@@ -1,0 +1,12 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "symbols" : [
+    {
+      "filename" : "custom.point.bottomleft.forward.to.point.topright.scurvepath.rectangle.stack.fill.svg",
+      "idiom" : "universal"
+    }
+  ]
+}
