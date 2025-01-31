@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "Afficher l'heure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display time"
+          }
+        }
+      }
+    },
+    "Autres arrêts proches" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Additional close stops"
+          }
+        }
+      }
+    },
+    "detail" : {
+      "shouldTranslate" : false
+    },
+    "Sélectionnez un arrêt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a stop"
+          }
+        }
+      }
+    },
+    "Temps restant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display remaining minutes"
+          }
+        }
+      }
+    },
+    "Test1" : {
+      "shouldTranslate" : false
+    },
+    "Test2" : {
+      "shouldTranslate" : false
+    },
+    "Test3" : {
+      "shouldTranslate" : false
+    },
+    "Trier par horaire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort by time"
+          }
+        }
+      }
+    },
+    "Trier par ligne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort by line"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
