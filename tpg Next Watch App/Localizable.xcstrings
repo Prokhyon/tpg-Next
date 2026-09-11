@@ -24,6 +24,9 @@
     "detail" : {
       "shouldTranslate" : false
     },
+    "Pas de départs trouvés" : {
+
+    },
     "Sélectionnez un arrêt" : {
       "localizations" : {
         "en" : {

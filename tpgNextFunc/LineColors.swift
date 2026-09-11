@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-struct LineColors {
+public struct LineColors {
     static let lineBrown = Color(red: 124.0/255.0, green: 74.0/255.0, blue: 38.0/255.0)
     static let lineBlue = Color(red: 77.0/255.0, green: 169.0/255.0, blue: 226.0/255.0)
     static let lineGrayBlue = Color(red: 61.0/255.0, green: 138.0/255.0, blue: 185.0/255.0)
@@ -278,7 +278,16 @@ struct LineColors {
             "119" :Color(red: 0.69, green: 0.14, blue: 0.35, opacity: 1.00)
         ]
     
-    static func lineColor(for lineID: String, operatorName: String, inverted: Bool = false) -> Color {
+    static let cgnColors: [String: Color] = [
+        "N1": .pink,
+        "N2": .green,
+        "N3": .orange,
+        "N4": .blue
+        ]
+    
+    
+    
+    public static func lineColor(for lineID: String, operatorName: String, inverted: Bool = false) -> Color {
         let colorMaps: [String: [String: Color]] = [
             "Transports Publics Genevois": tpgColors,
             "Schweizerische Bundesbahnen SBB": sbbColors,
@@ -290,7 +299,8 @@ struct LineColors {
             "Transports Vallée de Joux-Yverdon-Ste-Croix": travysColors,
             "Transports publics Vevey-Montreux-Chillon-Villeneuve": vmcvColors,
             "Transports Publics du Chablais": tpcColors,
-            "Transports Publics du Chablais (Bus)": tpcColors
+            "Transports Publics du Chablais (Bus)": tpcColors,
+            "CGN SA" : cgnColors
         ]
 
         if let colorMap = colorMaps[operatorName], let color = colorMap[lineID] {
@@ -300,7 +310,10 @@ struct LineColors {
                 return .red
             } else if operatorName == "PostAuto AG" {
                 return .yellow
+            } else if operatorName == "CGN SA" {
+                return lineDarkBlue
             } else {
+                print("missing colors for \(operatorName)")
                 return inverted ? .color1 : .primary
             }
         }

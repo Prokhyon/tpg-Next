@@ -8,71 +8,78 @@
 import Foundation
 import SwiftUI
 import MapKit
+import Combine
 
 var responseTrip = ""
 
-struct TripEvent: Identifiable, Hashable, Encodable, Decodable {
-    var id: String
-    var duration: String
-    var startTime: String
-    var endTime: String
-    var startCoordinates: Coordinates
-    var endCoordinates: Coordinates
-    var startName: String
-    var endName: String
-    var startCode: String?
-    var endCode: String?
-    var geoDeparture: Bool
-    var geoArrival: Bool
-    var transfers: String
-    var legs: [TripLeg]
+public struct TripEvent: Identifiable, Hashable, Encodable, Decodable {
+    public var id: String
+    public var duration: String
+    public var startTime: String
+    public var endTime: String
+    public var startCoordinates: Coordinates
+    public var endCoordinates: Coordinates
+    public var startName: String
+    public var endName: String
+    public var startCode: String?
+    public var endCode: String?
+    public var geoDeparture: Bool
+    public var geoArrival: Bool
+    public var transfers: String
+    public var legs: [TripLeg]
 }
 
-struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
-    var id: String
-    var transfer: Bool = false
-    var legBoardStopName: String
-    var legBoardStopId: String
-    var legBoardQuay: String
-    var legBoardTimetableTime: String
-    var legBoardEstimatedTime: String
-    var legBoardLongitude: String
-    var legBoardLatitude: String
+public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
+    public var id: String
+    public var transfer: Bool = false
+    public var legBoardStopName: String
+    public var legBoardStopId: String
+    public var legBoardQuay: String
+    public var legBoardTimetableTime: String
+    public var legBoardEstimatedTime: String
+    public var legBoardLongitude: String
+    public var legBoardLatitude: String
     
-    var legAlightStopName: String
-    var legAlightStopId: String
-    var legAlightQuay: String
-    var legAlightTimetableTime: String
-    var legAlightEstimatedTime: String
-    var legAlightLongitude: String
-    var legAlightLatitude: String
+    public var legAlightStopName: String
+    public var legAlightStopId: String
+    public var legAlightQuay: String
+    public var legAlightTimetableTime: String
+    public var legAlightEstimatedTime: String
+    public var legAlightLongitude: String
+    public var legAlightLatitude: String
     
-    var legIntermediates: [LegIntermediate]
+    public var legIntermediates: [LegIntermediate]
     
-    var legDestination: String
-    var journeyRef: String
-    var publishedLineName: String
-    var legDuration: String
-    var transferDuration: String
-    var transferWalkDuration: String
-    var transferBuffer: String
-    var transportTypeName: String
-    var legOperator: String
+    public var legDestination: String
+    public var journeyRef: String
+    public var publishedLineName: String
+    public var legDuration: String
+    public var transferDuration: String
+    public var transferWalkDuration: String
+    public var transferBuffer: String
+    public var transportTypeName: String
+    public var legOperator: String
 //    var legTrack: [CLLocationCoordinate2D]
 }
 
-struct LegIntermediate: Codable, Identifiable, Hashable {
-    var id: String
-    var stopId: String
-    var stopName: String
-    var longitude: String
-    var latitude: String
+public struct LegIntermediate: Codable, Identifiable, Hashable {
+    public var id: String
+    public var stopId: String
+    public var stopName: String
+    public var longitude: String
+    public var latitude: String
 }
 
+public enum ParserError: Error {
+    case noEventFound(message: String)
+    case xmlParsingFailed
+    case unknown
+}
 
-
-func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinates: Coordinates, startName: String, endName: String, startCode: String?, endCode: String?, geoDeparture: Bool, geoArrival: Bool) -> [TripEvent] {
+public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinates: Coordinates, startName: String, endName: String, startCode: String?, endCode: String?, geoDeparture: Bool, geoArrival: Bool) throws -> [TripEvent] {
     class TripEventParserDelegate: NSObject, XMLParserDelegate {
+        var error: ParserError?
+        
         private var currentElement = ""
         private var currentTripEvent: TripEvent?
         var currentTripLeg: TripLeg?
@@ -136,6 +143,10 @@ func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinat
             currentElement = elementName
             currentTextContent = "" // Reset text content on a new element
             
+//            if elementName == "siri:ErrorText" {
+//                currentElement = elementName
+//            }
+            
             if elementName == "ojp:TripResponseContext" {
                 insideTripResponseContext = true
             } else if elementName == "ojp:TripResult" {
@@ -155,9 +166,9 @@ func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinat
                 insideStopPoint = true
             } else if currentElement == "ojp:StopPlace" {
                 insideStopPlace = true
-            /*} else if currentElement == "ojp:LinkProjection" {
-                currentPosition = CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
-                linkProjection = true*/
+                /*} else if currentElement == "ojp:LinkProjection" {
+                 currentPosition = CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
+                 linkProjection = true*/
             } else if currentElement == "ojp:StopPointName" || currentElement == "ojp:PlannedQuay" || currentElement == "ojp:PublishedLineName" || currentElement == "ojp:DestinationText" || currentElement == "ojp:TransportTypeName" || currentElement == "ojp:Position" || currentElement == "ojp:OperatorName"{
                 parentElement = currentElement
             }
@@ -168,7 +179,11 @@ func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinat
         }
         
         func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-                
+            
+            if currentElement == "siri:ErrorText" {
+                error = .noEventFound(message: currentTextContent)
+            }
+            
             if insideTripResponseContext {
                 if !currentTextContent.isEmpty || elementName == "ojp:Location" || elementName == "ojp:StopPoint" || elementName == "ojp:StopPlace" {
                     if elementName == "ojp:StopPoint" {
@@ -240,135 +255,135 @@ func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinat
                     currentLegIntermediate?.stopName = currentTextContent
                 }
             } else if parentElement == "ojp:StopPointName" && currentElement == "ojp:Text" {
-                    if legBoard {
-                        currentTripLeg?.legBoardStopName = currentTextContent
-                    } else if legAlight {
-                        currentTripLeg?.legAlightStopName = currentTextContent
-                    }
-                } else if parentElement == "ojp:PlannedQuay" && currentElement == "ojp:Text" {
-                    if legBoard {
-                        currentTripLeg?.legBoardQuay = currentTextContent
-                    } else if legAlight {
-                        currentTripLeg?.legAlightQuay = currentTextContent
-                    }
-                } else if parentElement == "ojp:PublishedLineName" && currentElement == "ojp:Text" {
-                    currentTripLeg?.publishedLineName = currentTextContent
-                } else if parentElement == "ojp:DestinationText" && currentElement == "ojp:Text" {
-                    currentTripLeg?.legDestination = currentTextContent
-                } else if parentElement == "ojp:TransportTypeName" && currentElement == "ojp:Text" {
-                    currentTripLeg?.transportTypeName = currentTextContent
-                } else if parentElement == "ojp:OperatorName" && currentElement == "ojp:Text" {
-                    currentTripLeg?.legOperator = currentTextContent
-                } else if currentElement == "ojp:TimetabledTime" {
-                    if legBoard {
-                        currentTripLeg?.legBoardTimetableTime = currentTextContent
-                    } else if legAlight {
-                        currentTripLeg?.legAlightTimetableTime = currentTextContent
-                    }
-                } else if currentElement == "ojp:EstimatedTime" {
-                    if legBoard {
-                        currentTripLeg?.legBoardEstimatedTime = currentTextContent
-                    } else if legAlight {
-                        currentTripLeg?.legAlightEstimatedTime = currentTextContent
-                    }
-                } else if currentElement == "siri:StopPointRef" {
-                    if legBoard {
-                        currentTripLeg?.legBoardStopId = currentTextContent
-                    } else if legAlight {
-                        currentTripLeg?.legAlightStopId = currentTextContent
-                    }
+                if legBoard {
+                    currentTripLeg?.legBoardStopName = currentTextContent
+                } else if legAlight {
+                    currentTripLeg?.legAlightStopName = currentTextContent
                 }
-                
-                switch currentElement {
-                case "ojp:ResultId":
-                    currentTripEvent?.id = currentTextContent
-                    previousIsTripID = true
-                case "ojp:Duration":
-                    if previousIsTripID {
-                        previousIsTripID = false
-                        currentTripEvent?.duration = currentTextContent
-                    }
-                    if insideLeg {
-                        if currentTripLeg?.transfer == true {
-                            currentTripLeg?.transferDuration = currentTextContent
-                        } else {
-                            currentTripLeg?.legDuration = currentTextContent
-                        }
-                    }
-                case "ojp:StartTime":
-                    currentTripEvent?.startTime = currentTextContent
-                case "ojp:EndTime":
-                    currentTripEvent?.endTime = currentTextContent
-                case "ojp:Transfers":
-                    currentTripEvent?.transfers = currentTextContent
-                case "ojp:LegId":
-                    currentTripLeg?.id = currentTextContent
-                case "ojp:JourneyRef":
-                    currentTripLeg?.journeyRef = currentTextContent
-                case "ojp:TransferMode":
-                    if currentTextContent == "walk" {
-                        currentTripLeg?.transfer = true
-                    }
-                case "ojp:IndividualMode":
-                    if currentTextContent == "walk" {
-                        currentTripLeg?.transfer = true
-                    }
-                case "ojp:WalkDuration":
-                    currentTripLeg?.transferWalkDuration = currentTextContent
-                case "ojp:BufferTime":
-                    currentTripLeg?.transferBuffer = currentTextContent
-                default:
-                    break
+            } else if parentElement == "ojp:PlannedQuay" && currentElement == "ojp:Text" {
+                if legBoard {
+                    currentTripLeg?.legBoardQuay = currentTextContent
+                } else if legAlight {
+                    currentTripLeg?.legAlightQuay = currentTextContent
                 }
-//            }
-            /*if linkProjection && elementName == "ojp:Position" {
-                if let position = currentPosition {
-                    currentTripLeg?.legTrack.append(position)
+            } else if parentElement == "ojp:PublishedLineName" && currentElement == "ojp:Text" {
+                currentTripLeg?.publishedLineName = currentTextContent
+            } else if parentElement == "ojp:DestinationText" && currentElement == "ojp:Text" {
+                currentTripLeg?.legDestination = currentTextContent
+            } else if parentElement == "ojp:TransportTypeName" && currentElement == "ojp:Text" {
+                currentTripLeg?.transportTypeName = currentTextContent
+            } else if parentElement == "ojp:OperatorName" && currentElement == "ojp:Text" {
+                currentTripLeg?.legOperator = currentTextContent
+            } else if currentElement == "ojp:TimetabledTime" {
+                if legBoard {
+                    currentTripLeg?.legBoardTimetableTime = currentTextContent
+                } else if legAlight {
+                    currentTripLeg?.legAlightTimetableTime = currentTextContent
                 }
-            } else */if elementName == "ojp:TripLeg" {
-                if var leg = currentTripLeg {
-                    if let boardData = stopPlaceRefMap[leg.legBoardStopId] {
-                        leg.legBoardLongitude = boardData.longitude
-                        leg.legBoardLatitude = boardData.latitude
-                    }
-                    if let alightData = stopPlaceRefMap[leg.legAlightStopId] {
-                        leg.legAlightLongitude = alightData.longitude
-                        leg.legAlightLatitude = alightData.latitude
-                    }
-                    leg.legIntermediates = currentIntermediates
-                    currentLegs.append(leg)
-                    currentTripLeg = nil
-                    currentIntermediates = []
+            } else if currentElement == "ojp:EstimatedTime" {
+                if legBoard {
+                    currentTripLeg?.legBoardEstimatedTime = currentTextContent
+                } else if legAlight {
+                    currentTripLeg?.legAlightEstimatedTime = currentTextContent
                 }
-            } else if elementName == "ojp:TripResult" {
-                if var trip = currentTripEvent {
-                    trip.legs = currentLegs
-                    tripEvents.append(trip)
-                    currentLegs = []
-                    currentTripEvent = nil
+            } else if currentElement == "siri:StopPointRef" {
+                if legBoard {
+                    currentTripLeg?.legBoardStopId = currentTextContent
+                } else if legAlight {
+                    currentTripLeg?.legAlightStopId = currentTextContent
                 }
-            } else if elementName == "ojp:TripResponseContext" {
-                insideTripResponseContext = false
-            } else if elementName == "ojp:LegBoard" {
-                legBoard = false
-            } else if elementName == "ojp:LegAlight" {
-                legAlight = false
-            } else if elementName == "ojp:LegIntermediates" {
-                legIntermediates = false
-
-                if var intermediateData = currentLegIntermediate {
-                    if let longitude = stopPlaceRefMap[intermediateData.stopId]?.longitude, let latitude = stopPlaceRefMap[intermediateData.stopId]?.latitude {
-                        intermediateData.longitude = longitude
-                        intermediateData.latitude = latitude
-                    }
-                    currentIntermediates.append(intermediateData)
-                    currentLegIntermediate = nil
-                }
-            } else if elementName == "ojp:LinkProjection" {
-                linkProjection = false
-            } else if elementName == "ojp:TripLeg" {
-                insideLeg = false
             }
+            
+            switch currentElement {
+            case "ojp:ResultId":
+                currentTripEvent?.id = currentTextContent
+                previousIsTripID = true
+            case "ojp:Duration":
+                if previousIsTripID {
+                    previousIsTripID = false
+                    currentTripEvent?.duration = currentTextContent
+                }
+                if insideLeg {
+                    if currentTripLeg?.transfer == true {
+                        currentTripLeg?.transferDuration = currentTextContent
+                    } else {
+                        currentTripLeg?.legDuration = currentTextContent
+                    }
+                }
+            case "ojp:StartTime":
+                currentTripEvent?.startTime = currentTextContent
+            case "ojp:EndTime":
+                currentTripEvent?.endTime = currentTextContent
+            case "ojp:Transfers":
+                currentTripEvent?.transfers = currentTextContent
+            case "ojp:LegId":
+                currentTripLeg?.id = currentTextContent
+            case "ojp:JourneyRef":
+                currentTripLeg?.journeyRef = currentTextContent
+            case "ojp:TransferMode":
+                if currentTextContent == "walk" {
+                    currentTripLeg?.transfer = true
+                }
+            case "ojp:IndividualMode":
+                if currentTextContent == "walk" {
+                    currentTripLeg?.transfer = true
+                }
+            case "ojp:WalkDuration":
+                currentTripLeg?.transferWalkDuration = currentTextContent
+            case "ojp:BufferTime":
+                currentTripLeg?.transferBuffer = currentTextContent
+            default:
+                break
+            }
+            //            }
+            /*if linkProjection && elementName == "ojp:Position" {
+             if let position = currentPosition {
+             currentTripLeg?.legTrack.append(position)
+             }
+             } else */if elementName == "ojp:TripLeg" {
+                 if var leg = currentTripLeg {
+                     if let boardData = stopPlaceRefMap[leg.legBoardStopId] {
+                         leg.legBoardLongitude = boardData.longitude
+                         leg.legBoardLatitude = boardData.latitude
+                     }
+                     if let alightData = stopPlaceRefMap[leg.legAlightStopId] {
+                         leg.legAlightLongitude = alightData.longitude
+                         leg.legAlightLatitude = alightData.latitude
+                     }
+                     leg.legIntermediates = currentIntermediates
+                     currentLegs.append(leg)
+                     currentTripLeg = nil
+                     currentIntermediates = []
+                 }
+             } else if elementName == "ojp:TripResult" {
+                 if var trip = currentTripEvent {
+                     trip.legs = currentLegs
+                     tripEvents.append(trip)
+                     currentLegs = []
+                     currentTripEvent = nil
+                 }
+             } else if elementName == "ojp:TripResponseContext" {
+                 insideTripResponseContext = false
+             } else if elementName == "ojp:LegBoard" {
+                 legBoard = false
+             } else if elementName == "ojp:LegAlight" {
+                 legAlight = false
+             } else if elementName == "ojp:LegIntermediates" {
+                 legIntermediates = false
+                 
+                 if var intermediateData = currentLegIntermediate {
+                     if let longitude = stopPlaceRefMap[intermediateData.stopId]?.longitude, let latitude = stopPlaceRefMap[intermediateData.stopId]?.latitude {
+                         intermediateData.longitude = longitude
+                         intermediateData.latitude = latitude
+                     }
+                     currentIntermediates.append(intermediateData)
+                     currentLegIntermediate = nil
+                 }
+             } else if elementName == "ojp:LinkProjection" {
+                 linkProjection = false
+             } else if elementName == "ojp:TripLeg" {
+                 insideLeg = false
+             }
             currentTextContent = ""
             currentElement = ""
             if parentElement == elementName {
@@ -379,46 +394,23 @@ func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCoordinat
     let parserDelegate = TripEventParserDelegate(startCoordinates: startCoordinate, endCoordinates: endCoordinates, startName: startName, endName: endName, startCode: startCode, endCode: endCode, geoDeparture: geoDeparture, geoArrival: geoArrival)
     let parser = XMLParser(data: data)
     parser.delegate = parserDelegate
-    let result = parserDelegate.parse(data: data)
-//    print("Finished parsing. Result:", result)
-    return result
+    parser.parse()
+    
+    if let error = parserDelegate.error {
+        throw error
+    }
+    
+    return parserDelegate.tripEvents // TripEvents
 }
+//    let result = parserDelegate.parse(data: data)
+////    print("Finished parsing. Result:", result)
+//    return result
+//}
 
 
 
 //Send XMLrequest
-class TripManager: ObservableObject {
-    @Published var tripEvents: [TripEvent] = []
-    let dateFormatter = DateFormatter()
-    
-    func selectTrip(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool) {
-//        print((departureGeoPosition ?? departureStop) ?? "emptyDeparture")
-//        print((arrivalGeoPosition ?? arrivalStop) ?? "emptyArrival")
-        fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { success in
-                if success {
-                   print("success")
-                    // Parse XML response
-                    if let data = responseTrip.data(using: .utf8) {
-                        let startCoordinate = geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates
-//                        print(startCoordinate ?? "empty startCoordinates")
-                        let endCoordinate = geoArrival ? arrivalGeoPosition?.coordinate.toCoordinates : arrivalStop?.wgs84Coordinates
-                        let startName = geoDeparture ? departureGeoPosition?.name : departureStop?.name
-                        let endName = geoArrival ? arrivalGeoPosition?.name : arrivalStop?.name
-                        let emptyCoordinates: Coordinates = Coordinates(lon: 0.0, lat: 0.0)
-                        
-                        self.tripEvents = parseTripEvents(from: data, startCoordinate: startCoordinate ?? emptyCoordinates, endCoordinates: endCoordinate ?? emptyCoordinates, startName: startName ?? "", endName: endName ?? "", startCode: departureStop?.codedidoc, endCode: arrivalStop?.codedidoc, geoDeparture: geoDeparture, geoArrival: geoArrival)
-                    }
-                    if !(self.tripEvents.last?.legs.first?.transfer ?? true) && self.tripEvents.last?.legs.first?.publishedLineName == "" {
-                        let transferLast: TripEvent = self.tripEvents.last!
-                        var tripEventsTransfer: [TripEvent] = self.tripEvents.dropLast()
-                        tripEventsTransfer.insert(transferLast, at: 0)
-                        self.tripEvents = tripEventsTransfer
-                    }
-                }
-            }
-        }
-    
-    func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Bool) -> Void) {
+    public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Bool, String?) -> Void) {
         
         let urlString = "https://api.opentransportdata.swiss/ojp2020"
         guard let url = URL(string: urlString) else { return }
@@ -448,14 +440,14 @@ class TripManager: ObservableObject {
                         <ojp:PlaceRef>
                         \(geoDeparture ? """
                                 <ojp:GeoPosition>
-                                <Longitude>\(departureGeoPosition!.coordinate.longitude))</Longitude>
-                                <Latitude>\(departureGeoPosition!.coordinate.latitude))</Latitude>
+                                <Longitude>\(departureGeoPosition!.coordinate.longitude)</Longitude>
+                                <Latitude>\(departureGeoPosition!.coordinate.latitude)</Latitude>
                                 </ojp:GeoPosition>
                                 """ : """
-                                        <ojp:StopPlaceRef>\(departureStop!.codedidoc)</ojp:StopPlaceRef>
+                                        <ojp:StopPlaceRef>\(departureStop!.sloid)</ojp:StopPlaceRef>
                                         """)
                             <ojp:LocationName>
-                                <ojp:Text>\(geoDeparture ? departureGeoPosition!.name : departureStop!.name))</ojp:Text>
+                                <ojp:Text>\(geoDeparture ? departureGeoPosition!.name : departureStop!.name)</ojp:Text>
                             </ojp:LocationName>
                         </ojp:PlaceRef>
                         \(isArrivalTime ? "" : "<ojp:DepArrTime>\(tripTime)</ojp:DepArrTime>")
@@ -464,14 +456,14 @@ class TripManager: ObservableObject {
                         <ojp:PlaceRef>
                         \(geoArrival ? """
                              <ojp:GeoPosition>
-                                   <Longitude>\(arrivalGeoPosition!.coordinate.longitude))</Longitude>
-                                   <Latitude>\(arrivalGeoPosition!.coordinate.latitude))</Latitude>
+                                   <Longitude>\(arrivalGeoPosition!.coordinate.longitude)</Longitude>
+                                   <Latitude>\(arrivalGeoPosition!.coordinate.latitude)</Latitude>
                                 </ojp:GeoPosition>
                              """ : """
-                         <ojp:StopPlaceRef>\(arrivalStop!.codedidoc)</ojp:StopPlaceRef>
+                         <ojp:StopPlaceRef>\(arrivalStop!.sloid)</ojp:StopPlaceRef>
                          """)
                             <ojp:LocationName>
-                                <ojp:Text>\(geoArrival ? arrivalGeoPosition!.name : arrivalStop!.name))</ojp:Text>
+                                <ojp:Text>\(geoArrival ? arrivalGeoPosition!.name : arrivalStop!.name)</ojp:Text>
                             </ojp:LocationName>
                         </ojp:PlaceRef>
                         \(isArrivalTime ? "<ojp:DepArrTime>\(tripTime)</ojp:DepArrTime>" : "")
@@ -500,22 +492,23 @@ class TripManager: ObservableObject {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error: \(error)")
-                completion(false)
+                completion(false, nil)
                 return
             }
             
             guard let data = data else {
                 print("No data received")
-                completion(false)
+                completion(false, nil)
                 return
             }
+//            print("Request: \(xmlString)")
             
             if let responseString = String(data: data, encoding: .utf8) {
 //                print("Response: \(responseString)")
                 DispatchQueue.main.async {
                     // Assuming responseLine is a global variable
                     responseTrip = responseString
-                    completion(true)
+                    completion(true, responseString)
                 }
             }
         }
@@ -523,62 +516,16 @@ class TripManager: ObservableObject {
         task.resume()
         
     }
-}
 
-
-class SavedTripsModel: ObservableObject {
-    @Published var savedTrips: [TripEvent] {
-        didSet {
-            saveTrips()
-        }
-    }
-    
-    private let userDefaultsKey = "savedTrips"
-    
-    init() {
-        self.savedTrips = []
-        loadTrips()
+public class FullTripTest: ObservableObject {
+    @Published public var Trip: TripEvent
+    public init() {
+        self.Trip = TripEvent(id: "AAAA", duration: "PT50M", startTime: "2025-02-08T14:50:42Z", endTime: "2025-02-08T15:35:42Z", startCoordinates: Coordinates(lon: 0.0, lat: 0.0), endCoordinates: Coordinates(lon: 0.0, lat: 0.0), startName: "Meinier, église", endName: "Carouge, Rondeau", startCode: "", endCode: "", geoDeparture: false, geoArrival: false, transfers: "1", legs: [
+            TripLeg(id: "A", transfer: true, legBoardStopName: "", legBoardStopId: "", legBoardQuay: "", legBoardTimetableTime: "2025-02-08T14:50:42Z", legBoardEstimatedTime: "2025-02-08T14:50:42Z", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "", legAlightStopId: "", legAlightQuay: "", legAlightTimetableTime: "2025-02-08T14:51:42Z", legAlightEstimatedTime: "2025-02-08T14:51:42Z", legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "", journeyRef: "", publishedLineName: "", legDuration: "PT1M", transferDuration: "PT1M", transferWalkDuration: "PT1M", transferBuffer: "PT1M", transportTypeName: "walk", legOperator: ""),
+            TripLeg(id: "1234", legBoardStopName: "Meinier, église", legBoardStopId: "AAA", legBoardQuay: "A", legBoardTimetableTime: "2025-02-08T14:51:42Z", legBoardEstimatedTime: "2025-02-08T14:51:42Z", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "Genève, Place des Eaux-Vives", legAlightStopId: "BBB", legAlightQuay: "B", legAlightTimetableTime: "2025-02-08T15:10:42Z", legAlightEstimatedTime: "2025-02-08T15:10:42Z", legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "Genève, Rive", journeyRef: "", publishedLineName: "A", legDuration: "PT20M", transferDuration: "", transferWalkDuration: "", transferBuffer: "", transportTypeName: "Bus", legOperator: "Transports Publics Genevois"),
+            TripLeg(id: "B", legBoardStopName: "", legBoardStopId: "", legBoardQuay: "", legBoardTimetableTime: "", legBoardEstimatedTime: "", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "", legAlightStopId: "", legAlightQuay: "", legAlightTimetableTime: "", legAlightEstimatedTime: "", legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "", journeyRef: "", publishedLineName: "", legDuration: "", transferDuration: "PT10M", transferWalkDuration: "PT4M", transferBuffer: "PT6M", transportTypeName: "", legOperator: ""),
+            TripLeg(id: "5678", legBoardStopName: "Genève, Terrassière", legBoardStopId: "CCC", legBoardQuay: "C", legBoardTimetableTime: "2025-02-08T15:20:42Z", legBoardEstimatedTime: "2025-02-08T15:20:42Z", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "Carouge, Rondeau", legAlightStopId: "DDD", legAlightQuay: "D", legAlightTimetableTime: "2025-02-08T15:35:42Z", legAlightEstimatedTime: "2025-02-08T15:35:42Z", legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "Lancy-Bachet, Gare", journeyRef: "", publishedLineName: "12", legDuration: "PT20M", transferDuration: "", transferWalkDuration: "", transferBuffer: "", transportTypeName: "Tram", legOperator: "Transports Publics Genevois")
+        ])
     }
 
-    func addTrip(_ trip: TripEvent) {
-        if !savedTrips.contains(trip) {
-            savedTrips.append(trip)
-            saveTrips()
-        }
-    }
-    
-    func removeTrip(_ trip: TripEvent) {
-        savedTrips.removeAll(where: { $0.id == trip.id })
-        saveTrips()
-    }
-    
-    func tripIsSaved(_ trip: TripEvent) -> Bool {
-        return savedTrips.contains(trip)
-    }
-    
-//    func moveFavorite(fromOffsets source: IndexSet, toOffset destination: Int) {
-//        favoriteStops.move(fromOffsets: source, toOffset: destination)
-//        saveFavorites()
-//    }
-    
-    private func saveTrips() {
-        do {
-            let data = try JSONEncoder().encode(savedTrips)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            print("Error encoding trips: \(error)")
-        }
-    }
-    
-    private func loadTrips() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let trips = try JSONDecoder().decode([TripEvent].self, from: data)
-                self.savedTrips = trips
-                print("trips loaded")
-            } catch {
-                print("Error decoding trips: \(error)")
-            }
-        }
-    }
 }

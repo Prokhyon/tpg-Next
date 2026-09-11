@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import tpgNextFunc
 
 enum welcomePage {
     case page1
@@ -51,7 +52,7 @@ struct WelcomeView: View {
         var body: some View {
             VStack(alignment: .leading) {
                 Text("Bienvenue").font(.largeTitle).bold()
-                Text("merci d'avoir téléchargé tpg Next").font(.headline)
+                Text("Merci d'avoir téléchargé tpg Next").font(.headline)
                 Spacer()
                 Text("Voici quelques astuces pour vous aider à démarrer.\nRevoyez les à tout moment depuis les paramètres.")
                 Spacer()
@@ -71,29 +72,25 @@ struct WelcomeView: View {
                     }
                 } label: {
                     if locationManager.locationStatus == .authorizedWhenInUse || locationManager.locationStatus == .authorizedAlways {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.thinMaterial)
+                        BasicElement()
                             .frame(height: 40)
-                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                             .overlay(HStack(spacing: 10) {
                                 Text("Accès autorisé")
                                 Image(systemName: "checkmark")
                             }.foregroundStyle(.accent))
                     } else if locationManager.locationStatus == .denied {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.thinMaterial)
+                        BasicElement()
                             .frame(height: 40)
-                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                             .overlay(HStack(spacing: 10) {
                                 Text("Accès refusé")
                                 Image(systemName: "xmark")
                             }.foregroundStyle(.red))
                     } else {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.accent)
+                    BasicElement(button: true)
                             .frame(height: 40)
-                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                            .overlay(Text("Choisir").foregroundStyle(.white))
+                            .overlay(Text("Choisir")
+                                .foregroundStyle(.white)
+                            )
                     }
                 }
                 Spacer()
@@ -113,46 +110,53 @@ struct WelcomeView: View {
                 } label: {
                     if notificationAuthorizationAsked {
                         if notificationManager.isNotificationAuthorized {
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(.thinMaterial)
+                            BasicElement()
                                 .frame(height: 40)
-                                .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                                 .overlay(HStack(spacing: 10) {
                                     Text("Accès autorisé")
                                     Image(systemName: "checkmark")
                                 }.foregroundStyle(.accent))
                         } else if !notificationManager.isNotificationAuthorized {
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(.thinMaterial)
+                            BasicElement()
                                 .frame(height: 40)
-                                .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                                 .overlay(HStack(spacing: 10) {
                                     Text("Accès refusé")
                                     Image(systemName: "xmark")
                                 }.foregroundStyle(.red))
                         }
                     } else {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.accent)
+                        BasicElement(button: true)
                             .frame(height: 40)
-                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                             .overlay(Text("Choisir").foregroundStyle(.white))
                     }
                 }
                 Spacer()
                 if notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined {
-                    Button {
-                        withAnimation(.easeInOut) {
-                            page = .page2
+                    if #available (iOS 26, *) {
+                        Button {
+                            withAnimation(.easeInOut) {
+                                page = .page2
+                            }
+                        } label: {
+                            Text("Suivant").foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 30)
                         }
-                    } label: {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(.accent)
-                            .frame(height: 50)
-                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                            .overlay(Text("Suivant").foregroundStyle(.white))
+                        .buttonStyle(.glassProminent)
+                        .disabled(notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined ? false : true)
+                    } else {
+                        Button {
+                            withAnimation(.easeInOut) {
+                                page = .page2
+                            }
+                        } label: {
+                            Text("Suivant").foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 30)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined ? false : true)
                     }
-                    .disabled(notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined ? false : true)
                 } else {
                     Rectangle()
                         .frame(height:50)
@@ -197,13 +201,11 @@ struct WelcomeView: View {
                 .padding(.bottom, 5)
                 
                 Text("Itinéraires").font(.title2).bold()
-                Text("Lors d'une recherche d'un arrêt ou lieu, appuyez sur l'icône à la droite d'un résultat afin d'afficher une carte et vérifier la position de celui-ci.")
-                Text("\nTestez ici:")
+                Text("Lors d'une recherche d'un arrêt ou d'un lieu, appuyez sur l'icône à la droite d'un résultat afin d'obtenir un aperçu de sa position sur une carte.\n\nAjoutez aussi facilement des arrêts à vos favoris avec l'étoile.")
+                Text("\nTestez ici:").font(.footnote)
                 
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.thinMaterial)
+                BasicElement()
                     .frame(height: 45)
-                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                     .overlay(
                         HStack {
                             Button(action: {
@@ -213,7 +215,7 @@ struct WelcomeView: View {
                                     favoritesViewModel.addFavorite(stopCornavin)
                                 }
                             }) {
-                                Image(systemName: favoritesViewModel.isFavorite(stopCornavin) ? "star.fill" : "star")
+                                Image(systemName: favoritesViewModel.isFavorite(stopCornavin) ? "star.fill" : "star").foregroundStyle(.accent)
                             }
                             SmallStopTitleView(stopName: "Genève, gare Cornavin")
                             Spacer()
@@ -228,21 +230,33 @@ struct WelcomeView: View {
                     )
                 Spacer()
                 Text("Notifications").font(.title2).bold()
-                Text("Depuis n'importe quel événement de véhicule, appuyez longuement pour afficher le menu de programmation de rappel. Vous pourrez voir les rappels programmés depuis les paramètres")
-                Text("Ces rappels vérifieront l'heure réelle d'arrivée d'un véhicule avant celle-ci et s'y adaptent.")
-                Text("\nTestez ici:")
+                Text("Appuyez longuement sur un horaire pour programmer un rappel. Vous pourrez voir les rappels prévus depuis les paramètres.")
+                Text("De plus, vous serez prévenu en cas d'avance ou retard du véhicule. ")
+                Text("\nTestez ici: (Le rappel ne sera pas programmé)").font(.footnote)
                 notificationTestView()
                 Spacer()
-                Button {
-                    withAnimation(.easeInOut) {
-                        page = .page3
+                if #available (iOS 26, *) {
+                    Button {
+                        withAnimation(.easeInOut) {
+                            page = .page3
+                        }
+                    } label: {
+                        Text("Suivant").foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 30)
                     }
-                } label: {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.accent)
-                        .frame(height: 50)
-                        .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                        .overlay(Text("Suivant").foregroundStyle(.white))
+                    .buttonStyle(.glassProminent)
+                } else {
+                    Button {
+                        withAnimation(.easeInOut) {
+                            page = .page3
+                        }
+                    } label: {
+                        Text("Suivant").foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 30)
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
             }
             .sheet(item: $resultDetail) { detail in
@@ -255,7 +269,12 @@ struct WelcomeView: View {
     struct WelcomePage3: View {
         @Binding var page: welcomePage
         @Binding var viewingWelcome: Bool
-        @State var showTime: Bool = false
+        @State var showTime: Bool = true
+        @State var favorite = false
+        @State var viewLineSorted = false
+        @State var filterLines = false
+        @State var earlier = false
+        @State var later = false
         var body: some View {
             VStack(alignment: .leading) {
                 HStack {
@@ -279,19 +298,24 @@ struct WelcomeView: View {
                     }
                 }
                 .padding(.bottom, 5)
+//                Spacer()
+                Text("Quelques boutons utiles:").font(.title3)
+                Text("Testez-les !").font(.subheadline)
                 Spacer()
                 HStack {
                     VStack(spacing: 10) {
-                        Button(action: {
-                            showTime.toggle()
-                        }) {
-                            Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill").font(.largeTitle)
-                        }
-                        .padding(.horizontal)
+                        ShowTimeButton(showTime: $showTime)
+//                        Button(action: {
+//                            showTime.toggle()
+//                        }) {
+//                            Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill").font(.largeTitle)
+//                        }
+//                        .padding(.horizontal)
                         Text(showTime ? "12:34" : "14'")
                     }
+                    .padding()
                     
-                    Text("Utilisez ce bouton pour changer l'affichage de l'heure d'arrivée d'un véhicule entre son horaire et le temps restant")
+                    Text("Changez l'affichage de l'heure d'arrivée d'un véhicule entre son horaire et le temps restant")
                 }
                 Spacer()
                 HStack {
@@ -304,87 +328,86 @@ struct WelcomeView: View {
                             }) {
                                 Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
                             }
+                            Button(action: {
+                            }) {
+                                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
+                            }
                         } label: {
                         Image(systemName: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                            .font(.largeTitle)
+                            .font(.title)
+                            .foregroundStyle(.foreground)
                     }
                         .padding()
-                    Text("Utilisez ce bouton pour lancer une recherche d'itinéraire avec l'arrêt correspondant")
+                    Text("Lancez rapidement une recherche d'itinéraire depuis un arrêt")
                 }
                 Spacer()
                 HStack {
-                    Menu {
-                        Menu {
-                                Button(action: {
-                                }) {
-                                    Label("18" + " ➔ " + "Meyrin, CERN", systemImage: "circle")
-                                }
-                                .menuActionDismissBehavior(.disabled)
-                            Button(action: {
-                            }) {
-                                Label("18" + " ➔ " + "Grand-Lancy, Palettes", systemImage: "circle")
-                            }
-                            .menuActionDismissBehavior(.disabled)
-                            Button(action: {
-                            }) {
-                                Label("14" + " ➔ " + "Meyrin, Gravière", systemImage: "circle")
-                            }
-                            .menuActionDismissBehavior(.disabled)
-                            Button(action: {
-                            }) {
-                                Label("14" + " ➔ " + "Bernex, Vailly", systemImage: "circle")
-                                
-                            }
-                            .menuActionDismissBehavior(.disabled)
-                        } label: {
-                            Label("Filtrer par ligne", systemImage:  "line.3.horizontal.decrease.circle")
-                        }
-                        
                         Button(action: {
+                            viewLineSorted.toggle()
                         }) {
-                            Label("Trier par horaire", systemImage: "list.bullet")
+                            Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
+                                .contentTransition(.symbolEffect(.replace.upUp.byLayer))
+                                .padding()
+                                .foregroundStyle(.foreground)
                         }
-                        Button(action: {
-
-                        }) {
-                            Label("Trier par ligne", systemImage: "rectangle.grid.1x2.fill")
-                        }
-                        Button(action: {
-                        }) {
-                            Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                        }
-                        
-                        Button(action: {
-                        }) {
-                            Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                        }
-                        Divider()
-                        
-                        Button(action: {
-                        }) {
-                            Label("Carte des quais", systemImage: "map")
-                        }
-                        Button(action: {
-                        }) {
-                            Label("Ajouter aux favoris", systemImage: "star")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle").font(.largeTitle)
-                    }
-                    .padding()
-                    Text("Utilisez ce bouton depuis un arrêt pour accéder au menu. Vous pourrez l'ajouter aux favoris, choisir comment trier les départs, filtrer certaines lignes, afficher la cartes de ses quais ou lancer un itinéraire avec celui-ci")
+                    Text("Alternez entre le tri par horaire et par ligne")
                 }
                 Spacer()
-                Button {
-                    withAnimation(.easeInOut) {
-                        viewingWelcome = false
+                HStack {
+                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $filterLines)
+                    Text("Filtrez les départs affichés par ligne")
                     }
-                } label: {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.accent)
-                        .frame(height: 50)
-                        .shadow(color: Color.customShadows, radius: 3, y: 2)
-                        .overlay(Text("Terminer").foregroundStyle(.white))                }
+
+                    Spacer()
+                HStack {
+                    HStack {
+                        Button(action: {
+                            earlier.toggle()
+                        }) {
+                            Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                                .symbolEffect(.bounce.down.byLayer, value: earlier)
+                                .padding()
+                                .foregroundStyle(.foreground)
+                        }
+                        Button(action: {
+                            later.toggle()
+                        }) {
+                            Image(systemName: "text.line.last.and.arrowtriangle.forward")
+                                .symbolEffect(.bounce.down.byLayer, value: later)
+                                .padding()
+                                .foregroundStyle(.foreground)
+                        }
+                    }
+                    Text("Affichez les départs précédents ou suivants")
+                }
+                
+                HStack {
+                    
+                }
+                Spacer()
+                if #available (iOS 26, *) {
+                    Button {
+                        withAnimation(.easeInOut) {
+                            viewingWelcome = false
+                        }
+                    } label: {
+                        Text("Terminer").foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 30)
+                    }
+                    .buttonStyle(.glassProminent)
+                } else {
+                    Button {
+                        withAnimation(.easeInOut) {
+                            viewingWelcome = false
+                        }
+                    } label: {
+                        Text("Terminer").foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 30)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }
         }
     }
@@ -392,10 +415,8 @@ struct WelcomeView: View {
 
 struct notificationTestView: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 20)
-                    .fill(.thinMaterial)
+        BasicElement()
             .frame(height: 50)
-                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
             .overlay(
                 HStack {
                     BusLineIcon(lineName: "12", operatorName: "Transports Publics Genevois")
@@ -434,4 +455,11 @@ struct notificationTestView: View {
                 return ""
             }
         }
+}
+
+#Preview {
+    @Previewable @State var welcome: Bool = true
+    @Previewable  @StateObject var favoritesViewModel = FavoritesViewModel()
+    WelcomeView(viewingWelcome: $welcome)
+        .environmentObject(favoritesViewModel)
 }

@@ -83,14 +83,25 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
     
+    /// Chemin principal : l'iPhone pousse les favoris via le contexte applicatif,
+    /// livré même si l'app montre n'était pas lancée au moment de la modification.
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        applyFavorites(from: applicationContext)
+    }
+
+    /// Conservé pour rester compatible avec une version de l'app iPhone
+    /// qui pousse encore les favoris par sendMessage.
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        guard let data = message["favoriteStops"] as? Data else { return }
-        
+        applyFavorites(from: message)
+    }
+
+    private func applyFavorites(from payload: [String: Any]) {
+        guard let data = payload["favoriteStops"] as? Data else { return }
+
         do {
             let stops = try JSONDecoder().decode([Stop].self, from: data)
             DispatchQueue.main.async {
-                self.favoriteStops = stops
-                self.saveFavorites()
+                self.favoriteStops = stops // le didSet enregistre
             }
         } catch {
             print("Decoding error: \(error)")
@@ -117,5 +128,9 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
     
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        guard activationState == .activated else { return }
+        // Un contexte poussé pendant que l'app montre était éteinte attend déjà ici.
+        applyFavorites(from: session.receivedApplicationContext)
+    }
 }

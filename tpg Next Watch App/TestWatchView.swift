@@ -69,7 +69,7 @@ struct TestWatchView: View {
             
             
 //            if let selected = selected {
-//                StopView(stopName: "Genève, Rive", stopCodedidoc: "8593006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
+//                StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:93006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
 //                    
 //            } else {
 //            }

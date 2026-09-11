@@ -6,39 +6,44 @@
 //
 
 import SwiftUI
+import Foundation
 import Combine
+import tpgNextFunc
 
-struct CustomNavigationTitle: View {
-    var stopEvent: StopEvent
+struct LineViewTitle: View {
+    var destination: String
     var currentLine: String
     var operatorName: String
     
     var body: some View {
-            VStack {
+        VStack(alignment: .leading) {
                 HStack {
                     Text("Ligne ")
                         .font(.largeTitle)
                         .bold()
                     BusLineIcon(lineName: currentLine, operatorName: operatorName)
-                    Spacer()
+//                    Spacer()
                 }
                 HStack {
                     Image(systemName: "arrow.right")
-                    eventStopName(stopName: stopEvent.destination)
-                    Spacer()
+                    eventStopName(stopName: destination)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+//                    Spacer()
             }
         }
-            .padding(.leading, 30)
+//            .padding(.leading, 30)
     }
 }
 
 struct LineView: View {
-    @ObservedObject var path: ViewStateStack
     @StateObject private var lineManager = LineManager()
     @EnvironmentObject var stopStore: StopStore
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
     @State private var timer: AnyCancellable?
-    @Binding var autoRefresh: Bool
+    var autoRefresh: Bool = true
+    
     var stopEvent: StopEvent
     var currentStop: ShortStop?
     var currentLine: String
@@ -57,80 +62,49 @@ struct LineView: View {
                     
                     //Events view
                     VStack {
-                        Rectangle()
-                            .frame(height: 15)
-                            .opacity(0.0)
+//                        Rectangle()
+//                            .frame(height: 15)
+//                            .opacity(0.0)
                         ScrollViewReader { scroll in
                             ScrollView {
                                 LazyVStack {
                                     ForEach(lineEvents, id: \.id) { event in
-                                        Button(action: {
-                                            path.push(.stop(stopCodedidoc: event.codedidoc, stopName: event.stopPointName, previousLineRef: stopEvent.journeyRef, previousLineName: currentLine, previousLineTime: event.timetabledTime))
-                                        }) {
-                                            LineEventElementView(event: event, stopEvent: stopEvent, currentLine: currentLine, operatorName: operatorName, currentStopCodedidoc: currentStop?.codedidoc ?? "", showTime: $showTime)
+                                        NavigationLink {
+                                            StopView(stopName: event.stopPointName, stopSloid: event.sloid, previousLineRef: stopEvent.journeyRef, previousLineName: currentLine, previousLineTime: event.timetabledTime)
+                                        } label: {
+                                            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid ?? "noCurrentStop", eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
                                         }
+                                        .foregroundStyle(.primary)
                                         .onAppear {
                                             if !scrollDone {
                                                 DispatchQueue.main.async {
                                                     withAnimation(.easeInOut(duration: 0.4)) {
                                                         if let currentStop = currentStop {
-                                                            let currentStopID = currentStop.codedidoc + stopEvent.timetabledTime
+                                                            let currentStopID = currentStop.sloid + stopEvent.timetabledTime
                                                             scroll.scrollTo(currentStopID, anchor: UnitPoint(x: 0.0, y: 0.05))
                                                             scrollDone = true
                                                         }
                                                     }
                                                 }
                                             }
-                                            print("Ligne " + stopEvent.lineName + ",\n" + stopEvent.transportType + ",\n operateur: " +
-                                                  stopEvent.operatorName)
+//                                            print("Ligne " + stopEvent.lineName + ",\n" + stopEvent.transportType + ",\n operateur: " + stopEvent.operatorName)
                                         }
-                                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20))
+                                        .contentShape(.contextMenuPreview, Capsule())
                                         .padding(.horizontal, 15)
                                         .padding(.vertical, 5)
-                                        .if(!compareDateString(with: event.estimatedTime, equalPossible: false)) { view in
+                                        .if(!dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false)) { view in
                                             view.contextMenu {
-                                                NotificationContextMenu(event: StopEvent(stopPointName: event.stopPointName, stopId: event.codedidoc, plannedQuay: event.plannedQuay, timetabledTime: event.timetabledTime, estimatedTime: event.estimatedTime, lineName: currentLine, origin: stopEvent.origin, destination: stopEvent.destination, transportType: stopEvent.transportType, operatorName: operatorName, journeyRef: stopEvent.journeyRef, operatingDayRef: stopEvent.operatingDayRef), stopID: event.codedidoc, path: path, itinerary: true)
+                                                NotificationContextMenu(event: StopEvent(stopPointName: event.stopPointName, stopId: event.sloid, plannedQuay: event.plannedQuay, timetabledTime: event.timetabledTime, estimatedTime: event.estimatedTime, lineName: currentLine, origin: stopEvent.origin, destination: stopEvent.destination, transportType: stopEvent.transportType, operatorName: operatorName, journeyRef: stopEvent.journeyRef, operatingDayRef: stopEvent.operatingDayRef), stopID: event.sloid, itinerary: true)
                                             }
                                         }
                                         .background(
-                                            GeometryReader { geometry in
-                                                if event.id == lineEvents.first?.id {
-                                                    Rectangle()
-                                                        .frame(width: 7, height: geometry.size.height / 2 + 8)
-                                                        .foregroundColor(compareDateString(with: event.estimatedTime, equalPossible: false) ? lineColor.opacity(0.3) : lineColor)
-                                                        .position(x: 45, y: geometry.size.height / 4 * 3)
-                                                } else if event.id == lineManager.LineEvents.last?.id {
-                                                    Rectangle()
-                                                        .frame(width: 7, height: geometry.size.height / 2 + 8)
-                                                        .foregroundColor(compareDateString(with: event.estimatedTime, equalPossible: true) ? lineColor.opacity(0.3) : lineColor)
-                                                        .position(x: 45, y: geometry.size.height / 4)
-                                                } else {
-                                                    var colorUp = compareDateString(with: event.estimatedTime, equalPossible: true)
-                                                    let colorDown = compareDateString(with: event.estimatedTime, equalPossible: false)
-                                                    
-                                                    Rectangle()
-                                                        .frame(width: 7, height: geometry.size.height / 2 + 8)
-                                                        .foregroundColor(colorUp ? lineColor.opacity(0.3) : lineColor)
-                                                        .position(x: 45, y: geometry.size.height / 4)
-                                                    Rectangle()
-                                                        .frame(width: 7, height: geometry.size.height / 2 + 8)
-                                                        .foregroundColor(colorDown ? lineColor.opacity(0.3) : lineColor)
-                                                        .position(x: 45, y: geometry.size.height / 4 * 3)
-                                                        .onAppear {
-                                                            if busIsHere {
-                                                                colorUp = false
-                                                            } else if !busIsHere && colorUp && !colorDown {
-                                                                busIsHere = true
-                                                            }
-                                                        }
-                                                }
-                                            }
+                                            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineManager.LineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere)
                                         )
                                     }
                                 }
                             }
-                            .contentMargins(.top, 79.0, for: .automatic)
-                            .contentMargins(.bottom, 75.0, for: .automatic)
+                            .contentMargins(.top, 95.0, for: .automatic)
+                            .contentMargins(.bottom, appRequirementsClass.version26 ? 0.0 : 60, for: .automatic)
                             .refreshable {
                                 getLineEvents(for: stopEvent)
                             }
@@ -138,11 +112,13 @@ struct LineView: View {
                     }
                     .onAppear {
                         getLineEvents(for: stopEvent)
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
+                        if autoRefresh {
+                            timer = Timer.publish(every: 30, on: .main, in: .common)
+                                .autoconnect()
+                                .sink { _ in
+                                    getLineEvents(for: stopEvent)
+                                }
+                        }
                     }
                     .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                         if autoRefresh {
@@ -172,37 +148,111 @@ struct LineView: View {
                                 }
                         }
                     }
+                    
+                    if #available(iOS 26, *) {
+                    } else {
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .foregroundStyle(.ultraThickMaterial)
+                                .frame(height: 50)
+                            Rectangle()
+                                .foregroundStyle(.ultraThickMaterial)
+                                .frame(height: 100)
+                                .mask {
+                                    Rectangle()
+                                        .overlay(alignment: .trailing) {
+                                            ScrollMask(leading: true, vertical: true, gradientLength: 100)
+                                        }
+                                }
+                            Spacer()
+                        }
+                        //                    .blur(radius: 10)
+                        .ignoresSafeArea(edges: .top)
+                    }
                     //Top card
                     VStack {
-                        CustomNavigationTitle(stopEvent: stopEvent, currentLine: currentLine, operatorName: operatorName)
-                            .background {
-                                RoundedRectangle(cornerRadius: 35.0)
-                                    .frame(width: geometry.size.width+100, height: 90)
-                                    .foregroundStyle(.thinMaterial)
-                                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                    .padding(.trailing, 120)
+                        HStack {
+                        if #available(iOS 26, *) {
+                                HStack {
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .frame(width: 50, height: 1)
+                                    LineViewTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
+                                        .foregroundStyle(Color.text)
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .frame(maxWidth: 50, maxHeight: 1)
+                                }
+                                .padding(10)
+                                .glassEffect()
+                                .offset(x: -50)
+                                
+                            } else {
+                                HStack {
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .frame(width: 50, height: 1)
+                                    LineViewTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
+                                    Rectangle()
+                                        .fill(.clear)
+//                                        .frame(width: 50, height: 1)
+                                        .frame(maxWidth: 50, maxHeight: 1)
+                                }
+                                .padding(10)
+                                .background {
+                                    Capsule()
+//                                        .frame(width: geometry.size.width-100, height: 90)
+                                        .foregroundStyle(.thinMaterial)
+                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+//                                        .padding(.trailing, 200)
+                                }
+                                .offset(x: -50)
                             }
-                            .padding(.top)
+                            Spacer()
+                        }
                         Spacer()
                     }
+                    
                 }
             }
         .toolbar {
+//            Button(action: {
+//                showTime.toggle()
+//            }) {
+//                Image(systemName: "hourglass")
+//                    .foregroundColor(showTime ? .text : .white)
+//                    .padding(.horizontal, 10)
+//                    .padding(.vertical, 15)
+//            }
+//            .background {
+//                Capsule()
+//                    .foregroundStyle(showTime ? .clear : .accent)
+//                    .padding(.horizontal, 5)
+//                    .padding(.vertical, 2)
+//            }
             HStack {
-                Spacer()
-                Button(action: {
-                    path.push(.lineMap(lineEvents: lineEvents, lineName: currentLine, lineOperator: operatorName))
-                }) {
+                ShowTimeButton(showTime: $showTime)
+                
+                NavigationLink {
+                    LineMapView(lineEvents: lineEvents, lineName: currentLine, operatorName: operatorName, destination: stopEvent.destination, stopEvent: stopEvent, currentStopSloid: currentStop?.sloid)
+                } label: {
                     Image(systemName: "map")
-                        .font(.title3)
+                        .padding(.trailing, appRequirementsClass.version26 ? 5 : 10)
+                    //                        .font(.title3)
                 }
-                Button(action: {
-                    self.showTime.toggle()
-                    // Call the external function with the updated boolean value
-                    
-                }) {
-                    Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill").font(.title3)
-                }
+            }
+            .background {
+                Capsule()
+                    .opacity(appRequirementsClass.version26 ? 0 : 1)
+                    .foregroundStyle(.ultraThinMaterial)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+            }
+        }
+        .navigationTitle("Ligne \(currentLine)") // Set back button text
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("") // Visible title
             }
         }
     }
@@ -215,79 +265,145 @@ struct LineView: View {
     func getLineEvents(for stopEvent: StopEvent) {
         lineManager.selectJourney(stopEvent) {
             operatorName = self.lineManager.operatorName
-            print(operatorName)
+//            print(operatorName)
             lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
-            print(lineColor)
+//            print(lineColor)
             lineEvents = self.lineManager.LineEvents
         }
     }
 }
 
-struct LineEventElementView: View {
+struct LineBackground: View {
     var event: LineEvent
-    var stopEvent: StopEvent
-    var currentLine: String
-    var operatorName: String
-    var currentStopCodedidoc: String
-    @Binding var showTime: Bool
+    var firstEventId: String?
+    var lastEventId: String?
+    var lineColor: Color
+    @Binding var busIsHere: Bool
     
     var body: some View {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(.thinMaterial)
+        GeometryReader { geometry in
+            if event.id == firstEventId {
+                Rectangle()
+                    .frame(width: 7, height: geometry.size.height / 2 + 8)
+                    .foregroundColor(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) ? lineColor.opacity(0.3) : lineColor)
+                    .position(x: 45, y: geometry.size.height / 4 * 3)
+            } else if event.id == lastEventId {
+                Rectangle()
+                    .frame(width: 7, height: geometry.size.height / 2 + 8)
+                    .foregroundColor(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: true) ? lineColor.opacity(0.3) : lineColor)
+                    .position(x: 45, y: geometry.size.height / 4)
+            } else {
+                var colorUp = dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: true)
+                let colorDown = dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false)
+                
+                Rectangle()
+                    .frame(width: 7, height: geometry.size.height / 2 + 8)
+                    .foregroundColor(colorUp ? lineColor.opacity(0.3) : lineColor)
+                    .position(x: 45, y: geometry.size.height / 4)
+                Rectangle()
+                    .frame(width: 7, height: geometry.size.height / 2 + 8)
+                    .foregroundColor(colorDown ? lineColor.opacity(0.3) : lineColor)
+                    .position(x: 45, y: geometry.size.height / 4 * 3)
+                    .onAppear {
+                        if busIsHere {
+                            colorUp = false
+                        } else if !busIsHere && colorUp && !colorDown {
+                            busIsHere = true
+                        }
+                    }
+            }
+        }
+    }
+}
+
+struct LineEventElementView: View {
+    var currentLine: String
+    var operatorName: String
+    var transportType: String
+    var currentStop: Bool = false
+    var eventName: String
+    var estimatedTime: String
+    var timetabledTime: String
+    var plannedQuay: String
+    @Binding var showTime: Bool
+    var pastEventPossible: Bool = true //If the event is in the past, it will become grey.
+    var geoPositionDisplay: Bool = false //Changes the name display type
+    var displayIcon: Bool = true //Display a transport icon if event time equals current time
+    
+    var body: some View {
+//        RoundedRectangle(cornerRadius: 20)
+//        Capsule()
+//            .stroke(currentStop ? .accent : .border, lineWidth: 1)
+//            .fill(.thinMaterial)
+//            .fill(.color1)
+        BasicElement(highlighted: currentStop)
             .frame(height: 45)
-            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+//            .shadow(color: .customShadows.opacity(0.2), radius: 10)
             .overlay(
                 HStack {
-                    Circle()
-                        .strokeBorder(Color.primary, lineWidth: 5)
-                        .background(
-                            Circle()
-                                .fill(compareDateString(with: event.estimatedTime, equalPossible: false) ? LineColors.lineColor(for: currentLine, operatorName: operatorName).opacity(0.3) : LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true))
-                        )
-                        .frame(width: 18, height: 18)
-                    SmallStopTitleView(stopName: event.stopPointName)
-                    Spacer()
-                    let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime, with: showTime)
-                    if transportTime == "0" {
-                        transportIcon(with: stopEvent.transportType).frame(width: 10)
+                    StopIcon(color: LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true))
+                    if geoPositionDisplay {
+                        Text(eventName)
                     } else {
-                        Text(transportTime)
-                            .padding(.vertical, 2)
-                            .minimumScaleFactor(0.5)
+                        SmallStopTitleView(stopName: eventName)
                     }
-                    if event.plannedQuay == "" {
-                        Image(systemName: "questionmark.square.fill")
+                    Spacer()
+                    let transportTime = displayTimeOrMinutesRemaining(for: timetabledTime, estimatedInput: estimatedTime, with: showTime)
+                    if transportTime.text == "0" && displayIcon {
+                        transportIcon(with: transportType).frame(width: 10)
                     } else {
-                        Image(systemName: "\(event.plannedQuay).square.fill".lowercased())
+                        if transportTime.text.count > 6 { //Time with delay
+                            let splitTime = splitString(transportTime.text, separator: ";" )
+                            VStack(spacing: 0) {
+                                Text(splitTime.0)
+                                Text(splitTime.1).foregroundStyle(transportTime.color)
+                                    .minimumScaleFactor(0.5)
+                            }
+                            .padding(.vertical, 4)
+                        } else {
+                            Text(transportTime.text)
+                                .padding(.vertical, 4)
+                                .minimumScaleFactor(0.5)
+                                .foregroundStyle(transportTime.color)
+                        }
+                    }
+                    if plannedQuay == "" { //Unkown quay
+                        Image(systemName: "questionmark.square.fill")
+                    } else if plannedQuay == "ignore" { //Used for trip, if no transport connection
+                        Image(systemName: "dot.square.fill")
+                    } else {
+                        Image(systemName: "\(plannedQuay.lowercased()).square.fill")
                     }
                 }
-                .foregroundStyle(determineColor(for: event))
+                    .foregroundStyle(.primary)
+//                .foregroundStyle(pastEventPossible ? determineColor(for: estimatedTime): .primary)
+                    .opacity(pastEventPossible && dateStringHasPassed(with: estimatedTime, equalReturnsTrue: false) ? 0.3 : 1)
                 .padding(.horizontal)
             )
             .padding(5)
     }
-    
-    func determineColor(for event: LineEvent) -> Color {
-        print(event.timetabledTime, event.estimatedTime)
-        let eventET = event.estimatedTime.isEmpty ? event.timetabledTime : event.estimatedTime
-        if event.codedidoc == currentStopCodedidoc {
-            return Color.accentColor
-        } else if compareDateString(with: eventET, equalPossible: false) {
-            return Color.gray
-        } else {
-            return Color.primary
-        }
-    }
 }
- 
 
 struct LineView_Previews: PreviewProvider {
     static var previews: some View {
+        @StateObject var appRequirementsClass = AppRequirementsClass()
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
+        let date = "2025-09-12"
+//        @State var showTime: Bool = false
 
-        return ContentView()
+        return
+            NavigationStack {
+                LineView(autoRefresh: false,
+                         stopEvent: StopEvent(stopPointName: "Genève, Rive", stopId: "ch:1:sloid:87061:0:450545", plannedQuay: "I", timetabledTime: "\(date)T11:13:00Z", estimatedTime: "\(date)T11:13:00Z", lineName: "A", origin: "Genève, Rive", destination: "Gy, temple", transportType: "bus", operatorName: "Transports Publics Genevois", journeyRef: "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791918", operatingDayRef: date),
+                         currentStop: ShortStop(name: "Genève, Rive", sloid: "ch:1:sloid:87061"),
+                         currentLine: "A")
+            }
             .environmentObject(stopStore)
             .environmentObject(favoritesViewModel)
+            .environmentObject(appRequirementsClass)
+//        return LineEventElementView(currentLine: "A", operatorName: "tpg", transportType: "Bus", currentStopCodedidoc: "1", eventCodedidoc: "1", eventName: "Meinier, église", estimatedTime: "2025-06-27T18:18:18Z", timetabledTime: "2025-06-27T18:18:18Z", plannedQuay: "H", showTime: $showTime)
     }
 }
+

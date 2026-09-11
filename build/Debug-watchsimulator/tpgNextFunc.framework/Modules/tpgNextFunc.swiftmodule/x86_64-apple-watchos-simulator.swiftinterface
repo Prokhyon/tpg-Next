@@ -1,0 +1,504 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3.1 effective-5.10 (swiftlang-6.3.1.1.2 clang-2100.0.123.102)
+// swift-module-flags: -target x86_64-apple-watchos10.5-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -Onone -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name tpgNextFunc
+// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.1
+import Combine
+import CoreLocation
+import DeveloperToolsSupport
+import Foundation
+import MapKit
+import Swift
+import SwiftUI
+import UIKit
+import WatchConnectivity
+import WidgetKit
+import _Concurrency
+import _MapKit_SwiftUI
+import _StringProcessing
+import _SwiftConcurrencyShims
+@_exported import tpgNextFunc
+public func keySelect() -> Swift.String
+public func displayTimeOrMinutesRemaining(for timetableInput: Swift.String, estimatedInput: Swift.String, with showTime: Swift.Bool, at now: Foundation.Date = Date()) -> (text: Swift.String, color: SwiftUICore.Color)
+public func dateStringHasPassed(with dateString: Swift.String, equalReturnsTrue: Swift.Bool) -> Swift.Bool
+public func stringToDate(with dateString: Swift.String) -> Foundation.Date?
+public func dateToString(with date: Foundation.Date) -> Swift.String
+public func convertDateString(_ dateString: Swift.String) -> Swift.String?
+public func transportIcon(with transportType: Swift.String) -> SwiftUICore.Image
+public func splitString(_ input: Swift.String, separator: Swift.String) -> (Swift.String, Swift.String)
+@_Concurrency.MainActor @preconcurrency public struct eventStopName : SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public let stopName: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(stopName: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s11tpgNextFunc13eventStopNameV4bodyQrvp", 0) __
+}
+@_Concurrency.MainActor @preconcurrency public struct ScrollMask : SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public init(leading: Swift.Bool = true, vertical: Swift.Bool = true, gradientLength: CoreFoundation.CGFloat = 10)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s11tpgNextFunc10ScrollMaskV4bodyQrvp", 0) __
+}
+public func startsWithVowel(_ word: Swift.String) -> Swift.Bool
+public func determineColor(for time: Swift.String) -> SwiftUICore.Color
+public struct LineColors {
+  public static func lineColor(for lineID: Swift.String, operatorName: Swift.String, inverted: Swift.Bool = false) -> SwiftUICore.Color
+}
+public struct LineEvent : Swift.Codable, Swift.Identifiable, Swift.Hashable {
+  public var stopPointName: Swift.String
+  public var plannedQuay: Swift.String
+  public var timetabledTime: Swift.String
+  public var estimatedTime: Swift.String
+  public var stopPlaceRef: Swift.String
+  public var sloid: Swift.String
+  public var previousCall: Swift.Bool
+  public var longitude: Swift.String
+  public var latitude: Swift.String
+  public var id: Swift.String {
+    get
+  }
+  public static func == (a: tpgNextFunc.LineEvent, b: tpgNextFunc.LineEvent) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public func fetchTransportJourney(with stopEvent: tpgNextFunc.StopEvent, calls: Swift.Bool = true, completion: @escaping (Swift.Bool, Swift.String?) -> Swift.Void)
+public func parseJourneyEvents(from data: Foundation.Data, completion: @escaping ([tpgNextFunc.LineEvent], Swift.String) -> Swift.Void)
+@_Concurrency.MainActor @preconcurrency public struct BusLineIcon : SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public init(lineName: Swift.String, operatorName: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s11tpgNextFunc11BusLineIconV4bodyQrvp", 0) __
+}
+public func stopEventToLineEvent(stopEvent: tpgNextFunc.StopEvent, stopID: Swift.String) -> tpgNextFunc.LineEvent
+public enum NearbyStopSelector {
+  public static let favoriteOverrideDistance: Swift.Double
+  public static let searchRadius: Swift.Double
+  public static let candidateCount: Swift.Int
+  public struct Selection {
+    public let stop: tpgNextFunc.Stop
+    public let distance: _LocationEssentials.CLLocationDistance
+    public let isFavorite: Swift.Bool
+  }
+  public static func selectStop(near coordinate: _LocationEssentials.CLLocationCoordinate2D, using reader: tpgNextFunc.StopIndexReader, favoriteSloids: Swift.Set<Swift.String>) -> tpgNextFunc.NearbyStopSelector.Selection?
+  public static func favoriteSloids() -> Swift.Set<Swift.String>
+}
+public enum SharedStorage {
+  public static let appGroupIdentifier: Swift.String
+  public static let defaults: Foundation.UserDefaults
+  public static var containerURL: Foundation.URL? {
+    get
+  }
+  public static var isAvailable: Swift.Bool {
+    get
+  }
+  public static var lastKnownLocation: _LocationEssentials.CLLocation? {
+    get
+  }
+  public static func saveLastKnownLocation(_ location: _LocationEssentials.CLLocation)
+  public static func mirrorSettings()
+  public static func bool(forSetting key: Swift.String) -> Swift.Bool
+}
+public struct LocationStop : Swift.Identifiable, Swift.Hashable, Swift.Sendable {
+  public var coordinate: _LocationEssentials.CLLocationCoordinate2D
+  public var id: Swift.String
+  public var name: Swift.String
+  public init(coordinate: _LocationEssentials.CLLocationCoordinate2D, id: Swift.String, name: Swift.String)
+  public static func == (lhs: tpgNextFunc.LocationStop, rhs: tpgNextFunc.LocationStop) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public typealias ID = Swift.String
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct Stop : Swift.Codable, Swift.Identifiable, Swift.Hashable, Swift.Equatable {
+  public let name: Swift.String
+  public let sloid: Swift.String
+  public let codedidoc: Swift.String
+  public let country: Swift.String
+  public let canton: Swift.String
+  public let meansOfTransport: Swift.String
+  public let wgs84Coordinates: tpgNextFunc.Coordinates
+  public var id: Swift.String {
+    get
+  }
+  public init(name: Swift.String, sloid: Swift.String, codedidoc: Swift.String, country: Swift.String, canton: Swift.String, meansOfTransport: Swift.String, wgs84Coordinates: tpgNextFunc.Coordinates)
+  public static func == (a: tpgNextFunc.Stop, b: tpgNextFunc.Stop) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct Coordinates : Swift.Codable, Swift.Hashable {
+  public let lon: Swift.Double
+  public let lat: Swift.Double
+  public init(lon: Swift.Double, lat: Swift.Double)
+  public static func == (a: tpgNextFunc.Coordinates, b: tpgNextFunc.Coordinates) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension tpgNextFunc.Coordinates {
+  public var toCLLocationCoordinate2D: _LocationEssentials.CLLocationCoordinate2D {
+    get
+  }
+}
+extension _LocationEssentials.CLLocationCoordinate2D {
+  public var toCoordinates: tpgNextFunc.Coordinates {
+    get
+  }
+}
+public struct ShortStop : Swift.Codable, Swift.Identifiable, Swift.Hashable, Swift.Equatable {
+  public let name: Swift.String
+  public let sloid: Swift.String
+  public var id: Swift.String {
+    get
+  }
+  public init(name: Swift.String, sloid: Swift.String)
+  public static func == (a: tpgNextFunc.ShortStop, b: tpgNextFunc.ShortStop) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct GeoPosition : Swift.Hashable {
+  public let name: Swift.String
+  public let coordinate: _LocationEssentials.CLLocationCoordinate2D
+  public init(name: Swift.String, coordinate: _LocationEssentials.CLLocationCoordinate2D)
+  public static func == (lhs: tpgNextFunc.GeoPosition, rhs: tpgNextFunc.GeoPosition) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct searchResultItem : Swift.Identifiable {
+  public let title: Swift.String
+  public let coordinates: _LocationEssentials.CLLocationCoordinate2D
+  public var id: Foundation.UUID
+  public init(title: Swift.String, coordinates: _LocationEssentials.CLLocationCoordinate2D)
+  public typealias ID = Foundation.UUID
+}
+extension Swift.String {
+  public func normalized() -> Swift.String
+}
+public class StopStore : Foundation.ObservableObject {
+  @Combine.Published<[tpgNextFunc.Stop]> @_projectedValueProperty($stops) public var stops: [tpgNextFunc.Stop] {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $stops: Combine.Published<[tpgNextFunc.Stop]>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  @Combine.Published<Swift.String> @_projectedValueProperty($searchText) public var searchText: Swift.String {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $searchText: Combine.Published<Swift.String>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  @Combine.Published<[tpgNextFunc.Stop]> @_projectedValueProperty($filteredStops) public var filteredStops: [tpgNextFunc.Stop] {
+    get
+  }
+  public var $filteredStops: Combine.Published<[tpgNextFunc.Stop]>.Publisher {
+    get
+  }
+  @Combine.Published<[tpgNextFunc.Stop]> @_projectedValueProperty($activeStops) public var activeStops: [tpgNextFunc.Stop] {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $activeStops: Combine.Published<[tpgNextFunc.Stop]>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  @Combine.Published<[tpgNextFunc.LocationStop]> @_projectedValueProperty($mapStops) public var mapStops: [tpgNextFunc.LocationStop] {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $mapStops: Combine.Published<[tpgNextFunc.LocationStop]>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  @Combine.Published<_LocationEssentials.CLLocation?> @_projectedValueProperty($location) public var location: _LocationEssentials.CLLocation? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $location: Combine.Published<_LocationEssentials.CLLocation?>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  public init()
+  public func findStop(id: Swift.String) -> tpgNextFunc.Stop?
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+public struct FavoriteStop : Swift.Codable, Swift.Identifiable, Swift.Hashable {
+  public var sloid: Swift.String
+  public var cachedName: Swift.String
+  public var cachedMeansOfTransport: Swift.String
+  public var cachedCoordinates: tpgNextFunc.Coordinates
+  public var legacyCodedidoc: Swift.String
+  public var id: Swift.String {
+    get
+  }
+  public init(stop: tpgNextFunc.Stop)
+  public var fallbackStop: tpgNextFunc.Stop {
+    get
+  }
+  public static func == (a: tpgNextFunc.FavoriteStop, b: tpgNextFunc.FavoriteStop) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum FavoritesStorage {
+  public static let key: Swift.String
+  public static let legacyKey: Swift.String
+  public static func load(from defaults: Foundation.UserDefaults = SharedStorage.defaults) -> [tpgNextFunc.FavoriteStop]
+}
+public class FavoritesViewModel : Foundation.ObservableObject {
+  public static let shared: tpgNextFunc.FavoritesViewModel
+  @Combine.Published<[tpgNextFunc.FavoriteStop]> @_projectedValueProperty($favorites) public var favorites: [tpgNextFunc.FavoriteStop] {
+    get
+  }
+  public var $favorites: Combine.Published<[tpgNextFunc.FavoriteStop]>.Publisher {
+    get
+  }
+  @Combine.Published<[tpgNextFunc.Stop]> @_projectedValueProperty($favoriteStops) public var favoriteStops: [tpgNextFunc.Stop] {
+    get
+  }
+  public var $favoriteStops: Combine.Published<[tpgNextFunc.Stop]>.Publisher {
+    get
+  }
+  public init()
+  public func attach(stopStore: tpgNextFunc.StopStore)
+  public func addFavorite(_ stop: tpgNextFunc.Stop)
+  public func removeFavoriteStop(_ stop: tpgNextFunc.Stop)
+  public func removeFavoriteIndex(atOffsets offsets: Foundation.IndexSet)
+  public func moveFavorite(fromOffsets source: Foundation.IndexSet, toOffset destination: Swift.Int)
+  public func replaceAll(with stops: [tpgNextFunc.Stop])
+  public func isFavorite(_ stop: tpgNextFunc.Stop) -> Swift.Bool
+  public func isFavoriteID(_ id: Swift.String) -> Swift.Bool
+  public func refresh()
+  public func syncFavoritesToWatch()
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+@_Concurrency.MainActor @preconcurrency public struct splitStopName : SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s11tpgNextFunc13splitStopNameV4bodyQrvp", 0) __
+}
+public func sloidHarmonizer(code: Swift.String) -> Swift.String
+public func isQuaySloid(_ code: Swift.String) -> Swift.Bool
+public struct StopEvent : Swift.Codable, Swift.Identifiable, Swift.Hashable {
+  public var stopPointName: Swift.String
+  public var stopId: Swift.String
+  public var plannedQuay: Swift.String
+  public var timetabledTime: Swift.String
+  public var estimatedTime: Swift.String
+  public var lineName: Swift.String
+  public var origin: Swift.String
+  public var destination: Swift.String
+  public var transportType: Swift.String
+  public var operatorName: Swift.String
+  public var journeyRef: Swift.String
+  public var operatingDayRef: Swift.String
+  public var id: Swift.String {
+    get
+  }
+  public init(stopPointName: Swift.String, stopId: Swift.String, plannedQuay: Swift.String, timetabledTime: Swift.String, estimatedTime: Swift.String, lineName: Swift.String, origin: Swift.String, destination: Swift.String, transportType: Swift.String, operatorName: Swift.String, journeyRef: Swift.String, operatingDayRef: Swift.String)
+  public static func == (a: tpgNextFunc.StopEvent, b: tpgNextFunc.StopEvent) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct Quay : Swift.Codable, Swift.Identifiable, Swift.Hashable {
+  public var id: Swift.String
+  public var quayName: Swift.String
+  public var latitude: Swift.String
+  public var longitude: Swift.String
+  public static func == (a: tpgNextFunc.Quay, b: tpgNextFunc.Quay) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public func fetchTransportDepartures(with stopName: Swift.String, stopSloid: Swift.String, stopEventNumber: Swift.Int, timeRequest: Foundation.Date, completion: @escaping (Swift.Bool, Swift.String?) -> Swift.Void)
+public func parseStopEvents(from data: Foundation.Data, stopCode: Swift.String, completion: @escaping ([tpgNextFunc.StopEvent], [tpgNextFunc.Quay], tpgNextFunc.ParserError?) -> Swift.Void)
+public func createStopEventFromTripLeg(tripLeg: tpgNextFunc.TripLeg) -> tpgNextFunc.StopEvent
+public func createEssentialStopEvent(journeyRef: Swift.String, operatingDayRef: Swift.String, stopPointName: Swift.String?, stopId: Swift.String?, lineName: Swift.String?, origin: Swift.String?, destination: Swift.String?, transportType: Swift.String?, operatorName: Swift.String?) -> tpgNextFunc.StopEvent
+public func createStop(nomarret: Swift.String?, sloid: Swift.String) -> tpgNextFunc.Stop
+public func saveStopEventsToFile(stopEvents: [tpgNextFunc.StopEvent])
+public func loadStopEventsFromFile() -> [tpgNextFunc.StopEvent]?
+public func loadStopEventsFromAssets() -> [tpgNextFunc.StopEvent]?
+public func changeTime(_ myArray: inout [tpgNextFunc.StopEvent])
+public enum StopIndex {
+  public static let fileName: Swift.String
+  public static var fileURL: Foundation.URL? {
+    get
+  }
+  @discardableResult
+  public static func ensureIndex(for stops: [tpgNextFunc.Stop]) -> Swift.Bool
+  public static func encode(_ stops: [tpgNextFunc.Stop]) -> Foundation.Data
+}
+final public class StopIndexReader {
+  public init?(url: Foundation.URL? = StopIndex.fileURL)
+  final public var stopCount: Swift.Int {
+    get
+  }
+  final public func nearest(to coordinate: _LocationEssentials.CLLocationCoordinate2D, limit: Swift.Int, maxDistance: _LocationEssentials.CLLocationDistance = 1000) -> [(stop: tpgNextFunc.Stop, distance: _LocationEssentials.CLLocationDistance)]
+  final public func stop(sloid: Swift.String) -> tpgNextFunc.Stop?
+  final public func search(_ query: Swift.String, limit: Swift.Int = 20) -> [tpgNextFunc.Stop]
+  @objc deinit
+}
+public struct TripEvent : Swift.Identifiable, Swift.Hashable, Swift.Encodable, Swift.Decodable {
+  public var id: Swift.String
+  public var duration: Swift.String
+  public var startTime: Swift.String
+  public var endTime: Swift.String
+  public var startCoordinates: tpgNextFunc.Coordinates
+  public var endCoordinates: tpgNextFunc.Coordinates
+  public var startName: Swift.String
+  public var endName: Swift.String
+  public var startCode: Swift.String?
+  public var endCode: Swift.String?
+  public var geoDeparture: Swift.Bool
+  public var geoArrival: Swift.Bool
+  public var transfers: Swift.String
+  public var legs: [tpgNextFunc.TripLeg]
+  public static func == (a: tpgNextFunc.TripEvent, b: tpgNextFunc.TripEvent) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct TripLeg : Swift.Identifiable, Swift.Hashable, Swift.Encodable, Swift.Decodable {
+  public var id: Swift.String
+  public var transfer: Swift.Bool
+  public var legBoardStopName: Swift.String
+  public var legBoardStopId: Swift.String
+  public var legBoardQuay: Swift.String
+  public var legBoardTimetableTime: Swift.String
+  public var legBoardEstimatedTime: Swift.String
+  public var legBoardLongitude: Swift.String
+  public var legBoardLatitude: Swift.String
+  public var legAlightStopName: Swift.String
+  public var legAlightStopId: Swift.String
+  public var legAlightQuay: Swift.String
+  public var legAlightTimetableTime: Swift.String
+  public var legAlightEstimatedTime: Swift.String
+  public var legAlightLongitude: Swift.String
+  public var legAlightLatitude: Swift.String
+  public var legIntermediates: [tpgNextFunc.LegIntermediate]
+  public var legDestination: Swift.String
+  public var journeyRef: Swift.String
+  public var publishedLineName: Swift.String
+  public var legDuration: Swift.String
+  public var transferDuration: Swift.String
+  public var transferWalkDuration: Swift.String
+  public var transferBuffer: Swift.String
+  public var transportTypeName: Swift.String
+  public var legOperator: Swift.String
+  public static func == (a: tpgNextFunc.TripLeg, b: tpgNextFunc.TripLeg) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct LegIntermediate : Swift.Codable, Swift.Identifiable, Swift.Hashable {
+  public var id: Swift.String
+  public var stopId: Swift.String
+  public var stopName: Swift.String
+  public var longitude: Swift.String
+  public var latitude: Swift.String
+  public static func == (a: tpgNextFunc.LegIntermediate, b: tpgNextFunc.LegIntermediate) -> Swift.Bool
+  public typealias ID = Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum ParserError : Swift.Error {
+  case noEventFound(message: Swift.String)
+  case xmlParsingFailed
+  case unknown
+}
+public func parseTripEvents(from data: Foundation.Data, startCoordinate: tpgNextFunc.Coordinates, endCoordinates: tpgNextFunc.Coordinates, startName: Swift.String, endName: Swift.String, startCode: Swift.String?, endCode: Swift.String?, geoDeparture: Swift.Bool, geoArrival: Swift.Bool) throws -> [tpgNextFunc.TripEvent]
+public func fetchTrips(with departureStop: tpgNextFunc.Stop?, with departureGeoPosition: tpgNextFunc.GeoPosition?, with geoDeparture: Swift.Bool, with arrivalStop: tpgNextFunc.Stop?, with arrivalGeoPosition: tpgNextFunc.GeoPosition?, with geoArrival: Swift.Bool, with selectedTime: Foundation.Date, with isArrivalTime: Swift.Bool, completion: @escaping (Swift.Bool, Swift.String?) -> Swift.Void)
+public class FullTripTest : Foundation.ObservableObject {
+  @Combine.Published<tpgNextFunc.TripEvent> @_projectedValueProperty($Trip) public var Trip: tpgNextFunc.TripEvent {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $Trip: Combine.Published<tpgNextFunc.TripEvent>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  public init()
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+extension tpgNextFunc.eventStopName : Swift.Sendable {}
+extension tpgNextFunc.ScrollMask : Swift.Sendable {}
+extension tpgNextFunc.BusLineIcon : Swift.Sendable {}
+extension tpgNextFunc.splitStopName : Swift.Sendable {}

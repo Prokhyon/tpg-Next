@@ -1,0 +1,109 @@
+{
+  "" : {
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/tpgNextFunc-primary.dia",
+    "emit-module-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/tpgNextFunc-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/tpgNextFunc-primary-emit-module.dia",
+    "pch" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/tpgNextFunc-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/tpgNextFunc-primary.swiftdeps"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/BasicFunc.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/BasicFunc~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/LineColors.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineColors~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/LineFunc.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/LineFunc~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/NearbyStopSelector.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/NearbyStopSelector~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/SharedStorage.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/SharedStorage~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/StopBase.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopBase~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/StopFunc.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopFunc~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/StopIndex.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/StopIndex~partial.swiftmodule"
+  },
+  "/Users/loristhomas/Xcode/tpg Next (beta)/tpgNextFunc/TripFunc.swift" : {
+    "const-values" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.swiftconstvalues",
+    "dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.d",
+    "diagnostics" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.dia",
+    "index-unit-output-path" : "/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.o",
+    "llvm-bc" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.bc",
+    "object" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.o",
+    "swift-dependencies" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc.swiftdeps",
+    "swiftmodule" : "/Users/loristhomas/Xcode/tpg Next (beta)/build/tpg Next.build/Debug-watchsimulator/tpgNextFunc.build/Objects-normal/arm64/TripFunc~partial.swiftmodule"
+  }
+}
