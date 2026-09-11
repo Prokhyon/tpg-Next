@@ -93,7 +93,7 @@ struct ContentView: View {
                 
             } detail: {
                 if let selected = selected {
-                        StopView(stopName: selected.name, stopCodedidoc: selected.codedidoc, isCloseStop: closestStops.contains(selected), showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
+                        StopView(stopName: selected.name, stopSloid: selected.sloid, isCloseStop: closestStops.contains(selected), showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
                 } else {
                     Text("Sélectionnez un arrêt")
                 }
@@ -149,7 +149,7 @@ struct ContentView_Previews: PreviewProvider {
         @State var autoRefresh: Bool = false
         @State var viewLineSorted: Bool = true
         @State var showTime: Bool = false
-        let stop = Stop(name: "Genève, Rive", sloid: "8593006", codedidoc: "8593006", country: "CH", canton: "GE", meansOfTransport: "bus", wgs84Coordinates: Coordinates(lon: 46.2167, lat: 6.1667))
+        let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:93006", codedidoc: "8593006", country: "CH", canton: "GE", meansOfTransport: "bus", wgs84Coordinates: Coordinates(lon: 46.2167, lat: 6.1667))
         
         return ContentView(closeStop: stop, autoRefresh: false)
             .environmentObject(stopStore)

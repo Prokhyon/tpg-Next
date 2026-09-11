@@ -7,34 +7,38 @@
 
 import SwiftUI
 import Combine
+import tpgNextFunc
 
-struct StopEventView: View  {
+struct StopEventViewContent: View  { //Tests nouveau design, à supprimer
     var event: StopEvent
     var showTime: Bool
+    var previousLineRef: String?
     
     var body: some View {
-            RoundedRectangle(cornerRadius: 20)
-                        .fill(.thinMaterial)
-                .frame(height: 50)
-                .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                .overlay(
                     HStack {
                         let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime,  with: showTime)
                         BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                         Image(systemName: "arrow.right").font(.caption)
                         SmallStopTitleView(stopName: event.destination)
                         Spacer()
-                        if transportTime == "0" {
+                        if transportTime.text == "0" {
                             transportIcon(with: event.transportType).frame(width: 10)
                         } else {
-                            if transportTime.count > 4 {
-                                Text(transportTime)
-                                    .padding(.vertical, 4)
-                                    .minimumScaleFactor(0.5)
+                            if transportTime.text.count > 6 {
+                                let splitTime = splitString(transportTime.text, separator: ";" )
+                                VStack(spacing: 0) {
+                                    Text(splitTime.0)
+                                    Text(splitTime.1)
+                                        .foregroundStyle(transportTime.color)
+                                        .minimumScaleFactor(0.5)
+                                }
+                                .padding(.vertical, 4)
+                                
                             } else {
-                                Text(transportTime)
+                                Text(transportTime.text)
                                     .padding(.vertical, 4)
                                     .minimumScaleFactor(0.5)
+                                    .foregroundStyle(transportTime.color)
                             }
                         }
                         if event.plannedQuay == "" {
@@ -44,40 +48,162 @@ struct StopEventView: View  {
                         }
                     }
                         .padding(.horizontal)
-                )
-                .padding(5)
+                        .padding(5)
     }
 }
 
 struct SortedStopEventsView: View {
+    var key: String
+    var filteredStopEvents: [String: [StopEvent]]
+    var groupedStopEvents: [String: [StopEvent]]
+    @Binding var showTime: Bool
+    @Binding var previousLineRef: String?
+    var stopName: String
+    var stopSloid: String
+    
     var body: some View {
-        VStack {
-            
+            let splitLine = splitString(key, separator: ";")
+        BasicCard(cornerRadius: 30)
+                .padding(.vertical, 5)
+                .frame(height: 110)
+                .overlay(
+                    VStack(spacing: 0) {
+                        Spacer()
+                        HStack {
+                            let quay = groupedStopEvents[key]!.first!.plannedQuay
+                            BusLineIcon(lineName: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName)
+                            Image(systemName: "arrow.right")
+                            SmallStopTitleView(stopName: splitLine.1)
+                            Spacer()
+                            if quay == "" {
+                                Image(systemName: "questionmark.square.fill")
+                            } else {
+                                Image(systemName: "\(quay).square.fill".lowercased())
+                            }
+                        }
+                        .frame(height: 30)
+//                        .background(Rectangle().fill(.red))
+                        .padding(.horizontal, 20)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 4) {
+                                ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
+                                    let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
+                                    NavigationLink {
+                                        LineView(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: stopEvent.lineName)
+                                    } label: {
+                                    Group {
+                                            if time.text == "0" {
+                                                transportIcon(with: stopEvent.transportType)
+                                                    .frame(width: 15)
+                                            } else {
+                                                if time.text.count > 6 {
+                                                    HStack(spacing: 2) {
+                                                        let splitTime = time.text.split(separator: ";")
+                                                        Text(splitTime[0])
+                                                        Text(splitTime[1])
+                                                            .foregroundStyle(time.color)
+                                                            .minimumScaleFactor(0.5)
+                                                    }
+                                                } else {
+                                                    Text(time.text)
+                                                        .foregroundStyle(time.color)
+                                                }
+                                                
+                                            }
+                                        }
+                                        .foregroundStyle(determineColor(for: stopEvent.estimatedTime))
+                                        .padding(.horizontal, 17)
+                                        .padding(.vertical, 5)
+                                        .background(
+                                            BasicElement(highlighted: stopEvent.journeyRef == (previousLineRef ?? ""))
+//                                                .padding(2)
+                                        )
+                                        
+                                        
+                                    }
+                                    .padding(2)
+                                    .contentShape(.contextMenuPreview, Capsule())
+                                    .if(!dateStringHasPassed(with: stopEvent.estimatedTime, equalReturnsTrue: false)) { view in
+                                        view.contextMenu {
+                                            NotificationContextMenu(event: stopEvent, stopID: stopSloid)
+                                        } preview: {
+                                            StopEventView(event: stopEvent, showTime: showTime, previousLineRef: previousLineRef)
+                                                .foregroundStyle(.primary)
+                                                .frame(width: UIScreen.main.bounds.width)
+                                        }
+                                    }
+                                    .foregroundStyle(.primary)
+                                }
+                            }
+                            .frame(height: 40)
+//                            .background(Rectangle().fill(.red))
+                            .padding(.horizontal)
+                            .padding(.vertical, 7)
+                            
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .leading) {
+                                    ScrollMask(leading: true, vertical: false, gradientLength: 10)
+                                }
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .trailing) {
+                                    ScrollMask(leading: false, vertical: false, gradientLength: 10)
+                                }
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .top) {
+                                    ScrollMask(leading: false, vertical: true, gradientLength: 10)
+                                }
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .bottom) {
+                                    ScrollMask(leading: true, vertical: true, gradientLength: 10)
+                                }
+                        }
+                        .padding(.horizontal, 5)
+//                        Spacer()
+                    }
+                        .padding(.vertical, 10)
+//                        .background(Rectangle().fill(.red))
+                )
+                .padding(.horizontal, 20)
         }
-    }
 }
 
 struct StopView: View {
-    @ObservedObject var path: ViewStateStack
     @StateObject private var stopManager = StopManager()
-    @State var favoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var tripViewModel: ItineraryViewModel
+    @EnvironmentObject var navigationModel: NavigationModel
+    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
     @StateObject private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @EnvironmentObject var stopStore: StopStore
     @State private var timer: AnyCancellable?
     let stopName: String
-    let stopCodedidoc: String
-    var previousLineRef: String?
+    let stopSloid: String
+    @State var previousLineRef: String?
     var previousLineName: String?
     var previousLineTime: String?
     @State private var showTime = false
     @State private var timeIntervalNotification = 0
-    @State private var viewLineSorted = false
-    @State private var viewLineFiltered = false
+    @State private var viewLineSorted = false //Events are grouped by line
+    @State private var viewLineFiltered = false //Filter is active
     @State private var selectedNumber = 5
-    @State private var timeRequest = Date()
+    @State private var timeRequest = Date() //Time sent to the api for departures
+    @State private var timeAnimate = false //animate time selection symbol
     @State private var requestNumber = 30
-    @Binding var autoRefresh: Bool
+    @State private var selectTime = false //display time selection sheet
+    @State private var filterLines = false //display filter sheet
+    @State private var scrollID = ""
+    @State private var scrollNextEvents: Bool = false
+    var autoRefresh: Bool = true
+
     
     var groupedStopEvents: [String: [StopEvent]] {
             Dictionary(grouping: stopManager.stopEvents) { stopEvent in
@@ -93,217 +219,231 @@ struct StopView: View {
             }
     }
     var allFilteredStopEvents: [StopEvent] {
-        filteredStopEvents.values.flatMap { $0 }
+        filteredStopEvents.values.flatMap { $0 }.sorted(by: { $0.estimatedTime < $1.estimatedTime })
     }
     
     @State private var selectedFilters: Set<String> = []
         
     @AppStorage("GoupedDefault") var groupedDefault = false
-    @AppStorage("TimeDefault") var timeDefault = false
+//    @AppStorage("TimeDefault") var timeDefault = false
+    
+    @Namespace var topID
+    @Namespace var bottomID
 
     var body: some View {
-        GeometryReader { geometry in
             ZStack {
-                VStack(spacing:0) {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            if !stopManager.stopEvents.isEmpty {
-                                Button(action: {
-                                    let halfTime = Int(halfTimeDifferenceInMinutes(from: stopEvents.first?.estimatedTime ?? "0", to: stopEvents.last?.estimatedTime ?? "0") ?? 15)
-                                    adjustTime(byAdding: -halfTime)
-                                    getStopEvents()
-                                }) {
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(.thinMaterial)
-                                        .frame(height: 50)
-                                        .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                                        .overlay(
-                                            Text("Départs précédents")
-                                        )
-                                        .padding(.vertical, 5)
-                                        .padding(.horizontal, 20)
-                                }
-                            }
-                            
-                            if viewLineSorted {
-                                ForEach(filteredStopEvents.keys.sorted(), id: \.self) { key in
-                                    let splitLine = splitString(key, separator: ";")
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                                        .padding(.vertical, 5)
-                                        .frame(height: 110)
-                                        .overlay(
-                                            VStack {
-                                                HStack {
-                                                    let quay = groupedStopEvents[key]!.first!.plannedQuay
-                                                    BusLineIcon(lineName: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName)
-                                                    Image(systemName: "arrow.right")
-                                                    SmallStopTitleView(stopName: splitLine.1)
-                                                    Spacer()
-                                                    if quay == "" {
-                                                        Image(systemName: "questionmark.square.fill")
-                                                    } else {
-                                                        Image(systemName: "\(quay).square.fill".lowercased())
-                                                    }
-                                                }
-                                                .padding(.horizontal, 20)
-                                                ZStack {
-                                                    ScrollView(.horizontal, showsIndicators: false) {
-                                                        HStack {
-                                                            ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
-                                                                let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
-                                                                Button(action: {
-                                                                    path.push(.line(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, codedidoc: codedidocHarmonizer(code: stopCodedidoc)), currentLine: stopEvent.lineName))
-                                                                }) {
-                                                                    Group {
-                                                                        if time == "0" {
-                                                                            transportIcon(with: stopEvent.transportType)
-                                                                                .frame(width: 10)
-                                                                        } else {
-                                                                            Text(time)
-                                                                        }
-                                                                    }
-                                                                    .foregroundStyle(determineColor(for: stopEvent))
-                                                                    .padding(.horizontal, 10)
-                                                                    .padding(.vertical, 5)
-                                                                    .background(Color.gray.opacity(0.2))
-                                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                                }
-                                                                .foregroundStyle(.primary)
-                                                            }
-                                                        }
-                                                        .padding(.horizontal)
-                                                    }
-                                                    .mask {
-                                                        Rectangle()
-                                                            .overlay(alignment: .leading) {
-                                                                ScrollMask(leading: true, width: 30)
-                                                            }
-                                                    }
-                                                    .mask {
-                                                        Rectangle()
-                                                            .overlay(alignment: .trailing) {
-                                                                ScrollMask(leading: false, width: 30)
-                                                            }
-                                                    }
-                                                }
-                                                .padding(.horizontal, 10)
+                    ScrollViewReader { scroll in
+                        ScrollView {
+                            if !stopManager.stopError {
+                                LazyVStack(spacing: 0) {
+                                    
+                                    if viewLineSorted {
+                                        ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                                            SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: $previousLineRef, stopName: stopName, stopSloid: stopSloid)
+                                        }
+                                    } else {
+                                        ForEach(allFilteredStopEvents, id: \.id) { event in
+                                            NavigationLink {
+                                                LineView(stopEvent: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: event.lineName)
+                                            }label: {
+                                                StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
+                                                    .foregroundStyle(determineColor(for: event.estimatedTime))
                                             }
-                                                .padding(.vertical, 15)
-                                                 )
-                                        .padding(.horizontal, 20)
-                                        }
-                            } else {
-                                    ForEach(allFilteredStopEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }), id: \.id) { event in
-                                        
-                                        Button(action: {
-                                            path.push(.line(stopEvent: event, currentStop: ShortStop(name: stopName, codedidoc: codedidocHarmonizer(code: stopCodedidoc)), currentLine: event.lineName))
-                                        }) {
-                                            StopEventView(event: event, showTime: showTime)
-                                                .foregroundStyle(determineColor(for: event))
-                                        }
-                                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20))
-                                        .padding(.horizontal, 15)
-                                        .if(!compareDateString(with: event.estimatedTime, equalPossible: false)) { view in
-                                            view.contextMenu {
-                                                NotificationContextMenu(event: event, stopID: stopCodedidoc, path: path)
+                                            .contentShape(.contextMenuPreview, Capsule())
+                                            .padding(.horizontal, 15)
+                                            .if(!dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false)) { view in
+                                                view.contextMenu {
+                                                    NotificationContextMenu(event: event, stopID: stopSloid)
+                                                }
                                             }
                                         }
                                     }
-                            }
-                            if !stopManager.stopEvents.isEmpty {
-                                Button(action: {
-                                    let halfTime = Int(halfTimeDifferenceInMinutes(from: stopEvents.first?.estimatedTime ?? "0", to: stopEvents.last?.estimatedTime ?? "0") ?? 15)
-                                    adjustTime(byAdding: halfTime)
-                                    getStopEvents()
-                                }) {
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(.thinMaterial)
-                                        .frame(height: 50)
-                                        .shadow(color: Color.customShadows, radius: 1, y: 1)
-                                        .overlay(
-                                            Text("Départs suivants")
-                                        )
-                                        .padding(.vertical, 5)
-                                        .padding(.horizontal, 20)
+                                }
+                            } else {
+                                VStack {
+                                    Spacer()
+                                    if stopManager.stopErrorMessage == "STOPEVENT_LOCATIONUNSERVED" {
+                                        Text("Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi")
+                                            .padding()
+                                    } else {
+                                        Text("Pas de départs trouvés")
+                                    }
+                                    Spacer()
                                 }
                             }
                         }
-                    }
-                    .contentMargins(.top, 90.0, for: .automatic)
-                    .contentMargins(.bottom, 75.0, for: .automatic)
-
-                    .refreshable {
-                        timeRequest = Date()
-                        getStopEvents()
-                    }
-                }
-                VStack {
-                    VStack {
-                            let splitStopName = splitString(stopName, separator: ",")
-                            if splitStopName.1.isEmpty {
-                                HStack {
-                                    Text(splitStopName.0)
-                                        .font(.largeTitle)
-                                        .bold()
-                                        .minimumScaleFactor(0.5)
-                                    Spacer()
-                                }
-                                .frame(height: 60)
-                                .padding(.horizontal, 25)
-                                .padding(.bottom, 10)
-                            } else {
-                                VStack {
-                                    HStack {
-                                        Text(splitStopName.0)
-                                            .font(.title2)
-                                        Spacer()
-                                    }
-                                    HStack {
-                                        Text(splitStopName.1)
-                                            .font(.largeTitle)
-                                            .bold()
-                                        Spacer()
-                                    }
-                                }
-                                .padding(.bottom, 15)
-                                .frame(height: 80)
-                                .padding(.horizontal, 25)
-                                .minimumScaleFactor(0.5)
+                        .contentMargins(.top, 90.0, for: .automatic)
+                        .contentMargins(.bottom, appRequirementsClass.version26 ? 75.0 : 125, for: .automatic)
+                        
+                        .refreshable {
+                            timeRequest = Date()
+                            getStopEvents()
+                        }
+                        .onChange(of: allFilteredStopEvents) {
+                            if !viewLineSorted {
+                                scroll.scrollTo(scrollID, anchor: scrollNextEvents ? UnitPoint(x: 0, y: 0.87) : UnitPoint(x: 0, y: 0.13))
+                                scrollID = ""
                             }
+                        }
                     }
-                    .background {
-                        RoundedRectangle(cornerRadius: 45.0)
-                            .frame(width: geometry.size.width, height: 200 + geometry.safeAreaInsets.top)
-                            .foregroundStyle(.thinMaterial)
-                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                            .ignoresSafeArea(edges: .top)
-                            .offset(y: -105)
+                VStack {
+                    if #available(iOS 26, *) {
+                        VStack(alignment: .center) {
+                            HStack {
+                                Spacer()
+                                HStack {
+                                    StopTitleView(stopName: stopName)
+                                        .foregroundStyle(Color.text)
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .frame(width: 100, height: 0)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 5)
+                                .glassEffect(.regular.interactive())
+                                .offset(x: 50)
+                            }
+                            Spacer()
+                            HStack {
+                                HStack(spacing: 0) {
+                                    Button(action: {
+                                        viewLineSorted.toggle()
+                                        requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
+                                    }) {
+                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
+                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
+                                            .padding()
+                                            .foregroundStyle(.foreground)
+                                    }
+                                    
+                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
+                                        .padding(.trailing, 7)
+//                                        .padding(.vertical)
+//                                    Button {
+//                                        filterLines.toggle()
+//                                    } label: {
+//                                        Image(systemName: "line.3.horizontal.decrease")
+//                                            .foregroundStyle(viewLineFiltered ? .white : Color.text)
+//                                            .padding()
+////                                            .glassEffect(.regular)
+//                                            .background {
+//                                                Capsule()
+//                                                    .fill(viewLineFiltered ? Color.accentColor : Color.clear)
+//                                                    .padding(5)
+//                                            }
+//                                    }
+                                    
+                                }
+                                .glassEffect(.regular.interactive())
+                                Spacer()
+//                                HStack(spacing: 0) {
+//                                    Button(action: {
+//                                        moveTime(previous: true)
+//                                    }) {
+//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
+//                                    }
+//                                    .padding()
+//                                    Button(action: {
+//                                        moveTime(previous: false)
+//                                    }) {
+//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
+//                                    }
+//                                    .padding()
+//                                }
+                                AdjustTimeButton(moveTime: moveTime)
+                                .glassEffect(.regular.interactive())
+                            }
+                            .padding()
+                            .foregroundStyle(.primary)
+                        }
+
+                    } else {
+                        VStack(alignment: .center) {
+                            
+                            //Stop title element
+                            HStack {
+                                Spacer()
+                                HStack {
+                                    StopTitleView(stopName: stopName)
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .frame(width: 100, height: 0)
+                                }
+                                .padding(.horizontal)
+                                .background {
+                                    Capsule()
+                                        .foregroundStyle(.ultraThinMaterial)
+                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                }
+                                .offset(x: 50)
+                            }
+                            Spacer()
+                            
+                            //Bottom buttons
+                            HStack {
+                                HStack {
+                                    Button(action: {
+                                        withAnimation {
+                                            viewLineSorted.toggle()
+                                        }
+                                    }) {
+                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
+                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
+                                            .padding()
+                                            .foregroundStyle(.foreground)
+                                    }
+                                    
+                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
+                                        .padding(.trailing, 7)
+                                }
+                                .background {
+                                    Capsule()
+                                        .foregroundStyle(.thinMaterial)
+                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                }
+                                Spacer()
+//                                HStack {
+//                                    Button(action: {
+//                                        moveTime(previous: true)
+//                                    }) {
+//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
+//                                            .padding()
+//                                    }
+//                                    Button(action: {
+//                                        moveTime(previous: false)
+//                                    }) {
+//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
+//                                            .padding()
+//                                    }
+//                                }
+                                AdjustTimeButton(moveTime: moveTime)
+                                .background {
+                                    Capsule()
+                                        .foregroundStyle(.thinMaterial)
+                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                }
+                            }
+                            .padding()
+                            .foregroundStyle(.primary)
+                        }
+                        .padding(.bottom, 50)
                     }
-                    Spacer()
                 }
                 .onAppear {
                     viewLineSorted = groupedDefault
-                    showTime = timeDefault
+//                    showTime = timeDefault
                     timeRequest = timeRequest(for: previousLineTime)
                     getStopEvents()
-                    timer = Timer.publish(every: 30, on: .main, in: .common)
-                        .autoconnect()
-                        .sink { _ in
-                            getStopEvents()
-                        }
+                    if autoRefresh {
+                        startTimer()
+                    }
                     requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                     if autoRefresh {
                         timeRequest = timeRequest(for: previousLineTime)
                         getStopEvents()
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getStopEvents()
-                            }
+                        startTimer()
                     }
                 }
                 .onDisappear {
@@ -318,104 +458,227 @@ struct StopView: View {
                     } else {
                         timeRequest = timeRequest(for: previousLineTime)
                         getStopEvents()
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getStopEvents()
-                            }
+                        startTimer()
                     }
                 }
             }
-        }
         .toolbar {
             HStack {
-                    Spacer()
-                    Button(action: {
-                        showTime.toggle()
-                    }) {
-                        Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill").font(.title3)
-                    }
+//                Button(action: {
+//                    showTime.toggle()
+//                }) {
+//                        Image(systemName: "hourglass")
+//                        .foregroundColor(showTime ? .text : .white)
+//                            .padding(.horizontal, 10)
+////                            .padding(.vertical, 15)
+//                        .background {
+//                            Capsule()
+//                                .foregroundStyle(showTime ? .clear : .accent)
+////                                .padding(.horizontal, 5)
+////                                .padding(.vertical, 5)
+//                        }
+//                }
+                ShowTimeButton(showTime: $showTime)
+                
+                Button {
+                    selectTime.toggle()
+                } label: {
+                    Label("Selectionner l'heure", systemImage: "clock")
+                        .symbolEffect(.bounce.down.byLayer, value: selectTime)
+                }
+                
                 Menu {
                     Button(action: {
                         toggleFavorite()
                     }) {
-                        favoritesViewModel.isFavoriteID(stopCodedidoc) ? Label("Retirer des favoris", systemImage: "star.fill") : Label("Ajouter aux favoris", systemImage: "star")
+                        favoritesViewModel.isFavoriteID(stopSloid) ? Label("Retirer des favoris", systemImage: "star.fill") : Label("Ajouter aux favoris", systemImage: "star")
                     }
+                    Divider()
                     if !stopManager.quays.isEmpty {
-                        Button(action: {
-                            path.push(.stopMap(quays: stopManager.quays, stopPointRef: stopCodedidoc, stopName: stopName))
-                        }) {
+                        NavigationLink {
+                                                    StopMapView(quays: stopManager.quays, stopSloid: stopSloid, stopName: stopName)
+                        } label: {
                             Label("Carte des quais", systemImage: "map")
                         }
                     }
                     
-                    Divider()
-                    
-                    Button(action: {
-                        path.push(.trip(selectedTextField: 2, departureStop: createStop(nomarret: stopName, codedidoc: stopCodedidoc), arrivalStop: nil, quickTrip: false))
-                    }) {
-                        Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                    }
-                    Button(action: {
-                        path.push(.trip(selectedTextField: 1, departureStop: nil, arrivalStop: createStop(nomarret: stopName, codedidoc: stopCodedidoc), quickTrip: false))
-                    }) {
-                        Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                    }
-                    
-                    Divider()
-                    if !viewLineSorted {
                         Button(action: {
-                            viewLineSorted = true
-                            requestNumber = groupedStopEvents.keys.count * 5
-                            getStopEvents()
+                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
                         }) {
-                            Label("Trier par ligne", systemImage: "rectangle.grid.1x2.fill")
+                            Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
                         }
-                    } else {
                         Button(action: {
-                            viewLineSorted = false
-                            requestNumber = 30
-                            getStopEvents()
+                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
                         }) {
-                            Label("Trier par horaire", systemImage: "list.bullet")
+                            Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
                         }
-                    }
-                    Menu {
-                        if !selectedFilters.isEmpty {
-                            Button(role: .destructive, action: {
-                                viewLineFiltered = false
-                                selectedFilters = []
-                            }) {
-                                Label("Supprimer les filtres", systemImage: "xmark.circle")
-                            }
-                            .menuActionDismissBehavior(.disabled)
-                        }
-                        ForEach(groupedStopEvents.keys.sorted(), id: \.self) { key in
-                            let splitLine = splitString(key, separator: ";")
-                            Button(action: {
-                                viewLineFiltered = true
-                                if selectedFilters.contains(key) {
-                                                selectedFilters.remove(key) // Unselect if already selected
-                                            } else {
-                                                selectedFilters.insert(key) // Add to selected filters
-                                            }
-                            }) {
-                                Label(splitLine.0 + " ➔ " + splitLine.1, systemImage: selectedFilters.contains(key) ? "checkmark.circle.fill" : "circle")
-                            }
-                            .menuActionDismissBehavior(.disabled)
-                        }
-                    } label: {
-                        Label("Filtrer par ligne", systemImage: selectedFilters.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                    }
                 } label: {
-                    Image(systemName: "ellipsis.circle").font(.title3)
-                }
+                        Label("", systemImage: "ellipsis")
+                            .padding(.horizontal, 5)
                 }
             }
+            .background {
+                Capsule()
+                    .opacity(appRequirementsClass.version26 ? 0 : 1)
+                    .foregroundStyle(.ultraThinMaterial)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+            }
         }
-
+        
+        
+        .sheet(isPresented: $selectTime) {
+                let timeSelectSheet = VStack(spacing: 0) {
+                    Spacer()
+                    Text("Sélectionnez l'heure de départ")
+                        .font(.title2)
+                        .bold()
+//                        .padding()
+                        HStack {
+                            DatePicker(selection: $timeRequest) {
+                                
+                            }
+                            .datePickerStyle(.wheel)
+                            Button(action: {
+                                timeRequest = Date()
+                                timeAnimate.toggle()
+                            }) {
+                                Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                                    .font(.title2)
+                                    .symbolEffect(.rotate, value: timeAnimate)
+                            }
+                        }
+                        if #available(iOS 26, *) {
+                            Button {
+                                getStopEvents()
+                                selectTime.toggle()
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    Text("Selectionner")
+                                    Spacer()
+                                }
+                                .frame(height: 40)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Button(action: {
+                                getStopEvents()
+                                selectTime.toggle()
+                            }) {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.accent)
+                                    .frame(height: 50)
+                                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+                                    .overlay(Text("Selectionner").foregroundStyle(.white))
+                            }
+                            .padding(.bottom)
+                        }
+            }
+            .padding()
+            .presentationDetents([.fraction(0.4)])
+//            .presentationCornerRadius(35)
+//            .presentationBackground(#available(ios 26, *) ? .clear : .thinMaterial)
+            if #available(iOS 26, *) {
+                timeSelectSheet
+            } else {
+                timeSelectSheet
+                    .presentationBackground(.thinMaterial)
+            }
+        }
+        
+        .sheet(isPresented: $filterLines) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Filtrer par lignes")
+                    .font(.title2)
+                    .bold()
+                    .padding()
+                
+                    let scroll = VStack {
+                        ForEach(groupedStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+//                            let splitLineOperator = splitString(key, separator: "$")
+                            let splitLine = splitString(key, separator: ";")
+                            Button(action: {
+//                                print(key)
+                                viewLineFiltered = true
+                                if selectedFilters.contains(key) {
+                                    selectedFilters.remove(key) // Unselect if already selected
+                                } else {
+                                    selectedFilters.insert(key) // Add to selected filters
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: selectedFilters.contains(key) ? "checkmark.circle.fill" : "circle")
+                                    BusLineIcon(lineName: splitLine.0, operatorName: groupedStopEvents[key]![0].operatorName)
+                                    Image(systemName: "arrow.right")
+                                    Text(splitLine.1)
+                                    Spacer()
+                                }
+                                .padding()
+                            }
+                            .foregroundStyle(.primary)
+                        }
+                    }
+                        ScrollView {
+                            scroll
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .top) {
+                                    ScrollMask(leading: false, vertical: true, gradientLength: 30)
+                                }
+                        }
+                        .mask {
+                            Rectangle()
+                                .overlay(alignment: .bottom) {
+                                    ScrollMask(leading: true, vertical: true, gradientLength: 30)
+                                }
+                        }
+                
+                if !selectedFilters.isEmpty {
+                    Button(role: .destructive, action: {
+                        viewLineFiltered = false
+                        selectedFilters = []
+                    }) {
+                        HStack {
+                            Label("Supprimer les filtres", systemImage: "xmark.circle")
+                            Spacer()
+                        }
+                        .frame(height: 40)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.horizontal)
+                }
+                
+                Button {
+                    filterLines = false
+                } label: {
+                    HStack {
+                        Label("Filtrer", systemImage: "line.3.horizontal.decrease")
+//                            .font(.title3)
+                        Spacer()
+                    }
+                    .padding()
+                    .frame(height: 40)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+            }
+//            .padding(.horizontal)
+            .padding(.top)
+            .presentationDetents([.fraction(0.7)])
+        }
+        
+        .navigationTitle("\(stopName)") // Set back button text
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("") // Visible title
+            }
+        }
+    }
+    
     private func toggleFavorite() {
-        if let stop = stopStore.findStop(id: stopCodedidoc) {
+        if let stop = stopStore.findStop(id: stopSloid) {
             if favoritesViewModel.isFavorite(stop) {
                 favoritesViewModel.removeFavoriteStop(stop)
             } else {
@@ -425,9 +688,8 @@ struct StopView: View {
         }
     }
     
-    private func getStopEvents () {
-        
-        stopManager.selectStop(stopName: stopName, stopCodedidoc: stopCodedidoc, stopEventNumber: requestNumber, timeRequest: timeRequest) {
+    private func getStopEvents() {
+        stopManager.selectStop(stopName: stopName, stopSloid: stopSloid, stopEventNumber: requestNumber, timeRequest: timeRequest) {
                     stopEvents = self.stopManager.stopEvents
         }
     }
@@ -449,26 +711,112 @@ struct StopView: View {
         let timeDifference = endDate.timeIntervalSince(startDate)
         // Convert the time difference to minutes and return half of it
         let halfDifferenceInMinutes = timeDifference / 60 / 2
+        print("halfDifferenceInMinutes: \(halfDifferenceInMinutes)")
         return halfDifferenceInMinutes
     }
-    func determineColor(for event: StopEvent) -> Color {
-        if event.journeyRef == previousLineRef {
-            return Color.accentColor
-        } else if compareDateString(with: event.estimatedTime, equalPossible: false) {
-            return Color.gray
-        } else {
-            return Color.primary
-        }
-    }
     func timeRequest(for time: String?) -> Date {
-        if time != nil {
-            return stringToDate(with: time!)!
-        } else {
-            return Date()
+        // Une heure absente ou illisible (ouverture depuis le widget, par exemple)
+        // veut simplement dire « les départs à partir de maintenant ».
+        guard let time, let date = stringToDate(with: time) else { return Date() }
+        return date
+    }
+    private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
+        let lhsComponents = lhs.split(separator: ";")
+        let rhsComponents = rhs.split(separator: ";")
+        
+        let lhsLineName = lhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let lhsDestination = lhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        
+        let rhsLineName = rhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let rhsDestination = rhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        
+        // Sort primarily by LineName
+        if lhsLineName != rhsLineName {
+            if let lhsLineNameInt = Int(lhsLineName), let rhsLineNameInt = Int(rhsLineName) {
+                return lhsLineNameInt < rhsLineNameInt
+            } else {
+                return lhsLineName < rhsLineName
+            }
+        }
+        
+        // If LineName is the same, sort by Destination
+        return lhsDestination < rhsDestination
+    }
+    private func startTimer() {
+        timer = Timer.publish(every: 30, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                getStopEvents()
+            }
+    }
+    
+    private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
+        let formatter = ISO8601DateFormatter()
+        let dates = events.compactMap { formatter.date(from: $0.estimatedTime) }.sorted()
+
+        guard dates.count > 2 else {
+            return 10 // Valeur par défaut minimale
+        }
+
+        // Prendre le 80e percentile (ou autre)
+        let index = Int(Double(dates.count - 1) * 0.8)
+        let typicalEnd = dates[index]
+        let start = dates.first!
+
+        let timeInterval = typicalEnd.timeIntervalSince(start) / 60.0
+        return max(5, Int(timeInterval)) // minimum 5 minutes
+    }
+    
+    private func moveTime(previous: Bool) { //Move departures time earlier or later (with top and bottom buttons)
+        let interval = estimatedTypicalTimeInterval(from: stopEvents)
+        adjustTime(byAdding: previous ? -interval : interval)
+        scrollNextEvents = !previous
+        scrollID = previous ? allFilteredStopEvents.first!.id : allFilteredStopEvents.last!.id
+        getStopEvents()
+        startTimer()
+    }
+}
+
+struct StopTitleView : View {
+    var stopName: String
+    
+    var body: some View {
+        VStack {
+                let splitStopName = splitString(stopName, separator: ",")
+                if splitStopName.1.isEmpty {
+                    HStack {
+                        Text(splitStopName.0)
+                            .font(.largeTitle)
+                            .bold()
+                            .minimumScaleFactor(0.5)
+//                        Spacer()
+                    }
+                    .frame(height: 70)
+                    .padding(.horizontal, 25)
+//                    .padding(.bottom, 10)
+                    
+                } else {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text(splitStopName.0)
+                                .font(.title2)
+//                            Spacer()
+                        }
+                        HStack {
+                            Text(splitStopName.1)
+                                .font(.largeTitle)
+                                .bold()
+//                            Spacer()
+                        }
+                    }
+//                    .padding(.bottom, 15)
+                    .frame(height: 70)
+                    .padding(.horizontal, 25)
+                    .minimumScaleFactor(0.5)
+                }
         }
     }
 }
-    
 
 extension View {
     @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
@@ -476,6 +824,83 @@ extension View {
             transform(self)
         } else {
             self
+        }
+    }
+}
+
+struct ShowTimeModifier: ViewModifier {
+    var apply: Bool
+    @Binding var value: Bool
+    func body(content: Content) -> some View {
+        if apply {
+            content.symbolEffect(.bounce, value: value)
+        } else {
+            content.symbolEffect(.wiggle.clockwise.byLayer, value: value)
+        }
+    }
+}
+
+
+#Preview("StopEventView preview") {
+    let stopStore = StopStore()
+    let favoritesViewModel = FavoritesViewModel()
+    let appRequirementsClass = AppRequirementsClass()
+
+    return VStack {
+        StopEventView(
+            event: StopEvent(
+                stopPointName: "Meinier, Eglise",
+                stopId: "8587061",
+                plannedQuay: "A",
+                timetabledTime: "2025-08-13T14:55:18Z",
+                estimatedTime: "2025-08-13T14:55:18Z",
+                lineName: "A",
+                origin: "Gy, Temple",
+                destination: "Genève, Rive",
+                transportType: "Bus",
+                operatorName: "Transports Publics Genevois",
+                journeyRef: "ch:1:sjyid:100680:HAS-25-A-31-Lun-Ven-32504874",
+                operatingDayRef: "2025-08-13"
+            ),
+            showTime: false
+        )
+    }
+    .environmentObject(favoritesViewModel)
+    .environmentObject(appRequirementsClass)
+    .environmentObject(stopStore)
+}
+
+#Preview("StopView preview") {
+    let stopStore = StopStore()
+    let favoritesViewModel = FavoritesViewModel()
+    let appRequirementsClass = AppRequirementsClass()
+    let navigationModel = NavigationModel()
+
+    return NavigationStack {
+        ZStack {
+            StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
+                .environmentObject(favoritesViewModel)
+                .environmentObject(appRequirementsClass)
+                .environmentObject(stopStore)
+                .navigationTitle("Genève, Rive")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text("")
+                    }
+                }
+            if #available(iOS 26, *) {
+                // No dock in iOS 26 preview
+            } else {
+                VStack {
+                    Spacer()
+                    DockView()
+                        .padding(.bottom)
+                        .environmentObject(navigationModel)
+                        .environmentObject(stopStore)
+                        .offset(y: 20)
+                }
+            }
         }
     }
 }

@@ -6,60 +6,173 @@
 //
 
 import SwiftUI
+import MapKit
+import tpgNextFunc
 
-
+enum TripField: Hashable {
+        case departure
+        case arrival
+    }
 
 class ItineraryViewModel: ObservableObject {
-//    @EnvironmentObject var stopStore: StopStore
-    private var stopStore: StopStore
-
     
     @Published var departureStop: Stop?
+    @Published var departureGeoPosition: GeoPosition?
+    @Published var geoDeparture: Bool = false
+    
     @Published var arrivalStop: Stop?
+    @Published var arrivalGeoPosition: GeoPosition?
+    @Published var geoArrival: Bool = false
+    
     @Published var invertStop: Stop?
+    @Published var invertLocation: GeoPosition?
+    @Published var invertGeo: Bool = false
     @Published var selectedTime = Date()
-    @Published var isDepartureTime = true
-    @Published var stops: [Stop] = []
-    @Published var departureSearchText = "" {
-        didSet {
-            searchDepartureStops()
-        }
-    }
-    @Published var arrivalSearchText = "" {
-        didSet {
-            searchArrivalStops()
-        }
-    }
+    @Published var isArrivalTime = false
+    @Published var departureSearchText = ""
+    @Published var arrivalSearchText = ""
     
-    init(stopStore: StopStore = StopStore()) {
-            self.stopStore = stopStore
-        }
+    @Published var tripDone = false
+    @Published var quickTrip = false
     
-    @Published var filteredDepartureStops: [Stop] = []
-    @Published var filteredArrivalStops: [Stop] = []
-    
-    // Function to search stops in the database
-    private func searchDepartureStops() {
-        let filteredStops = departureSearchText.isEmpty ? stopStore.activeStops : stopStore.activeStops.filter { $0.name.localizedCaseInsensitiveContains(departureSearchText) }
-            
-            // Sort alphabetically by `nomarret` and update `stops`
-            filteredDepartureStops = filteredStops.sorted { $0.name < $1.name }
-        }
-    private func searchArrivalStops() {
-        let filteredStops = arrivalSearchText.isEmpty ? stopStore.activeStops : stopStore.activeStops.filter { $0.name.localizedCaseInsensitiveContains(arrivalSearchText) }
-            
-            // Sort alphabetically by `nomarret` and update `stops`
-        filteredArrivalStops = filteredStops.sorted { $0.name < $1.name }
-        }
+    @Published var selectedTextField: Int = 1
 
+    @Published var selectedField: TripField? = .departure
+    
     func invertStops() {
+        departureSearchText = ""
+        arrivalSearchText = ""
         invertStop = departureStop
+        invertLocation = departureGeoPosition
+        invertGeo = geoDeparture
         departureStop = arrivalStop
+        departureGeoPosition = arrivalGeoPosition
+        geoDeparture = geoArrival
         arrivalStop = invertStop
-        departureSearchText = departureStop?.name ?? ""
-        arrivalSearchText = arrivalStop?.name ?? ""
+        arrivalGeoPosition = invertLocation
+        geoArrival = invertGeo
+        if geoDeparture {
+            departureSearchText = departureGeoPosition?.name ?? ""
+        } else {
+            departureSearchText = departureStop?.name ?? ""
+        }
+        if geoArrival {
+            arrivalSearchText = arrivalGeoPosition?.name ?? ""
+        } else {
+            arrivalSearchText = arrivalStop?.name ?? ""
+        }
+    }
+    func resetModel() {
+        departureStop = nil
+        departureGeoPosition = nil
+        geoDeparture = false
+        arrivalStop = nil
+        arrivalGeoPosition = nil
+        geoArrival = false
+        invertStop = nil
+        invertLocation = nil
+        invertGeo = false
+        selectedTime = Date()
+        isArrivalTime = false
+        departureSearchText = ""
+        arrivalSearchText = ""
+    }
+    
+    func outerTrip(tab: NavigationModel, isDeparture: Bool, stop: Stop, isQuickTrip: Bool) {
+        if isDeparture {
+            //        print("TripViewAppear: inputDeparture != nil && inputArrival == nil")
+            departureStop = stop
+            departureSearchText = stop.name
+            arrivalStop = nil
+            arrivalSearchText = ""
+            selectedTextField = 2
+        } else {
+            //        print("TripViewAppear: inputArrival != nil && inputDeparture == nil")
+            departureStop = nil
+            departureSearchText = ""
+            arrivalStop = stop
+            arrivalSearchText = stop.name
+            selectedTextField = 1
+        }
+        tripDone = false
+        quickTrip = isQuickTrip
+//        tab.tripNavigationId = "trip"
+        tab.tripPath = NavigationPath()
+        tab.selectedTab = .trip
     }
 }
+
+struct ConditionalModifier: ViewModifier {
+    var apply: Bool
+    func body(content: Content) -> some View {
+        if apply {
+            content.ignoresSafeArea(.keyboard)
+        } else {
+            content
+        }
+    }
+}
+
+class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var searchQuery: String = "" {
+        didSet {
+            updateSearchResults()
+        }
+    }
+    @Published var searchResults = [MKLocalSearchCompletion]()
+    
+    private var completer: MKLocalSearchCompleter
+    
+    // Define the region you want to limit the search to
+    var searchRegion: MKCoordinateRegion? {
+        didSet {
+            if let region = searchRegion {
+                completer.region = region
+            }
+        }
+    }
+    
+    override init() {
+        self.completer = MKLocalSearchCompleter()
+        super.init()
+        self.completer.delegate = self
+        
+        // Optionally set an initial region here
+        let initialRegion = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 46.8182, longitude: 8.2275),
+            span: MKCoordinateSpan(latitudeDelta: 3.0, longitudeDelta: 3.0)
+        )
+        completer.region = initialRegion
+    }
+    
+    func updateSearchResults() {
+        completer.queryFragment = searchQuery
+    }
+    
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        DispatchQueue.main.async {
+            self.searchResults = completer.results
+        }
+    }
+    
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        print("Error: \(error.localizedDescription)")
+    }
+    
+    func getCoordinate(for suggestion: MKLocalSearchCompletion, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
+        let searchRequest = MKLocalSearch.Request(completion: suggestion)
+        let search = MKLocalSearch(request: searchRequest)
+        
+        search.start { response, error in
+            if let coordinate = response?.mapItems.first?.placemark.coordinate {
+                completion(coordinate)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+}
+
 
 struct TripElementView: View {
     var event: TripEvent
@@ -67,34 +180,81 @@ struct TripElementView: View {
     var body: some View {
         VStack(alignment: .center) {
             HStack {
-                //Spacer()
-                if displayTimeOrMinutesRemaining(for: event.startTime, estimatedInput: event.startTime, with: showTime)  == "0" { transportIcon(with: event.legs.first?.transportTypeName ?? "Bus")
-                        .frame(width:50)
-                } else { Text("\(displayTimeOrMinutesRemaining(for: event.startTime, estimatedInput: event.startTime, with: showTime))")
-                    .frame(width:50)}
-                Spacer()
-                HStack {
-                    Spacer()
-                    ForEach(event.legs, id: \.id) { leg in
-                        if !(leg.publishedLineName == "") {
-                            BusLineIcon(lineName: leg.publishedLineName)
-                                .padding(.horizontal, 3)
-                        } else if (leg.transfer == false ) {Image(systemName: "figure.walk")}
-                           /*if !leg.transferDuration.isEmpty {
-                           Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
-                           }*/
-                        //Spacer()
+                let startTime = displayTimeOrMinutesRemaining(for: event.startTime, estimatedInput: event.startTime, with: showTime)
+                if startTime.text  == "0" { transportIcon(with: event.legs.first?.transportTypeName ?? "Bus")
+                            .frame(width:55)
+                    } else {
+                        if startTime.text.count > 6 {
+                            let splitTime = splitString(startTime.text, separator: ";" )
+                            VStack {
+                                Text(splitTime.0)
+                                Text(splitTime.1).foregroundStyle(startTime.color)
+                                
+                            }
+                            .frame(width:55)
+                            .minimumScaleFactor(0.5)
+                        } else {
+                            Text(startTime.text)
+                                .frame(width:55)
+                                .minimumScaleFactor(0.5)
+                                .foregroundStyle(startTime.color)
+                        }
                     }
                     Spacer()
+
+                    // Scrollable icon area
+                ZStack {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Spacer()
+                            ForEach(event.legs, id: \.id) { leg in
+                                if !(leg.publishedLineName == "") {
+                                    BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
+                                        .padding(2)
+                                } else if /*!*/leg.transfer && Int(leg.transferWalkDuration.dropFirst(2).dropLast(1)) ?? 0 >= 5 {
+                                    Image(systemName: "figure.walk").font(.caption)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .frame(minWidth: 200)
+                    }
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .leading) {
+                                ScrollMask(leading: true, vertical: false, gradientLength: 25)
+                            }
+                    }
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .trailing) {
+                                ScrollMask(leading: false, vertical: false, gradientLength: 25)
+                            }
+                    }
+
                 }
-                .frame(width: 180)
-                .lineLimit(1)
-                .minimumScaleFactor(0.1)
-                Spacer()
-                if displayTimeOrMinutesRemaining(for: event.endTime, estimatedInput: event.endTime, with: showTime)  == "0" { transportIcon(with: event.legs.last?.transportTypeName ?? "Bus")
-                        .frame(width:50)
-                } else { Text("\(displayTimeOrMinutesRemaining(for: event.endTime, estimatedInput: event.endTime, with: showTime))").frame(width:50) }
-                //Spacer()
+                .frame(minWidth: 200, maxHeight: 30)
+                    Spacer()
+                let endTime = displayTimeOrMinutesRemaining(for: event.endTime, estimatedInput: event.endTime, with: showTime)
+                if endTime.text  == "0" { transportIcon(with: event.legs.last?.transportTypeName ?? "Bus")
+                            .frame(width:55)
+                } else {
+                    if endTime.text.count > 6 {
+                        let splitTime = splitString(endTime.text, separator: ";" )
+                        VStack {
+                            Text(splitTime.0)
+                            Text(splitTime.1).foregroundStyle(endTime.color)
+                        }
+                        .frame(width:55)
+                        .minimumScaleFactor(0.5)
+                    } else {
+                        Text(endTime.text)
+                            .frame(width:55)
+                            .minimumScaleFactor(0.5)
+                            .foregroundStyle(endTime.color)
+                    }
+                }
             }
             .padding(.horizontal)
             
@@ -114,431 +274,1343 @@ struct TripElementView: View {
     }
 }
 
+struct ListView: View {
+    let range = 1..<10
+    enum Results {
+        case one, two
+    }
+    
+    @State var results = Results.one
+    var body: some View {
+        ForEach(range) {_ in 
+            Capsule()
+                .frame(height: 50)
+                .padding()
+        }
+        var test = VStack {
+            switch results {
+                
+            case .one:
+                Text("")
+            case .two:
+                Text("")
+            }
+        }
+    }
+}
+
 struct TripView: View {
-    @StateObject private var tripManager = TripManager()
-    @StateObject var viewModel: ItineraryViewModel
+    @ObservedObject var tripManager = TripManager()
+    @EnvironmentObject var savedTripsModel: SavedTripsModel
+    @EnvironmentObject var regularTripsModel: RegularTripsModel
+    @EnvironmentObject var viewModel: ItineraryViewModel
     @EnvironmentObject var stopStore: StopStore
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
+    @StateObject private var locationViewModel = LocationSearchViewModel()
     @StateObject var locationManager = LocationManager()
+    @StateObject var recentSearchModel = RecentSearch()
+
     
-    @Binding var firstSelected: Bool
-    @FocusState private var firstIsFocused: Bool
-    @FocusState private var secondIsFocused: Bool
+    @FocusState var focusField: TripField?
+    
     @State private var showCloseStops = false
-    @State private var tripDone: Bool = false
     @State private var timeRequest = Date()
     
     @State private var closestStops: [Stop] = []
     @State private var calculationSuccess = false
+    @State private var userPosition: CLLocation?
     
     @State private var showTime = true
-    @ObservedObject var viewStateStack: ViewStateStack
-    @Binding var transition: AnyTransition
+    @State private var showSavedTrips = false
+    @State private var selectedSavedTrip: TripEvent?
+    @State private var showTripDetail = false
     
+    @Namespace private var animation
+    @State private var switchAnimate: Bool = false
+    @State private var switchRotation: Bool = false
     
+    @AppStorage("TimeDefault") var timeDefault = false
     
-    private let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
-    ]
-    
-    var body: some View {
-            ZStack {
-                    VStack {
-                        Spacer(minLength: 280)
-                        if calculationSuccess {
-                            if showCloseStops {
-                                    if !closestStops.isEmpty {
-                                        ScrollView() {
-                                            LazyVStack {
-                                                Spacer(minLength: 25)
-                                                ForEach(closestStops, id: \.id) { stop in
-                                                    RoundedRectangle(cornerRadius: 20)
-                                                        .fill(.color1)
-                                                        .frame(height: 45)
-                                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                                        .overlay(
-                                                            Text(stop.name)
-                                                                .font(.headline)
-                                                                .foregroundColor(Color.primary)
-            //                                                    .frame(width: 130)
-                                                                .minimumScaleFactor(0.5)
-                                                                .onTapGesture {
-                                                                    if firstSelected {
-                                                                        viewModel.departureStop = stop
-                                                                        viewModel.departureSearchText = stop.name
-                                                                        firstSelected = false
-                                                                        showCloseStops = false
-                                                                        calculationSuccess = false
-                                                                    } else {
-                                                                        viewModel.arrivalStop = stop
-                                                                        viewModel.arrivalSearchText = stop.name
-                                                                        firstSelected = true
-                                                                        showCloseStops = false
-                                                                        calculationSuccess = false
-                                                                    }
-                                                                }
-                                                        )
-                                                        .padding(.horizontal, 30)
-                                                }
-                                            }
-                                        }
-                                } else {
-                                    Text("No bus stops found.")
-                                }
-                            } else {
-                                Text("Loading...")
-                            }
-                        } else if ((firstIsFocused || firstSelected) && viewModel.departureSearchText == "") || ((secondIsFocused || !firstSelected) &&  viewModel.arrivalSearchText == "") || (viewModel.departureSearchText == viewModel.departureStop?.name && firstIsFocused) || ( viewModel.arrivalSearchText == viewModel.arrivalStop?.name && secondIsFocused) {
-                        ScrollView {
-                            LazyVGrid(columns: columns, spacing: 10) {
-                                //Spacer(minLength: 30)
-                               // Spacer(minLength: 30)
-                                ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(.color1)
-                                        .frame(maxWidth: .infinity, minHeight: 45, maxHeight: 45)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                        .overlay(
-                                            Text(stop.name)
-                                                .font(.headline)
-                                                .foregroundColor(Color.primary)
-                                                .frame(width: 130)
-                                                .minimumScaleFactor(0.5)
-                                                .onTapGesture {
-                                                    if firstSelected {
-                                                        viewModel.departureStop = createStop(nomarret: stop.name, codedidoc: stop.codedidoc)
-                                                        viewModel.departureSearchText = stop.name
-                                                        firstSelected = false
-                                                    } else {
-                                                        viewModel.arrivalStop = createStop(nomarret: stop.name, codedidoc: stop.codedidoc)
-                                                        viewModel.arrivalSearchText = stop.name
-                                                        firstSelected = true
-                                                    }
-                                                }
-                                        )
-                                }
-                            }
-                            .padding(30)
-                        }
-                        
-                        .scrollDismissesKeyboard(.immediately)
-                    } else if (viewModel.departureSearchText != viewModel.departureStop?.name && firstSelected) || ( viewModel.arrivalSearchText != viewModel.arrivalStop?.name && !firstSelected) {
-                        ScrollView {
-                            LazyVStack {
-                                Spacer(minLength: 20)
-                                if firstSelected {
-                                    ForEach(viewModel.filteredDepartureStops) { stop in
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(.color1)
-                                            .frame(height: 45)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            .overlay(
-                                                Text(stop.name)
-                                                    .font(.headline)
-                                                    .foregroundColor(Color.primary)
-//                                                    .frame(width: 130)
-                                                    .minimumScaleFactor(0.5)
-                                                    .onTapGesture {
-                                                        viewModel.departureStop = stop
-                                                        viewModel.departureSearchText = stop.name
-                                                        firstSelected = false
-                                                    }
-                                            )
-                                            .padding(.horizontal, 30)
-                                    }
-                                    Spacer(minLength: 75)
-                                } else {
-                                    ForEach(viewModel.filteredArrivalStops) { stop in
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(.color1)
-                                            .frame(height: 45)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            .overlay(
-                                                Text(stop.name)
-                                                    .font(.headline)
-                                                    .foregroundColor(Color.primary)
-                                                    .onTapGesture {
-                                                        viewModel.arrivalStop = stop
-                                                        viewModel.arrivalSearchText = stop.name
-                                                        firstSelected = true
-                                                    }
-                                            )
-                                            .padding(.horizontal, 30)
-                                    }
-                                    Spacer(minLength: 75)
-                                }
-                            }
-                            .padding()
-                        }
-                        .scrollDismissesKeyboard(.immediately)
-                    } else if /*tripDone && */!(firstIsFocused || secondIsFocused) {
-                        ScrollView {
-                            LazyVStack {
-                                Spacer(minLength: 30)
-                                Button(action: {
-        //                            timeRequest = Date()
-                                    adjustTime(byAdding: -timeChange())
-                                    searchTrips()
-                                }) {
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.color1)
-                                        .frame(height: 50)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                        .overlay(
-                                            Text("Itinéraires précédents")
-                                        )
-                                        .padding(.vertical, 1)
-                                        .padding(.horizontal, 30)
-                                }
-                                ForEach(tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime }), id: \.id) { event in
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.4)) {
-                                            transition = .trailingIn
-                                            viewStateStack.push(.fullTrip(fullTrip: event, departureStop: viewModel.departureStop!, arrivalStop: viewModel.arrivalStop!))
-                                            //FullTripView(fullTrip: event)
-                                        }
-                                    }) {
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(.color1)
-                                            .padding(.horizontal, 30)
-                                            .frame(height: 80)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            .overlay(
-                                                TripElementView(event: event, showTime: showTime)
-                                                    .padding(.horizontal)
-                                            )
-                                            
-                                    }
-                                    .foregroundStyle(.primary)
-                                }
-                                Button(action: {
-        //                            timeRequest = Date()
-                                    adjustTime(byAdding: timeChange())
-                                    searchTrips()
-                                }) {
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.color1)
-                                        .frame(height: 50)
-                                        .shadow(color: Color.customShadows, radius: 3, y: 2)
-                                        .overlay(
-                                            Text("Itinéraires suivants")
-                                        )
-                                        .padding(.vertical, 1)
-                                        .padding(.horizontal, 30)
-                                }
-                                Spacer(minLength: 75)
-                            }
-                        }
-                        .scrollDismissesKeyboard(.immediately)
-                    }
-                }
-                
-                VStack {
-                    HStack {
-                        Text("Itinéraire")
-                            .font(.title)
-                            .bold()
-                            .padding(.leading, 15)
-                            .frame(height: 20.0)
-                        Spacer()
-                        Button(action: {
-                            self.showTime.toggle()
-                            }) {
-                            Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill")
-                                .font(.title)
-                                .padding(.trailing)
-                        }
-                    }
-                    .padding(.bottom, 5)
-
-                    RoundedRectangle(cornerRadius: 35.0)
-                        .foregroundStyle(Color.color1)
-                        .shadow(color: Color.customShadows, radius: 3, y: 2)
-                        .frame(height: 250)
-                        .overlay(
-                            VStack {
-                                HStack {
-                                    VStack {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 25.0)
-                                                .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
-                                                .frame(width: 280, height: 40)
-                                                .foregroundStyle(.color1)
-                                                .overlay(
-                                                    TextField("départ", text: $viewModel.departureSearchText)
-                                                        .focused($firstIsFocused)
-                                                        .foregroundStyle(.primary)
-                                                        .padding(.leading)
-                                                        .overlay(
-                                                          Button(action: {
-                                                              if viewModel.departureSearchText.isEmpty && firstSelected && showCloseStops {
-                                                                  showCloseStops = false
-                                                                  calculationSuccess = false
-                                                              } else if viewModel.departureSearchText.isEmpty && firstSelected {
-                                                                  locationManager.locationUpdateHandler = { location in
-                                                                      if let userLocation = locationManager.userLocation {
-                                                                          calculateClosestBusStops(from: userLocation, stops: stopStore.activeStops, nb: 6) { success, stops in
-                                                                              if success {
-                                                                                  closestStops = stops
-                                                                                  calculationSuccess = true
-                                                                              }
-                                                                              showCloseStops = true
-                                                                          }
-                                                                      } else { print("error")}
-                                                                  }
-                                                                  locationManager.requestLocation()
-                                                              } else if !viewModel.departureSearchText.isEmpty {
-                                                                  viewModel.departureSearchText = ""
-                                                                  firstSelected = true
-                                                                  firstIsFocused = true
-                                                                  secondIsFocused = false
-                                                              }
-                                                                }) {
-                                                                    if viewModel.departureSearchText.isEmpty && firstSelected && showCloseStops {
-                                                                        Image(systemName: "location.circle.fill").font(.title2)
-                                                                    } else if viewModel.departureSearchText.isEmpty && firstSelected {
-                                                                        Image(systemName: "location.circle").font(.title2)
-                                                                    } else if !viewModel.departureSearchText.isEmpty {
-                                                                        Image(systemName: "xmark.circle.fill").font(.title2)
-//                                                                            .opacity(viewModel.departureSearchText .isEmpty ? 0 : 1)//.padding()
-                                                                    }
-                                                             }
-                                                              .padding(),
-                                                               alignment: .trailing
-                                                              )
-                                                        .onTapGesture(perform: {
-                                                            if !firstSelected {
-                                                                showCloseStops = false
-                                                                calculationSuccess = false
-                                                            }
-                                                            firstSelected = true
-                                                            firstIsFocused = true
-                                                            secondIsFocused = false
-                                                        })
-                                                )
-                                                .frame(width: 280)
-                                            RoundedRectangle(cornerRadius: 25.0)
-                                                .stroke(firstSelected ? Color.accentColor : .clear, lineWidth: 1)
-                                                .frame(width: 280, height: 40)
-                                        }
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 25.0)
-                                                .frame(width: 280, height: 40)
-                                                .foregroundStyle(.color1)
-                                                .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
-                                                .overlay(
-                                                    TextField("arrivée", text: $viewModel.arrivalSearchText)
-                                                        .focused($secondIsFocused)
-                                                        .padding(.leading)
-                                                        .overlay(
-                                                                            Button(action: {
-                                                                                if viewModel.departureSearchText.isEmpty && !firstSelected && showCloseStops {
-                                                                                    showCloseStops = false
-                                                                                    calculationSuccess = false
-                                                                                } else if viewModel.arrivalSearchText.isEmpty && !firstSelected {
-                                                                                    locationManager.locationUpdateHandler = { location in
-                                                                                        if let userLocation = locationManager.userLocation {
-                                                                                            calculateClosestBusStops(from: userLocation, stops: stopStore.activeStops, nb: 6) { success, stops in
-                                                                                                if success {
-                                                                                                    closestStops = stops
-                                                                                                    calculationSuccess = true
-                                                                                                }
-                                                                                                showCloseStops = true
-                                                                                            }
-                                                                                        } else { print("error")}
-                                                                                    }
-                                                                                    locationManager.requestLocation()
-                                                                                } else if !viewModel.arrivalSearchText.isEmpty {
-                                                                                    viewModel.arrivalSearchText = ""
-                                                                                    firstSelected = false
-                                                                                    firstIsFocused = false
-                                                                                    secondIsFocused = true
-                                                                                }
-                                                                                  }) {
-                                                                                      if viewModel.departureSearchText.isEmpty && !firstSelected && showCloseStops {
-                                                                                          Image(systemName: "location.circle.fill").font(.title2)
-                                                                                      } else if viewModel.arrivalSearchText.isEmpty && !firstSelected {
-                                                                                          Image(systemName: "location.circle").font(.title2)
-                                                                                      } else if !viewModel.arrivalSearchText.isEmpty {
-                                                                                          Image(systemName: "xmark.circle.fill").font(.title2)
-                                                                                      }
-                                                                               }
-                                                                            .padding(),
-                                                                            alignment: .trailing
-                                                                        )
-                                                        .onTapGesture(perform: {
-                                                            if firstSelected {
-                                                                showCloseStops = false
-                                                                calculationSuccess = false
-                                                            }
-                                                            firstSelected = false
-                                                            firstIsFocused = false
-                                                            secondIsFocused = true
-                                                        })
-                                                )
-                                                .frame(width: 280)
-                                            RoundedRectangle(cornerRadius: 25.0)
-                                                .stroke(!firstSelected ? Color.accentColor : .clear, lineWidth: 1)
-                                                .frame(width: 280, height: 40)
-                                        }
-                                    }
-                                    Spacer()
-                                    Button {
-                                        viewModel.invertStops()
-                                    } label: {
-                                        Image(systemName: "arrow.triangle.swap")
-                                            .font(.title)
-                                    }
-                                }
-                                .padding(.vertical, 5)
-                                .padding(.horizontal)
-                                HStack {
-                                    DatePicker("Date et heure:", selection: $viewModel.selectedTime)
-                                        .padding(.trailing)
-                                    Button(action: {
-                                        viewModel.selectedTime = Date()
-                                    }) {
-                                        Image(systemName: "clock").font(.title2)
-                                    }
-                                }
-                                .padding(.vertical, 5)
-                                .padding(.horizontal)
-                                HStack {
-                                    Picker("Time Type", selection: $viewModel.isDepartureTime) {
-                                        Text("Départ").tag(true)
-                                        Text("Arrivée").tag(false)
-                                    }
-                                    .pickerStyle(.segmented)
-//                                    .frame(height: 40)
-                                    //.padding(.horizontal)
-                                    Button("Rechercher") {
-                                        searchTrips()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .onAppear(perform: {
-                                        if viewModel.departureStop != nil && viewModel.arrivalStop != nil {
-                                            tripManager.selectTrip(with: viewModel.departureStop!, with: viewModel.arrivalStop!, with: viewModel.selectedTime, with: viewModel.isDepartureTime)
-                                            tripDone = true
-                                            firstIsFocused = false
-                                            secondIsFocused = false
-                                        }
-                                    })
-                                }
-                                .padding(.vertical, 5)
-                                .padding(.horizontal)
-                            })
-                        .padding(.horizontal)
-                    Spacer()
-                }
-            }
-            .onAppear {
-                viewModel.selectedTime = Date()
-            }
-//        .transition(.truSlide)
+    enum Results {
+        case empty, favorites, search, closeStops, tripResults, loading, error
     }
     
-    private func adjustTime(byAdding minutes: Int) {
+    @State var results = Results.favorites
+    @State var timeAnimate = false
+    
+    var body: some View {
+        var hasDeparture = (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)
+        var hasArrival = (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil)
+        ZStack {
+            VStack {
+                    let resultsView = VStack {switch results {
+                    case .empty:
+                        ResultsEmptyView()
+                    case .favorites:
+//                        ListView()
+                        ResultsFavoritesView(viewModel: viewModel, results: $results)
+                            .environmentObject(recentSearchModel)
+                    case.search:
+                        ResultsSearchView(viewModel: viewModel, locationViewModel: locationViewModel, results: $results, focusField: $focusField)
+                            .environmentObject(recentSearchModel)
+                    case.closeStops:
+                        ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
+                    case.tripResults:
+                        ResultsTripView(viewModel: viewModel, tripManager: tripManager, showTime: $showTime, adjustTime: adjustTime, timeChange: timeChange, searchTrips: searchTrips)
+                    case.loading:
+                        Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
+                            .opacity(0)
+                            .frame(height: 50)
+                        
+                            Text("Chargement...")
+                    case.error:
+                        Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
+                            .opacity(0)
+                            .frame(height: 50)
+                        
+                            Text("Erreur, pas d'itinéraires trouvés")
+                    }
+                }
+                if #available(iOS 26, *) {
+                    ScrollView {
+                        resultsView
+                    }
+                    .scrollEdgeEffectStyle(.soft, for: .top)
+//                    .scrollDismissesKeyboard(.immediately)
+//                    .contentMargins(.top, 320.0, for: .automatic)
+                    .contentMargins(.bottom, (results == .tripResults) ? 340 : (focusField != nil) ? 70 : 270, for: .automatic)
+                } else {
+                    ScrollView {
+                        resultsView
+                    }
+                    .scrollDismissesKeyboard(.immediately)
+                    .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? 340 : (focusField != nil) ? 70 : 270 , for: .automatic)
+                    .contentMargins(.bottom, appRequirementsClass.version26 ? 0: 75, for: .automatic)
+                }
+            }
+            .onChange(of: viewModel.selectedField) {
+                withAnimation {
+//                    focusField = nil
+                    if (viewModel.departureSearchText == viewModel.departureStop?.name && viewModel.selectedField == .departure) || (viewModel.arrivalSearchText == viewModel.arrivalStop?.name && viewModel.selectedField == .arrival) {
+                        results = Results.empty
+                        if viewModel.selectedField != nil {
+                            viewModel.selectedField = nil
+                        }
+                    } else {
+                        results = Results.favorites
+                    }
+                }
+            }
+//            .onChange(of: showSearchField) {
+//                if showSearchField {
+//                    focusField = nil
+//                }
+//            }
+            .onChange(of: focusField) {
+                withAnimation {
+                    if focusField == .arrival {
+                        viewModel.selectedField = .arrival
+                    } else if focusField == .departure {
+                        viewModel.selectedField = .departure
+                    } else if focusField == nil {
+                        if !hasDeparture {
+                            viewModel.departureSearchText = ""
+                        }
+                        if !hasArrival {
+                            viewModel.arrivalSearchText = ""
+                        }
+                    }
+                }
+            }
+            .onChange(of: viewModel.departureSearchText) {
+                locationViewModel.searchQuery = viewModel.departureSearchText
+                stopStore.searchText = viewModel.departureSearchText
+            }
+            .onChange(of: viewModel.arrivalSearchText) {
+                locationViewModel.searchQuery = viewModel.arrivalSearchText
+                stopStore.searchText = viewModel.arrivalSearchText
+            }
+            .onChange(of: tripManager.tripEvents) {
+                withAnimation {
+                    if !tripManager.tripEvents.isEmpty {
+                        results = Results.tripResults
+                    }
+                }
+            }
+            .onChange(of: tripManager.tripError) {
+                withAnimation {
+                    if tripManager.tripError {
+                        results = Results.error
+                    }
+                }
+            }
+            .onChange(of: viewModel.tripDone) {
+                withAnimation {
+                    if viewModel.tripDone {
+                        results = Results.loading
+                    } else {
+                        results = Results.favorites
+                        tripManager.tripEvents.removeAll()
+                    }
+                }
+            }
+            .onAppear(perform: {
+                showTime = timeDefault
+                if !viewModel.tripDone {
+                    viewModel.selectedTime = Date()
+                    viewModel.isArrivalTime = false
+                    results = Results.favorites
+                }
+                if viewModel.quickTrip && !viewModel.tripDone {
+                    print("TripViewAppear: quickTrip")
+                    
+                    locationManager.requestLocation { location in
+                        guard let userLocation = locationManager.userLocation else {
+                            print("error")
+                            return
+                        }
+                        
+                        let coordinate = CLLocationCoordinate2D(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
+//                                           print(coordinate)
+                        
+                        viewModel.departureGeoPosition = GeoPosition(name: "Ma position", coordinate: coordinate)
+                        viewModel.geoDeparture = true
+                        viewModel.departureSearchText = "Ma position"
+                        
+                        locationManager.locationUpdateHandler = nil
+                        
+                        viewModel.selectedTime = Date()
+                        viewModel.isArrivalTime = false
+                        
+                        tripManager.tripEvents.removeAll()
+                        tripManager.selectTrip(with: viewModel.departureStop, with: viewModel.departureGeoPosition, with: viewModel.geoDeparture, with: viewModel.arrivalStop, with: viewModel.arrivalGeoPosition, with: viewModel.geoArrival, with: viewModel.selectedTime, with: viewModel.isArrivalTime)
+                        viewModel.tripDone = true
+//                        results = Results.tripResults
+                        viewModel.quickTrip = false
+                    }
+                }
+                if viewModel.quickTrip && viewModel.tripDone {
+                    print("TripViewAppear: quickTrip && tripDone")
+                    withAnimation {
+                        results = Results.loading
+                    }
+                }
+                print(results)
+            })
+            
+            VStack(spacing: 0) {
+                Spacer()
+                //Previous and next buttons
+                if results == .tripResults {
+                    HStack {
+                        Spacer()
+                        if #available(iOS 26, *) {
+//                            HStack {
+//                                Button(action: {
+//                                    withAnimation {
+//                                        adjustTime(byAdding: -timeChange())
+//                                        searchTrips()
+//                                    }
+//                                }) {
+//                                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
+//                                        .padding()
+//                                        .symbolEffect(.bounce.up.byLayer, value: viewModel.selectedTime)
+//                                }
+//                                Button(action: {
+//                                    withAnimation {
+//                                        adjustTime(byAdding: timeChange())
+//                                        searchTrips()
+//                                    }
+//                                }) {
+//                                    Image(systemName: "text.line.last.and.arrowtriangle.forward")
+//                                        .padding()
+//                                        .symbolEffect(.bounce.down.byLayer, value: viewModel.selectedTime)
+//                                }
+//                            }
+                            AdjustTimeButton(moveTime: moveTime)
+                            .foregroundStyle(.primary)
+                            .glassEffect(.regular.interactive())
+                        } else {
+//                            HStack {
+//                                Button(action: {
+//                                    withAnimation {
+//                                        adjustTime(byAdding: -timeChange())
+//                                        searchTrips()
+//                                    }
+//                                }) {
+//                                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
+//                                        .padding()
+//                                }
+//                                Button(action: {
+//                                    withAnimation {
+//                                        adjustTime(byAdding: timeChange())
+//                                        searchTrips()
+//                                    }
+//                                }) {
+//                                    Image(systemName: "text.line.last.and.arrowtriangle.forward")
+//                                        .padding()
+//                                }
+//                            }
+                            AdjustTimeButton(moveTime: moveTime)
+                            .background {
+                                Capsule()
+                                    .foregroundStyle(.ultraThinMaterial)
+                                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 10)
+//                    .opacity(results == .tripResults ? 1 : 0)
+                    .background {
+                        VStack {
+                            Spacer()
+                            BackdropBlurView(radius: 1)
+                                .frame(height: 20)
+                                .mask {
+                                    Rectangle()
+                                        .overlay(alignment: .top) {
+                                            ScrollMask(leading: false, vertical: true, gradientLength: 20)
+                                        }
+                                }
+                        }
+                    }
+                }
+                Group {
+                    let switchButton = Button {
+                        withAnimation {
+                            switchAnimate.toggle()
+                            switchRotation.toggle()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                switchRotation.toggle()
+                                withAnimation {
+                                    switchAnimate.toggle()
+                                    viewModel.invertStops()
+                                    if viewModel.selectedField == .departure {
+                                        stopStore.searchText = viewModel.departureSearchText
+                                        viewModel.selectedField = .arrival
+                                    } else if viewModel.selectedField == .arrival {
+                                        stopStore.searchText = viewModel.arrivalSearchText
+                                        viewModel.selectedField = .departure
+                                    }
+                                    viewModel.tripDone = false
+                                    results = Results.favorites
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.triangle.swap")
+                            .font(.title)
+                            .padding(10)
+                            .rotationEffect(.degrees(switchRotation ? 180 : 0))
+//                            .symbolEffect(.rotate, value: switchRotation)
+                    }
+                    VStack(spacing: 10) {
+                        if #available(iOS 26, *) {
+                            GlassEffectContainer {
+                                HStack {
+                                    VStack(spacing: 10) {
+                                        if focusField != .arrival {
+                                            HStack {
+                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
+                                                    .frame(height: 40)
+                                                    .glassEffect(.regular.interactive())
+                                                    .glassEffectID("departure", in: animation)
+                                                
+                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.departureSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
+                                                    .frame(width: 40, height: 40)
+                                                    .glassEffect(.regular.interactive())
+                                                    .glassEffectID("departureButton", in: animation)
+                                            }
+                                            .padding(.vertical, focusField == .departure ? 10 : 0)
+                                            .offset(y: switchAnimate ? 25 : 0)
+                                        }
+                                        if focusField != .departure {
+                                            HStack {
+                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
+                                                    .frame(height: 40)
+                                                    .glassEffect(.regular.interactive())
+                                                    .glassEffectID("arrival", in: animation)
+                                                
+                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrivalSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
+                                                    .frame(width: 40, height: 40)
+                                                    .glassEffect(.regular.interactive())
+                                                    .glassEffectID("arrivalButton", in: animation)
+                                            }
+                                            .padding(.vertical, focusField == .arrival ? 10 : 0)
+                                            .offset(y: switchAnimate ? -25 : 0)
+                                        }
+                                    }
+                                    if focusField == nil {
+                                        switchButton
+                                            .frame(width: 60, height: 60)
+                                            .glassEffect(.regular.interactive())
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+//                            .padding(.top, 20)
+                        } else {
+                                HStack {
+                                    VStack(spacing: 10) {
+                                        if focusField != .arrival {
+                                            HStack {
+                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
+                                                    .frame(height: 40)
+                                                    .background {
+                                                        Capsule()
+                                                            .foregroundStyle(.ultraThinMaterial)
+                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                                    }
+                                                
+                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.departureSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
+                                                    .frame(width: 40, height: 40)
+                                                    .background {
+                                                        Capsule()
+                                                            .foregroundStyle(.ultraThinMaterial)
+                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                                    }
+                                            }
+                                            .padding(.vertical, focusField == .departure ? 10 : 0)
+                                            .offset(y: switchAnimate ? 25 : 0)
+                                        }
+                                        if focusField != .departure {
+                                            HStack {
+                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
+                                                    .frame(height: 40)
+                                                    .background {
+                                                        Capsule()
+                                                            .foregroundStyle(.ultraThinMaterial)
+                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                                    }
+                                                
+                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrivalSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
+                                                    .frame(width: 40, height: 40)
+                                                    .background {
+                                                        Capsule()
+                                                            .foregroundStyle(.ultraThinMaterial)
+                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                                    }
+                                            }
+                                            .padding(.vertical, focusField == .arrival ? 10 : 0)
+                                            .offset(y: switchAnimate ? -25 : 0)
+                                        }
+                                    }
+                                    if focusField == nil {
+                                        switchButton
+                                            .frame(width: 60, height: 60)
+                                            .background {
+                                                Capsule()
+                                                    .foregroundStyle(.ultraThinMaterial)
+                                                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                            }
+                                    }
+                                }
+                                .padding(.horizontal)
+                        }
+                        
+                        let bottomTripSearch = VStack(spacing: 15) {
+                            
+                            HStack {
+                                DatePicker(selection: $viewModel.selectedTime) {
+                                    Text("Date et heure:")
+                                }
+                                .padding(.trailing, 5)
+                                Button(action: {
+                                    viewModel.selectedTime = Date()
+                                    viewModel.tripDone = false
+                                    timeAnimate.toggle()
+                                }) {
+                                    Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                                        .symbolEffect(.rotate, value: timeAnimate)
+                                        .font(.title2)
+                                }
+                            }
+                            
+                            
+                            if #available(iOS 26, *) {
+                                HStack {
+                                    Picker("", selection: $viewModel.isArrivalTime) {
+                                        Text("Départ").tag(false)
+                                        Text("Arrivée").tag(true)
+                                    }
+                                    .pickerStyle(.segmented)
+                                    Button {
+                                        
+                                        if (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil) &&  (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil) {
+                                            withAnimation {
+                                                searchTrips()
+                                                viewModel.tripDone = true
+                                            }
+                                        }
+                                    } label: {
+                                        Text("Rechercher")
+                                            .foregroundStyle(.white)
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal)
+                                            .glassEffect(.regular.tint(.accentColor).interactive())
+                                    }
+                                }
+                            } else {
+                                HStack {
+                                    CustomPicker(secondSelected: $viewModel.isArrivalTime, height: 45, firstOption: String(localized: "Départ"), firstIcon: nil, secondOption: String(localized: "Arrivée"), secondIcon: nil, animation: animation)
+                                        .frame(width: 220)
+                                    
+                                    Button {
+                                        if (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil) &&  (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil) {
+                                            searchTrips()
+                                            viewModel.tripDone = true
+                                        }
+                                    } label: {
+                                        Capsule()
+                                            .fill(.accent)
+                                            .shadow(color: Color.customShadows, radius: 1, y: 0.8)
+                                            .frame(width: 110, height: 45)
+                                            .overlay(Text("Rechercher").foregroundStyle(.white))
+                                    }
+                                }
+                            }
+                        }
+                            .padding()
+                            .onAppear(perform: {
+                                if !tripManager.tripEvents.isEmpty {
+                                    print("changed to tripResults")
+                                    withAnimation {
+                                        results = Results.tripResults
+                                    }
+                                }
+                            })
+                        if focusField == nil {
+                            if #available(iOS 26, *) {
+                                bottomTripSearch
+                                    .glassEffect(in: .rect(cornerRadius: 35))
+                                //                                .shadow(color: Color.black.opacity(0.05), radius: 20)
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 20)
+                            } else {
+                                bottomTripSearch
+                                    .background {
+                                        RoundedRectangle(cornerRadius: 35.0)
+                                            .foregroundStyle(.ultraThinMaterial)
+                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                                    }
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 70)
+                            }
+                        }
+                    }
+//                    .shadow(color: .black.opacity(0.08), radius: 15)
+                    .background {
+                        ZStack {
+                            Rectangle()
+                                .foregroundStyle(.customBackground)
+                                .opacity(0.5)
+                                .blur(radius: 10)
+                            BackdropBlurView(radius: 1)
+                            
+                        }
+                    }
+                }
+            }
+        }
+        .navigationDestination(isPresented: $showTripDetail) {
+            if let trip = selectedSavedTrip {
+                FullTripView(fullTrip: trip)
+                    .environmentObject(savedTripsModel)
+            }
+        }
+        .sheet(isPresented: $showSavedTrips) {
+            SavedTripsView(isPresented: $showSavedTrips, onTripSelected: { trip in
+                selectedSavedTrip = trip
+                showTripDetail = true
+                showSavedTrips = false
+            })
+                .environmentObject(savedTripsModel)
+                .environmentObject(regularTripsModel)
+                .presentationDetents([.fraction(0.99)])
+                .presentationCornerRadius(35)
+                .presentationBackground(.thinMaterial)
+        }
+        .navigationTitle("Itinéraire") // Set back button text
+//        .navigationBarTitleDisplayMode(.inline)
+//        .toolbar {
+//            ToolbarItem(placement: .principal) {
+//                Text("") // Visible title
+//            }   
+//        }
+//        .toolbar(.hidden, for: .navigationBar)
+        .toolbar {
+            HStack {
+                if results == .tripResults {
+                    ShowTimeButton(showTime: $showTime)
+                        .padding(.trailing, 5)
+                }
+                Button {
+                    self.showSavedTrips.toggle()
+                } label: {
+                    Image("scurvepath.stack.fill")
+                        .foregroundColor(appRequirementsClass.version26 ? Color.text : .accent)
+                        .symbolEffect(.bounce, value: showSavedTrips)
+                        .scaleEffect(0.9)
+                        .padding(.trailing, appRequirementsClass.version26 && results == .tripResults ? 10 : 0)
+                }
+                .frame(width: appRequirementsClass.version26 ? 30 : 40, height: 30)
+            }
+            .background {
+                Capsule()
+                    .frame(height: 40)
+                    .foregroundStyle(.ultraThinMaterial)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                    .opacity(appRequirementsClass.version26 ? 0 : 1)
+                    .offset(x: 4)
+            }
+        }
+    }
+    
+    struct ResultsFavoritesView: View {
+        @EnvironmentObject var stopStore: StopStore
+        @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+        @ObservedObject var viewModel: ItineraryViewModel
+        @EnvironmentObject var recentSearchModel: RecentSearch
+        @Binding var results: Results
+
+        var body: some View {
+            VStack {
+                if !favoritesViewModel.favoriteStops.isEmpty {
+                    HStack {
+                        Text("Favoris")
+                            .font(.title3).bold()
+                        Spacer()
+                    }
+                }
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ], spacing: 10) {
+                    ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
+                        Button(action: {
+                            withAnimation {
+                                let geoPosition = GeoPosition(name: stop.name, coordinate: CLLocationCoordinate2D(latitude: Double(stop.wgs84Coordinates.lat), longitude: Double(stop.wgs84Coordinates.lon)))
+                                if viewModel.selectedField == .departure {
+                                    viewModel.departureStop = stop
+                                    viewModel.departureSearchText = stop.name
+                                    viewModel.geoDeparture = false
+                                    viewModel.departureGeoPosition = geoPosition
+                                    viewModel.selectedField = .arrival
+                                    results = Results.favorites
+                                    viewModel.tripDone = false
+                                } else if viewModel.selectedField == .arrival {
+                                    viewModel.arrivalStop = stop
+                                    viewModel.arrivalSearchText = stop.name
+                                    viewModel.geoArrival = false
+                                    viewModel.arrivalGeoPosition = geoPosition
+                                    viewModel.selectedField = .departure
+                                    results = Results.favorites
+                                    viewModel.tripDone = false
+                                }
+                            }
+                        }){
+                            BasicLocationView(name: stop.name, transportType: stop.meansOfTransport)
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                }
+                if !recentSearchModel.searchItems.isEmpty {
+                    RecentSearchFavoritesView(recentSearchModel: recentSearchModel, viewModel: viewModel, results: $results)
+                }
+            }
+            .padding(.horizontal, 30)
+        }
+    }
+    
+    struct ResultsSearchView: View {
+        @EnvironmentObject var stopStore: StopStore
+        @ObservedObject var viewModel: ItineraryViewModel
+        @ObservedObject var locationViewModel: LocationSearchViewModel
+        @EnvironmentObject var recentSearchModel: RecentSearch
+        @Binding var results: Results
+        @StateObject var locationManager = LocationManager()
+        
+        
+        @State private var showMap = false
+        @State private var resultCoordinates: CLLocationCoordinate2D?
+        @State private var resultTitle: String?
+        @State private var resultDetail: searchResultItem?
+        @State private var locationSearch = false
+        
+        var focusField: FocusState<TripField?>.Binding
+        
+        var body: some View {
+                LazyVStack {
+                    Picker("", selection: $locationSearch) {
+                        Text("Arrêts").tag(false)
+                        Text("Lieux").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                    if !locationSearch {
+                        if !stopStore.filteredStops.isEmpty {
+                            HStack {
+                                Text("Arrêts")
+                                    .font(.title3).bold()
+                                Spacer()
+                            }
+                            .padding(.horizontal, 30)
+                        }
+                        ForEach(stopStore.filteredStops) { stop in
+                            Button(action: {
+                                let geoPosition = GeoPosition(name: stop.name, coordinate: CLLocationCoordinate2D(latitude: Double(stop.wgs84Coordinates.lat), longitude: Double(stop.wgs84Coordinates.lon)))
+                                withAnimation {
+                                    if viewModel.selectedField == .departure {
+                                        viewModel.departureStop = stop
+                                        viewModel.departureSearchText = stop.name
+                                        viewModel.geoDeparture = false
+                                        viewModel.departureGeoPosition = geoPosition
+                                        viewModel.selectedField = .arrival
+                                    } else {
+                                        viewModel.arrivalStop = stop
+                                        viewModel.arrivalSearchText = stop.name
+                                        viewModel.geoArrival = false
+                                        viewModel.arrivalGeoPosition = geoPosition
+                                        viewModel.selectedField = .departure
+                                    }
+                                    results = Results.favorites
+                                    viewModel.tripDone = false
+                                    focusField.wrappedValue = nil
+                                    recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
+                                    stopStore.searchText = ""
+                                }
+                            }) {
+                                BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
+                                    resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
+                                    resultTitle = stop.name
+                                })
+                                .padding(.horizontal, 30)
+                            }
+                            .foregroundStyle(.primary)
+                        }
+                    } else {
+                        HStack {
+                            Text("Lieux")
+                                .font(.title3).bold()
+                                .padding(.top)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 30)
+                        ForEach(locationViewModel.searchResults, id: \.self) { result in
+                            Button(action: {
+                                self.locationViewModel.getCoordinate(for: result) { coordinate in
+                                    if let coordinate = coordinate {
+                                        withAnimation {
+                                            if viewModel.selectedField == .departure {
+                                                viewModel.departureGeoPosition = GeoPosition(name: result.title, coordinate: coordinate)
+                                                viewModel.geoDeparture = true
+                                                viewModel.departureSearchText = result.title
+                                                viewModel.selectedField = .arrival
+                                            } else if viewModel.selectedField == .arrival {
+                                                viewModel.arrivalGeoPosition = GeoPosition(name: result.title, coordinate: coordinate)
+                                                viewModel.geoArrival = true
+                                                viewModel.arrivalSearchText = result.title
+                                                viewModel.selectedField = .departure
+                                            }
+                                            results = Results.favorites
+                                            viewModel.tripDone = false
+                                            focusField.wrappedValue = nil
+                                            stopStore.searchText = ""
+                                            recentSearchModel.add(name: "\(result.title);\(result.subtitle)", isStop: false, stop: nil, geoCoordinates: coordinate.toCoordinates)
+                                        }
+                                    }
+                                }
+                            }) {
+                                BasicLocationView(name: result.title, subtitle: result.subtitle, isGeoPosition: true, showButton: true, favoriteAction:  {
+                                    self.locationViewModel.getCoordinate(for: result) { coordinate in
+                                        resultDetail = searchResultItem(title: result.title, coordinates: coordinate ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
+                                    }
+                                })
+                            }
+                            .padding(.horizontal, 30)
+                            .foregroundStyle(.primary)
+                            
+                        }
+                    }
+                }
+                .sheet(item: $resultDetail) { detail in
+                    MapPreview(resultDetail: detail, position: .region(MKCoordinateRegion(center: detail.coordinates, span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007))))
+                        .presentationDetents([.medium, .fraction(0.9)])
+                        .presentationCornerRadius(35)
+                }
+        }
+    }
+    
+    struct ResultsCloseStopsView: View {
+        @EnvironmentObject var stopStore: StopStore
+        @ObservedObject var viewModel: ItineraryViewModel
+        
+        @Binding var calculationSuccess: Bool
+        @Binding var showCloseStops: Bool
+        @Binding var closestStops: [Stop]
+        @Binding var results: Results
+                
+        @StateObject var locationManager = LocationManager()
+        
+        @State private var showMap = false
+        @State private var resultCoordinates: CLLocationCoordinate2D?
+        @State private var resultTitle: String?
+        @State private var resultDetail: searchResultItem?
+        
+        var body: some View {
+            if calculationSuccess {
+                if showCloseStops {
+                    if !closestStops.isEmpty {
+                        LazyVStack {
+                            Button {
+                                locationManager.requestLocation { location in
+                                    guard let userLocation = locationManager.userLocation else {
+                                        print("error")
+                                        return
+                                    }
+                                    
+                                    let coordinate = CLLocationCoordinate2D(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
+                                    withAnimation {
+                                        if viewModel.selectedField == .departure {
+                                            // Execute only when selectedTextField is 1
+                                            viewModel.departureGeoPosition = GeoPosition(name: "Ma position", coordinate: coordinate)
+                                            viewModel.geoDeparture = true
+                                            viewModel.departureSearchText = "Ma position"
+                                            results = Results.favorites
+                                            showCloseStops = false
+                                            calculationSuccess = false
+                                            viewModel.selectedField = .arrival
+                                            viewModel.tripDone = false
+                                        } else if viewModel.selectedField == .arrival {
+                                            // Execute only when selectedTextField is 2
+                                            viewModel.arrivalGeoPosition = GeoPosition(name: "Ma position", coordinate: coordinate)
+                                            viewModel.geoArrival = true
+                                            viewModel.arrivalSearchText = "Ma position"
+                                            results = Results.favorites
+                                            showCloseStops = false
+                                            calculationSuccess = false
+                                            viewModel.selectedField = .departure
+                                            viewModel.tripDone = false
+                                        }
+                                    }
+                                    
+                                    // Clear the location update handler after executing the action
+                                    locationManager.locationUpdateHandler = nil
+                                }
+                            } label: {
+//                                RoundedRectangle(cornerRadius: 20)
+                                BasicElement()
+                                    .frame(height: 45)
+                                    .overlay(
+                                        HStack {
+                                            Text("Utiliser la position actuelle")
+                                            Spacer()
+                                            Image(systemName: "location.circle").font(.title2).foregroundStyle(.accent)
+                                        }
+                                            .padding(.horizontal, 20)
+                                    )
+                                    .padding(.horizontal, 30)
+                            }
+                            HStack {
+                                Text("Arrêts à proximité")
+                                    .font(.title3).bold()
+                                    .padding(.top)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 30)
+                            ForEach(closestStops, id: \.id) { stop in
+                                Button(action: {
+                                    let geoPosition = GeoPosition(name: stop.name, coordinate: CLLocationCoordinate2D(latitude: Double(stop.wgs84Coordinates.lat), longitude: Double(stop.wgs84Coordinates.lon)))
+                                    withAnimation {
+                                        if viewModel.selectedField == .departure {
+                                            viewModel.departureStop = stop
+                                            viewModel.departureSearchText = stop.name
+                                            viewModel.geoDeparture = false
+                                            viewModel.departureGeoPosition = geoPosition
+                                            viewModel.selectedField = .arrival
+                                            showCloseStops = false
+                                            calculationSuccess = false
+                                            results = Results.favorites
+                                            viewModel.tripDone = false
+                                        } else if viewModel.selectedField == .arrival {
+                                            viewModel.arrivalStop = stop
+                                            viewModel.arrivalSearchText = stop.name
+                                            viewModel.geoArrival = false
+                                            viewModel.arrivalGeoPosition = geoPosition
+                                            viewModel.selectedField = .departure
+                                            showCloseStops = false
+                                            calculationSuccess = false
+                                            results = Results.favorites
+                                            viewModel.tripDone = false
+                                        }
+                                    }
+                                }) {
+                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
+                                        resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
+                                        resultTitle = stop.name
+                                    })
+                                }
+                                .padding(.horizontal, 30)
+                                .foregroundStyle(.primary)
+                            }
+                        }
+                        .sheet(item: $resultDetail) { detail in
+                            MapPreview(resultDetail: detail, position: .region(MKCoordinateRegion(center: detail.coordinates, span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007))))
+                                .presentationDetents([.medium, .fraction(0.9)])
+                                .presentationCornerRadius(35)
+                        }
+                    } else {
+                        Text("Pas d'arrêts trouvés à proximité")
+                    }
+                } else {
+                    Text("Chargement...")
+                }
+            }
+            
+        }
+    }
+    
+    struct ResultsTripView: View {
+        @ObservedObject var viewModel: ItineraryViewModel
+        
+        @ObservedObject var tripManager: TripManager
+        @EnvironmentObject var savedTripsModel: SavedTripsModel
+        @Binding var showTime: Bool
+        
+        let adjustTime: (Int) -> Void
+        let timeChange: () -> Int
+        let searchTrips: () -> Void
+        
+        var body: some View {
+            LazyVStack(spacing: 5) {
+
+                ForEach(tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime }), id: \.id) { event in
+                        NavigationLink {
+                            FullTripView(fullTrip: event)
+//                                .environmentObject(savedTripsModel)
+                        } label: {
+                            BasicElement()
+                            .padding(4)
+                            .frame(height: 80)
+//                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+                            .overlay(
+                                TripElementView(event: event, showTime: showTime)
+                                    .padding(.horizontal, 20)
+                            )
+                            
+//                            TripElementView(event: event, showTime: showTime)
+//                                .padding(.horizontal)
+//                                .background {
+//                                    Capsule()
+//                                    .fill(.thinMaterial)
+//                                    .frame(height: 80)
+//                                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+//                                }
+                    }
+                    .foregroundStyle(.primary)
+                    .contentShape(.contextMenuPreview, Capsule())
+                    .padding(.horizontal, 25)
+                    .contextMenu {
+                        if savedTripsModel.tripIsSaved(event) {
+                            Button(action: {
+                                savedTripsModel.removeTrip(event)
+                            }) {
+                                Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
+                            }
+                        } else {
+                            Button(action: {
+                                savedTripsModel.addTrip(event)
+                            }) {
+                                Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
+                            }
+                        }
+                    } preview: {
+                        TripMapView(tripEvent: event, isPreview: true)
+                            .frame(width: UIScreen.main.bounds.width, height: 300)
+                    }
+                }
+            }
+        }
+    }
+    
+    struct ResultsEmptyView: View {
+        var body: some View {
+            Spacer()
+        }
+    }
+    
+    struct CustomTextField: View {
+        @ObservedObject var viewModel: ItineraryViewModel
+        @Binding var text: String
+        @Binding var results: Results
+        
+        var focus: FocusState<Bool>.Binding
+        var fieldNumber: Int
+        var emptyText: String
+        
+        var body: some View {
+            let textFieldSelected = viewModel.selectedTextField == fieldNumber
+            let hasSelection = (fieldNumber == 1 && (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)) || (fieldNumber == 2 && (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil))
+            ZStack {
+                HStack {
+                    if hasSelection && !focus.wrappedValue {
+                        if fieldNumber == 1 {
+                            Image(systemName: viewModel.geoDeparture ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2)
+                        } else if fieldNumber == 2 {
+                            Image(systemName: viewModel.geoArrival ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2)
+                        }
+                    } else {
+                        Image(systemName: "magnifyingglass").opacity(textFieldSelected ? 1 : 0.2)
+                    }
+                    //                    TextField(emptyText, text: $text)
+                    if text.isEmpty {
+                        Text(emptyText)
+                            .opacity(0.4)
+                    } else {
+                        Text(text)
+                    }
+                    Spacer()
+                }
+//                        .autocorrectionDisabled(true)
+//                        .focused(focus)
+                        .onChange(of: text) {
+                            if viewModel.selectedTextField == fieldNumber {
+                                if hasSelection && !focus.wrappedValue {
+                                    results = Results.empty
+                                } else if !text.isEmpty {
+                                    results = Results.search
+                                } else if text.isEmpty {
+                                    results = Results.favorites
+                                }
+                            }
+                        }
+                .mask {
+                    Rectangle()
+                        .overlay(alignment: .trailing) {
+                            ScrollMask(leading: false, vertical: false, gradientLength: 40)
+                        }
+                        .padding(.trailing, 20)
+                }
+
+                .padding(.horizontal, 15)
+                
+//                    RoundedRectangle(cornerRadius: 17)
+                Capsule()
+                        .stroke(textFieldSelected ? .accent : .gray.opacity(0.3), lineWidth: 2)
+                        .shadow(color: textFieldSelected ? Color.customShadows2 : .clear, radius: 2, y: 1.5)
+            }
+            .frame(height: 40)
+        }
+    }
+    
+    struct TripFieldButton: View {
+        @ObservedObject var viewModel: ItineraryViewModel
+        @Binding var searchText: String
+        @Binding var showCloseStops: Bool
+        @Binding var calculationSuccess: Bool
+        @Binding var closestStops: [Stop]
+        @Binding var results: Results
+        
+        var focusField: FocusState<TripField?>.Binding
+        
+        
+        var field: TripField
+        
+        @StateObject var locationManager = LocationManager()
+        @EnvironmentObject var stopStore: StopStore
+        
+        var body: some View {
+            if searchText.isEmpty && viewModel.selectedField == field {
+                Button(action: {
+                    if !showCloseStops {
+                        withAnimation {
+                            results = Results.closeStops
+                            focusField.wrappedValue = nil
+                        }
+                    } else {
+                        withAnimation {
+                            results = Results.favorites
+                        }
+                    }
+                    showCloseStops.toggle()
+                    if showCloseStops {
+                        locationManager.requestLocation { location in
+                            if let userLocation = locationManager.userLocation {
+                                calculateClosestBusStops(from: userLocation, stops: stopStore.activeStops, nb: 6) { success, stops in
+                                    if success {
+                                        closestStops = stops
+                                        calculationSuccess = true
+                                    }
+                                }
+                            } else { print("error")}
+                            locationManager.locationUpdateHandler = nil
+                        }
+                    }
+                }) {
+                    Image(systemName: (showCloseStops ? "location.fill" :  "location")).font(.title3)
+                }
+            } else if !searchText.isEmpty {
+                Button(action: {
+                    withAnimation {
+                        searchText = ""
+                        viewModel.selectedField = field
+                        viewModel.tripDone = false
+                        if field == .departure {
+                            viewModel.departureStop = nil
+                            viewModel.departureGeoPosition = nil
+                            viewModel.geoDeparture = false
+                        } else if field == .arrival {
+                            viewModel.arrivalStop = nil
+                            viewModel.arrivalGeoPosition = nil
+                            viewModel.geoArrival = false
+                        }
+                    }
+                }) {
+                    Image(systemName: "xmark").font(.title2)
+                }
+            }
+        }
+    }
+    struct CloseStopButton: View {
+        var body: some View {
+            
+        }
+    }
+    struct TripPointField: View {
+        @ObservedObject var viewModel: ItineraryViewModel
+        @Binding var results: Results
+        var focusField: FocusState<TripField?>.Binding
+
+        var field: TripField
+        
+        var body: some View {
+            let selected = viewModel.selectedField == field
+            let hasSelection = (field == .departure && (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)) || (field == .arrival && (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil))
+            ZStack {
+                HStack {
+                    HStack {
+                        if hasSelection && focusField.wrappedValue != field {
+                            if field == .departure {
+                                Image(systemName: viewModel.geoDeparture ? "mappin.and.ellipse.circle" : "figure.wave.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(selected ? .accent : .primary)
+                            } else if field == .arrival {
+                                Image(systemName: viewModel.geoArrival ? "mappin.and.ellipse.circle" : "figure.wave.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(selected ? .accent : .primary)
+                            }
+                        } else {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(selected ? .accent : .primary.opacity(0.2))
+                        }
+                        if field == .arrival {
+                            TextField("Destination", text: $viewModel.arrivalSearchText)
+                            //                            .frame(height: size)
+                                .focused(focusField, equals: .arrival)
+                            //                            .opacity(focusField.wrappedValue == .arrival ? 1:0)
+                                .onChange(of: viewModel.arrivalSearchText) {
+                                    if selected {
+                                        if hasSelection && focusField.wrappedValue == nil {
+                                            results = Results.empty
+                                        } else if !viewModel.arrivalSearchText.isEmpty {
+                                            results = Results.search
+                                        } else if viewModel.arrivalSearchText.isEmpty {
+                                            results = Results.favorites
+                                        }
+                                    }
+                                }
+                        } else {
+                            TextField("Origine", text: $viewModel.departureSearchText)
+                            //                            .frame(height: size)
+                                .focused(focusField, equals: .departure)
+                            //                            .opacity(focusField.wrappedValue == .departure ? 1:0)
+                                .onChange(of: viewModel.departureSearchText) {
+                                    if selected {
+                                        if hasSelection && focusField.wrappedValue == nil {
+                                            results = Results.empty
+                                        } else if !viewModel.departureSearchText.isEmpty {
+                                            results = Results.search
+                                        } else if viewModel.departureSearchText.isEmpty {
+                                            results = Results.favorites
+                                        }
+                                    }
+                                }
+                        }
+                        //                    if text.isEmpty {
+                        ////                        Text(emptyText)
+                        ////                            .opacity(0.4)
+                        //                        TextField
+                        //                    } else {
+                        ////                        Text(text)
+                        //                    }
+                        Spacer()
+                    }
+                    
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .trailing) {
+                                ScrollMask(leading: false, vertical: false, gradientLength: 40)
+                            }
+                            .padding(.trailing, 20)
+                    }
+                    if selected {
+                        Image(systemName: "record.circle.fill")
+                            .foregroundStyle(.accent)
+                    }
+                }
+                .onTapGesture {
+                    withAnimation {
+                        focusField.wrappedValue = field
+                        viewModel.selectedField = field
+                        
+                        if viewModel.geoArrival {
+                            viewModel.arrivalSearchText = viewModel.arrivalGeoPosition?.name ?? ""
+                        } else {
+                            viewModel.arrivalSearchText = viewModel.arrivalStop?.name ?? ""
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+//                Capsule()
+//                        .stroke(textFieldSelected ? .accent : .gray.opacity(0.3), lineWidth: 2)
+//                        .shadow(color: textFieldSelected ? Color.customShadows2 : .clear, radius: 2, y: 1.5)
+            }
+        }
+    }
+    
+    struct SearchField: View {
+        @ObservedObject var viewModel: ItineraryViewModel
+
+        var focusField: FocusState<TripField?>.Binding
+        @Binding var showSearchField: Bool
+        
+        var size: CGFloat = 20
+        
+        var body: some View {
+            HStack {
+               let search = ZStack {
+                    TextField("Arrivée", text: $viewModel.arrivalSearchText)
+                       .frame(height: size)
+                        .focused(focusField, equals: .arrival)
+                        .opacity(focusField.wrappedValue == .arrival ? 1:0)
+                    TextField("Départ", text: $viewModel.departureSearchText)
+                       .frame(height: size)
+                        .focused(focusField, equals: .departure)
+                        .opacity(focusField.wrappedValue == .departure ? 1:0)
+                    
+                }
+                        let button = Button {
+                            focusField.wrappedValue = nil
+                            showSearchField = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .frame(width: size, height: size)
+                                .padding()
+                        }
+                if #available(iOS 26, *) {
+                    search
+                        .padding()
+                        .glassEffect()
+                    button
+                        .glassEffect()
+                } else {
+                    search
+                        .padding()
+                        .background {
+                            Capsule()
+                                .foregroundStyle(.thinMaterial)
+                        }
+                    button
+                        .background {
+                            Capsule()
+                                .foregroundStyle(.thinMaterial)
+                        }
+                }
+            }
+        }
+    }
+    
+    struct RecentSearchFavoritesView: View {
+        @ObservedObject var recentSearchModel: RecentSearch
+        @ObservedObject var viewModel: ItineraryViewModel
+        @Binding var results: Results
+        
+        @State private var showMap = false
+        @State private var resultCoordinates: CLLocationCoordinate2D?
+        @State private var resultTitle: String?
+        @State private var resultDetail: searchResultItem?
+        
+        var body: some View {
+            VStack(spacing: 10) {
+                HStack {
+                    Text("Recherches récentes")
+                        .font(.title3).bold()
+                        .padding(.top)
+                    Spacer()
+                }
+                ForEach(recentSearchModel.searchItems, id: \.self) { item in
+                    Button(action : {
+                        if item.isStop {
+                            if viewModel.selectedField == .departure {
+                                viewModel.departureStop = item.stop
+                                viewModel.departureSearchText = item.name
+                                viewModel.geoDeparture = false
+                                viewModel.selectedField = .arrival
+                            } else {
+                                viewModel.arrivalStop = item.stop
+                                viewModel.arrivalSearchText = item.name
+                                viewModel.geoArrival = false
+                                viewModel.selectedField = .departure
+                            }
+                            results = Results.favorites
+                            recentSearchModel.add(name: item.name, isStop: true, stop: item.stop, geoCoordinates: nil)
+                        } else {
+                            let title = item.name.split(separator: ";")
+                            let coordinates = item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
+                            if viewModel.selectedField == .departure {
+                                viewModel.departureGeoPosition = GeoPosition(name: String(title[0]), coordinate: coordinates)
+                                viewModel.geoDeparture = true
+                                viewModel.departureSearchText = String(title[0])
+                                viewModel.selectedField = .arrival
+                            } else if viewModel.selectedField == .arrival {
+                                viewModel.arrivalGeoPosition = GeoPosition(name: String(title[0]), coordinate: coordinates)
+                                viewModel.geoArrival = true
+                                viewModel.arrivalSearchText = String(title[0])
+                                viewModel.selectedField = .departure
+                            }
+                            results = Results.favorites
+                            viewModel.tripDone = false
+                            recentSearchModel.add(name: item.name, isStop: false, stop: nil, geoCoordinates: item.geoCoordinates)
+                        }
+                        
+                    }) {
+                        if item.isStop {
+                            BasicLocationView(name: item.name, showButton: true, favoriteAction:  {
+                                resultDetail = searchResultItem(title: item.name, coordinates: item.stop?.wgs84Coordinates.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
+                                resultTitle = item.name
+                            })
+                        } else {
+                            let title = item.name.split(separator: ";")
+                            BasicLocationView(name: String(title[0]), subtitle: String(title[1]), isGeoPosition: true, showButton: true, favoriteAction:  {
+                                resultDetail = searchResultItem(title: String(title[0]), coordinates:item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
+                            })
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
+            .sheet(item: $resultDetail) { detail in
+                MapPreview(resultDetail: detail, position: .region(MKCoordinateRegion(center: detail.coordinates, span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007))))
+                    .presentationDetents([.medium, .fraction(0.9)])
+                    .presentationCornerRadius(35)
+            }
+        }
+    }
+    
+    func adjustTime(byAdding minutes: Int) {
         if let newTimeRequest = Calendar.current.date(byAdding: .minute, value: minutes, to: viewModel.selectedTime) {
             viewModel.selectedTime = newTimeRequest
         } else {
@@ -546,347 +1618,388 @@ struct TripView: View {
         }
     }
     
-    private func timeChange() -> Int {
+    func timeChange() -> Int {
         let tripEventsSorted = tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime })
         let firstTime: Date = stringToDate(with: tripEventsSorted.first?.startTime ?? "") ?? Date()
         let lastTime: Date = stringToDate(with: tripEventsSorted.last?.startTime ?? "") ?? Date()
         let timeChange = lastTime.timeIntervalSince(firstTime)/60
-
+        
         return Int(timeChange)
     }
+    private func moveTime(previous: Bool) { //Move departures time earlier or later (with top and bottom buttons)
+        adjustTime(byAdding: previous ? -timeChange() : timeChange())
+        searchTrips()
+    }
     
-    private func searchTrips() {
-        if viewModel.departureStop != nil && viewModel.arrivalStop != nil {
-            tripManager.selectTrip(with: viewModel.departureStop!, with: viewModel.arrivalStop!, with: viewModel.selectedTime, with: viewModel.isDepartureTime)
-            tripDone = true
-            firstIsFocused = false
-            secondIsFocused = false
-                showCloseStops = false
-                calculationSuccess = false
+    func searchTrips() {
+        if ((viewModel.geoDeparture && viewModel.departureGeoPosition != nil) || viewModel.departureStop != nil) && ((viewModel.geoArrival && viewModel.arrivalGeoPosition != nil) || viewModel.arrivalStop != nil) {
+            print("searching for trips")
+            results = Results.loading
+            tripManager.tripEvents.removeAll()
+            tripManager.selectTrip(with: viewModel.departureStop, with: viewModel.departureGeoPosition, with: viewModel.geoDeparture, with: viewModel.arrivalStop, with: viewModel.arrivalGeoPosition, with: viewModel.geoArrival, with: viewModel.selectedTime, with: viewModel.isArrivalTime)
+            viewModel.tripDone = true
+            showCloseStops = false
+            calculationSuccess = false
+//            results = Results.tripResults
         }
     }
 }
-//extension UISegmentedControl {
-//    override open func didMoveToSuperview() {
-//        super.didMoveToSuperview()
-//        self.setContentHuggingPriority(.defaultLow, for: .vertical)  // << here !!
-//    }
-//}
 
-struct FullTripView: View {
-    var fullTrip: TripEvent
-    var departureStop: Stop
-    var arrivalStop: Stop
-    @ObservedObject var viewStateStack: ViewStateStack
-    @StateObject private var lineManager = LineManager()
-    @State private var showTime = true
-    @Binding var transition: AnyTransition
+struct MapPreview: View {
+    var resultDetail: searchResultItem
+    @State var position: MapCameraPosition
+    
+    var body: some View {
+            Map(position: $position) {
+                Annotation(resultDetail.title, coordinate: resultDetail.coordinates, anchor: .center) {
+                    Circle()
+                        .strokeBorder(Color.primary, lineWidth: 2)
+                        .background(
+                            Circle()
+                                .fill(.color1)
+                        )
+                        .frame(width: 15, height: 15)
+                }
+                UserAnnotation()
+            }
+            .safeAreaPadding(10)
+                    .mapControls {
+                        MapUserLocationButton()
+                        MapCompass()
+                        MapScaleView()
+                    }
+    }
+}
 
+struct CustomPicker: View {
+    @Binding var secondSelected: Bool
+    var height: CGFloat
+    var firstOption: String
+    var firstIcon: String?
+    var secondOption: String
+    var secondIcon: String?
+    var name = "shape"
+    var animation: Namespace.ID
+    @State var firstSelected: Bool = true
+    var body: some View {
+            HStack {
+                ZStack {
+                        if firstSelected {
+//                            RoundedRectangle(cornerRadius: 20)
+                            BasicElement()
+                                .frame(height: height)
+                                .matchedGeometryEffect(id: name, in: animation)
+                        }
+                    Button {
+                                            withAnimation {
+                                                firstSelected = true
+                                            }
+                    } label: {
+                        
+                        HStack {
+                            Spacer()
+                            if firstIcon != nil {
+                                Image(systemName: firstIcon!)
+                            }
+                            Text(firstOption)
+                            Spacer()
+                        }
+                        .scaleEffect(firstSelected ?  1 : 0.9)
+                    }
+                }
+                ZStack {
+                        if !firstSelected {
+//                            RoundedRectangle(cornerRadius: 20)
+                            BasicElement()
+                                .frame(height: height)
+                                .matchedGeometryEffect(id: name, in: animation)
+                        }
+                    Button {
+                                            withAnimation {
+                                                firstSelected = false
+                                            }
+                    } label: {
+                        HStack {
+                            Spacer()
+                            if secondIcon != nil {
+                                Image(systemName: secondIcon!)
+                            }
+                            Text(secondOption)
+                            Spacer()
+                        }
+                        .scaleEffect(!firstSelected ?  1 : 0.9)
+                    }
+                }
+            }
+            .foregroundStyle(.primary)
+            .background {
+//                RoundedRectangle(cornerRadius: 20)
+                Capsule()
+                    .stroke(.gray.opacity(0.3), lineWidth: 2)
+                    .frame(height: height-3)
+//                    .padding(5)
+            }
+            .onAppear {
+                firstSelected = !secondSelected
+            }
+            .onChange(of: firstSelected) {
+                withAnimation {
+                    secondSelected = !firstSelected
+                }
+            }
+    }
+}
+
+struct SavedTripsView: View {
+    @EnvironmentObject var savedTripsModel: SavedTripsModel
+    @EnvironmentObject var regularTripsModel: RegularTripsModel
+    @Binding var isPresented: Bool
+    
+    let onTripSelected: (TripEvent) -> Void
+    
     var body: some View {
         ZStack {
-            VStack(alignment: .leading) {
-                Spacer(minLength: 110)
+            VStack {
+                Rectangle()
+                    .frame(height: 10)
+                    .foregroundStyle(.clear)
                 ScrollView {
-                    Spacer(minLength: 50)
-                    if fullTrip.legs.first?.transfer ?? false || fullTrip.legs.first?.publishedLineName == "" {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.4)) {
-                                transition = .trailingIn
-                                viewStateStack.push(.stop(stopCodedidoc: departureStop.codedidoc, stopName: departureStop.name, previousLineRef: "", previousLineName: ""))
-                            }
-                        }) {
-                            RoundedRectangle(cornerRadius: 25.0)
-                                .frame(width: 330, height: 45)
-                                .foregroundStyle(.color1)
-                                .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                .padding(.horizontal)
-//                                .padding(.vertical, 4)
-                                .overlay (
-                                    HStack {
-                                        Circle()
-                                            .strokeBorder(.primary, lineWidth: 5)
-                                            .background(Circle().fill(.color1))
-                                            .frame(width: 18, height: 18)
-                                        Text(departureStop.name)
-                                        Spacer()
-                                    }
-                                        .padding(.horizontal, 30)
-                                        .padding(.vertical, 0)
-                                )
-//                                .onAppear { print("\(fullTrip.legs.first?.legBoardStopId ?? "") != \(arrivalStop.codedidoc)") }
-                        }
-                        .foregroundStyle(.primary)
-                    }
-                    ForEach(fullTrip.legs) { leg in
-                        if !leg.publishedLineName.isEmpty {
-                            ZStack {
-                                VStack {
-                                    Spacer(minLength: 45)
-                                    HStack {
-                                        Rectangle()
-                                            .frame(width: 7, height: 60)
-                                            .foregroundStyle(LineColors.lineColor(for: leg.publishedLineName))
-                                            .padding(.trailing, 285)
-                                    }
-                                    Spacer(minLength: 45)
-                                }
-                                VStack {
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.4)) {
-                                            transition = .trailingIn
-                                            viewStateStack.push(.stop(stopCodedidoc: leg.legBoardStopId, stopName: leg.legBoardStopName, previousLineRef: leg.journeyRef, previousLineName: nil))
-                                        }
-                                    }) {
-                                        RoundedRectangle(cornerRadius: 25.0)
-                                            .frame(width: 330, height: 45)
-                                            .foregroundStyle(.color1)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            .padding(.horizontal)
-                                            .padding(.vertical, 4)
-                                            .overlay (
-                                                HStack {
-                                                    Circle()
-                                                        .strokeBorder(.primary, lineWidth: 5)
-                                                        .background(Circle().fill(LineColors.lineColor(for: leg.publishedLineName)))
-                                                        .frame(width: 18, height: 18)
-                                                    Text(leg.legBoardStopName)
-                                                    Spacer()
-                                                    if displayTimeOrMinutesRemaining(for: leg.legBoardTimetableTime, estimatedInput: leg.legBoardEstimatedTime, with: showTime) == "0" {
-                                                        transportIcon(with: leg.transportTypeName)
-                                                    } else {
-                                                        Text("\(displayTimeOrMinutesRemaining(for: leg.legBoardTimetableTime, estimatedInput: leg.legBoardEstimatedTime, with: showTime))")
-                                                            .frame(width: 50)
-                                                    }
-                                                    Image(systemName: "\(leg.legBoardQuay).square.fill".lowercased())
-                                                }
-                                                .padding(.horizontal, 30)
-                                                .padding(.vertical, 0)
-                                            )
-                                    }
-                                        .foregroundStyle(.primary)
-                                        .contextMenu {
-                                            let stopBoardEvent = createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: "\(leg.legBoardTimetableTime.dropLast(10))", stopPointName: leg.legBoardStopName, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName)
-                                            
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopBoardEvent, stopID: "\(leg.legBoardStopId)", timeDelay: 0.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir à l'arrivée")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopBoardEvent, stopID: "\(leg.legBoardStopId)", timeDelay: 1.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 1' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopBoardEvent, stopID: "\(leg.legBoardStopId)", timeDelay: 5.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 5' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopBoardEvent, stopID: "\(leg.legBoardStopId)", timeDelay: 10.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 10' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopBoardEvent, stopID: "\(leg.legBoardStopId)", timeDelay: 30.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 30' avant")
-                                                }
-                                        }
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.4)) {
-                                            transition = .trailingIn
-                                            viewStateStack.push(.line(stopEvent: createStopEventFromTripLeg(tripLeg: leg), currentStop: nil, currentLine: leg.publishedLineName))
-                                        }
-                                    }) {
-                                        HStack {
-                                            BusLineIcon(lineName: leg.publishedLineName)
-                                            Image(systemName: "arrow.right")
-                                            Text(leg.legDestination)
-                                            Spacer()
-                                        }
-                                        .frame(width: 300, height: 30)
-                                        .padding(.leading, 50)
-                                    }
-                                        .foregroundStyle(.primary)
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.4)) {
-                                            transition = .trailingIn
-                                            viewStateStack.push(.stop(stopCodedidoc: leg.legAlightStopId, stopName: leg.legAlightStopName, previousLineRef: leg.journeyRef, previousLineName: nil))
-                                        }
-                                    }) {
-                                        RoundedRectangle(cornerRadius: 25.0)
-                                            .frame(width: 330, height: 45)
-                                            .foregroundStyle(.color1)
-                                            .padding(.horizontal)
-                                            .padding(.vertical, 4)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            .overlay (
-                                                HStack {
-                                                    Circle()
-                                                        .strokeBorder(.primary, lineWidth: 5)
-                                                        .background(Circle().fill(LineColors.lineColor(for: leg.publishedLineName)))
-                                                        .frame(width: 18, height: 18)
-                                                    Text(leg.legAlightStopName)
-                                                    Spacer()
-                                                    if displayTimeOrMinutesRemaining(for: leg.legAlightTimetableTime, estimatedInput: leg.legAlightEstimatedTime, with: showTime) == "0" {
-                                                        transportIcon(with: leg.transportTypeName)
-                                                    } else {
-                                                        Text("\(displayTimeOrMinutesRemaining(for: leg.legAlightTimetableTime, estimatedInput: leg.legAlightEstimatedTime, with: showTime))")
-                                                            .frame(width: 50)
-                                                    }
-                                                    Image(systemName: "\(leg.legAlightQuay).square.fill".lowercased())
-                                                }
-                                                .padding(.horizontal, 30)
-                                                .padding(.vertical, 0)
-                                            )
-                                    }
-                                        .foregroundStyle(.primary)
-                                        .contextMenu {
-                                            let stopAlightEvent = createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: "\(leg.legAlightTimetableTime.dropLast(10))", stopPointName: leg.legAlightStopName, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName)
-                                            
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopAlightEvent, stopID: "\(leg.legAlightStopId)", timeDelay: 0.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir à l'arrivée")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopAlightEvent, stopID: "\(leg.legAlightStopId)", timeDelay: 1.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 1' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopAlightEvent, stopID: "\(leg.legAlightStopId)", timeDelay: 5.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 5' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopAlightEvent, stopID: "\(leg.legAlightStopId)", timeDelay: 10.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 10' avant")
-                                                }
-                                                Button(action: {
-                                                    scheduleBusNotifications(for: stopAlightEvent, stopID: "\(leg.legAlightStopId)", timeDelay: 30.0, lineManager: lineManager)
-                                                }) {
-                                                    Text("Prévenir 30' avant")
-                                                }
-                                        }
-                                }
-                            }
-                        } else {
+                    ForEach(groupedEvents.keys.sorted(by: { $0 > $1 }), id: \.self) { date in
+                        VStack(spacing: 0) {
+                            // Display date as header in the desired format
                             HStack {
-                                if !leg.transferDuration.isEmpty {
-                                    Image(systemName: "timer")
-                                        .padding(.leading, 124)
-                                    Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
-                                        .padding(.trailing, 30)
-                                    Image(systemName: "figure.walk")
-                                    Text("\(leg.transferWalkDuration.dropFirst(2).dropLast(1))'")
-                                    Spacer()
-                                } else if leg.publishedLineName.isEmpty {
-                                    Image(systemName: "figure.walk")
-                                        .padding(.leading, 124)
-                                    Text("\(fullTrip.duration.dropFirst(2).dropLast(1))'")
-                                        .padding(.trailing, 30)
-                                    Spacer()
-                                }
+                                Text(formatDate(date))
+                                    .font(.title3).bold()
+                                    .padding(.top)
+                                Spacer()
                             }
-                            .padding(.vertical, 10)
-                        }
-                    }
-                    if fullTrip.legs.last?.transfer ?? false || fullTrip.legs.last?.publishedLineName == "" {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.4)) {
-                                transition = .trailingIn
-                                viewStateStack.push(.stop(stopCodedidoc: arrivalStop.codedidoc, stopName: arrivalStop.name, previousLineRef: "", previousLineName: ""))
-                            }
-                        }) {
-                            RoundedRectangle(cornerRadius: 25.0)
-                                .frame(width: 330, height: 45)
-                                .foregroundStyle(.color1)
-                                .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                .padding(.horizontal)
-//                                .padding(.vertical, 4)
-                                .overlay (
-                                    HStack {
-                                        Circle()
-                                            .strokeBorder(.primary, lineWidth: 5)
-                                            .background(Circle().fill(.color1))
-                                            .frame(width: 18, height: 18)
-                                        Text(arrivalStop.name)
-                                        Spacer()
+                            .padding(.horizontal, 30)
+                            // Display events for this date
+                            ForEach(groupedEvents[date]!.sorted(by: { $0.startTime < $1.startTime }), id: \.self) { trip in
+                                Button(action: {
+                                    onTripSelected(trip)
+                                }) {
+                                    VStack {
+                                        SavedTripView(event: trip)
+                                            .padding(15)
                                     }
-                                        .padding(.horizontal, 30)
-                                        .padding(.vertical, 0)
-                                )
-//                                .onAppear { print("\(fullTrip.legs.last?.legAlightStopId ?? "") != \(arrivalStop.codedidoc)") }
+                                    .background(
+                                        BasicCard(cornerRadius: 30)
+                                    )
+                                }
+                                .padding(5)
+                                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 35))
+                                .contextMenu {
+                                    Button(action: {
+                                        savedTripsModel.removeTrip(trip)
+                                    }) {
+                                        Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
+                                    }
+                                    .onAppear(perform: {
+                                        print(trip.startCoordinates)
+                                    })
+                                }
+                                .padding(.horizontal, 15)
+                                .foregroundStyle(.primary)
+                            }
                         }
-                        .foregroundStyle(.primary)
                     }
                     Rectangle()
-                        .frame(height: 80)
+                        .frame(height: 10)
                         .foregroundStyle(.clear)
-//                    .background(Color.color1)
                 }
-                .onAppear {
-                    UINavigationBar.setTransparentAppearance()
-                }
+                .contentMargins(.top, 60.0, for: .automatic)
             }
             VStack {
-                HStack {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            transition = .leadingIn
-                            viewStateStack.pop()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "chevron.backward")
-                            Text("Itinéraire")
-                        }
-                    }
-                    Spacer()
-                    Button(action: {
-                        self.showTime.toggle()
-                    }) {
-                        Image(systemName: showTime ? "hourglass.circle" : "hourglass.circle.fill")
-                            .font(.title)
-                    }
-                }
-                .frame(width: 350)
-                HStack {
-                    RoundedRectangle(cornerRadius: 35)
-                        .frame(width: 450, height: 90)
-                        .foregroundStyle(.color1)
-                        .shadow(color: Color.customShadows, radius: 3, y: 2)
-                        .padding(.leading, 100)
-                        .overlay(
-                            VStack {
-                                Text(departureStop.name)
-                                    .font(.title3)
-                                    .bold()
-                                Image(systemName: "arrow.down")
-                                Text(arrivalStop.name)
-                                    .font(.title3)
-                                    .bold()
-                            }
-                        )
-                }
+//                RoundedRectangle(cornerRadius: 25)
+                Capsule()
+                    .fill(.thinMaterial)
+                    .frame(height: 60)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+                    .padding(10)
+                    .overlay(
+                        Text("Itinéraires sauvegardés")
+                            .font(.title2)
+                            .bold()
+                            .frame(height: 20.0)
+                    )
                 Spacer()
+            }
+            .contentMargins(.horizontal, 20, for: .automatic)
+        }
+    }
+    var weeklyGeneratedTrips: [TripEvent] {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekdays = (0...6).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+
+        return regularTripsModel.regularTrips.flatMap { regularTrip in
+            weekdays.compactMap { day -> TripEvent? in
+                guard let weekday = Weekday(rawValue: calendar.component(.weekday, from: day)) else { return nil }
+                guard regularTrip.repeatingDays.contains(weekday) else { return nil }
+                if let start = regularTrip.startDate, day < start { return nil }
+                if let end = regularTrip.endDate, day > end { return nil }
+                if regularTrip.exceptions.contains(where: { calendar.isDate($0, inSameDayAs: day) }) { return nil }
+
+                var trip = regularTrip.trip
+                trip.id = trip.id + UUID().uuidString // Differentiate each instance
+                return trip
+            }
+        }
+        
+        func updateRegularTrip(_ trip: inout RegularTrip) {
+            for leg in trip.trip.legs {
+                if leg.transfer == false && leg.journeyRef != "" {
+                    
+                }
             }
         }
     }
+
+    var groupedEvents: [Date: [TripEvent]] {
+        let combined = savedTripsModel.savedTrips + weeklyGeneratedTrips
+        return Dictionary(grouping: combined) { event in
+            if let date = stringToDate(with: event.startTime) {
+                return Calendar.current.startOfDay(for: date)
+            } else {
+                return Calendar.current.startOfDay(for: Date())
+            }
+        }
+    }
+    func formatDate(_ date: Date) -> String {
+            let dateFormatter = DateFormatter()
+//            dateFormatter.dateFormat = "EEE, d MMMM yyyy"
+        dateFormatter.dateStyle = .full
+        dateFormatter.timeStyle = .none
+        let formattedDate = dateFormatter.string(from: date)
+            return formattedDate.prefix(1).capitalized + formattedDate.dropFirst()
+        }
 }
 
-
-
+struct SavedTripView: View {
+    var event: TripEvent
+    
+    var body: some View {
+        VStack(alignment: .center) {
+            HStack {
+//                RoundedRectangle(cornerRadius: 20.0)
+                BasicElement()
+                    .frame(height: 45)
+//                    .foregroundStyle(.thinMaterial)
+//                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+                    .overlay (
+                        HStack {
+                            Circle()
+                                .strokeBorder(.primary, lineWidth: 5)
+                                .background(Circle().fill(.color1))
+                                .frame(width: 18, height: 18)
+                            SmallStopTitleView(stopName: event.startName)
+                            Text(dateToString(with: stringToDate(with: event.startTime) ?? Date()))
+                            Spacer()
+                        }
+                            .padding(.horizontal)
+                        )
+            }
+            HStack(spacing: 0) {
+                    Image(systemName: "arrowshape.bounce.forward")
+                    Text(" : \(event.transfers)")
+                        .padding(.trailing)
+                    Image(systemName: "timer")
+                    if event.duration.count == 7 {
+                        Text(" : \(event.duration.dropFirst(2).dropLast(1))")
+                    } else {
+                        Text(" : \(event.duration.dropFirst(2).dropLast(1))'")
+                    }
+                // Scrollable icon area
+                ZStack {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Spacer()
+                            ForEach(event.legs, id: \.id) { leg in
+                                if !(leg.publishedLineName == "") {
+                                    BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
+                                        .padding(2)
+                                } else if leg.transfer && Int(leg.transferWalkDuration.dropFirst(2).dropLast(1)) ?? 0 >= 5 {
+                                    Image(systemName: "figure.walk").font(.caption)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                    }
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .leading) {
+                                ScrollMask(leading: true, vertical: false, gradientLength: 25)
+                            }
+                    }
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .trailing) {
+                                ScrollMask(leading: false, vertical: false, gradientLength: 25)
+                            }
+                    }
+                    
+                }
+            }
+            .padding(.vertical, 3)
+            HStack {
+//                RoundedRectangle(cornerRadius: 20.0)
+                BasicElement()
+                    .frame(height: 45)
+                    .overlay (
+                        HStack {
+                            Circle()
+                                .strokeBorder(.primary, lineWidth: 5)
+                                .background(Circle().fill(.color1))
+                                .frame(width: 18, height: 18)
+                            SmallStopTitleView(stopName: event.endName)
+                            Text(dateToString(with: stringToDate(with: event.endTime) ?? Date()))
+                            Spacer()
+                        }
+                            .padding(.horizontal)
+                        )
+            }
+            
+        }
+    }
+}
 struct TripView_Previews: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
-
-        return ContentView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
+        @StateObject var fullTripTest = FullTripTest()
+        
+        @StateObject var savedTripsModel = SavedTripsModel()
+        @StateObject var regularTripsModel = RegularTripsModel()
+        @StateObject var appRequirementsClass = AppRequirementsClass()
+            @StateObject var itineraryViewModel = ItineraryViewModel()
+        @State var boolTest: Bool = true
+        @State var showTime: Bool = true
+        
+        return
+            NavigationStack {
+                TripView(tripManager: TripManager())
+                    .environmentObject(itineraryViewModel)
+                    .environmentObject(stopStore)
+                    .environmentObject(favoritesViewModel)
+                    .environmentObject(savedTripsModel)
+                    .environmentObject(regularTripsModel)
+                    .environmentObject(appRequirementsClass)
+                    .background(Image("tpgMap"))
+            }
+        
+//        VStack {
+//            Capsule()
+//            .fill(.thinMaterial)
+//            .padding(4)
+//            .frame(height: 80)
+//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+//            .overlay(
+//                TripElementView(event: fullTripTest.Trip, showTime: showTime)
+////                    .padding(.horizontal, 20)
+//            )
+//            .padding()
+//        }
     }
 }

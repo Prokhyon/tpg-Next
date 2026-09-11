@@ -1,7 +1,1441 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
+    "" : {
 
+    },
+    "\nTestez ici:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\nTest here:"
+          }
+        }
+      }
+    },
+    "\nTestez ici: (Le rappel ne sera pas programmé)" : {
+
+    },
+    " : %@" : {
+      "shouldTranslate" : false
+    },
+    " : %@'" : {
+      "shouldTranslate" : false
+    },
+    ": %@" : {
+      "shouldTranslate" : false
+    },
+    ": %@'" : {
+      "shouldTranslate" : false
+    },
+    "%@" : {
+      "shouldTranslate" : false
+    },
+    "%@ - %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ - %2$@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "%@ aurait du arriver mais arrivera %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ should have arrived, but will arrive"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ aurait du arriver mais arrivera %2$@"
+          }
+        }
+      }
+    },
+    "%@ devait arriver dans %lld minutes mais arrivera %@" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should have arrived in %2$lld minute but will arrive %3$@ "
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should have arrived in %2$lld minutes but will arrive %3$@ "
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@ devait arriver dans %2$lld minute mais arrivera %3$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%1$@ devait arriver dans %2$lld minutes mais arrivera %3$@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ devrait arriver à l'arrêt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ should be arriving soon"
+          }
+        }
+      }
+    },
+    "%@ devrait arriver à l'arrêt %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ should arrive %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ devrait arriver à l'arrêt %2$@"
+          }
+        }
+      }
+    },
+    "%@ est dans %lld minutes à l'arrêt" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minutes"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@ est dans %2$lld minute à l'arrêt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%1$@ est dans %2$lld minutes à l'arrêt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ est estimé dans %lld minutes à l'arrêt" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minutes"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@ est estimé dans %2$lld minute à l'arrêt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%1$@ est estimé dans %2$lld minutes à l'arrêt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ est estimé dans %lld minutes à l'arrêt %@" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minute %3$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@  should arrive in %2$lld minutes %3$@"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$@ est estimé dans %2$lld minute à l'arrêt %3$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%1$@ est estimé dans %2$lld minutes à l'arrêt %3$@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@'" : {
+      "shouldTranslate" : false
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld' avant" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld' before"
+          }
+        }
+      }
+    },
+    "12:34" : {
+      "shouldTranslate" : false
+    },
+    "14'" : {
+      "shouldTranslate" : false
+    },
+    "A l'arrivée" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At arrival"
+          }
+        }
+      }
+    },
+    "Accès à votre géolocalisation:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access to your location:"
+          }
+        }
+      }
+    },
+    "Accès autorisé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access granted"
+          }
+        }
+      }
+    },
+    "Accès refusé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access denied"
+          }
+        }
+      }
+    },
+    "Add Regular Trip" : {
+
+    },
+    "Affichage des départs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departures display"
+          }
+        }
+      }
+    },
+    "Afficher la carte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show map"
+          }
+        }
+      }
+    },
+    "Affichez les départs précédents ou suivants" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get earlier or later departures"
+          }
+        }
+      }
+    },
+    "Ajouter aux favoris" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to favorites"
+          }
+        }
+      }
+    },
+    "Ajoutez un arrêt aux favoris depuis la recherche ou son menu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a stop to favorites from search or its menu"
+          }
+        }
+      }
+    },
+    "Aller ici" : {
+      "comment" : "Other: Use as destination",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travel there"
+          }
+        }
+      }
+    },
+    "Alternez entre le tri par horaire et par ligne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch sorting between time and line"
+          }
+        }
+      }
+    },
+    "Appuyez longuement sur un horaire pour programmer un rappel. Vous pourrez voir les rappels prévus depuis les paramètres." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long press an arrival to set a reminder. You can see scheduled reminders from the settings."
+          }
+        }
+      }
+    },
+    "Arrêts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops"
+          }
+        }
+      }
+    },
+    "Arrêts à proximité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close stops"
+          }
+        }
+      }
+    },
+    "Arrivée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrival"
+          }
+        }
+      }
+    },
+    "Aucun rappel programmé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reminders set"
+          }
+        }
+      }
+    },
+    "Aucun résultat pour « %@ »" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No result for « %@ » "
+          }
+        }
+      }
+    },
+    "avec %lld minutes d'avance" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute earlier"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minutes earlier"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "avec %lld minute d'avance"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "avec %lld minutes d'avance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "avec %lld minutes de retard." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute later"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute later"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "avec %lld minute de retard."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "avec %lld minutes de retard."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Bienvenue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome"
+          }
+        }
+      }
+    },
+    "Carte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map"
+          }
+        }
+      }
+    },
+    "Carte %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map %@"
+          }
+        }
+      }
+    },
+    "Carte des quais" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quays map"
+          }
+        }
+      }
+    },
+    "Changez l'affichage de l'heure d'arrivée d'un véhicule entre son horaire et le temps restant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Switch the display of a vehicle’s arrival time between it’s timetable and remaining time"
+          }
+        }
+      }
+    },
+    "Chargement..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading…"
+          }
+        }
+      }
+    },
+    "Choisir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose"
+          }
+        }
+      }
+    },
+    "Dans un premier temps, quelques autorisations afin d'améliorer votre expérience:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First, some authorisations to improve your experience:"
+          }
+        }
+      }
+    },
+    "Date et heure:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time & date:"
+          }
+        }
+      }
+    },
+    "De plus, vous serez prévenu en cas d'avance ou retard du véhicule. " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In addition, you will be notified of a delay or early arrival of the vehicle."
+          }
+        }
+      }
+    },
+    "Départ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departure"
+          }
+        }
+      }
+    },
+    "Départs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departures"
+          }
+        }
+      }
+    },
+    "Départs à proximité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close stops"
+          }
+        }
+      }
+    },
+    "Départs sur la page d'accueil:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home departures:"
+          }
+        }
+      }
+    },
+    "Destination" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Destination"
+          }
+        }
+      }
+    },
+    "Détail itinéraire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip detail"
+          }
+        }
+      }
+    },
+    "Enregistrer l'itinéraire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save trip"
+          }
+        }
+      }
+    },
+    "Erreur, pas d'itinéraires trouvés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error, no trip found"
+          }
+        }
+      }
+    },
+    "Erreur: Le rappel n'a pas pu être prévu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error: The reminder couldn’t be scheduled"
+          }
+        }
+      }
+    },
+    "Explorer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore"
+          }
+        }
+      }
+    },
+    "Favoris" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        }
+      }
+    },
+    "Filtrer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        }
+      }
+    },
+    "Filtrer par lignes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter by lines"
+          }
+        }
+      }
+    },
+    "Filtrez les départs affichés par ligne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter departures by lines"
+          }
+        }
+      }
+    },
+    "Format du retard:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delay format:"
+          }
+        }
+      }
+    },
+    "Général" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        }
+      }
+    },
+    "Hello, World!" : {
+      "shouldTranslate" : false
+    },
+    "Heure d'arrivée par défaut:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default arrival time:"
+          }
+        }
+      }
+    },
+    "Horaire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrival"
+          }
+        }
+      }
+    },
+    "Itinéraire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Itinerary"
+          }
+        }
+      }
+    },
+    "Itinéraires" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Itinerary"
+          }
+        }
+      }
+    },
+    "Itinéraires sauvegardés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved trips"
+          }
+        }
+      }
+    },
+    "Lancez rapidement une recherche d'itinéraire depuis un arrêt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quickly launch a trip search from a stop"
+          }
+        }
+      }
+    },
+    "Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les paramètres du téléphone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications have not been authorised for tpg Next.\nChange this in the phone settings"
+          }
+        }
+      }
+    },
+    "Lieux" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locations"
+          }
+        }
+      }
+    },
+    "Ligne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line"
+          }
+        }
+      }
+    },
+    "Ligne " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line "
+          }
+        }
+      }
+    },
+    "Ligne %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line %@"
+          }
+        }
+      }
+    },
+    "Lors d'une recherche d'un arrêt ou d'un lieu, appuyez sur l'icône à la droite d'un résultat afin d'obtenir un aperçu de sa position sur une carte.\n\nAjoutez aussi facilement des arrêts à vos favoris avec l'étoile." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While searching for a stop or location, press the icon on the right of a result to get a preview of its position.\n\nEasily add stops to your favorite with the star."
+          }
+        }
+      }
+    },
+    "Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfortunately, this stop is not available in the app, or is not served"
+          }
+        }
+      }
+    },
+    "Merci d'avoir téléchargé tpg Next" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thank you for downloading tpg Next"
+          }
+        }
+      }
+    },
+    "Ne plus enregistrer l'itinéraire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove trip"
+          }
+        }
+      }
+    },
+    "Notifications" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescriptio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location is used to access close stops and display your position on a map"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ceci permettra de programmer des notifications de rappel avant l'arrivée d'un véhicule"
+          }
+        }
+      }
+    },
+    "NSUserNotificationsUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are used to set reminders before a departure"
+          }
+        }
+      }
+    },
+    "Ordre des favoris" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit favorites"
+          }
+        }
+      }
+    },
+    "Origine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origin"
+          }
+        }
+      }
+    },
+    "Paramètres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
+    "Partir d'ici" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travel from here"
+          }
+        }
+      }
+    },
+    "Pas d'arrêt à proximité trouvé." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stop found in proximity."
+          }
+        }
+      }
+    },
+    "Pas d'arrets en favoris" : {
+
+    },
+    "Pas d'arrêts trouvés à proximité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stop found in proximity"
+          }
+        }
+      }
+    },
+    "Pas de départs trouvés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No departures found"
+          }
+        }
+      }
+    },
+    "Permet d'afficher les arrêts à proximité ainsi que votre position sur la carte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find close stops and display your location on a map"
+          }
+        }
+      }
+    },
+    "Permet de programmer et recevoir des rappels de départ d'un véhicule" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule and receive reminders of a vehicle’s departure"
+          }
+        }
+      }
+    },
+    "Prévenir 1' avant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind 1’ before"
+          }
+        }
+      }
+    },
+    "Prévenir 5' avant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind 5’ before"
+          }
+        }
+      }
+    },
+    "Prévenir 10' avant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind 10’ before"
+          }
+        }
+      }
+    },
+    "Prévenir 30' avant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind 30’ before"
+          }
+        }
+      }
+    },
+    "Prévenir à l'arrivée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind on arrival"
+          }
+        }
+      }
+    },
+    "Prochains itinéraires" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next trips"
+          }
+        }
+      }
+    },
+    "Proches" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
+    "quai %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "quay %@"
+          }
+        }
+      }
+    },
+    "Quai %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quay %@"
+          }
+        }
+      }
+    },
+    "Quelques boutons utiles:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some useful buttons:"
+          }
+        }
+      }
+    },
+    "Rappel %@ avant prévu avec succès" : {
+      "extractionState" : "manual",
+      "shouldTranslate" : false
+    },
+    "Rappel %lld' avant" : {
+
+    },
+    "Rappel %lld' avant prévu avec succès" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder %lld’ before successfully set"
+          }
+        }
+      }
+    },
+    "Rappel à l'arrivée" : {
+
+    },
+    "Rappel à l'arrivée prévu avec succès" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder on arrival successfully set"
+          }
+        }
+      }
+    },
+    "Rappels prévus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scheduled reminders"
+          }
+        }
+      }
+    },
+    "Recherche des départs..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching departures…"
+          }
+        }
+      }
+    },
+    "Rechercher" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        }
+      }
+    },
+    "Rechercher un arrêt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search a stop"
+          }
+        }
+      }
+    },
+    "Recherches récentes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent searches"
+          }
+        }
+      }
+    },
+    "Retirer des favoris" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from favorites"
+          }
+        }
+      }
+    },
+    "Retour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        }
+      }
+    },
+    "Revoir le message de démarrage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View welcome message again"
+          }
+        }
+      }
+    },
+    "Save Trip" : {
+      "shouldTranslate" : false
+    },
+    "Screen height via UIScreen: %lld" : {
+      "shouldTranslate" : false
+    },
+    "Screen width via UIScreen: %lld" : {
+      "shouldTranslate" : false
+    },
+    "Select days to repeat:" : {
+      "shouldTranslate" : false
+    },
+    "Selectionner" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select"
+          }
+        }
+      }
+    },
+    "Selectionner l'heure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select time"
+          }
+        }
+      }
+    },
+    "Sélectionnez l'heure de départ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select departure time"
+          }
+        }
+      }
+    },
+    "Sizes" : {
+      "shouldTranslate" : false
+    },
+    "Suivant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        }
+      }
+    },
+    "Supprimer les filtres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove filters"
+          }
+        }
+      }
+    },
+    "Terminer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "Test" : {
+
+    },
+    "Testez-les !" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test them !"
+          }
+        }
+      }
+    },
+    "This VStack height: %lld" : {
+      "shouldTranslate" : false
+    },
+    "This VStack width: %lld" : {
+      "shouldTranslate" : false
+    },
+    "This Week’s Trips" : {
+      "shouldTranslate" : false
+    },
+    "Trajet rapide" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick trip"
+          }
+        }
+      }
+    },
+    "Tri par défaut:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default sorting:"
+          }
+        }
+      }
+    },
+    "Un problème, une question, une envie ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A problem, question or wish ?"
+          }
+        }
+      }
+    },
+    "Utiliser la position actuelle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use current location"
+          }
+        }
+      }
+    },
+    "Voici quelques astuces pour vous aider à démarrer.\nRevoyez les à tout moment depuis les paramètres." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here are some explanations to help you start.\nSee them again at any time from the settings."
+          }
+        }
+      }
+    },
+    "Voir tous les trajets enregristrés" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }

@@ -8,20 +8,23 @@
 import Foundation
 import SwiftUI
 
-func keySelect() -> String {
-    let keys = ["***CLE-RETIREE***","***CLE-RETIREE***"]
+public func keySelect() -> String {
+    let keys = ["***CLE-RETIREE***","***CLE-RETIREE***", "***CLE-RETIREE***"]
     
     return keys.randomElement()!
 }
 
-func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool) -> (text: String, color: Color) {
-    @AppStorage("DelayTimeIntegrated") var delayTimeIntegrated = false
+/// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
+///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
+public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool, at now: Date = Date()) -> (text: String, color: Color) {
+    // Lu dans le groupe d'app : @AppStorage écrit dans .standard, invisible depuis le widget.
+    let delayTimeIntegrated = SharedStorage.bool(forSetting: "DelayTimeIntegrated")
     var estimatedInput = estimatedInput
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
     formatter.timeZone = TimeZone(identifier: "UTC")
 
-    let currentDate = Date()
+    let currentDate = now
     
     // Parse the timetabledTime and estimatedTime
     if estimatedInput.isEmpty {
@@ -44,7 +47,7 @@ func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: S
     // Calculate the time difference
     let timeDifference = estimatedTime.timeIntervalSince(currentDate)
     let minutesRemaining = /*Int(*/timeDifference / 60//)
-    print("EstimatedTime: \(estimatedTime), timeDifference: \(timeDifference), minutesRemaining: \(minutesRemaining),  Int: \(Int(minutesRemaining))")
+//    print("EstimatedTime: \(estimatedTime), timeDifference: \(timeDifference), minutesRemaining: \(minutesRemaining),  Int: \(Int(minutesRemaining))")
     
     // Calculate the delay
     let delay = Int(estimatedTime.timeIntervalSince(timetableTime) / 60)
@@ -71,7 +74,7 @@ func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: S
     }
 }
 
-func compareDateString(with dateString: String, equalPossible: Bool) -> Bool {
+public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool) -> Bool {
     let formatter = ISO8601DateFormatter()
     
     // Parse the date string into a Date object
@@ -103,20 +106,20 @@ func compareDateString(with dateString: String, equalPossible: Bool) -> Bool {
     }
     
     // Compare the adjusted parsed date with the adjusted current date ignoring seconds
-    if equalPossible {
+    if equalReturnsTrue {
         return roundedParsedDate <= roundedCurrentDate
     } else {
         return roundedParsedDate < roundedCurrentDate
     }
-}
+} //A check: hh:mm:30, arrondi vers le haut ou le bas ?
 
-func stringToDate(with dateString: String) -> Date? {
+public func stringToDate(with dateString: String) -> Date? {
     let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ" // Adjust this format to match your date string format
         return dateFormatter.date(from: dateString)
 }
 
-func dateToString(with date: Date) -> String {
+public func dateToString(with date: Date) -> String {
     let targetTimeZone = TimeZone.current
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
@@ -125,7 +128,7 @@ func dateToString(with date: Date) -> String {
         return formattedDate
 }
 
-func convertDateString(_ dateString: String) -> String? {
+public func convertDateString(_ dateString: String) -> String? {
     // Step 1: Create a DateFormatter to parse the input string
     let inputFormatter = DateFormatter()
     inputFormatter.dateFormat = "yyyy-MM-dd" // The format of the input string
@@ -143,7 +146,7 @@ func convertDateString(_ dateString: String) -> String? {
     return nil // Return nil if the input string is not in the correct format
 }
 
-func transportIcon(with transportType: String) -> Image {
+public func transportIcon(with transportType: String) -> Image {
     let type = transportType
     if type == "Bus" {
         return Image(systemName: "bus.fill")
@@ -153,12 +156,14 @@ func transportIcon(with transportType: String) -> Image {
         return Image(systemName: "lightrail.fill")
     } else if type == "Schiff" {
         return Image(systemName: "ferry.fill")
+    } else if type == "walk" {
+        return Image(systemName: "figure.walk")
     } else {
        return Image(systemName: "bus.fill")
     }
 }
 
-func splitString(_ input: String, separator: String) -> (String, String) {
+public func splitString(_ input: String, separator: String) -> (String, String) {
     
     // Split the string at the comma
     let parts = input.split(separator: separator)
@@ -175,9 +180,14 @@ func splitString(_ input: String, separator: String) -> (String, String) {
     return (firstPart, secondPart)
 }
 
-struct eventStopName: View {
-    let stopName: String
-    var body: some View {
+public struct eventStopName: View {
+    public let stopName: String
+    
+    public init(stopName: String) {
+        self.stopName = stopName
+    }
+    
+    public var body: some View {
         let splitStopName = splitString(stopName, separator: ",")
         
         HStack {
@@ -191,12 +201,18 @@ struct eventStopName: View {
     }
 }
 
-struct ScrollMask: View {
+public struct ScrollMask: View {
     let leading: Bool
     let vertical: Bool
     let gradientLength: CGFloat
+    
+    public init(leading: Bool = true, vertical: Bool = true, gradientLength: CGFloat = 10) {
+        self.leading = leading
+        self.vertical = vertical
+        self.gradientLength = gradientLength
+    }
 
-    var body: some View {
+    public var body: some View {
         if !vertical {
             LinearGradient(colors: [.black, .clear], startPoint: UnitPoint(x: leading ? 0 : 1, y: 0), endPoint: UnitPoint(x: leading ? 1 : 0, y: 0))
                 .frame(width: gradientLength)
@@ -209,8 +225,16 @@ struct ScrollMask: View {
     }
 }
 
-func startsWithVowel(_ word: String) -> Bool {
+public func startsWithVowel(_ word: String) -> Bool {
     guard let firstChar = word.lowercased().first else { return false }
     let vowels: Set<Character> = ["a", "e", "i", "o", "u"]
     return vowels.contains(firstChar)
+}
+
+public func determineColor(for time: String) -> Color {
+    if dateStringHasPassed(with: time, equalReturnsTrue: false) {
+        return Color.gray
+    } else {
+        return Color.primary
+    }
 }

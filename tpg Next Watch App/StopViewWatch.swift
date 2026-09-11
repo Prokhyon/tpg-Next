@@ -103,7 +103,7 @@ struct StopView: View {
     @EnvironmentObject var stopStore: StopStore
     @State private var timer: AnyCancellable?
     let stopName: String
-    let stopCodedidoc: String
+    let stopSloid: String
     var previousLineRef: String?
     var previousLineName: String?
     var previousLineTime: String?
@@ -139,36 +139,37 @@ struct StopView: View {
     
     var body: some View {
         Group {
-            if viewLineSorted {
-                ZStack {
-                    TabView {
-                        ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
-                            let splitLine = splitString(key, separator: ";")
-                            StopSortedView(lineName: splitLine.0, destination: splitLine.1, currentStopName: stopName, stopEventsList: filteredStopEvents[key]!, showTime: $showTime)
-                                .containerBackground(LineColors.lineColor(for: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName).gradient,
-                                                     for: .tabView)
-                        }
-                    }
-                    .tabViewStyle(.verticalPage)
-                    VStack {
-                        HStack {
-                            Circle()
-                                .strokeBorder(Color.primary, lineWidth: 5)
-                                .background(
-                                    Circle()
-                                        .fill(.black)
-                                )
-                                .frame(width: 20, height: 20)
-                            SmallStopTitleView(stopName: stopName)
-                            if isCloseStop {
-                                Image(systemName: "location.fill")
+            if !stopManager.stopError {
+                if viewLineSorted {
+                    ZStack {
+                        TabView {
+                            ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                                let splitLine = splitString(key, separator: ";")
+                                StopSortedView(lineName: splitLine.0, destination: splitLine.1, currentStopName: stopName, stopEventsList: filteredStopEvents[key]!, showTime: $showTime)
+                                    .containerBackground(LineColors.lineColor(for: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName).gradient,
+                                                         for: .tabView)
                             }
                         }
-                        .padding(.horizontal, 10)
-                        Spacer()
+                        .tabViewStyle(.verticalPage)
+                        VStack {
+                            HStack {
+                                Circle()
+                                    .strokeBorder(Color.primary, lineWidth: 5)
+                                    .background(
+                                        Circle()
+                                            .fill(.black)
+                                    )
+                                    .frame(width: 20, height: 20)
+                                SmallStopTitleView(stopName: stopName)
+                                if isCloseStop {
+                                    Image(systemName: "location.fill")
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            Spacer()
+                        }
                     }
-                }
-            } else {
+                } else {
                     ScrollView {
                         HStack {
                             Circle()
@@ -199,7 +200,28 @@ struct StopView: View {
                     }
                     .containerBackground(Color(white: 0.2).gradient, for: .tabView)
                 }
+            } else {
+                VStack {
+                    HStack {
+                        Circle()
+                            .strokeBorder(Color.primary, lineWidth: 5)
+                            .background(
+                                Circle()
+                                    .fill(.black)
+                            )
+                            .frame(width: 20, height: 20)
+                        SmallStopTitleView(stopName: stopName)
+                        if isCloseStop {
+                            Image(systemName: "location.fill")
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    Spacer()
+                    Text("Pas de départs trouvés")
+                    Spacer()
+                }
             }
+        }
         .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -232,7 +254,7 @@ struct StopView: View {
         .onAppear {
             viewIsVisible = true
             print(stopName)
-            print(stopCodedidoc)
+            print(stopSloid)
             timeRequest = timeRequest(for: previousLineTime)
             getStopEvents()
             if autoRefresh {
@@ -256,7 +278,7 @@ struct StopView: View {
     }
     
 //    private func toggleFavorite() {
-//        if let stop = stopStore.findStop(id: stopCodedidoc) {
+//        if let stop = stopStore.findStop(id: stopSloid) {
 //            if favoritesViewModel.isFavorite(stop) {
 //                favoritesViewModel.removeFavoriteStop(stop)
 //            } else {
@@ -267,7 +289,7 @@ struct StopView: View {
 //    }
     
     private func getStopEvents () {
-        stopManager.selectStop(stopName: stopName, stopCodedidoc: stopCodedidoc, stopEventNumber: requestNumber, timeRequest: timeRequest) {
+        stopManager.selectStop(stopName: stopName, stopSloid: stopSloid, stopEventNumber: requestNumber, timeRequest: timeRequest) {
                     stopEvents = self.stopManager.stopEvents
         }
     }
@@ -295,7 +317,7 @@ struct StopView: View {
     func determineColor(for event: StopEvent) -> Color {
         /*if event.journeyRef == previousLineRef {
             return Color.accentColor
-        } else*/ if compareDateString(with: event.estimatedTime, equalPossible: false) {
+        } else*/ if dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) {
             return Color.gray
         } else {
             return Color.primary
@@ -455,7 +477,7 @@ struct StopView_Previews: PreviewProvider {
         @State var viewLineSorted: Bool = false
         @State var showTime: Bool = false
         
-        return StopView(stopName: "Genève, Rive", stopCodedidoc: "8593006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
+        return StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:93006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
             .environmentObject(stopStore)
             .environmentObject(watchFavorites)
     }
