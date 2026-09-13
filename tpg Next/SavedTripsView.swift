@@ -10,8 +10,8 @@ import MapKit
 import tpgNextFunc
 
 struct SavedTripsView: View {
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
-    @EnvironmentObject var regularTripsModel: RegularTripsModel
+    @Environment(SavedTripsModel.self) var savedTripsModel
+    @Environment(RegularTripsModel.self) var regularTripsModel
     @Binding var isPresented: Bool
     
     let onTripSelected: (TripEvent) -> Void

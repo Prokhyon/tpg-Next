@@ -11,14 +11,14 @@ import MapKit
 import tpgNextFunc
 
 struct SearchView: View {
-    //    @ObservedObject var path: ViewStateStack
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @EnvironmentObject var recentSearchModel: RecentSearch
-    @StateObject var locationManager = LocationManager()
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
+    //    var path: ViewStateStack
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @Environment(RecentSearch.self) var recentSearchModel
+    @State var locationManager = LocationManager()
+    @Environment(SavedTripsModel.self) var savedTripsModel
     
     @State private var resultDetail: searchResultItem?
     @State private var activeFutureTrip: TripEvent?
@@ -227,13 +227,13 @@ struct SearchView: View {
                                    //            .navigationDestination(isPresented: $showTripDetail) {
                                    //                if let stop = selectedSearchResult {
                                    //                    StopView(stopName: stop.title, stopSloid: stop.stop.sloid)
-                                   ////                        .environmentObject(savedTripsModel)
+                                   ////                        .environment(savedTripsModel)
                                    //                }
                                    //            }
                
         if #available(iOS 26, *) {
             searchView
-                .searchable(text: $navigationModel.searchQuery)
+                .searchable(text: Bindable(navigationModel).searchQuery)
         } else {
             searchView
         }
@@ -262,16 +262,16 @@ struct SearchView: View {
 
 struct SearchView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var stopStore = StopStore()
-        @StateObject var favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var stopStore = StopStore()
+        @State var favoritesViewModel = FavoritesViewModel()
+        @State var fullTripTest = FullTripTest()
         @State var showSearch: Bool = true
         
         return NavigationStack() {
             SearchView(/*futureTrips: [fullTripTest.Trip]*/)
-                .environmentObject(favoritesViewModel)
-                .environmentObject(stopStore)
-                .environmentObject(RecentSearch())
+                .environment(favoritesViewModel)
+                .environment(stopStore)
+                .environment(RecentSearch())
 //                    .background(Background())
             }
             

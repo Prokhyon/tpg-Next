@@ -198,8 +198,9 @@ public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: Geo
     OJPClient.post(xmlString, to: .v1) { completion(try? $0.get()) }
 }
 
-public class FullTripTest: ObservableObject {
-    @Published public var Trip: TripEvent
+@Observable
+public class FullTripTest {
+    public var Trip: TripEvent
     public init() {
         self.Trip = TripEvent(id: "AAAA", duration: "PT50M", startTime: "2025-02-08T14:50:42Z", endTime: "2025-02-08T15:35:42Z", startCoordinates: Coordinates(lon: 0.0, lat: 0.0), endCoordinates: Coordinates(lon: 0.0, lat: 0.0), startName: "Meinier, église", endName: "Carouge, Rondeau", startCode: "", endCode: "", geoDeparture: false, geoArrival: false, transfers: "1", legs: [
             TripLeg(id: "A", transfer: true, legBoardStopName: "", legBoardStopId: "", legBoardQuay: "", legBoardTimetableTime: "2025-02-08T14:50:42Z", legBoardEstimatedTime: "2025-02-08T14:50:42Z", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "", legAlightStopId: "", legAlightQuay: "", legAlightTimetableTime: "2025-02-08T14:51:42Z", legAlightEstimatedTime: "2025-02-08T14:51:42Z", legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "", journeyRef: "", publishedLineName: "", legDuration: "PT1M", transferDuration: "PT1M", transferWalkDuration: "PT1M", transferBuffer: "PT1M", transportTypeName: "walk", legOperator: ""),

@@ -11,7 +11,7 @@ import Combine
 import tpgNextFunc
 
 struct StopMapView: View {
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @State var autoRefresh = true
     var quays: [Quay]
     var stopSloid: String
@@ -150,19 +150,19 @@ struct stopMapPreview: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var fullTripTest = FullTripTest()
         
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var regularTripsModel = RegularTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-            @StateObject var itineraryViewModel = ItineraryViewModel()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var regularTripsModel = RegularTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+            @State var itineraryViewModel = ItineraryViewModel()
         return StopMapView(quays: [], stopSloid: "", stopName: "Meinier, Eglise")
-            .environmentObject(itineraryViewModel)
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(savedTripsModel)
-            .environmentObject(regularTripsModel)
-            .environmentObject(appRequirementsClass)
+            .environment(itineraryViewModel)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(savedTripsModel)
+            .environment(regularTripsModel)
+            .environment(appRequirementsClass)
         
     }
 }

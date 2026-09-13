@@ -112,14 +112,14 @@ struct SortedStopEventsView: View {
 }
 
 struct StopView: View {
-    @StateObject private var stopManager = StopManager()
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @StateObject private var lineManager = LineManager()
+    @State private var stopManager = StopManager()
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
-    @EnvironmentObject var stopStore: StopStore
+    @Environment(StopStore.self) var stopStore
     /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
     @State private var refreshGeneration = 0
     let stopName: String
@@ -580,9 +580,9 @@ extension View {
             showTime: false
         )
     }
-    .environmentObject(favoritesViewModel)
-    .environmentObject(appRequirementsClass)
-    .environmentObject(stopStore)
+    .environment(favoritesViewModel)
+    .environment(appRequirementsClass)
+    .environment(stopStore)
 }
 
 #Preview("StopView preview") {
@@ -594,9 +594,9 @@ extension View {
     return NavigationStack {
         ZStack {
             StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
-                .environmentObject(favoritesViewModel)
-                .environmentObject(appRequirementsClass)
-                .environmentObject(stopStore)
+                .environment(favoritesViewModel)
+                .environment(appRequirementsClass)
+                .environment(stopStore)
                 .navigationTitle("Genève, Rive")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -611,8 +611,8 @@ extension View {
                     Spacer()
                     DockView()
                         .padding(.bottom)
-                        .environmentObject(navigationModel)
-                        .environmentObject(stopStore)
+                        .environment(navigationModel)
+                        .environment(stopStore)
                         .offset(y: 20)
                 }
             }

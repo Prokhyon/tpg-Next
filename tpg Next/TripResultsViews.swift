@@ -11,10 +11,10 @@ import tpgNextFunc
 
 extension TripView {
     struct ResultsFavoritesView: View {
-        @EnvironmentObject var stopStore: StopStore
-        @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-        @ObservedObject var viewModel: ItineraryViewModel
-        @EnvironmentObject var recentSearchModel: RecentSearch
+        @Environment(StopStore.self) var stopStore
+        @Environment(FavoritesViewModel.self) var favoritesViewModel
+        @Bindable var viewModel: ItineraryViewModel
+        @Environment(RecentSearch.self) var recentSearchModel
         @Binding var results: Results
 
         var body: some View {
@@ -60,12 +60,12 @@ extension TripView {
     }
     
     struct ResultsSearchView: View {
-        @EnvironmentObject var stopStore: StopStore
-        @ObservedObject var viewModel: ItineraryViewModel
-        @ObservedObject var locationViewModel: LocationSearchViewModel
-        @EnvironmentObject var recentSearchModel: RecentSearch
+        @Environment(StopStore.self) var stopStore
+        @Bindable var viewModel: ItineraryViewModel
+        var locationViewModel: LocationSearchViewModel
+        @Environment(RecentSearch.self) var recentSearchModel
         @Binding var results: Results
-        @StateObject var locationManager = LocationManager()
+        @State var locationManager = LocationManager()
         
         
         @State private var showMap = false
@@ -171,15 +171,15 @@ extension TripView {
     }
     
     struct ResultsCloseStopsView: View {
-        @EnvironmentObject var stopStore: StopStore
-        @ObservedObject var viewModel: ItineraryViewModel
+        @Environment(StopStore.self) var stopStore
+        @Bindable var viewModel: ItineraryViewModel
         
         @Binding var calculationSuccess: Bool
         @Binding var showCloseStops: Bool
         @Binding var closestStops: [Stop]
         @Binding var results: Results
                 
-        @StateObject var locationManager = LocationManager()
+        @State var locationManager = LocationManager()
         
         @State private var showMap = false
         @State private var resultCoordinates: CLLocationCoordinate2D?
@@ -289,10 +289,10 @@ extension TripView {
     }
     
     struct ResultsTripView: View {
-        @ObservedObject var viewModel: ItineraryViewModel
+        @Bindable var viewModel: ItineraryViewModel
         
-        @ObservedObject var tripManager: TripManager
-        @EnvironmentObject var savedTripsModel: SavedTripsModel
+        var tripManager: TripManager
+        @Environment(SavedTripsModel.self) var savedTripsModel
         @Binding var showTime: Bool
         
         let adjustTime: (Int) -> Void
@@ -305,7 +305,7 @@ extension TripView {
                 ForEach(tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime }), id: \.id) { event in
                         NavigationLink {
                             FullTripView(fullTrip: event)
-//                                .environmentObject(savedTripsModel)
+//                                .environment(savedTripsModel)
                         } label: {
                             BasicElement()
                             .padding(4)
@@ -358,7 +358,7 @@ extension TripView {
     }
     
     struct TripFieldButton: View {
-        @ObservedObject var viewModel: ItineraryViewModel
+        @Bindable var viewModel: ItineraryViewModel
         @Binding var searchText: String
         @Binding var showCloseStops: Bool
         @Binding var calculationSuccess: Bool
@@ -370,8 +370,8 @@ extension TripView {
         
         var field: TripField
         
-        @StateObject var locationManager = LocationManager()
-        @EnvironmentObject var stopStore: StopStore
+        @State var locationManager = LocationManager()
+        @Environment(StopStore.self) var stopStore
         
         var body: some View {
             if searchText.isEmpty && viewModel.selectedField == field {
@@ -427,7 +427,7 @@ extension TripView {
         }
     }
     struct TripPointField: View {
-        @ObservedObject var viewModel: ItineraryViewModel
+        @Bindable var viewModel: ItineraryViewModel
         @Binding var results: Results
         var focusField: FocusState<TripField?>.Binding
 
@@ -526,8 +526,8 @@ extension TripView {
     }
     
     struct RecentSearchFavoritesView: View {
-        @ObservedObject var recentSearchModel: RecentSearch
-        @ObservedObject var viewModel: ItineraryViewModel
+        var recentSearchModel: RecentSearch
+        @Bindable var viewModel: ItineraryViewModel
         @Binding var results: Results
         
         @State private var showMap = false

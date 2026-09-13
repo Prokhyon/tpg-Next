@@ -19,7 +19,7 @@ public extension View {
 }
 
 private struct StopSearchModifier: ViewModifier {
-    @EnvironmentObject private var stopStore: StopStore
+    @Environment(StopStore.self) private var stopStore
     let query: String
     @Binding var results: [Stop]
 

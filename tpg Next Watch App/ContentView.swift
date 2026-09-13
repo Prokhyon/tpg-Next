@@ -10,9 +10,9 @@ import tpgNextFunc
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var watchFavorites: WatchFavoritesViewModel
-    @StateObject var locationManager = LocationManager()
+    @Environment(StopStore.self) var stopStore
+    @Environment(WatchFavoritesViewModel.self) var watchFavorites
+    @State var locationManager = LocationManager()
     @State private var closestStops: [Stop] = []
     @State var closeStop: Stop? = nil
     @State var viewCloseStops = false
@@ -142,15 +142,15 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var stopStore = StopStore()
-        @StateObject var watchFavorites = WatchFavoritesViewModel()
+        @State var stopStore = StopStore()
+        @State var watchFavorites = WatchFavoritesViewModel()
         @State var autoRefresh: Bool = false
         @State var viewLineSorted: Bool = true
         @State var showTime: Bool = false
         let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:93006", codedidoc: "8593006", country: "CH", canton: "GE", meansOfTransport: "bus", wgs84Coordinates: Coordinates(lon: 46.2167, lat: 6.1667))
         
         return ContentView(closeStop: stop, autoRefresh: false)
-            .environmentObject(stopStore)
-            .environmentObject(watchFavorites)
+            .environment(stopStore)
+            .environment(watchFavorites)
     }
 }

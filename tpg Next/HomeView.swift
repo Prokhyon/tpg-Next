@@ -11,8 +11,8 @@ import Combine
 import tpgNextFunc
 
 struct FavoriteStopView: View {
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
     var stop: Stop
     var body: some View {
         NavigationLink {
@@ -32,9 +32,9 @@ struct FavoriteStopView: View {
 }
 
 struct FavoriteView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(NavigationModel.self) var navigationModel
     @Binding var isExpanded: Bool
 
     private let columns: [GridItem] = [
@@ -136,11 +136,11 @@ struct FavoriteView: View {
 }
 
 struct HomeDepartures: View {
-//    @ObservedObject var path: ViewStateStack
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject var locationManager = LocationManager()
-//    @StateObject private var stopManager = StopManager()
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+//    var path: ViewStateStack
+    @Environment(StopStore.self) var stopStore
+    @State var locationManager = LocationManager()
+//    @State private var stopManager = StopManager()
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
     @State private var closestStops: [Stop] = []
     @State private var testStop: [Stop] = [Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), Stop(name: "Genève, Place des Eaux-Vives", sloid: "ch:1:sloid:87062", codedidoc: "8587062", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0))]
     @State private var calculationSuccess = false
@@ -313,10 +313,10 @@ struct HomeDepartures: View {
 }
 
 struct SmallStopView: View {
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @StateObject var stopManager = StopManager()
-    @StateObject private var lineManager = LineManager()
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @State var stopManager = StopManager()
+    @State private var lineManager = LineManager()
     @State private var isShowingPopover = false
     
     var stop: Stop
@@ -533,8 +533,8 @@ struct SmallStopView: View {
 }
 
 struct HomeView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
     
     @State private var isExpanded: Bool = false
     @State private var maxRows: Int = 5
@@ -686,30 +686,30 @@ struct HomeView_Previews: PreviewProvider {
         return
             NavigationStack {
                 HomeView(testing: false)
-                    .environmentObject(stopStore)
-                    .environmentObject(favoritesViewModel)
-                    .environmentObject(navigationModel)
+                    .environment(stopStore)
+                    .environment(favoritesViewModel)
+                    .environment(navigationModel)
             }
 //            HomeDepartures(testing: true)
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //            ContentView()
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //            VStack {
 //                Spacer()
 //                SmallStopView(stop: Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), autoRefresh: $autoRefresh)
 //            }
 //            .background(Image("tpgMap"))
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //        VStack {
 //            ClosestStopsView(autoRefresh: $autoRefresh)
-//                .environmentObject(stopStore)
-//                .environmentObject(favoritesViewModel)
+//                .environment(stopStore)
+//                .environment(favoritesViewModel)
 //        }
     }
 }

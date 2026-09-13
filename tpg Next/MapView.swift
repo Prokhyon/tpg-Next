@@ -21,9 +21,9 @@ struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
 }
 
 struct MapView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject private var stopManager = StopManager()
-    @StateObject var locationManager = LocationManager()
+    @Environment(StopStore.self) var stopStore
+    @State private var stopManager = StopManager()
+    @State var locationManager = LocationManager()
     @State private var dataSource = DataSource()
     @State private var selectedResult: String?
     @State private var selectedStop: Stop?
@@ -278,7 +278,7 @@ extension MapView {
             var count: Int
         }
     @Observable
-    final class DataSource: ObservableObject {
+    final class DataSource {
         private let clusterManager = ClusterManager<LocationStop>()
         private var mapStops: [LocationStop] = []
         let test = [33, 57, 39843, 78925]
@@ -359,8 +359,8 @@ struct MapView2_Previews: PreviewProvider {
         let keyboardResponder = KeyboardResponder()
 
         return MapView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(keyboardResponder)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(keyboardResponder)
     }
 }

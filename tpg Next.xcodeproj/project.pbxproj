@@ -45,11 +45,11 @@
 		78D8519B2CFF0EB8002810D5 /* FullTripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D8519A2CFF0EB8002810D5 /* FullTripView.swift */; };
 		78E81CDD2C3D34BC0021DC5D /* NotificationFunc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */; };
 		78FE35632C31A1CD00698FEE /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FE35622C31A1CD00698FEE /* TripView.swift */; };
+		7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000A001 /* WhatsNewView.swift */; };
 		7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */; };
 		7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B021 /* TripResultsViews.swift */; };
 		7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B031 /* TripComponents.swift */; };
 		7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B041 /* SavedTripsView.swift */; };
-		7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000A001 /* WhatsNewView.swift */; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
@@ -186,11 +186,11 @@
 		78D8519A2CFF0EB8002810D5 /* FullTripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullTripView.swift; sourceTree = "<group>"; };
 		78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFunc.swift; sourceTree = "<group>"; };
 		78FE35622C31A1CD00698FEE /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
+		7A1C0DE0000000000000A001 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItineraryViewModel.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B021 /* TripResultsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripResultsViews.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B031 /* TripComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripComponents.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B041 /* SavedTripsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedTripsView.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000A001 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B02 /* DeparturesProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeparturesProvider.swift; sourceTree = "<group>"; };
@@ -1074,7 +1074,7 @@
 					"@executable_path/..",
 					"@loader_path/..",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1106,7 +1106,7 @@
 					"@executable_path/..",
 					"@loader_path/..",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

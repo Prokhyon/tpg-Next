@@ -173,8 +173,8 @@ struct SettingsView: View {
 }
 
 struct FavoritesOrderView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
 //    @Binding var orderFavorites: Bool
     
     var body: some View {
@@ -213,7 +213,7 @@ struct FavoritesOrderView: View {
 }
 
 struct ScheduledNotifications: View {
-    @ObservedObject var transportNotificationManager = BusNotificationManager.shared
+    var transportNotificationManager = BusNotificationManager.shared
     
     let notificationManager = NotificationManager.shared
     
@@ -332,7 +332,7 @@ struct SettingsView_Previews: PreviewProvider {
         let favoritesViewModel = FavoritesViewModel()
         
         return SettingsView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
     }
 }

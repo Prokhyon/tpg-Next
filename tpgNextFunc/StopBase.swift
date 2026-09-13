@@ -151,12 +151,15 @@ extension String {
     }
 }
 
-public class StopStore: ObservableObject {
-    @Published public private(set) var stops: [Stop] = []
-    @Published public private(set) var activeStops: [Stop] = []
-    @Published public var location: CLLocation?
+@Observable
+public class StopStore {
+    public private(set) var stops: [Stop] = []
+    public private(set) var activeStops: [Stop] = []
+    public var location: CLLocation?
     /// Vrai une fois la base chargée, ce qui se fait en arrière-plan.
-    @Published public private(set) var isLoaded = false
+    public private(set) var isLoaded = false
+    /// Les appels à `waitUntilLoaded` en attente, repris à la fin du chargement.
+    @ObservationIgnored private var loadWaiters: [CheckedContinuation<Void, Never>] = []
     
     /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
     private var stopsBySloid: [String: Stop] = [:]
@@ -180,6 +183,8 @@ public class StopStore: ObservableObject {
                 self.activeStops = active
                 self.searchIndex = index
                 self.isLoaded = true
+                self.loadWaiters.forEach { $0.resume() }
+                self.loadWaiters = []
             }
         }
     }
@@ -187,9 +192,8 @@ public class StopStore: ObservableObject {
     /// Rend la main une fois la base chargée, tout de suite si elle l'est déjà.
     @MainActor
     public func waitUntilLoaded() async {
-        for await loaded in $isLoaded.values where loaded {
-            return
-        }
+        guard !isLoaded else { return }
+        await withCheckedContinuation { loadWaiters.append($0) }
     }
 
     // MARK: - Chargement
@@ -339,15 +343,16 @@ public enum FavoritesStorage {
     }
 }
 
-public class FavoritesViewModel: ObservableObject {
+@Observable
+public class FavoritesViewModel {
     public static let shared = FavoritesViewModel()
 
     /// Les identités persistées, dans l'ordre choisi par l'utilisateur.
-    @Published public private(set) var favorites: [FavoriteStop] = []
+    public private(set) var favorites: [FavoriteStop] = []
 
     /// Les favoris résolus contre la base — c'est ce que consomment les vues.
     /// Même ordre et même cardinalité que `favorites`, donc les index restent alignés.
-    @Published public private(set) var favoriteStops: [Stop] = []
+    public private(set) var favoriteStops: [Stop] = []
 
     private weak var stopStore: StopStore?
 

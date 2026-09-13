@@ -29,17 +29,18 @@ enum Tabs: String, Equatable, Hashable {
 
 
 
-class NavigationModel: ObservableObject {
-    @Published var selectedTab: Tabs = .home
+@Observable
+class NavigationModel {
+    var selectedTab: Tabs = .home
     /// Texte de l'onglet Recherche, partagé par son champ et celui du dock (avant iOS 26).
-    @Published var searchQuery = ""
+    var searchQuery = ""
     /// Ouvertures depuis une notification ou le widget, poussées sur la pile des départs.
-    @Published var selectedStopViewData: StopViewData?
-    @Published var selectedLineViewData: LineViewData?
+    var selectedStopViewData: StopViewData?
+    var selectedLineViewData: LineViewData?
     /// Identité de la pile de chaque onglet. Les écrans sont poussés par des
     /// `NavigationLink(destination:)`, sans chemin à vider : changer l'identité recrée
     /// la pile, donc revient à sa racine.
-    @Published private var stackResets: [Tabs: Int] = [:]
+    private var stackResets: [Tabs: Int] = [:]
 
     init(selectedTab: Tabs = .home) {
         self.selectedTab = selectedTab
@@ -78,19 +79,19 @@ struct LineViewData: Identifiable, Hashable {
 }
 
 struct ContentView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @StateObject var savedTripsModel = SavedTripsModel()
-    @StateObject var regularTripsModel = RegularTripsModel()
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @State var savedTripsModel = SavedTripsModel()
+    @State var regularTripsModel = RegularTripsModel()
     /// Une seule instance, partagée par la recherche et l'itinéraire : chacun avait la sienne.
-    @StateObject var recentSearchModel = RecentSearch()
-    @StateObject var itineraryViewModel = ItineraryViewModel()
-    @StateObject private var keyboardResponder = KeyboardResponder()
-    @StateObject private var tripManager = TripManager()
-    @StateObject var notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
-    @StateObject var locationManager = LocationManager()
-    @StateObject var navigationModel = NavigationModel()
+    @State var recentSearchModel = RecentSearch()
+    @State var itineraryViewModel = ItineraryViewModel()
+    @State private var keyboardResponder = KeyboardResponder()
+    @State private var tripManager = TripManager()
+    @State var notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
+    @State var locationManager = LocationManager()
+    @State var navigationModel = NavigationModel()
     
     
     @State private var viewingTrip = false
@@ -108,14 +109,14 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-                TabView(selection: $navigationModel.selectedTab) {
+                TabView(selection: Bindable(navigationModel).selectedTab) {
                     Tab("Départs", systemImage: "house", value: .home) {
                         NavigationStack() {
                             HomeView(testing: !autoRefresh)
 //                                .background(Background())
                                 // Doivent rester à l'intérieur du NavigationStack : appliquées
                                 // sur la pile elle-même, les destinations ne sont jamais poussées.
-                                .navigationDestination(item: $navigationModel.selectedStopViewData) { data in
+                                .navigationDestination(item: Bindable(navigationModel).selectedStopViewData) { data in
                                     StopView(
                                         stopName: data.stopName,
                                         stopSloid: data.stopID,
@@ -125,7 +126,7 @@ struct ContentView: View {
                                         previousLineTime: data.estimatedTime.isEmpty ? nil : data.estimatedTime
                                     )
                                 }
-                                .navigationDestination(item: $navigationModel.selectedLineViewData) { data in
+                                .navigationDestination(item: Bindable(navigationModel).selectedLineViewData) { data in
                                     LineView(stopEvent: data.event,
                                              currentStop: data.stop,
                                              currentLine: data.event.lineName)
@@ -141,8 +142,8 @@ struct ContentView: View {
                         }
                         .id(navigationModel.stackID(.trip))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
-                        .environmentObject(savedTripsModel)
-                        .environmentObject(regularTripsModel)
+                        .environment(savedTripsModel)
+                        .environment(regularTripsModel)
                     }
                     Tab("Carte", systemImage: "map", value: .map) {
                         NavigationStack() {
@@ -155,15 +156,15 @@ struct ContentView: View {
                         NavigationStack() {
                             SearchView()
                         }
-                        .environmentObject(savedTripsModel)
+                        .environment(savedTripsModel)
                         .id(navigationModel.stackID(.search))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                 }
-                .environmentObject(itineraryViewModel)
-                .environmentObject(recentSearchModel)
-                .environmentObject(navigationModel)
-                .environmentObject(appRequirementsClass)
+                .environment(itineraryViewModel)
+                .environment(recentSearchModel)
+                .environment(navigationModel)
+                .environment(appRequirementsClass)
             if #available(iOS 26, *), !testingNewDock {
             } else {
                 if !(keyboardResponder.isKeyboardVisible && navigationModel.selectedTab != .search) {
@@ -171,7 +172,7 @@ struct ContentView: View {
                         Spacer()
                         DockView()
                             .padding(.bottom)
-                            .environmentObject(navigationModel)
+                            .environment(navigationModel)
                             .offset(y: keyboardResponder.isKeyboardVisible ? 0 : 20)
                             .background {
                                 Capsule()
@@ -218,7 +219,7 @@ struct ContentView: View {
             //                        .presentationDetents([.fraction(0.9)])
             //                        .presentationCornerRadius(35)
             //                        .presentationBackground(.thinMaterial)
-            //                        .environmentObject(stopStore)
+            //                        .environment(stopStore)
             //                        .navigationTitle("Recherche") // Set back button text
             //                        .navigationBarTitleDisplayMode(.inline)
             //                        .toolbar {
@@ -359,9 +360,10 @@ struct ContentView: View {
 }
 
 
-class KeyboardResponder: ObservableObject {
-    @Published var isKeyboardVisible = false
-    private var cancellable: AnyCancellable?
+@Observable
+class KeyboardResponder {
+    var isKeyboardVisible = false
+    @ObservationIgnored private var cancellable: AnyCancellable?
 
     init() {
         let willShow = NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
@@ -379,8 +381,8 @@ class KeyboardResponder: ObservableObject {
 }
 
 struct DockView: View {
-    @EnvironmentObject var navigationModel: NavigationModel
-    @EnvironmentObject var stopStore: StopStore
+    @Environment(NavigationModel.self) var navigationModel
+    @Environment(StopStore.self) var stopStore
     @Namespace var animationNamespace
     
     @State var previousMainTab: Tabs = .home
@@ -447,7 +449,7 @@ struct DockView: View {
                         .font(search ? .callout : .title2)
                         .foregroundStyle(search ? .gray : .primary)
                     if search {
-                        TextField("Rechercher un arrêt", text: $navigationModel.searchQuery)
+                        TextField("Rechercher un arrêt", text: Bindable(navigationModel).searchQuery)
                             .focused($searchFocus)
                     }
                 }
@@ -498,7 +500,7 @@ struct DockView: View {
     }
 
     struct dockButton: View {
-        @EnvironmentObject var navigationModel: NavigationModel
+        @Environment(NavigationModel.self) var navigationModel
         @Binding var previousMainTab: Tabs
         var searchFocus: FocusState<Bool>.Binding
         let tab: Tabs
@@ -537,14 +539,14 @@ struct DockView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
-        @StateObject var favoritesViewModel = FavoritesViewModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
+        @State var favoritesViewModel = FavoritesViewModel()
+        @State var appRequirementsClass = AppRequirementsClass()
         
         return ContentView(testingNewDock: false)
 //        return DockTestView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(appRequirementsClass)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(appRequirementsClass)
         
         
 //            .mask {

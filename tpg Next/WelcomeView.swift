@@ -45,7 +45,7 @@ struct WelcomeView: View {
     struct WelcomePage1: View {
         @Binding var page: welcomePage
         @Binding var viewingWelcome: Bool
-        @StateObject var locationManager = LocationManager()
+        @State var locationManager = LocationManager()
         let notificationManager = NotificationManager.shared
         @AppStorage(SettingKey.notificationAsked) var notificationAuthorizationAsked = false
         
@@ -169,7 +169,7 @@ struct WelcomeView: View {
         }
     }
     struct WelcomePage2: View {
-        @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+        @Environment(FavoritesViewModel.self) var favoritesViewModel
         @Binding var page: welcomePage
         @Binding var viewingWelcome: Bool
         @State var favorite = false
@@ -459,7 +459,7 @@ struct notificationTestView: View {
 
 #Preview {
     @Previewable @State var welcome: Bool = true
-    @Previewable  @StateObject var favoritesViewModel = FavoritesViewModel()
+    @Previewable  @State var favoritesViewModel = FavoritesViewModel()
     WelcomeView(viewingWelcome: $welcome)
-        .environmentObject(favoritesViewModel)
+        .environment(favoritesViewModel)
 }
