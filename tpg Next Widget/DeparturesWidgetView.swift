@@ -158,10 +158,7 @@ struct DepartureRow: View {
     @Environment(\.widgetRenderingMode) var widgetRenderingMode
 
     var body: some View {
-        let departure = displayTimeOrMinutesRemaining(for: event.timetabledTime,
-                                                      estimatedInput: event.estimatedTime,
-                                                      with: false,
-                                                      at: referenceDate)
+        let departure = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: false, at: referenceDate)
         HStack(spacing: 6) {
             BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 .font(.caption)
@@ -171,17 +168,12 @@ struct DepartureRow: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer(minLength: 2)
-            if departure.text == "0" {
-                transportIcon(with: event.transportType)
-                    .font(.caption)
-            } else {
-                Text(departure.text)
-                    .font(.caption)
-                    .bold()
-                    .foregroundStyle(departure.color)
-                    .lineLimit(1)
-            }
-            QuayIcon(quay: event.plannedQuay)
+            DepartureTimeView(departure, transportType: event.transportType)
+                .font(.caption)
+                .bold()
+                .lineLimit(1)
+            QuayIcon(quay: event.plannedQuay, dimsUnknown: true)
+                .font(.caption)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -199,20 +191,6 @@ struct DepartureRow: View {
                 BasicElement().opacity(0.5)
             }
             
-        }
-    }
-}
-
-/// Le quai n'a un symbole SF que s'il tient sur un caractère, ce qui est le cas
-/// des quais tpg mais pas de tous les exploitants.
-struct QuayIcon: View {
-    let quay: String
-
-    var body: some View {
-        if let character = quay.first, quay.count == 1, character.isLetter || character.isNumber {
-            Image(systemName: "\(quay.lowercased()).square.fill").font(.caption)
-        } else {
-            Image(systemName: "questionmark.square.fill").font(.caption).foregroundStyle(.secondary)
         }
     }
 }

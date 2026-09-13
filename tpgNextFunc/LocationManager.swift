@@ -26,14 +26,32 @@ public final class LocationManager: NSObject, ObservableObject, CLLocationManage
         locationManager.requestWhenInUseAuthorization()
     }
 
+    /// La cause du dernier échec, `nil` après une position obtenue. `.denied` : l'utilisateur
+    /// doit autoriser la localisation ; autre chose : la position est introuvable pour l'instant.
+    @Published public private(set) var lastFailure: CLError.Code?
+
+    /// Nouveaux essais sur `locationUnknown`, une erreur passagère : iOS n'a pas encore de position.
+    private var retriesLeft = 0
+    /// Une position est demandée en attendant la réponse à la demande d'autorisation.
+    private var awaitsAuthorization = false
+
     public func requestLocation(completion: @escaping (CLLocation?) -> Void) {
         locationUpdateHandler = completion
-        locationManager.requestLocation()
+        retriesLeft = 2
+        // Sans autorisation encore demandée (accueil passé, app réinstallée), `requestLocation`
+        // échouerait sans rien proposer : on demande d'abord l'autorisation.
+        if locationManager.authorizationStatus == .notDetermined {
+            awaitsAuthorization = true
+            locationManager.requestWhenInUseAuthorization()
+        } else {
+            locationManager.requestLocation()
+        }
     }
 
     public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         userLocation = location
+        lastFailure = nil
         #if os(iOS)
         // Repli du widget : sans autorisation « Toujours », l'extension n'a pas le droit
         // de demander la position et se rabat sur la dernière connue de l'app.
@@ -46,12 +64,32 @@ public final class LocationManager: NSObject, ObservableObject, CLLocationManage
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         locationStatus = manager.authorizationStatus
         Log.location.info("Autorisation de localisation : \(manager.authorizationStatus.rawValue)")
+        guard awaitsAuthorization, manager.authorizationStatus != .notDetermined else { return }
+        awaitsAuthorization = false
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.requestLocation()
+        default:
+            lastFailure = .denied
+            locationUpdateHandler?(nil)
+        }
     }
 
     /// Sans ce rappel, un refus ou une absence de signal laissait l'appelant attendre
-    /// indéfiniment (écran bloqué sur « Chargement... »).
+    /// indéfiniment (écran bloqué sur « Chargement... »). Une position pas encore connue
+    /// (`locationUnknown`) est d'abord redemandée : l'annoncer tout de suite affichait
+    /// « Position indisponible » alors qu'elle arrivait une seconde plus tard.
     public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if (error as? CLError)?.code == .locationUnknown, retriesLeft > 0 {
+            retriesLeft -= 1
+            Log.location.debug("Position pas encore connue, nouvel essai")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+                self?.locationManager.requestLocation()
+            }
+            return
+        }
         Log.location.error("Position indisponible : \(error.localizedDescription)")
+        lastFailure = (error as? CLError)?.code ?? .locationUnknown
         locationUpdateHandler?(nil)
     }
 }

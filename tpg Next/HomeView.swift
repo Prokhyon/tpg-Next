@@ -26,21 +26,7 @@ struct FavoriteStopView: View {
         .foregroundStyle(.primary)
         .contentShape(.contextMenuPreview, Capsule())
         .contextMenu {
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-            }) {
-                Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-            }
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-            }) {
-                Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-            }
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-            }) {
-                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-            }
+            TripActionsMenu(stop: stop)
         }
     }
 }
@@ -240,7 +226,13 @@ struct HomeDepartures: View {
                                             .padding(.top, 70)
                                     }
                                 } else if locationFailed {
-                                        Text("Position indisponible. Autorisez la localisation pour voir les départs à proximité.")
+                                        Group {
+                                            if locationManager.lastFailure == .denied {
+                                                Text("Autorisez la localisation pour voir les départs à proximité.")
+                                            } else {
+                                                Text("Position introuvable pour l'instant.")
+                                            }
+                                        }
                                         .multilineTextAlignment(.center)
                                         .padding(.top, 70)
                                         .padding(.horizontal)
@@ -527,21 +519,7 @@ struct SmallStopView: View {
     private func TripButton() -> some View {
         HStack {
             let menu = Group {
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                }) {
-                    Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                }
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                }) {
-                    Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                }
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                }) {
-                    Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                }
+                TripActionsMenu(stop: stop)
             }
             if isHome {
                 Button(action: {

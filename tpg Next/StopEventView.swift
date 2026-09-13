@@ -17,36 +17,14 @@ struct StopEventView: View  {
     
     var body: some View {
         let content = HStack {
-            let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime,  with: showTime)
+            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime)
             BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
             Image(systemName: "arrow.right").font(.caption)
             SmallStopTitleView(stopName: event.destination)
             Spacer()
-            if transportTime.text == "0" {
-                transportIcon(with: event.transportType).frame(width: 10)
-            } else {
-                if transportTime.text.count > 6 {
-                    let splitTime = splitString(transportTime.text, separator: ";" )
-                    VStack(spacing: 0) {
-                        Text(splitTime.0)
-                        Text(splitTime.1)
-                            .foregroundStyle(transportTime.color)
-                            .minimumScaleFactor(0.5)
-                    }
-                    .padding(.vertical, 4)
-                    
-                } else {
-                    Text(transportTime.text)
-                        .padding(.vertical, 4)
-                        .minimumScaleFactor(0.5)
-                        .foregroundStyle(transportTime.color)
-                }
-            }
-            if event.plannedQuay == "" {
-                Image(systemName: "questionmark.square.fill")
-            } else {
-                Image(systemName: "\(event.plannedQuay).square.fill".lowercased())
-            }
+            DepartureTimeView(transportTime, transportType: event.transportType, iconWidth: 10)
+                .padding(.vertical, 4)
+            QuayIcon(quay: event.plannedQuay)
         }
             .padding(.horizontal)
 //            Capsule()

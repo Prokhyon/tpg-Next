@@ -108,7 +108,7 @@ struct DepartureDisplayTests {
     }
 
     private func display(_ timetabled: String, _ estimated: String = "", showTime: Bool = false) -> String {
-        displayTimeOrMinutesRemaining(for: timetabled, estimatedInput: estimated, with: showTime, at: now).text
+        departureDisplay(timetabled: timetabled, estimated: estimated, showTime: showTime, at: now).text
     }
 
     @Test func countdown() {
@@ -128,6 +128,19 @@ struct DepartureDisplayTests {
         if !SharedStorage.bool(forSetting: SettingKey.delayIncludedInTime) {
             #expect(display("2026-09-13T10:05:00Z", "2026-09-13T10:08:00Z", showTime: true) == "\(localTime("2026-09-13T10:05:00Z"));(+3')")
         }
+    }
+
+    @Test func cases() {
+        #expect(departureDisplay(timetabled: "2026-09-13T10:05:00Z", estimated: "2026-09-13T10:07:00Z", showTime: false, at: now) == .minutes(7, delayed: true))
+        #expect(departureDisplay(timetabled: "2026-09-13T10:00:20Z", estimated: "", showTime: false, at: now) == .atStop)
+        #expect(departureDisplay(timetabled: "n/a", estimated: "", showTime: false, at: now) == .unknown)
+        #expect(DepartureDisplay.plannedWithDelay(planned: "14:05", delay: "(+3')").isHighlighted)
+        #expect(!DepartureDisplay.minutes(5, delayed: false).isHighlighted)
+    }
+
+    @Test(arguments: [("A", "a.square.fill"), ("3", "3.square.fill"), ("12", "12.square.fill"), ("", nil), ("A1", nil), ("É", nil), ("51", nil)])
+    func quaySymbols(_ quay: String, _ expected: String?) {
+        #expect(QuayIcon.symbolName(for: quay) == expected)
     }
 
     @Test func unreadableTimeGivesAnEmptyText() {

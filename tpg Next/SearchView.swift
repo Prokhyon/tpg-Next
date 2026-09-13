@@ -67,21 +67,7 @@ struct SearchView: View {
                                         .padding(5)
                                         .contentShape(.contextMenuPreview, Capsule())
                                         .contextMenu {
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                                            }) {
-                                                Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                                            }
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                                            }) {
-                                                Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                                            }
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                                            }) {
-                                                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                                            }
+                                            TripActionsMenu(stop: stop)
                                         }
                                         .padding(.horizontal)
                                     }
@@ -182,21 +168,7 @@ struct SearchView: View {
                                 .padding(5)
                                 .contentShape(.contextMenuPreview, Capsule())
                                 .contextMenu {
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                                    }) {
-                                        Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                                    }
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                                    }) {
-                                        Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                                    }
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                                    }) {
-                                        Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                                    }
+                                    TripActionsMenu(stop: stop)
                                 }
                             }
                         }

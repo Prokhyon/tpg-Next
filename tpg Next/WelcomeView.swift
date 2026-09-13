@@ -424,7 +424,7 @@ struct notificationTestView: View {
                     SmallStopTitleView(stopName: "Lancy-Bachet, gare")
                     Spacer()
                             Text("12:34").frame(width: 50)
-                        Image(systemName: "c.square.fill".lowercased())
+                        QuayIcon(quay: "C")
                     }
                     .padding(.horizontal)
             )

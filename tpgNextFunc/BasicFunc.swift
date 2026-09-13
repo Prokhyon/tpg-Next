@@ -64,41 +64,6 @@ extension String {
     }
 }
 
-/// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
-///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
-public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool, at now: Date = Date()) -> (text: String, color: Color) {
-    // Lu dans le groupe d'app : @AppStorage écrit dans .standard, invisible depuis le widget.
-    let delayTimeIntegrated = SharedStorage.bool(forSetting: SettingKey.delayIncludedInTime)
-    let estimatedInput = estimatedInput.isEmpty ? timetableInput : estimatedInput
-    guard let timetableTime = OJPDate.date(from: timetableInput),
-          let estimatedTime = OJPDate.date(from: estimatedInput) else {
-        Log.data.error("Dates illisibles : \(timetableInput) / \(estimatedInput)")
-        return ("", .yellow)//to change, yellow just for testing
-    }
-
-    let estimatedClock = OJPDate.clockTime(from: estimatedTime)
-    let timetableClock = OJPDate.clockTime(from: timetableTime)
-    let minutesRemaining = estimatedTime.timeIntervalSince(now) / 60
-    let delay = Int(estimatedTime.timeIntervalSince(timetableTime) / 60)
-    let delayString = delay > 0 ? "(+\(delay)')" : "(\(delay)')"
-    let delayColor: Color = delay > 0 ? .accent : .primary
-
-    if showTime && minutesRemaining > 0 {
-        if delay == 0 {
-            return (timetableClock, .primary)
-        }
-        return delayTimeIntegrated ? (estimatedClock, delayColor) : ("\(timetableClock);\(delayString)", .accent)
-    } else if minutesRemaining < 60 && minutesRemaining > 1 {
-        return ("\(Int(minutesRemaining))'", delayColor)
-    } else if minutesRemaining <= 1 && minutesRemaining > 0.5 {
-        return ("< 1'", delayColor)
-    } else if Int(minutesRemaining) == 0 {
-        return ("0", .primary)
-    } else {
-        return (estimatedClock, .primary)
-    }
-}
-
 /// `true` si l'heure OJP est passée, à la minute près : les secondes sont ignorées.
 /// - Parameter equalReturnsTrue: la minute en cours compte déjà comme passée.
 public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = Date()) -> Bool {
