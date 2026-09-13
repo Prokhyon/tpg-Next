@@ -149,29 +149,6 @@ struct FavoriteView: View {
     }
 }
 
-//A supprimer ? Pas sur de l'utilité
-struct StopDropDelegate: DropDelegate {
-    let item: Stop
-    @Binding var current: [Stop]
-    @Binding var draggingItem: Stop?
-    
-    func performDrop(info: DropInfo) -> Bool {
-        self.draggingItem = nil
-        return true
-    }
-    
-    func dropEntered(info: DropInfo) {
-        guard let draggingItem = self.draggingItem,
-              draggingItem != item,
-              let fromIndex = current.firstIndex(of: draggingItem),
-              let toIndex = current.firstIndex(of: item) else { return }
-        
-        withAnimation {
-            self.current.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
-        }
-    }
-}
-
 struct HomeDepartures: View {
 //    @ObservedObject var path: ViewStateStack
     @EnvironmentObject var stopStore: StopStore
@@ -182,6 +159,8 @@ struct HomeDepartures: View {
     @State private var closestStops: [Stop] = []
     @State private var testStop: [Stop] = [Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), Stop(name: "Genève, Place des Eaux-Vives", sloid: "ch:1:sloid:87062", codedidoc: "8587062", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0))]
     @State private var calculationSuccess = false
+    /// Position refusée ou introuvable : sans ça l'accueil restait sur « Chargement... ».
+    @State private var locationFailed = false
     @State private var currentIndex = 0
     @AppStorage("homeFavorites") var homeFavorites = false
     var testing: Bool = false
@@ -204,10 +183,6 @@ struct HomeDepartures: View {
 //                                                .background(Rectangle().fill(.red))
                                         
                                         .tag(index)
-                                        .onAppear {
-                                            print(currentIndex)
-                                            print(index)
-                                        }
                                     }
                                 }
                                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -242,11 +217,6 @@ struct HomeDepartures: View {
 //                                                .background(Rectangle().fill(.red))
                                                 
                                                 .tag(index)
-                                                .onAppear {
-                                                    print(closestStops)
-                                                    print(currentIndex)
-                                                    print(index)
-                                                }
                                             }
                                         }
                                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -269,6 +239,11 @@ struct HomeDepartures: View {
                                             Text("Pas d'arrêt à proximité trouvé.")
                                             .padding(.top, 70)
                                     }
+                                } else if locationFailed {
+                                        Text("Position indisponible. Autorisez la localisation pour voir les départs à proximité.")
+                                        .multilineTextAlignment(.center)
+                                        .padding(.top, 70)
+                                        .padding(.horizontal)
                                 } else {
                                         Text("Chargement...")
                                         .padding(.top, 70)
@@ -309,7 +284,6 @@ struct HomeDepartures: View {
                         }
         .onAppear {
                 setupLocationAndTimer()
-            print("cs count:", closestStops.count)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 setupLocationAndTimer()
@@ -342,10 +316,10 @@ struct HomeDepartures: View {
     
     private func getLocation() {
         locationManager.requestLocation { location in
-            if let userLocation = locationManager.userLocation {
+            if let userLocation = location ?? locationManager.userLocation {
+                locationFailed = false
                 let stopList = stopStore.activeStops
                 let radiusList = stopsInBoundingBox(from: userLocation, radius: 1000, stops: stopList)
-                print(radiusList)
                 calculateClosestBusStops(from: userLocation, stops: radiusList, nb: 3) { success, stops in
                     DispatchQueue.main.async {
                         calculationSuccess = success
@@ -360,7 +334,8 @@ struct HomeDepartures: View {
                 }
                 stopStore.location = userLocation
             } else {
-                print("Location error")
+                Log.location.error("Position indisponible pour les départs à proximité")
+                locationFailed = true
             }
             locationManager.locationUpdateHandler = nil
         }
@@ -629,17 +604,13 @@ struct SmallStopView: View {
     
     private func setupStopManager() {
         if !testing {
-            stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date()) {
-                print("Stop selected: \(stop.name)")
-            }
+            stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
         }
         if !testing {
             timer = Timer.publish(every: 30, on: .main, in: .common)
                 .autoconnect()
                 .sink { _ in
-                    stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date()) {
-                        print("Timer refreshed for stop: \(stop.name)")
-                    }
+                    stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
                 }
         }
     }
@@ -696,9 +667,6 @@ struct HomeView: View {
                             }
                             
                             FavoriteView(isExpanded: $isExpanded, maxRows: Int((UIScreen.main.bounds.height/168).rounded()))//168 used to obtain the right amount of rows based on the screen size. 3 for the SE, 4 for the mini and 5 for regular size.
-                                .onAppear {
-                                    print(UIScreen.main.bounds.height)
-                                }
                             VStack(spacing: 0) {
 
                                 
@@ -805,30 +773,6 @@ struct Fancy3DotsIndexView: View {
   func shouldShowIndex(_ index: Int) -> Bool {
     ((currentIndex - 1)...(currentIndex + 1)).contains(index)
   }
-}
-
-struct SizeView: View {
-    var body: some View {
-        GeometryReader {geometry in
-            VStack {
-                Text("Sizes")
-                    .font(.title)
-                VStack {
-                    Text("Screen width via UIScreen: \(Int(UIScreen.main.bounds.width))")
-                    Text("Screen height via UIScreen: \(Int(UIScreen.main.bounds.height))")
-                    Text("This VStack height: \(Int(geometry.size.height))")
-                    Text("This VStack width: \(Int(geometry.size.width))")
-                }
-            }
-        }
-    }
-}
-
-
-struct homeDepartureDisplayView: View {
-    var body: some View {
-        
-    }
 }
 
 struct HomeView_Previews: PreviewProvider {

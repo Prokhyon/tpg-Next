@@ -267,6 +267,10 @@ struct ScheduledNotifications: View {
 //                    .contentMargins(.top, 60.0, for: .automatic)
                 }
         }
+        // La liste ne survit pas à une relance : on la relit auprès du système.
+        .onAppear {
+            transportNotificationManager.refreshScheduledNotifications()
+        }
     }
 }
 

@@ -11,38 +11,23 @@ import tpgNextFunc
 public class StopManager: ObservableObject {
     @Published public var stopEvents: [StopEvent] = []
     @Published public var stopError: Bool = false
-    var testing: Bool = false
     
     
     @Published public var quays: [Quay] = []
     public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
         self.stopError = false
-        if testing {
-            if self.stopEvents.isEmpty {
-                if var mockData = loadStopEventsFromAssets() {
-                    print("Using mock data for debugging.")
-                    changeTime(&mockData)
-                    self.stopEvents = mockData
-                    completion()
-                    return
-                }
-            } else {
-                return
-            }
-        }
         
         fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { success, data in
             if success, let data = data?.data(using: .utf8) {
-                print("Number of request event: \(stopEventNumber)")
                 parseStopEvents(from: data, stopCode: stopSloid) { stopEvents, quays, error in
                     if let error = error {
                             switch error {
                             case .noEventFound(let msg):
                                 self.stopError = true
-                                print("Aucun arrêt trouvé: \(msg)")
+                                Log.network.info("Aucun départ : \(msg)")
                             default:
                                 self.stopError = true
-                                print("Erreur lors du parsing")
+                                Log.network.error("Départs : réponse illisible")
                             }
                             return
                         }
@@ -50,7 +35,7 @@ public class StopManager: ObservableObject {
                         self.stopEvents = stopEvents
                         self.quays = quays
                         //                            saveStopEventsToFile(stopEvents: stopEvents)
-                        print("Stop events updated: \(stopEvents.count) events found")
+                        Log.network.debug("\(stopEvents.count) départs reçus")
                         //                            print(stopEvents)
                         completion()
                     }
@@ -58,7 +43,7 @@ public class StopManager: ObservableObject {
             } else {
                 self.stopError = true
                 DispatchQueue.main.async {
-                    print("Failed to fetch or parse stop events.")
+                    Log.network.error("Départs : requête échouée")
                     completion()
                 }
             }
@@ -162,7 +147,7 @@ public class SavedTripsModel: ObservableObject {
             let data = try JSONEncoder().encode(savedTrips)
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         } catch {
-            print("Error encoding trips: \(error)")
+            Log.data.error("Enregistrement des itinéraires impossible : \(error.localizedDescription)")
         }
     }
     
@@ -171,9 +156,8 @@ public class SavedTripsModel: ObservableObject {
             do {
                 let trips = try JSONDecoder().decode([TripEvent].self, from: data)
                 self.savedTrips = trips
-                print("trips loaded")
             } catch {
-                print("Error decoding trips: \(error)")
+                Log.data.error("Lecture des itinéraires impossible : \(error.localizedDescription)")
             }
         }
     }

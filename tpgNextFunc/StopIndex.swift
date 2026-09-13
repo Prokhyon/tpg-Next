@@ -59,10 +59,10 @@ public enum StopIndex {
         do {
             try encode(stops).write(to: fileURL, options: .atomic)
             SharedStorage.defaults.set(signature, forKey: signatureKey)
-            print("StopIndex written: \(stops.count) stops")
+            Log.data.info("Index des arrêts écrit : \(stops.count) arrêts")
             return true
         } catch {
-            print("Failed to write stop index: \(error)")
+            Log.data.error("Écriture de l'index des arrêts impossible : \(error.localizedDescription)")
             return false
         }
     }

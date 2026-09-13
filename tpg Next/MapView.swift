@@ -115,7 +115,6 @@ struct MapView: View {
 //                                    )
 //                                )
 //                            }
-                            print("selected: ", stop.wgs84Coordinates)
                         }
                         if selectedResult == nil {
                             selectedStop = nil
@@ -341,7 +340,6 @@ func copyToMapStops(activeStops: [Stop]) -> [LocationStop] {
     let mapStops = activeStops.map { stop in
         LocationStop(coordinate: stop.wgs84Coordinates.toCLLocationCoordinate2D, id: stop.id, name: stop.name)
     }
-    print("mapStops copy done")
     return mapStops
 }
 

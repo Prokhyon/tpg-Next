@@ -238,7 +238,6 @@ struct StopView: View {
             if scenePhase == .active && viewIsVisible {
                 getStopEvents()
                 if autoRefresh {
-                    print("timer started")
                     timer = Timer.publish(every: 30, on: .main, in: .common)
                         .autoconnect()
                         .sink { _ in
@@ -247,18 +246,14 @@ struct StopView: View {
                 }
             } else {
                 timer?.cancel()
-                print("timer canceled")
                             }
             
         }
         .onAppear {
             viewIsVisible = true
-            print(stopName)
-            print(stopSloid)
             timeRequest = timeRequest(for: previousLineTime)
             getStopEvents()
             if autoRefresh {
-                print("timer started")
                 timer = Timer.publish(every: 30, on: .main, in: .common)
                     .autoconnect()
                     .sink { _ in
@@ -273,7 +268,6 @@ struct StopView: View {
         .onDisappear {
             viewIsVisible = false
             timer?.cancel()
-            print("timer canceled")
         }
     }
     
@@ -297,22 +291,8 @@ struct StopView: View {
         if let newTimeRequest = Calendar.current.date(byAdding: .minute, value: minutes, to: timeRequest) {
             timeRequest = newTimeRequest
         } else {
-            print("Failed to modify the date.")
+            Log.ui.error("Décalage de l'heure impossible")
         }
-    }
-    func halfTimeDifferenceInMinutes(from startTime: String, to endTime: String) -> Double? {
-        let dateFormatter = ISO8601DateFormatter()
-        // Convert the input strings to Date objects
-        guard let startDate = dateFormatter.date(from: startTime),
-              let endDate = dateFormatter.date(from: endTime) else {
-            return nil
-        }
-        // Calculate the time difference in seconds
-        let timeDifference = endDate.timeIntervalSince(startDate)
-        // Convert the time difference to minutes and return half of it
-        let halfDifferenceInMinutes = timeDifference / 60 / 2
-        print("halfDifferenceInMinutes: \(halfDifferenceInMinutes)")
-        return halfDifferenceInMinutes
     }
     func determineColor(for event: StopEvent) -> Color {
         /*if event.journeyRef == previousLineRef {
@@ -441,31 +421,6 @@ struct StopMenuView: View {
                 viewLineSorted ? Label("Trier par horaire", systemImage: "text.justify") : Label("Trier par ligne", systemImage: "rectangle.grid.1x2.fill")
             }
         }
-    }
-}
-
-struct ScrollingDotIndicator: View {
-    let numberOfPages: Int
-    let currentPage: Int
-    let maxVisibleDots: Int
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(visibleRange, id: \.self) { page in
-                Circle()
-                    .fill(page == currentPage ? Color.white : Color.gray.opacity(0.5))
-                    .frame(width: 6, height: 6)
-                    .scaleEffect(page == currentPage ? 1.2 : 1.0)
-                    .animation(.spring(), value: currentPage)
-            }
-        }
-    }
-    
-    private var visibleRange: Range<Int> {
-        let halfVisible = maxVisibleDots / 2
-        let start = max(0, min(currentPage - halfVisible, numberOfPages - maxVisibleDots))
-        let end = min(numberOfPages, start + maxVisibleDots)
-        return start..<end
     }
 }
 

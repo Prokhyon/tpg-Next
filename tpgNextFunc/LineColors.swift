@@ -136,15 +136,15 @@ public struct LineColors {
         "17" : .red,
         "18" : Color(red: 0.24, green: 0.76, blue: 0.95, opacity: 1.00),
         "19" : Color(red: 0.16, green: 0.37, blue: 0.67, opacity: 1.00),
-        "20" : Color(red: 217, green: 107, blue: 26),
-        "21" : Color(red: 194, green: 77, blue: 126),
-        "24" : Color(red: 71, green: 150, blue: 133),
-        "25" : Color(red: 70, green: 109, blue: 158),
-        "31" : Color(red: 72, green: 146, blue: 177),
-        "32" : Color(red: 146, green: 122, blue: 182),
-        "33" : Color(red: 67, green: 106, blue: 29),
-        "35" : Color(red: 249, green: 152, blue: 38),
-        "36" : Color(red: 145, green: 171, blue: 182),
+        "20" : Color(red: 0.85, green: 0.42, blue: 0.10, opacity: 1.00),
+        "21" : Color(red: 0.76, green: 0.30, blue: 0.49, opacity: 1.00),
+        "24" : Color(red: 0.28, green: 0.59, blue: 0.52, opacity: 1.00),
+        "25" : Color(red: 0.27, green: 0.43, blue: 0.62, opacity: 1.00),
+        "31" : Color(red: 0.28, green: 0.57, blue: 0.69, opacity: 1.00),
+        "32" : Color(red: 0.57, green: 0.48, blue: 0.71, opacity: 1.00),
+        "33" : Color(red: 0.26, green: 0.42, blue: 0.11, opacity: 1.00),
+        "35" : Color(red: 0.98, green: 0.60, blue: 0.15, opacity: 1.00),
+        "36" : Color(red: 0.57, green: 0.67, blue: 0.71, opacity: 1.00),
         "38" : Color(red: 0.70, green: 0.49, blue: 0.17, opacity: 1.00),
         "41" : Color(red: 0.67, green: 0.11, blue: 0.51, opacity: 1.00),
         "42" : Color(red: 0.77, green: 0.51, blue: 0.55, opacity: 1.00),
@@ -313,7 +313,7 @@ public struct LineColors {
             } else if operatorName == "CGN SA" {
                 return lineDarkBlue
             } else {
-                print("missing colors for \(operatorName)")
+                Log.ui.debug("Couleurs manquantes pour \(operatorName)")
                 return inverted ? .color1 : .primary
             }
         }

@@ -9,49 +9,6 @@ import SwiftUI
 import Combine
 import tpgNextFunc
 
-struct StopEventViewContent: View  { //Tests nouveau design, à supprimer
-    var event: StopEvent
-    var showTime: Bool
-    var previousLineRef: String?
-    
-    var body: some View {
-                    HStack {
-                        let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime,  with: showTime)
-                        BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
-                        Image(systemName: "arrow.right").font(.caption)
-                        SmallStopTitleView(stopName: event.destination)
-                        Spacer()
-                        if transportTime.text == "0" {
-                            transportIcon(with: event.transportType).frame(width: 10)
-                        } else {
-                            if transportTime.text.count > 6 {
-                                let splitTime = splitString(transportTime.text, separator: ";" )
-                                VStack(spacing: 0) {
-                                    Text(splitTime.0)
-                                    Text(splitTime.1)
-                                        .foregroundStyle(transportTime.color)
-                                        .minimumScaleFactor(0.5)
-                                }
-                                .padding(.vertical, 4)
-                                
-                            } else {
-                                Text(transportTime.text)
-                                    .padding(.vertical, 4)
-                                    .minimumScaleFactor(0.5)
-                                    .foregroundStyle(transportTime.color)
-                            }
-                        }
-                        if event.plannedQuay == "" {
-                            Image(systemName: "questionmark.square.fill")
-                        } else {
-                            Image(systemName: "\(event.plannedQuay).square.fill".lowercased())
-                        }
-                    }
-                        .padding(.horizontal)
-                        .padding(5)
-    }
-}
-
 struct SortedStopEventsView: View {
     var key: String
     var filteredStopEvents: [String: [StopEvent]]
@@ -684,7 +641,6 @@ struct StopView: View {
             } else {
                 favoritesViewModel.addFavorite(stop)
             }
-            print(favoritesViewModel.favoriteStops)
         }
     }
     
@@ -697,22 +653,8 @@ struct StopView: View {
         if let newTimeRequest = Calendar.current.date(byAdding: .minute, value: minutes, to: timeRequest) {
             timeRequest = newTimeRequest
         } else {
-            print("Failed to modify the date.")
+            Log.ui.error("Décalage de l'heure impossible")
         }
-    }
-    func halfTimeDifferenceInMinutes(from startTime: String, to endTime: String) -> Double? {
-        let dateFormatter = ISO8601DateFormatter()
-        // Convert the input strings to Date objects
-        guard let startDate = dateFormatter.date(from: startTime),
-              let endDate = dateFormatter.date(from: endTime) else {
-            return nil
-        }
-        // Calculate the time difference in seconds
-        let timeDifference = endDate.timeIntervalSince(startDate)
-        // Convert the time difference to minutes and return half of it
-        let halfDifferenceInMinutes = timeDifference / 60 / 2
-        print("halfDifferenceInMinutes: \(halfDifferenceInMinutes)")
-        return halfDifferenceInMinutes
     }
     func timeRequest(for time: String?) -> Date {
         // Une heure absente ou illisible (ouverture depuis le widget, par exemple)
@@ -771,7 +713,8 @@ struct StopView: View {
         let interval = estimatedTypicalTimeInterval(from: stopEvents)
         adjustTime(byAdding: previous ? -interval : interval)
         scrollNextEvents = !previous
-        scrollID = previous ? allFilteredStopEvents.first!.id : allFilteredStopEvents.last!.id
+        // Liste vide (arrêt sans départ, erreur) : on décale l'heure sans cible de défilement.
+        scrollID = (previous ? allFilteredStopEvents.first?.id : allFilteredStopEvents.last?.id) ?? ""
         getStopEvents()
         startTimer()
     }
@@ -827,19 +770,6 @@ extension View {
         }
     }
 }
-
-struct ShowTimeModifier: ViewModifier {
-    var apply: Bool
-    @Binding var value: Bool
-    func body(content: Content) -> some View {
-        if apply {
-            content.symbolEffect(.bounce, value: value)
-        } else {
-            content.symbolEffect(.wiggle.clockwise.byLayer, value: value)
-        }
-    }
-}
-
 
 #Preview("StopEventView preview") {
     let stopStore = StopStore()

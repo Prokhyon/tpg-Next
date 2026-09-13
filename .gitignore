@@ -1,0 +1,13 @@
+# Produits de compilation
+build/
+DerivedData/
+*.xcresult
+
+# Réglages Xcode propres à chaque utilisateur
+xcuserdata/
+*.xcuserstate
+
+# Clés d'API : générées par ci_scripts/ci_post_clone.sh, jamais versionnées
+tpgNextFunc/Secrets.swift
+
+.DS_Store

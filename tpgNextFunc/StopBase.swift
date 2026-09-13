@@ -229,13 +229,12 @@ public class StopStore: ObservableObject {
 
     private func loadStops(from fileName: String) {
         guard let url = Self.stopsBundle.url(forResource: fileName, withExtension: "json") else {
-            print("Failed to locate \(fileName).json in bundle.")
+            Log.data.error("\(fileName).json introuvable dans le bundle")
             return
         }
 
         do {
             let data = try Data(contentsOf: url)
-            print("Data loaded successfully from \(url).")
 
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -252,7 +251,6 @@ public class StopStore: ObservableObject {
             }
 
             let tempStops = try decoder.decode([TempStop].self, from: data)
-            print("TempStops from \(fileName) decoded successfully.")
 
             let filteredStops = tempStops.compactMap { tempStop -> Stop? in
                 guard let name = tempStop.designationOfficial,
@@ -268,10 +266,10 @@ public class StopStore: ObservableObject {
                 return Stop(name: name, sloid: sloid, codedidoc: codedidoc, country: country, canton: canton, meansOfTransport: meansOfTransport, wgs84Coordinates: Coordinates(lon: wgs84East, lat: wgs84North))
             }
 
-            print("Filtered Stops from \(fileName): \(filteredStops.count)")
+            Log.data.debug("\(fileName).json : \(filteredStops.count) arrêts")
             self.stops.append(contentsOf: filteredStops)
         } catch {
-            print("Error loading or decoding \(fileName).json:", error.localizedDescription)
+            Log.data.error("Lecture de \(fileName).json impossible : \(error.localizedDescription)")
         }
     }
 
@@ -513,7 +511,7 @@ public class FavoritesViewModel: ObservableObject {
             store.set(data, forKey: storageKey)
             reloadWidgets()
         } catch {
-            print("Error encoding favorite stops: \(error)")
+            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
         }
     }
 
@@ -539,7 +537,7 @@ public class FavoritesViewModel: ObservableObject {
                 refresh()
                 return
             } catch {
-                print("Error decoding favorite stops: \(error)")
+                Log.data.error("Lecture des favoris impossible : \(error.localizedDescription)")
             }
         }
         migrateLegacyFavorites()
@@ -555,9 +553,9 @@ public class FavoritesViewModel: ObservableObject {
             favorites = legacyStops.map(FavoriteStop.init(stop:))
             saveFavorites()
             refresh()
-            print("Migrated \(favorites.count) favorites to \(storageKey)")
+            Log.data.info("\(self.favorites.count) favoris migrés vers \(self.storageKey)")
         } catch {
-            print("Error migrating legacy favorite stops: \(error)")
+            Log.data.error("Migration des anciens favoris impossible : \(error.localizedDescription)")
         }
     }
 
@@ -574,7 +572,7 @@ public class FavoritesViewModel: ObservableObject {
             let data = try JSONEncoder().encode(favoriteStops)
             try session.updateApplicationContext(["favoriteStops": data])
         } catch {
-            print("Failed to sync favorites to watch: \(error)")
+            Log.sync.error("Envoi des favoris à la montre impossible : \(error.localizedDescription)")
         }
     }
 }

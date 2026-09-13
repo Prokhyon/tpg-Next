@@ -13,7 +13,6 @@ public class StopManager: ObservableObject {
     @Published public var stopEvents: [StopEvent] = []
     @Published public var stopError: Bool = false
     @Published public var stopErrorMessage: String = ""
-    var testing: Bool = false
     
     
     @Published public var quays: [Quay] = []
@@ -21,19 +20,6 @@ public class StopManager: ObservableObject {
         self.stopError = false
         self.stopErrorMessage = ""
         
-        if testing {
-            if self.stopEvents.isEmpty {
-                if var mockData = loadStopEventsFromAssets() {
-                    print("Using mock data for debugging.")
-                    changeTime(&mockData)
-                    self.stopEvents = mockData
-                    completion()
-                    return
-                }
-            } else {
-                return
-            }
-        }
         
         fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { success, data in
             if success, let data = data?.data(using: .utf8) {
@@ -43,10 +29,10 @@ public class StopManager: ObservableObject {
                             case .noEventFound(let msg):
                                 self.stopError = true
                                 self.stopErrorMessage = msg
-                                print("Aucun arrêt trouvé: \(msg)")
+                                Log.network.info("Aucun départ : \(msg)")
                             default:
                                 self.stopError = true
-                                print("Erreur lors du parsing")
+                                Log.network.error("Départs : réponse illisible")
                             }
                             return
                         }
@@ -54,15 +40,14 @@ public class StopManager: ObservableObject {
                         self.stopEvents = stopEvents
                         self.quays = quays
                         //                            saveStopEventsToFile(stopEvents: stopEvents)
-                        print("Stop events updated: \(stopEvents.count) events found")
-                                                    print(stopEvents)
+                        Log.network.debug("\(stopEvents.count) départs reçus")
                         completion()
                     }
                 }
             } else {
                 DispatchQueue.main.async {
                     self.stopError = true
-                    print("Failed to fetch or parse stop events.")
+                    Log.network.error("Départs : requête échouée")
                     completion()
                 }
             }
@@ -104,15 +89,10 @@ class LineManager: ObservableObject {
     }
 }
 
-class TripExistsVerification: ObservableObject {
-    
-}
-
 public class TripManager: ObservableObject {
     @Published public var tripEvents: [TripEvent] = []
     @Published public var tripError: Bool = false
     let dateFormatter = DateFormatter()
-    var testing: Bool = false
     
     public func selectTrip(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool) {
         self.tripError = false
@@ -120,7 +100,6 @@ public class TripManager: ObservableObject {
         //        print((arrivalGeoPosition ?? arrivalStop) ?? "emptyArrival")
         fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { success, data in
             if success {
-                print("success")
                 // Parse XML response
                 if success, let data = data?.data(using: .utf8) {
                     let startCoordinate = geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates
@@ -135,10 +114,10 @@ public class TripManager: ObservableObject {
                         self.tripEvents = tripEvents
                     } catch ParserError.noEventFound(let message) {
                         self.tripError = true
-                        print("Aucun trajet trouvé: \(message)")
+                        Log.network.info("Aucun itinéraire : \(message)")
                     } catch {
                         self.tripError = true
-                        print("Erreur lors de la recherche de trajets.")
+                        Log.network.error("Itinéraires : réponse illisible")
                     }
                 }
                 if !(self.tripEvents.last?.legs.first?.transfer ?? true) && self.tripEvents.last?.legs.first?.publishedLineName == "" {
@@ -190,7 +169,7 @@ public class SavedTripsModel: ObservableObject {
             let data = try JSONEncoder().encode(savedTrips)
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         } catch {
-            print("Error encoding trips: \(error)")
+            Log.data.error("Enregistrement des itinéraires impossible : \(error.localizedDescription)")
         }
     }
     
@@ -199,9 +178,8 @@ public class SavedTripsModel: ObservableObject {
             do {
                 let trips = try JSONDecoder().decode([TripEvent].self, from: data)
                 self.savedTrips = trips
-                print("trips loaded")
             } catch {
-                print("Error decoding trips: \(error)")
+                Log.data.error("Lecture des itinéraires impossible : \(error.localizedDescription)")
             }
         }
     }
@@ -234,7 +212,7 @@ public class RegularTripsModel: ObservableObject {
             let data = try JSONEncoder().encode(regularTrips)
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         } catch {
-            print("Error encoding regular trips: \(error)")
+            Log.data.error("Enregistrement des trajets réguliers impossible : \(error.localizedDescription)")
         }
     }
 
@@ -244,7 +222,7 @@ public class RegularTripsModel: ObservableObject {
                 let trips = try JSONDecoder().decode([RegularTrip].self, from: data)
                 self.regularTrips = trips
             } catch {
-                print("Error decoding regular trips: \(error)")
+                Log.data.error("Lecture des trajets réguliers impossible : \(error.localizedDescription)")
             }
         }
     }
@@ -279,7 +257,7 @@ class RecentSearch: ObservableObject {
             let data = try JSONEncoder().encode(searchItems)
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         } catch {
-            print("Error encoding recent searches: \(error)")
+            Log.data.error("Enregistrement des recherches récentes impossible : \(error.localizedDescription)")
         }
     }
     
@@ -288,9 +266,8 @@ class RecentSearch: ObservableObject {
             do {
                 let items = try JSONDecoder().decode([RecentSearchItem].self, from: data)
                 self.searchItems = items
-                print("Recent searches loaded")
             } catch {
-                print("Error decoding recent searches: \(error)")
+                Log.data.error("Lecture des recherches récentes impossible : \(error.localizedDescription)")
             }
         }
     }

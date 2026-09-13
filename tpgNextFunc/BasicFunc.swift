@@ -8,10 +8,10 @@
 import Foundation
 import SwiftUI
 
+/// Une des clés d'API OJP, tirée au hasard pour répartir la charge entre elles.
+/// Les clés vivent dans `Secrets.swift`, généré par `ci_scripts/ci_post_clone.sh` et jamais versionné.
 public func keySelect() -> String {
-    let keys = ["***CLE-RETIREE***","***CLE-RETIREE***", "***CLE-RETIREE***"]
-    
-    return keys.randomElement()!
+    Secrets.ojpAPIKeys.randomElement() ?? ""
 }
 
 /// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
@@ -32,7 +32,7 @@ public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedI
     }
     guard let timetableTime = formatter.date(from: timetableInput),
           let estimatedTime = formatter.date(from: estimatedInput) else {
-        print("Failed to parse date strings: \(timetableInput) or \(estimatedInput)")
+        Log.data.error("Dates illisibles : \(timetableInput) / \(estimatedInput)")
         return ("", .yellow)//to change, yellow just for testing
     }
     
@@ -79,7 +79,7 @@ public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool)
     
     // Parse the date string into a Date object
     guard let date = formatter.date(from: dateString) else {
-        print("Failed to parse date string: \(dateString)")
+        Log.data.error("Date illisible : \(dateString)")
         return false
     }
     
@@ -101,7 +101,7 @@ public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool)
     // Recreate dates without seconds for comparison
     guard let roundedParsedDate = calendar.date(from: componentsParsedDate),
           let roundedCurrentDate = calendar.date(from: componentsCurrentDate) else {
-        print("Failed to round dates")
+        Log.data.error("Arrondi des dates impossible")
         return false
     }
     

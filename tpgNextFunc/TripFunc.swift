@@ -10,7 +10,6 @@ import SwiftUI
 import MapKit
 import Combine
 
-var responseTrip = ""
 
 public struct TripEvent: Identifiable, Hashable, Encodable, Decodable {
     public var id: String
@@ -465,7 +464,6 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
         outputFormatter2.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
         outputFormatter2.timeZone = TimeZone(secondsFromGMT: 0)
         let tripTime = outputFormatter2.string(from: /*adjustedTime*/selectedTime)
-        print("tripTime: ", tripTime)
         
         
         let xmlString = """
@@ -532,13 +530,13 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Error: \(error)")
+                Log.network.error("Itinéraires : \(error.localizedDescription)")
                 completion(false, nil)
                 return
             }
             
             guard let data = data else {
-                print("No data received")
+                Log.network.error("Itinéraires : réponse vide")
                 completion(false, nil)
                 return
             }
@@ -547,8 +545,6 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
             if let responseString = String(data: data, encoding: .utf8) {
 //                print("Response: \(responseString)")
                 DispatchQueue.main.async {
-                    // Assuming responseLine is a global variable
-                    responseTrip = responseString
                     completion(true, responseString)
                 }
             }

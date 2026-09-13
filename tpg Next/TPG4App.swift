@@ -13,14 +13,6 @@ import WatchConnectivity
 import WidgetKit
 //import SwissPassClient
 
-let isTesting: Bool = {
-    #if DEBUG
-    return true
-    #else
-    return false
-    #endif
-}()
-
 @main
 struct TPG4App: App {
     @StateObject private var stopStore = StopStore()
@@ -92,9 +84,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         if let error = error {
-            print("WCSession activation failed with error: \(error.localizedDescription)")
+            Log.sync.error("Activation de WCSession impossible : \(error.localizedDescription)")
         } else {
-            print("WCSession activated with state: \(activationState.rawValue)")
+            Log.sync.debug("WCSession activée, état \(activationState.rawValue)")
             // La session peut s'activer après attach(stopStore:) : on repousse ici,
             // sinon le contexte du lancement serait perdu.
             if activationState == .activated {
@@ -127,7 +119,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     FavoritesViewModel.shared.replaceAll(with: favorites)
                 }
             } catch {
-                print("Failed to decode favoriteStops: \(error)")
+                Log.sync.error("Favoris reçus de la montre illisibles : \(error.localizedDescription)")
             }
         }
     }
@@ -161,27 +153,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             completionHandler()
         }
     
-    // MARK: - App Lifecycle Methods
-
-    func applicationWillResignActive(_ application: UIApplication) {
-        print("Application will resign active.")
-    }
-
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        print("Application entered background.")
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        print("Application will enter foreground.")
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        print("Application became active.")
-    }
-
-    func applicationWillTerminate(_ application: UIApplication) {
-        print("Application will terminate.")
-    }
 }
 
 extension UINavigationBar {
@@ -197,7 +168,6 @@ extension UINavigationBar {
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().compactScrollEdgeAppearance = appearance
         
-        print("UINavigationBar.transparentAppearance Set")
     }
 }
 

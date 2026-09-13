@@ -154,29 +154,6 @@ struct BasicLocationView: View {
     }
 }
 
-struct titleTestView: View {
-    var items: [Int] = Array(0..<10)
-    private let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
-    ]
-
-    var maxRows = 5
-    
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(items, id: \.self) { item in
-                BasicLocationView(name: "Meinier, église", transportType: "Bus")
-            }
-        }
-        .padding(15)
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
-        .padding(.horizontal)
-        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-    }
-}
-
 struct StopIcon: View {
     var color: Color
     var currentStop: Bool = false

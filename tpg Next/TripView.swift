@@ -107,17 +107,6 @@ class ItineraryViewModel: ObservableObject {
     }
 }
 
-struct ConditionalModifier: ViewModifier {
-    var apply: Bool
-    func body(content: Content) -> some View {
-        if apply {
-            content.ignoresSafeArea(.keyboard)
-        } else {
-            content
-        }
-    }
-}
-
 class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var searchQuery: String = "" {
         didSet {
@@ -161,7 +150,7 @@ class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchComplete
     }
     
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Error: \(error.localizedDescription)")
+        Log.ui.error("Recherche de lieux : \(error.localizedDescription)")
     }
     
     func getCoordinate(for suggestion: MKLocalSearchCompletion, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
@@ -276,31 +265,6 @@ struct TripElementView: View {
             }
         }
         .padding(.horizontal)
-    }
-}
-
-struct ListView: View {
-    let range = 1..<10
-    enum Results {
-        case one, two
-    }
-    
-    @State var results = Results.one
-    var body: some View {
-        ForEach(range) {_ in 
-            Capsule()
-                .frame(height: 50)
-                .padding()
-        }
-        var test = VStack {
-            switch results {
-                
-            case .one:
-                Text("")
-            case .two:
-                Text("")
-            }
-        }
     }
 }
 
@@ -466,11 +430,10 @@ struct TripView: View {
                     results = Results.favorites
                 }
                 if viewModel.quickTrip && !viewModel.tripDone {
-                    print("TripViewAppear: quickTrip")
                     
                     locationManager.requestLocation { location in
                         guard let userLocation = locationManager.userLocation else {
-                            print("error")
+                            Log.location.error("Position indisponible")
                             return
                         }
                         
@@ -494,12 +457,10 @@ struct TripView: View {
                     }
                 }
                 if viewModel.quickTrip && viewModel.tripDone {
-                    print("TripViewAppear: quickTrip && tripDone")
                     withAnimation {
                         results = Results.loading
                     }
                 }
-                print(results)
             })
             
             VStack(spacing: 0) {
@@ -780,7 +741,6 @@ struct TripView: View {
                             .padding()
                             .onAppear(perform: {
                                 if !tripManager.tripEvents.isEmpty {
-                                    print("changed to tripResults")
                                     withAnimation {
                                         results = Results.tripResults
                                     }
@@ -1072,7 +1032,7 @@ struct TripView: View {
                             Button {
                                 locationManager.requestLocation { location in
                                     guard let userLocation = locationManager.userLocation else {
-                                        print("error")
+                                        Log.location.error("Position indisponible")
                                         return
                                     }
                                     
@@ -1246,70 +1206,6 @@ struct TripView: View {
         }
     }
     
-    struct CustomTextField: View {
-        @ObservedObject var viewModel: ItineraryViewModel
-        @Binding var text: String
-        @Binding var results: Results
-        
-        var focus: FocusState<Bool>.Binding
-        var fieldNumber: Int
-        var emptyText: String
-        
-        var body: some View {
-            let textFieldSelected = viewModel.selectedTextField == fieldNumber
-            let hasSelection = (fieldNumber == 1 && viewModel.hasDeparture) || (fieldNumber == 2 && viewModel.hasArrival)
-            ZStack {
-                HStack {
-                    if hasSelection && !focus.wrappedValue {
-                        if fieldNumber == 1 {
-                            Image(systemName: viewModel.geoDeparture ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2)
-                        } else if fieldNumber == 2 {
-                            Image(systemName: viewModel.geoArrival ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2)
-                        }
-                    } else {
-                        Image(systemName: "magnifyingglass").opacity(textFieldSelected ? 1 : 0.2)
-                    }
-                    //                    TextField(emptyText, text: $text)
-                    if text.isEmpty {
-                        Text(emptyText)
-                            .opacity(0.4)
-                    } else {
-                        Text(text)
-                    }
-                    Spacer()
-                }
-//                        .autocorrectionDisabled(true)
-//                        .focused(focus)
-                        .onChange(of: text) {
-                            if viewModel.selectedTextField == fieldNumber {
-                                if hasSelection && !focus.wrappedValue {
-                                    results = Results.empty
-                                } else if !text.isEmpty {
-                                    results = Results.search
-                                } else if text.isEmpty {
-                                    results = Results.favorites
-                                }
-                            }
-                        }
-                .mask {
-                    Rectangle()
-                        .overlay(alignment: .trailing) {
-                            ScrollMask(leading: false, vertical: false, gradientLength: 40)
-                        }
-                        .padding(.trailing, 20)
-                }
-
-                .padding(.horizontal, 15)
-                
-//                    RoundedRectangle(cornerRadius: 17)
-                Capsule()
-                        .stroke(textFieldSelected ? .accent : .gray.opacity(0.3), lineWidth: 2)
-                        .shadow(color: textFieldSelected ? Color.customShadows2 : .clear, radius: 2, y: 1.5)
-            }
-            .frame(height: 40)
-        }
-    }
-    
     struct TripFieldButton: View {
         @ObservedObject var viewModel: ItineraryViewModel
         @Binding var searchText: String
@@ -1349,7 +1245,12 @@ struct TripView: View {
                                         calculationSuccess = true
                                     }
                                 }
-                            } else { print("error")}
+                            } else {
+                                // Sans position, la liste vide affiche « Pas d'arrêts trouvés à proximité » au lieu de charger indéfiniment.
+                                Log.location.error("Position indisponible pour les arrêts proches")
+                                closestStops = []
+                                calculationSuccess = true
+                            }
                             locationManager.locationUpdateHandler = nil
                         }
                     }
@@ -1376,11 +1277,6 @@ struct TripView: View {
                     Image(systemName: "xmark").font(.title2)
                 }
             }
-        }
-    }
-    struct CloseStopButton: View {
-        var body: some View {
-            
         }
     }
     struct TripPointField: View {
@@ -1486,58 +1382,6 @@ struct TripView: View {
         }
     }
     
-    struct SearchField: View {
-        @ObservedObject var viewModel: ItineraryViewModel
-
-        var focusField: FocusState<TripField?>.Binding
-        @Binding var showSearchField: Bool
-        
-        var size: CGFloat = 20
-        
-        var body: some View {
-            HStack {
-               let search = ZStack {
-                    TextField("Arrivée", text: $viewModel.arrivalSearchText)
-                       .frame(height: size)
-                        .focused(focusField, equals: .arrival)
-                        .opacity(focusField.wrappedValue == .arrival ? 1:0)
-                    TextField("Départ", text: $viewModel.departureSearchText)
-                       .frame(height: size)
-                        .focused(focusField, equals: .departure)
-                        .opacity(focusField.wrappedValue == .departure ? 1:0)
-                    
-                }
-                        let button = Button {
-                            focusField.wrappedValue = nil
-                            showSearchField = false
-                        } label: {
-                            Image(systemName: "xmark")
-                                .frame(width: size, height: size)
-                                .padding()
-                        }
-                if #available(iOS 26, *) {
-                    search
-                        .padding()
-                        .glassEffect()
-                    button
-                        .glassEffect()
-                } else {
-                    search
-                        .padding()
-                        .background {
-                            Capsule()
-                                .foregroundStyle(.thinMaterial)
-                        }
-                    button
-                        .background {
-                            Capsule()
-                                .foregroundStyle(.thinMaterial)
-                        }
-                }
-            }
-        }
-    }
-    
     struct RecentSearchFavoritesView: View {
         @ObservedObject var recentSearchModel: RecentSearch
         @ObservedObject var viewModel: ItineraryViewModel
@@ -1619,7 +1463,7 @@ struct TripView: View {
         if let newTimeRequest = Calendar.current.date(byAdding: .minute, value: minutes, to: viewModel.selectedTime) {
             viewModel.selectedTime = newTimeRequest
         } else {
-            print("Failed to modify the date.")
+            Log.ui.error("Décalage de l'heure impossible")
         }
     }
     
@@ -1638,7 +1482,6 @@ struct TripView: View {
     
     func searchTrips() {
         if ((viewModel.geoDeparture && viewModel.departureGeoPosition != nil) || viewModel.departureStop != nil) && ((viewModel.geoArrival && viewModel.arrivalGeoPosition != nil) || viewModel.arrivalStop != nil) {
-            print("searching for trips")
             results = Results.loading
             tripManager.tripEvents.removeAll()
             tripManager.selectTrip(with: viewModel.departureStop, with: viewModel.departureGeoPosition, with: viewModel.geoDeparture, with: viewModel.arrivalStop, with: viewModel.arrivalGeoPosition, with: viewModel.geoArrival, with: viewModel.selectedTime, with: viewModel.isArrivalTime)
@@ -1800,9 +1643,6 @@ struct SavedTripsView: View {
                                     }) {
                                         Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
                                     }
-                                    .onAppear(perform: {
-                                        print(trip.startCoordinates)
-                                    })
                                 }
                                 .padding(.horizontal, 15)
                                 .foregroundStyle(.primary)

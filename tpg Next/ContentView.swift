@@ -26,11 +26,6 @@ enum Tabs: String, Equatable, Hashable {
         }
 }
 
-enum DockViewType {
-    case circle
-    case dock
-    case circleDock
-}
 
 
 
@@ -326,15 +321,12 @@ struct ContentView: View {
         }
             .onChange(of: scenePhase) {
                             if scenePhase == .inactive {
-                                print("changed to inactive")
                                 if lastUsedTime == nil {
                                     lastUsedTime = Date()
                                 }
                                
                             } else if scenePhase == .active {
-                                print("changed to active")
                                 if lastUsedTime?.timeIntervalSinceNow ?? 0 < -3600 { //if the app hasn't been used for over an hour, reset to home, remove any trip search and results
-                                    print("App reset")
                                     withAnimation {
                                         navigationModel.selectedTab = .home
                                     }
@@ -509,7 +501,6 @@ struct DockView: View {
             let search = navigationModel.selectedTab == .search
             Button(action: {
                 if navigationModel.selectedTab == tab {
-                    print("This is the current tab")
                     resetNavigation()
                 } else {
                     
@@ -557,15 +548,6 @@ struct DockView: View {
                     navigationModel.searchPath = NavigationPath()
             }
         }
-    }
-}
-
-struct Background: View {
-   var useMap = false
-    var body: some View {
-            Rectangle()
-                .fill(.customBackground)
-                .ignoresSafeArea()
     }
 }
 
