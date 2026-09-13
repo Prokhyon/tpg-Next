@@ -24,6 +24,7 @@ struct SearchView: View {
     @State private var activeFutureTrip: TripEvent?
     //    @State private var recentSearchDestination: RecentSearchItem?
     @State var searchResult: Stop?
+    @State private var stopResults: [Stop] = []
     @State private var showTripDetail = false
     
     @FocusState private var isFocused: Bool
@@ -41,7 +42,7 @@ struct SearchView: View {
 //        let searchView = VStack {}
         let searchView = ZStack {
             VStack(alignment: .leading, spacing: 0) {
-            if stopStore.searchText.isEmpty {
+            if navigationModel.searchQuery.isEmpty {
                 ScrollView {
                     if !recentSearchModel.searchItems.isEmpty {
                         VStack(spacing: 0) {
@@ -150,12 +151,12 @@ struct SearchView: View {
                     }
                 }
             } else {
-                if stopStore.filteredStops.isEmpty {
-                    Text("Aucun résultat pour « \(stopStore.searchText) »")
+                if stopResults.isEmpty {
+                    Text("Aucun résultat pour « \(navigationModel.searchQuery) »")
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(stopStore.filteredStops) { stop in
+                            ForEach(stopResults) { stop in
                                 Button(action: {
                                     recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
                                     searchResult = stop
@@ -202,6 +203,7 @@ struct SearchView: View {
                 StopView(stopName: stop.name, stopSloid: stop.sloid)
             }
             .scrollDismissesKeyboard(.immediately)
+            .searchingStops(navigationModel.searchQuery, results: $stopResults)
         
         
             .onAppear {
@@ -231,7 +233,7 @@ struct SearchView: View {
                
         if #available(iOS 26, *) {
             searchView
-                .searchable(text: $stopStore.searchText)
+                .searchable(text: $navigationModel.searchQuery)
         } else {
             searchView
         }

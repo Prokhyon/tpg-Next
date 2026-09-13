@@ -107,24 +107,7 @@ struct HeaderView: View {
 
     var body: some View {
         HStack(alignment: .center) {
-            let split = splitString(stop.name, separator: ",")
-            if split.1.isEmpty {
-                Text(split.0)
-                    .font(.headline)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            } else {
-                VStack(alignment: .leading, spacing: -2) {
-                    Text(split.0)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text(split.1)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-            }
+            StopNameView(stop.name, style: .widget)
             Spacer(minLength: 4)
             if let distance {
                 Label("\(Int(distance.rounded())) m", systemImage: "location.fill")

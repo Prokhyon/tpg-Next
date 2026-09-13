@@ -143,31 +143,27 @@ public struct searchResultItem: Identifiable {
 }
 
 extension String {
-    // Function to normalize the string by removing accents and hyphens
+    /// Le texte sans accents ni ponctuation, pour la recherche : « Genève, Rive » devient
+    /// « GeneveRive », que « geneve rive » retrouve. La virgule restait, et « geneve rive »
+    /// ne trouvait pas « Genève, Rive ».
     public func normalized() -> String {
-        let normalizedString = self.folding(options: .diacriticInsensitive, locale: .current)
-        return normalizedString.replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
+        String(folding(options: .diacriticInsensitive, locale: .current).filter { $0.isLetter || $0.isNumber })
     }
 }
 
 public class StopStore: ObservableObject {
     @Published public private(set) var stops: [Stop] = []
-    @Published public var searchText: String = ""
-    @Published public private(set) var filteredStops: [Stop] = []
     @Published public private(set) var activeStops: [Stop] = []
     @Published public var location: CLLocation?
     /// Vrai une fois la base chargée, ce qui se fait en arrière-plan.
     @Published public private(set) var isLoaded = false
     
-    private var cancellables = Set<AnyCancellable>()
     /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
     private var stopsBySloid: [String: Stop] = [:]
     /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
     private var searchIndex: [(key: String, stop: Stop)] = []
-    private let debounceInterval: TimeInterval = 0.3 // 300ms debounce interval
 
     public init() {
-        setupSearch()
         // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
         // (et bien plus longtemps sur la montre).
         DispatchQueue.global(qos: .userInitiated).async {
@@ -184,10 +180,6 @@ public class StopStore: ObservableObject {
                 self.activeStops = active
                 self.searchIndex = index
                 self.isLoaded = true
-                // Une recherche tapée pendant le chargement est relancée sur la base complète.
-                Task { @MainActor in
-                    self.updateSearchResults()
-                }
             }
         }
     }
@@ -252,39 +244,26 @@ public class StopStore: ObservableObject {
         }
     }
 
-    // MARK: - Search Logic with Combine Debounce
+    // MARK: - Recherche
 
-    private func setupSearch() {
-        $searchText
-            .debounce(for: .seconds(debounceInterval), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                Task { @MainActor in
-                    self?.updateSearchResults()
-                }
-            }
-            .store(in: &cancellables)
-    }
+    /// Les arrêts dont le nom contient `query` (accents, espaces et tirets ignorés), du plus
+    /// proche au plus lointain si la position est connue, sinon par ordre alphabétique.
+    /// Chaque écran appelle `searchingStops`, qui garde son propre texte de recherche.
+    public func search(_ query: String) -> [Stop] {
+        let normalizedQuery = query.normalized().lowercased()
+        // Des espaces seuls se normalisent en "" : `contains("")` rendrait toute la base.
+        guard !normalizedQuery.isEmpty else { return [] }
 
-    @MainActor private func updateSearchResults() {
-        guard !searchText.isEmpty else {
-            filteredStops = []
-            return
-        }
-
-        let normalizedSearchText = searchText.normalized().lowercased()
-        
-        let matchingStops = searchIndex.filter { $0.key.contains(normalizedSearchText) }.map(\.stop)
+        let matchingStops = searchIndex.filter { $0.key.contains(normalizedQuery) }.map(\.stop)
 
         if let currentLocation = location {
             // Distances calculées une fois par arrêt, et non à chaque comparaison du tri.
-            filteredStops = matchingStops
+            return matchingStops
                 .map { (stop: $0, distance: CLLocation(latitude: $0.wgs84Coordinates.lat, longitude: $0.wgs84Coordinates.lon).distance(from: currentLocation)) }
                 .sorted { $0.distance < $1.distance }
                 .map(\.stop)
-        } else {
-            filteredStops = matchingStops.sorted { $0.name < $1.name }
         }
+        return matchingStops.sorted { $0.name < $1.name }
     }
 
     // MARK: - Utility Function

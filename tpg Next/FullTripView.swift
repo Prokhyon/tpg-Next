@@ -149,68 +149,24 @@ struct FullTripView: View {
                         showTime = timeDefault
                     }
                 }
-                if #available(iOS 26, *) {
-                } else {
-                    VStack(spacing: 0) {
-                        Rectangle()
-                            .foregroundStyle(.ultraThickMaterial)
-                            .frame(height: 50)
-                        Rectangle()
-                            .foregroundStyle(.ultraThickMaterial)
-                            .frame(height: 100)
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .trailing) {
-                                        ScrollMask(leading: true, vertical: true, gradientLength: 100)
-                                    }
-                            }
-                        Spacer()
-                    }
-                    //                    .blur(radius: 10)
-                    .ignoresSafeArea(edges: .top)
-                }
+                LegacyTopFade()
                 
                 VStack { //Trip title above the details
-                    if #available(iOS 26, *) {
-                        GlassEffectContainer() {
-                            HStack {
-                                fullTripViewTitle(departureStopName: fullTrip.startName, arrivalStopName: fullTrip.endName)
-                                    .foregroundStyle(.text)
-                                    .frame(height: 70)
-                                    .padding(.horizontal, 20)
-                                    .glassEffect(.regular.interactive())
-                                    .glassEffectID("title", in: namespace)
-                                fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
-                                    .foregroundStyle(.text)
-                                    .frame(height: 70)
-                                    .padding(.horizontal, 20)
-                                    .glassEffect(.regular.interactive())
-                                    .glassEffectID("timeDate", in: namespace)
-                            }
-//                            .foregroundStyle(.primary)
-                            .padding(.horizontal)
-                        }
-//                        .offset(x: 35)
-
-                    } else {
+                    TPGGlassContainer {
                         HStack {
                             fullTripViewTitle(departureStopName: fullTrip.startName, arrivalStopName: fullTrip.endName)
+                                .glassForegroundStyle(.text)
                                 .frame(height: 70)
                                 .padding(.horizontal, 20)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                            Spacer()
+                                .tpgSurface(interactive: true, legacy: .thinMaterial, glassID: "title", namespace: namespace)
+                            if !TPGSurface.isGlass {
+                                Spacer()
+                            }
                             fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
+                                .glassForegroundStyle(.text)
                                 .frame(height: 70)
                                 .padding(.horizontal, 20)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
+                                .tpgSurface(interactive: true, legacy: .thinMaterial, glassID: "timeDate", namespace: namespace)
                         }
                         .padding(.horizontal)
                     }
@@ -281,54 +237,9 @@ struct fullTripViewTitle: View {
     
     var body: some View {
                 HStack(alignment: .center) {
-                            VStack(alignment: .leading) {
-                                let splitStopName = splitString(departureStopName, separator: ",")
-                                if splitStopName.1.isEmpty {
-                                    HStack(alignment: .center) {
-                                        VStack {
-                                    Text(splitStopName.0)
-                                        .font(.title3)
-                                        .bold()
-                                        .minimumScaleFactor(0.5)
-                                        }
-                                    }
-                                    .frame(height: 60)
-                                } else {
-                                    Text(splitStopName.0)
-                                        .font(.callout)
-                                        .minimumScaleFactor(0.5)
-                                    Text(splitStopName.1)
-                                        .font(.title2)
-                                        .bold()
-                                }
-                            }
-                            .minimumScaleFactor(0.5)
-                            
-                        Image(systemName: "arrow.right")
-
-                            VStack(alignment: .leading) {
-                            let splitStopName = splitString(arrivalStopName, separator: ",")
-                            if splitStopName.1.isEmpty {
-                                HStack(alignment: .center) {
-                                    VStack {
-                                        Text(splitStopName.0)
-                                            .font(.title3)
-                                            .bold()
-                                            .minimumScaleFactor(0.5)
-                                    }
-                                }
-                                .frame(height: 60)
-                            } else {
-                                        Text(splitStopName.0)
-                                            .font(.callout)
-                                            .minimumScaleFactor(0.5)
-                                        Text(splitStopName.1)
-                                            .font(.title2)
-                                            .bold()
-                                            
-                            }
-                        }
-                        .minimumScaleFactor(0.5)
+                    StopNameView(departureStopName, style: .header)
+                    Image(systemName: "arrow.right")
+                    StopNameView(arrivalStopName, style: .header)
                 }
 //                .padding(.leading, 50)
 //                .padding(.trailing,10)

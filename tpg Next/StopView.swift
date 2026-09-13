@@ -120,7 +120,8 @@ struct StopView: View {
     @StateObject private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @EnvironmentObject var stopStore: StopStore
-    @State private var timer: AnyCancellable?
+    /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
+    @State private var refreshGeneration = 0
     let stopName: String
     let stopSloid: String
     @State var previousLineRef: String?
@@ -221,179 +222,62 @@ struct StopView: View {
                         }
                     }
                 VStack {
-                    if #available(iOS 26, *) {
-                        VStack(alignment: .center) {
-                            HStack {
-                                Spacer()
-                                HStack {
-                                    StopTitleView(stopName: stopName)
-                                        .foregroundStyle(Color.text)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 100, height: 0)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 5)
-                                .glassEffect(.regular.interactive())
-                                .offset(x: 50)
-                            }
+                    VStack(alignment: .center) {
+                        //Stop title element
+                        HStack {
                             Spacer()
                             HStack {
-                                HStack(spacing: 0) {
-                                    Button(action: {
-                                        viewLineSorted.toggle()
-                                        requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
-                                    }) {
-                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
-                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                                            .padding()
-                                            .foregroundStyle(.foreground)
-                                    }
-                                    
-                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
-                                        .padding(.trailing, 7)
-//                                        .padding(.vertical)
-//                                    Button {
-//                                        filterLines.toggle()
-//                                    } label: {
-//                                        Image(systemName: "line.3.horizontal.decrease")
-//                                            .foregroundStyle(viewLineFiltered ? .white : Color.text)
-//                                            .padding()
-////                                            .glassEffect(.regular)
-//                                            .background {
-//                                                Capsule()
-//                                                    .fill(viewLineFiltered ? Color.accentColor : Color.clear)
-//                                                    .padding(5)
-//                                            }
-//                                    }
-                                    
-                                }
-                                .glassEffect(.regular.interactive())
-                                Spacer()
-//                                HStack(spacing: 0) {
-//                                    Button(action: {
-//                                        moveTime(previous: true)
-//                                    }) {
-//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                    }
-//                                    .padding()
-//                                    Button(action: {
-//                                        moveTime(previous: false)
-//                                    }) {
-//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                    }
-//                                    .padding()
-//                                }
-                                AdjustTimeButton(moveTime: moveTime)
-                                .glassEffect(.regular.interactive())
+                                StopTitleView(stopName: stopName)
+                                    .glassForegroundStyle(Color.text)
+                                Rectangle()
+                                    .fill(.clear)
+                                    .frame(width: 100, height: 0)
                             }
-                            .padding()
-                            .foregroundStyle(.primary)
+                            .padding(.horizontal)
+                            .padding(.vertical, TPGSurface.isGlass ? 5 : 0)
+                            .tpgSurface(interactive: true)
+                            .offset(x: 50)
                         }
+                        Spacer()
 
-                    } else {
-                        VStack(alignment: .center) {
-                            
-                            //Stop title element
-                            HStack {
-                                Spacer()
-                                HStack {
-                                    StopTitleView(stopName: stopName)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 100, height: 0)
-                                }
-                                .padding(.horizontal)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.ultraThinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                                .offset(x: 50)
-                            }
-                            Spacer()
-                            
-                            //Bottom buttons
-                            HStack {
-                                HStack {
-                                    Button(action: {
-                                        withAnimation {
-                                            viewLineSorted.toggle()
-                                        }
-                                    }) {
-                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
-                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                                            .padding()
-                                            .foregroundStyle(.foreground)
+                        //Bottom buttons
+                        HStack {
+                            HStack(spacing: TPGSurface.isGlass ? 0 : nil) {
+                                Button(action: {
+                                    withAnimation(TPGSurface.isGlass ? nil : .default) {
+                                        viewLineSorted.toggle()
                                     }
-                                    
-                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
-                                        .padding(.trailing, 7)
+                                    requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
+                                }) {
+                                    Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
+                                        .contentTransition(.symbolEffect(.replace.upUp.byLayer))
+                                        .padding()
+                                        .foregroundStyle(.foreground)
                                 }
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                                Spacer()
-//                                HStack {
-//                                    Button(action: {
-//                                        moveTime(previous: true)
-//                                    }) {
-//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                            .padding()
-//                                    }
-//                                    Button(action: {
-//                                        moveTime(previous: false)
-//                                    }) {
-//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                            .padding()
-//                                    }
-//                                }
-                                AdjustTimeButton(moveTime: moveTime)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
+
+                                Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
+                                    .padding(.trailing, 7)
                             }
-                            .padding()
-                            .foregroundStyle(.primary)
+                            .tpgSurface(interactive: true, legacy: .thinMaterial)
+                            Spacer()
+                            AdjustTimeButton(moveTime: moveTime)
+                                .tpgSurface(interactive: true, legacy: .thinMaterial)
                         }
-                        .padding(.bottom, 50)
+                        .padding()
+                        .foregroundStyle(.primary)
                     }
+                    .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
                 .onAppear {
                     viewLineSorted = groupedDefault
-//                    showTime = timeDefault
-                    timeRequest = timeRequest(for: previousLineTime)
+                }
+                .periodicRefresh(id: refreshGeneration, repeats: autoRefresh) { trigger in
+                    // Au retour dans l'app, la liste repart de l'heure d'origine : l'heure
+                    // demandée au premier affichage serait dépassée.
+                    if trigger == .start && refreshGeneration == 0 {
+                        timeRequest = timeRequest(for: previousLineTime)
+                    }
                     getStopEvents()
-                    if autoRefresh {
-                        startTimer()
-                    }
-                    requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    if autoRefresh {
-                        timeRequest = timeRequest(for: previousLineTime)
-                        getStopEvents()
-                        startTimer()
-                    }
-                }
-                .onDisappear {
-                    timer?.cancel()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                    timer?.cancel()
-                }
-                .onChange(of: autoRefresh) {
-                    if !autoRefresh {
-                        timer?.cancel()
-                    } else {
-                        timeRequest = timeRequest(for: previousLineTime)
-                        getStopEvents()
-                        startTimer()
-                    }
                 }
             }
         .toolbar {
@@ -442,12 +326,7 @@ struct StopView: View {
                             .padding(.horizontal, 5)
                 }
             }
-            .background {
-                Capsule()
-                    .opacity(appRequirementsClass.version26 ? 0 : 1)
-                    .foregroundStyle(.ultraThinMaterial)
-                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-            }
+            .legacySurface()
         }
         
         
@@ -474,7 +353,7 @@ struct StopView: View {
                         }
                         if #available(iOS 26, *) {
                             Button {
-                                getStopEvents()
+                                refreshGeneration += 1
                                 selectTime.toggle()
                             } label: {
                                 HStack {
@@ -487,7 +366,7 @@ struct StopView: View {
                             .buttonStyle(.borderedProminent)
                         } else {
                             Button(action: {
-                                getStopEvents()
+                                refreshGeneration += 1
                                 selectTime.toggle()
                             }) {
                                 RoundedRectangle(cornerRadius: 20)
@@ -630,14 +509,6 @@ struct StopView: View {
         guard let time, let date = stringToDate(with: time) else { return Date() }
         return date
     }
-    private func startTimer() {
-        timer = Timer.publish(every: 30, on: .main, in: .common)
-            .autoconnect()
-            .sink { _ in
-                getStopEvents()
-            }
-    }
-    
     private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
         let dates = events.compactMap { OJPDate.date(from: $0.estimatedTime) }.sorted()
 
@@ -660,49 +531,18 @@ struct StopView: View {
         scrollNextEvents = !previous
         // Liste vide (arrêt sans départ, erreur) : on décale l'heure sans cible de défilement.
         scrollID = (previous ? allFilteredStopEvents.first?.id : allFilteredStopEvents.last?.id) ?? ""
-        getStopEvents()
-        startTimer()
+        // Recharge à la nouvelle heure et repousse le prochain rafraîchissement de 30 s.
+        refreshGeneration += 1
     }
 }
 
 struct StopTitleView : View {
     var stopName: String
-    
+
     var body: some View {
-        VStack {
-                let splitStopName = splitString(stopName, separator: ",")
-                if splitStopName.1.isEmpty {
-                    HStack {
-                        Text(splitStopName.0)
-                            .font(.largeTitle)
-                            .bold()
-                            .minimumScaleFactor(0.5)
-//                        Spacer()
-                    }
-                    .frame(height: 70)
-                    .padding(.horizontal, 25)
-//                    .padding(.bottom, 10)
-                    
-                } else {
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Text(splitStopName.0)
-                                .font(.title2)
-//                            Spacer()
-                        }
-                        HStack {
-                            Text(splitStopName.1)
-                                .font(.largeTitle)
-                                .bold()
-//                            Spacer()
-                        }
-                    }
-//                    .padding(.bottom, 15)
-                    .frame(height: 70)
-                    .padding(.horizontal, 25)
-                    .minimumScaleFactor(0.5)
-                }
-        }
+        StopNameView(stopName, style: .title)
+            .frame(height: 70)
+            .padding(.horizontal, 25)
     }
 }
 

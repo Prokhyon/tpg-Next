@@ -14,28 +14,7 @@ struct SmallStopTitleView: View {
 
     var body: some View {
         HStack {
-            let splitStopName = splitString(stopName, separator: ",")
-            if splitStopName.1.isEmpty {
-                HStack {
-                    Text(splitStopName.0)
-                        .font(.headline)
-                        .bold()
-                        .minimumScaleFactor(0.2)
-                        .lineLimit(2)
-                }
-            } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0)
-                            .font(.caption2)
-                            .minimumScaleFactor(0.2)
-                            .lineLimit(1)
-                        Text(splitStopName.1)
-                            .font(.caption)
-                            .bold()
-                            .minimumScaleFactor(0.3)
-                            .lineLimit(1)
-                    }
-            }
+            StopNameView(stopName, style: .compact)
             Spacer()
         }
     }
@@ -72,12 +51,9 @@ struct StopEventView: View  {
 }
 
 struct StopView: View {
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var viewIsVisible = false
     @StateObject private var stopManager = StopManager()
     @State private var stopEvents: [StopEvent] = []
     @EnvironmentObject var stopStore: StopStore
-    @State private var timer: AnyCancellable?
     let stopName: String
     let stopSloid: String
     var previousLineRef: String?
@@ -208,40 +184,13 @@ struct StopView: View {
         .sheet(isPresented: $showMenu) {
             StopMenuView(showMenu: $showMenu, showTime: $showTime, viewLineSorted: $viewLineSorted)
         }
-        .onChange(of: scenePhase) {
-            if scenePhase == .active && viewIsVisible {
-                getStopEvents()
-                if autoRefresh {
-                    timer = Timer.publish(every: 30, on: .main, in: .common)
-                        .autoconnect()
-                        .sink { _ in
-                            getStopEvents()
-                        }
-                }
-            } else {
-                timer?.cancel()
-                            }
-            
-        }
-        .onAppear {
-            viewIsVisible = true
-            timeRequest = timeRequest(for: previousLineTime)
-            getStopEvents()
-            if autoRefresh {
-                timer = Timer.publish(every: 30, on: .main, in: .common)
-                    .autoconnect()
-                    .sink { _ in
-                        getStopEvents()
-                    }
+        .periodicRefresh(repeats: autoRefresh) { trigger in
+            // Au retour dans l'app, la liste repart de l'heure d'origine : l'heure
+            // demandée au premier affichage serait dépassée.
+            if trigger == .start {
+                timeRequest = timeRequest(for: previousLineTime)
             }
-            requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
-//            if requestNumber > 30 {
-//                getStopEvents()
-//            }
-        }
-        .onDisappear {
-            viewIsVisible = false
-            timer?.cancel()
+            getStopEvents()
         }
     }
     

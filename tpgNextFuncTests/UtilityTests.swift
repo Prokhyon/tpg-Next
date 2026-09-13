@@ -41,7 +41,7 @@ struct StringTests {
     }
 
     @Test func normalization() {
-        #expect("Chêne-Bourg, Place Favre".normalized().lowercased() == "chenebourg,placefavre")
+        #expect("Chêne-Bourg, Place Favre".normalized().lowercased() == "chenebourgplacefavre")
     }
 }
 

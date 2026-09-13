@@ -141,7 +141,6 @@ struct HomeDepartures: View {
     @StateObject var locationManager = LocationManager()
 //    @StateObject private var stopManager = StopManager()
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @State private var timer: AnyCancellable?
     @State private var closestStops: [Stop] = []
     @State private var testStop: [Stop] = [Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), Stop(name: "Genève, Place des Eaux-Vives", sloid: "ch:1:sloid:87062", codedidoc: "8587062", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0))]
     @State private var calculationSuccess = false
@@ -274,46 +273,18 @@ struct HomeDepartures: View {
                                 }
                             }
                         }
-        .onAppear {
-                setupLocationAndTimer()
+        // `testing` passe à false à la fermeture de la bienvenue : la recherche démarre alors.
+        .periodicRefresh(repeats: !testing) { _ in
+            getLocation()
         }
         .onChange(of: stopStore.isLoaded) {
-            if !testing {
-                getLocation()
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                setupLocationAndTimer()
-        }
-        .onDisappear {
-            timer?.cancel()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            timer?.cancel()
-        }
-//        .onChange(of: autoRefresh) {
-//            if !autoRefresh {
-//                timer?.cancel()
-//            } else {
-//                setupLocationAndTimer()
-//            }
-//        }
-    }
-    
-    private func setupLocationAndTimer() {
-        if !testing {
             getLocation()
-            timer = Timer.publish(every: 30, on: .main, in: .common)
-                .autoconnect()
-                .sink { _ in
-                    getLocation()
-                }
         }
     }
-    
+
     private func getLocation() {
         // La base se charge en arrière-plan : `onChange(of: stopStore.isLoaded)` relance la recherche.
-        guard stopStore.isLoaded else { return }
+        guard !testing, stopStore.isLoaded else { return }
         locationManager.requestLocation { location in
             if let userLocation = location ?? locationManager.userLocation {
                 locationFailed = false
@@ -346,7 +317,6 @@ struct SmallStopView: View {
     @EnvironmentObject var navigationModel: NavigationModel
     @StateObject var stopManager = StopManager()
     @StateObject private var lineManager = LineManager()
-    @State private var timer: AnyCancellable?
     @State private var isShowingPopover = false
     
     var stop: Stop
@@ -408,28 +378,9 @@ struct SmallStopView: View {
                 //                    }
             }
         }
-        .onAppear {
-            setupStopManager()
+        .periodicRefresh(id: stop, repeats: !testing) { _ in
+            refreshDepartures()
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            setupStopManager()
-        }
-        .onDisappear {
-            timer?.cancel()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            timer?.cancel()
-        }
-        .onChange(of: stop) {
-            setupStopManager()
-        }
-//        .onChange(of: autoRefresh) {
-//            if !autoRefresh {
-//                timer?.cancel()
-//            } else {
-//                setupStopManager()
-//            }
-//        }
     }
     
     private func HeaderView() -> some View {
@@ -493,24 +444,9 @@ struct SmallStopView: View {
         } label: {
             HStack {
                 //                StopIcon(color: .color1)
-                let splitStopName = splitString(stop.name, separator: ",")
-                if splitStopName.1.isEmpty {
-                    Text(splitStopName.0)
-                        .font(.title3)
-                        .bold()
-                        .minimumScaleFactor(0.5)
-                    if stop.meansOfTransport == "TRAIN" {
-                        Image(systemName: "lightrail").font(.headline)
-                    } else if stop.meansOfTransport == "BOAT" {
-                        Image(systemName: "ferry").font(.headline)
-                    }
-                    Spacer()
-                } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0).font(.subheadline)
-                        Text(splitStopName.1).font(.title3).bold()
-                    }
-                    .minimumScaleFactor(0.5)
+                StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
+                if splitString(stop.name, separator: ",").1.isEmpty {
+                    Spacer() // Un nom sur une ligne occupe toute la largeur de la carte.
                 }
             }
         }
@@ -587,17 +523,9 @@ struct SmallStopView: View {
         .frame(height: 170)
     }
     
-    private func setupStopManager() {
-        if !testing {
-            stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
-        }
-        if !testing {
-            timer = Timer.publish(every: 30, on: .main, in: .common)
-                .autoconnect()
-                .sink { _ in
-                    stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
-                }
-        }
+    private func refreshDepartures() {
+        guard !testing else { return }
+        stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
     }
     private var filteredEvents: [StopEvent] {
         stopManager.stopEvents.filter { $0.plannedQuay == quay }
@@ -627,27 +555,16 @@ struct HomeView: View {
                                 Spacer()
 //                                Button(action: {
 //                                    self.showSettings.toggle()
-                                if #available(iOS 26, *) {
-                                    NavigationLink {
-                                        SettingsView()
-                                    } label: {
-                                        Image(systemName: "gear")
-                                            .font(.title)
-                                            .padding(5)
-                                    }
-                                    .glassEffect(.regular.interactive())
-                                    .padding(.leading, 5)
-                                    .padding(.trailing, 15)
-                                } else {
-                                    NavigationLink {
-                                        SettingsView()
-                                    } label: {
-                                        Image(systemName: "gear")
-                                            .font(.title)
-                                    }
-                                    .padding(.leading, 5)
-                                    .padding(.trailing, 15)
+                                NavigationLink {
+                                    SettingsView()
+                                } label: {
+                                    Image(systemName: "gear")
+                                        .font(.title)
+                                        .padding(TPGSurface.isGlass ? 5 : 0)
                                 }
+                                .tpgSurface(interactive: true, legacy: nil)
+                                .padding(.leading, 5)
+                                .padding(.trailing, 15)
                             }
                             
                             FavoriteView(isExpanded: $isExpanded, maxRows: Int((UIScreen.main.bounds.height/168).rounded()))//168 used to obtain the right amount of rows based on the screen size. 3 for the SE, 4 for the mini and 5 for regular size.

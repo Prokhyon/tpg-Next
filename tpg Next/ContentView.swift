@@ -31,6 +31,8 @@ enum Tabs: String, Equatable, Hashable {
 
 class NavigationModel: ObservableObject {
     @Published var selectedTab: Tabs = .home
+    /// Texte de l'onglet Recherche, partagé par son champ et celui du dock (avant iOS 26).
+    @Published var searchQuery = ""
     /// Ouvertures depuis une notification ou le widget, poussées sur la pile des départs.
     @Published var selectedStopViewData: StopViewData?
     @Published var selectedLineViewData: LineViewData?
@@ -382,7 +384,6 @@ struct DockView: View {
     @Namespace var animationNamespace
     
     @State var previousMainTab: Tabs = .home
-    @State var searchText: String = ""
     
     @FocusState private var searchFocus: Bool
     
@@ -446,7 +447,7 @@ struct DockView: View {
                         .font(search ? .callout : .title2)
                         .foregroundStyle(search ? .gray : .primary)
                     if search {
-                        TextField("Rechercher un arrêt", text: $searchText)
+                        TextField("Rechercher un arrêt", text: $navigationModel.searchQuery)
                             .focused($searchFocus)
                     }
                 }
@@ -459,7 +460,7 @@ struct DockView: View {
                                 .shadow(color: Color.customShadows, radius: 2, y: 1.5)
                         )
                         .onTapGesture {
-                            searchText = ""
+                            navigationModel.searchQuery = ""
                             if search {
                                 withAnimation(.spring()) {
                                     searchFocus = true
@@ -471,12 +472,11 @@ struct DockView: View {
                             }
                         }
             
-            if (searchFocus || searchText != "") && search {
+            if (searchFocus || navigationModel.searchQuery != "") && search {
                     Button(action: {
                         withAnimation(.spring()) {
                             searchFocus = false
-                            searchText = ""
-                            stopStore.searchText = ""
+                            navigationModel.searchQuery = ""
                         }
                     }, label: {
                         Image(systemName: "xmark")
@@ -495,12 +495,6 @@ struct DockView: View {
         }
         .padding(.horizontal)
         .sensoryFeedback(.selection, trigger: navigationModel.selectedTab)
-        .onChange(of: searchText) {
-            stopStore.searchText = searchText
-        }
-        .onAppear {
-            stopStore.searchText = searchText
-        }
     }
 
     struct dockButton: View {
