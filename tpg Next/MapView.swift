@@ -104,7 +104,7 @@ struct MapView: View {
                     }
                     .onChange(of: selectedResult) {
                         if let selectedId = selectedResult,
-                           let stop = stopStore.stops.first(where: { $0.id == selectedId }) {
+                           let stop = stopStore.findStop(id: selectedId) {
                             selectedStop = stop
                             // Set the new camera position to center and zoom on the selected stop
 //                            withAnimation {
@@ -185,7 +185,7 @@ struct MapView: View {
                         }
                     } else {
                         if let selectedId = selectedResult,
-                           let stop = stopStore.stops.first(where: { $0.id == selectedId }) {
+                           let stop = stopStore.findStop(id: selectedId) {
                             // Set the new camera position to center and zoom on the selected stop
                             withAnimation {
                                 position = .region(

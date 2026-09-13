@@ -287,10 +287,7 @@ enum PreviewData {
     ]
 
     private static func event(line: String, destination: String, quay: String, minutes: Int) -> StopEvent {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        let time = formatter.string(from: Date().addingTimeInterval(Double(minutes) * 60))
+        let time = OJPDate.string(from: Date().addingTimeInterval(Double(minutes) * 60))
         return StopEvent(stopPointName: "Genève, Rive",
                          stopId: stop.sloid,
                          plannedQuay: quay,

@@ -228,8 +228,8 @@ public func fetchLegTrack(for leg: TripLeg, completion: @escaping ([CLLocationCo
         finish(nil)
         return
     }
-    fetchTransportJourney(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, track: true, expectedStopRef: leg.legBoardStopId, expectedTime: leg.legBoardTimetableTime) { success, response in
-        guard success, let data = response?.data(using: .utf8) else {
+    fetchTransportJourney(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, track: true, expectedStopRef: leg.legBoardStopId, expectedTime: leg.legBoardTimetableTime) { data in
+        guard let data else {
             finish(nil)
             return
         }
