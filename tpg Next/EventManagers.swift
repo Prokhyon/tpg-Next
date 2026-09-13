@@ -17,25 +17,29 @@ public class TripManager: ObservableObject {
     /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
     private var latestRequest = 0
 
-    public func selectTrip(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool) {
+    /// Sans départ ou sans arrivée, la requête échoue et `tripError` passe à vrai.
+    public func selectTrip(from departure: TripEndpoint?, to arrival: TripEndpoint?, at selectedTime: Date, isArrivalTime: Bool) {
         self.tripError = false
         latestRequest += 1
         let request = latestRequest
-        fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { data in
+        fetchTrips(with: departure?.stop, with: departure?.place, with: departure?.isPlace ?? false,
+                   with: arrival?.stop, with: arrival?.place, with: arrival?.isPlace ?? false,
+                   with: selectedTime, with: isArrivalTime) { data in
             guard request == self.latestRequest else { return }
             guard let data else {
                 self.tripError = true
                 return
             }
-            let startCoordinate = (geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates) ?? Coordinates(lon: 0, lat: 0)
-            let endCoordinate = (geoArrival ? arrivalGeoPosition?.coordinate.toCoordinates : arrivalStop?.wgs84Coordinates) ?? Coordinates(lon: 0, lat: 0)
-            let startName = (geoDeparture ? departureGeoPosition?.name : departureStop?.name) ?? ""
-            let endName = (geoArrival ? arrivalGeoPosition?.name : arrivalStop?.name) ?? ""
+            let startCoordinate = departure?.coordinates ?? Coordinates(lon: 0, lat: 0)
+            let endCoordinate = arrival?.coordinates ?? Coordinates(lon: 0, lat: 0)
 
             // Décodage hors du thread principal ; seul le résultat y revient.
             DispatchQueue.global(qos: .userInitiated).async {
                 let result = Result {
-                    try parseTripEvents(from: data, startCoordinate: startCoordinate, endCoordinates: endCoordinate, startName: startName, endName: endName, startCode: departureStop?.sloid, endCode: arrivalStop?.sloid, geoDeparture: geoDeparture, geoArrival: geoArrival)
+                    try parseTripEvents(from: data, startCoordinate: startCoordinate, endCoordinates: endCoordinate,
+                                        startName: departure?.name ?? "", endName: arrival?.name ?? "",
+                                        startCode: departure?.stop?.sloid, endCode: arrival?.stop?.sloid,
+                                        geoDeparture: departure?.isPlace ?? false, geoArrival: arrival?.isPlace ?? false)
                 }
                 DispatchQueue.main.async {
                     guard request == self.latestRequest else { return }

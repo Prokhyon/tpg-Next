@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import CoreLocation
 import Testing
 @testable import tpgNextFunc
 
@@ -84,5 +85,30 @@ struct StopStoreTests {
         let names = Self.store.search("cornavin").map(\.name)
         #expect(!names.isEmpty)
         #expect(names == names.sorted())
+    }
+}
+
+@Suite("Extrémités d'itinéraire")
+struct TripEndpointTests {
+    private let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE",
+                            meansOfTransport: "BUS", wgs84Coordinates: Coordinates(lon: 6.15244, lat: 46.20192))
+    private let place = GeoPosition(name: "Ma position", coordinate: CLLocationCoordinate2D(latitude: 46.2, longitude: 6.14))
+
+    @Test func stopEndpoint() {
+        let endpoint = TripEndpoint.stop(stop)
+        #expect(endpoint.name == "Genève, Rive")
+        #expect(endpoint.stop == stop)
+        #expect(endpoint.place == nil)
+        #expect(!endpoint.isPlace)
+        #expect(endpoint.coordinates.lat == 46.20192)
+    }
+
+    @Test func placeEndpoint() {
+        let endpoint = TripEndpoint.place(place)
+        #expect(endpoint.name == "Ma position")
+        #expect(endpoint.stop == nil)
+        #expect(endpoint.isPlace)
+        #expect(endpoint.coordinates.lat == 46.2)
+        #expect(endpoint.coordinates.lon == 6.14)
     }
 }
