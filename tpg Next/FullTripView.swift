@@ -106,21 +106,21 @@ struct FullTripView: View {
                                         if leg.transferWalkDuration.isEmpty { //if walk leg without waiting time, display only the walking time
                                             Image(systemName: "figure.walk")
                                                 .padding(.leading, 30)
-                                            Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferDuration))
                                             Spacer()
                                         } else {
                                             Image(systemName: "timer") //Time between previous leg arrival and next leg departure
                                                 .padding(.leading, 30)
-                                            Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferDuration))
                                                 .padding(.trailing, 30)
                                             Image(systemName: "figure.walk")//walk time
-                                            Text("\(leg.transferWalkDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferWalkDuration))
                                             Spacer()
                                         }
                                     } else if leg.publishedLineName.isEmpty { //Used if trip without transport, only walking
                                         Image(systemName: "figure.walk")
                                             .padding(.leading, 30)
-                                        Text("\(fullTrip.duration.dropFirst(2).dropLast(1))'")
+                                        Text(durationText(fullTrip.duration))
                                             .padding(.trailing, 30)
                                         Spacer()
                                     }
@@ -349,7 +349,7 @@ struct fullTripViewTimeDate: View {
             }
             HStack {
                 Image(systemName: "timer")
-                Text("\(duration.dropFirst(2).dropLast(1))'")
+                Text(durationText(duration))
             }
         }
         .fixedSize()

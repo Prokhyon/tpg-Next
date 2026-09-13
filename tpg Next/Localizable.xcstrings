@@ -20,13 +20,7 @@
     " : %@" : {
       "shouldTranslate" : false
     },
-    " : %@'" : {
-      "shouldTranslate" : false
-    },
     ": %@" : {
-      "shouldTranslate" : false
-    },
-    ": %@'" : {
       "shouldTranslate" : false
     },
     "%@" : {
@@ -233,9 +227,6 @@
           }
         }
       }
-    },
-    "%@'" : {
-      "shouldTranslate" : false
     },
     "%lld" : {
       "shouldTranslate" : false

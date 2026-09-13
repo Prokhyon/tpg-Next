@@ -75,9 +75,9 @@ public struct Quay: Codable, Identifiable, Hashable {
                         <RequestTimestamp>\(requestTimestamp)</RequestTimestamp>
                         <ojp:Location>
                             <ojp:PlaceRef>
-                                <StopPlaceRef>\(stopSloid)</StopPlaceRef>
+                                <StopPlaceRef>\(stopSloid.xmlEscaped)</StopPlaceRef>
                                 <ojp:LocationName>
-                                    <ojp:Text>\(stopName)</ojp:Text>
+                                    <ojp:Text>\(stopName.xmlEscaped)</ojp:Text>
                                 </ojp:LocationName>
                             </ojp:PlaceRef>
                             <ojp:DepArrTime>\(depArrTime)</ojp:DepArrTime>
@@ -106,13 +106,13 @@ public struct Quay: Codable, Identifiable, Hashable {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 Log.network.error("Départs : \(error.localizedDescription)")
-                completion(false, nil)
+                DispatchQueue.main.async { completion(false, nil) }
                 return
             }
             
             guard let data = data else {
                 Log.network.error("Départs : réponse vide")
-                completion(false, nil)
+                DispatchQueue.main.async { completion(false, nil) }
                 return
             }
             

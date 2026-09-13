@@ -16,14 +16,20 @@ public class StopManager: ObservableObject {
     
     
     @Published public var quays: [Quay] = []
+    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
+    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
+    private var latestRequest = 0
     public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
         self.stopError = false
+        latestRequest += 1
+        let request = latestRequest
         self.stopErrorMessage = ""
         
         
         fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { success, data in
             if success, let data = data?.data(using: .utf8) {
                 parseStopEvents(from: data, stopCode: stopSloid) { stopEvents, quays, error in
+                    guard request == self.latestRequest else { return }
                     if let error = error {
                             switch error {
                             case .noEventFound(let msg):
@@ -46,6 +52,7 @@ public class StopManager: ObservableObject {
                 }
             } else {
                 DispatchQueue.main.async {
+                    guard request == self.latestRequest else { return }
                     self.stopError = true
                     Log.network.error("Départs : requête échouée")
                     completion()
@@ -63,7 +70,13 @@ class LineManager: ObservableObject {
     var track: [CLLocationCoordinate2D]?
     let dateFormatter = DateFormatter()
 
+    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
+    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
+    private var latestRequest = 0
+
     public func selectJourney(_ stopEvent: StopEvent, track: Bool = false, completion: @escaping () -> Void = {}) {
+        latestRequest += 1
+        let request = latestRequest
         if track {
             self.track = nil
         }
@@ -72,6 +85,7 @@ class LineManager: ObservableObject {
                 DispatchQueue.global(qos: .userInitiated).async {
                     let coordinates = track ? parseJourneyTrack(from: data) : nil
                     parseJourneyEvents(from: data) { lineEvents, operatorName in
+                        guard request == self.latestRequest else { return }
                         self.LineEvents = lineEvents
                         // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
                         self.operatorName = operatorName.isEmpty ? stopEvent.operatorName : operatorName
@@ -94,11 +108,18 @@ public class TripManager: ObservableObject {
     @Published public var tripError: Bool = false
     let dateFormatter = DateFormatter()
     
+    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
+    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
+    private var latestRequest = 0
+
     public func selectTrip(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool) {
         self.tripError = false
+        latestRequest += 1
+        let request = latestRequest
         //        print((departureGeoPosition ?? departureStop) ?? "emptyDeparture")
         //        print((arrivalGeoPosition ?? arrivalStop) ?? "emptyArrival")
         fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { success, data in
+            guard request == self.latestRequest else { return }
             if success {
                 // Parse XML response
                 if success, let data = data?.data(using: .utf8) {
