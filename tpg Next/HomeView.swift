@@ -48,7 +48,7 @@ struct FavoriteStopView: View {
 struct FavoriteView: View {
     @EnvironmentObject var stopStore: StopStore
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-
+    @EnvironmentObject var navigationModel: NavigationModel
     @Binding var isExpanded: Bool
 
     private let columns: [GridItem] = [
@@ -62,8 +62,21 @@ struct FavoriteView: View {
         VStack {
             VStack {
                 if favoritesViewModel.favoriteStops.isEmpty {
-                    Text("Ajoutez un arrêt aux favoris depuis la recherche ou son menu")
-                        .padding(.vertical)
+                    Button(action: {
+                        withAnimation {
+                            navigationModel.selectedTab = .search
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "star").font(.largeTitle)
+                            Text("Ajoutez un arrêt aux favoris en cliquant sur l'étoile depuis la recherche ou le menu d'une page arrêt").multilineTextAlignment(.leading)
+                        }
+                        .padding()
+                        .foregroundColor(Color.primary)
+                        .background {
+                            BasicCard(cornerRadius: 35)
+                        }
+                    }
                 }
                 LazyVGrid(columns: columns, spacing: 8) {
                     if favoritesViewModel.favoriteStops.count > maxRows*2 {
@@ -336,13 +349,13 @@ struct HomeDepartures: View {
                 calculateClosestBusStops(from: userLocation, stops: radiusList, nb: 3) { success, stops in
                     DispatchQueue.main.async {
                         calculationSuccess = success
-                        closestStops = stops
-                        for stop in closestStops {
-                            if favoritesViewModel.isFavorite(stop) {
-                                closestStops.remove(at: closestStops.firstIndex(of: stop)!)
-                                closestStops.insert(stop, at: 0)
-                            }
-                        }
+                        // Même règle que le widget et la montre : favori le plus proche
+                        // en tête, sauf si un arrêt est à moins de 20 m.
+                        closestStops = NearbyStopSelector.prioritized(
+                            stops,
+                            from: userLocation,
+                            favoriteSloids: Set(favoritesViewModel.favoriteStops.map { sloidHarmonizer(code: $0.sloid) })
+                        )
                     }
                 }
                 stopStore.location = userLocation
@@ -638,6 +651,7 @@ struct SmallStopView: View {
 struct HomeView: View {
     @EnvironmentObject var stopStore: StopStore
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    
     @State private var isExpanded: Bool = false
     @State private var maxRows: Int = 5
     var testing: Bool
@@ -821,6 +835,7 @@ struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
+        let navigationModel = NavigationModel()
         @State var autoRefresh: Bool = false
 
         return
@@ -828,6 +843,7 @@ struct HomeView_Previews: PreviewProvider {
                 HomeView(testing: false)
                     .environmentObject(stopStore)
                     .environmentObject(favoritesViewModel)
+                    .environmentObject(navigationModel)
             }
 //            HomeDepartures(testing: true)
 //            .environmentObject(stopStore)

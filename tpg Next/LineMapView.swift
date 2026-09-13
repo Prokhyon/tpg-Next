@@ -23,6 +23,10 @@ struct LineMapView: View {
     var stopEvent: StopEvent
     var currentStopSloid: String?
     @State private var polylines: [Int : MKPolyline] = [:]
+    @State private var track: [CLLocationCoordinate2D]?
+    /// Parcours auquel `track` correspond, ou pour lequel l'API n'a pas de tracé (`track == nil`).
+    @State private var trackKey: String?
+    @State private var trackSegments: [[CLLocationCoordinate2D]]?
 
     @State private var selectedResult: String?
 
@@ -47,13 +51,9 @@ struct LineMapView: View {
                             }
                         }
                         
-                        if !lineEvents.isEmpty {
-                            ForEach(0..<(max(lineEvents.count-1, 1)),id: \.self) { index in
-                                MapPolyline(coordinates:
-                                                [CLLocationCoordinate2D(latitude: Double(lineEvents[index].latitude) ?? 0.0, longitude: Double(lineEvents[index].longitude) ?? 0.0),
-                                                 CLLocationCoordinate2D(latitude: Double(lineEvents[index+1].latitude) ?? 0.0, longitude: Double(lineEvents[index+1].longitude) ?? 0.0)])
-                                .stroke(LineColors.lineColor(for: lineName, operatorName: operatorName).opacity(dateStringHasPassed(with: lineEvents[index].estimatedTime, equalReturnsTrue: false) ? 0.4 : 1), lineWidth: 5)
-                            }
+                        ForEach(mapSegments) { segment in
+                            MapPolyline(coordinates: segment.coordinates)
+                                .stroke(LineColors.lineColor(for: lineName, operatorName: operatorName).opacity(segment.passed ? 0.4 : 1), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                         }
                     }
                     .mapStyle(.standard(pointsOfInterest: .excludingAll))
@@ -157,6 +157,9 @@ struct LineMapView: View {
                 .onDisappear {
                     timer?.cancel()
                 }
+                .onChange(of: lineEvents) {
+                    updateTrackSegments()
+                }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
                     timer?.cancel()
                 }
@@ -176,11 +179,67 @@ struct LineMapView: View {
     }
     
     func getLineEvents(for stopEvent: StopEvent) {
-        lineManager.selectJourney(stopEvent) {
+        let currentKey = LineTrackCache.key(for: lineEvents)
+        if let currentKey, currentKey != trackKey, let cached = LineTrackCache.load(key: currentKey) {
+            applyTrack(cached, key: currentKey)
+        }
+        // Le tracé ne change pas pendant la course : on ne le demande qu'une fois par parcours,
+        // les rafraîchissements suivants restent légers.
+        let requestTrack = currentKey == nil || currentKey != trackKey
+        lineManager.selectJourney(stopEvent, track: requestTrack) {
 //            operatorName = self.lineManager.operatorName
 //            lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
             lineEvents = self.lineManager.LineEvents
+            guard requestTrack, let coordinates = lineManager.track,
+                  let newKey = LineTrackCache.key(for: lineEvents) else { return }
+            if coordinates.count >= 2 {
+                LineTrackCache.save(coordinates, key: newKey)
+                applyTrack(coordinates, key: newKey)
+            } else {
+                // Pas de tracé pour ce parcours : lignes droites, sans redemander toutes les 30 s.
+                applyTrack(nil, key: newKey)
+            }
         }
+    }
+
+    /// MapKit ne redessine pas une MapPolyline dont seules les coordonnées changent : l'id porte
+    /// donc la source de la géométrie, pour que les lignes droites soient remplacées par le tracé.
+    private struct MapSegment: Identifiable {
+        let id: String
+        let coordinates: [CLLocationCoordinate2D]
+        let passed: Bool
+    }
+
+    private var mapSegments: [MapSegment] {
+        guard lineEvents.count >= 2 else { return [] }
+        let segments = trackSegments?.count == lineEvents.count - 1 ? trackSegments : nil
+        let source = segments == nil ? "straight" : (trackKey ?? "track")
+        return (0..<(lineEvents.count - 1)).compactMap { index in
+            let coordinates = segments?[index] ?? [coordinate(of: lineEvents[index]), coordinate(of: lineEvents[index + 1])]
+            guard coordinates.count >= 2 else { return nil }
+            return MapSegment(id: "\(source)-\(index)", coordinates: coordinates, passed: dateStringHasPassed(with: lineEvents[index].estimatedTime, equalReturnsTrue: false))
+        }
+    }
+
+    private func coordinate(of event: LineEvent) -> CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: Double(event.latitude) ?? 0, longitude: Double(event.longitude) ?? 0)
+    }
+
+    func applyTrack(_ coordinates: [CLLocationCoordinate2D]?, key: String) {
+        track = coordinates
+        trackKey = key
+        updateTrackSegments()
+    }
+
+    func updateTrackSegments() {
+        guard let track, trackKey == LineTrackCache.key(for: lineEvents) else {
+            trackSegments = nil
+            return
+        }
+        let stops = lineEvents.map {
+            CLLocationCoordinate2D(latitude: Double($0.latitude) ?? 0, longitude: Double($0.longitude) ?? 0)
+        }
+        trackSegments = splitTrack(track, atStops: stops)
     }
     
 //    func calculateRoutes() {

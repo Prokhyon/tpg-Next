@@ -28,9 +28,9 @@ struct WhatsNew {
             Item(systemImage: "widget.medium",
                  title: "Widgets",
                  description: "Affichez les prochains départs d'un arrêt proche ou sélectionné directement sur l'écran d'accueil"),
-            Item(systemImage: "star.fill",
-                 title: "Autre nouveauté",
-                 description: "Description courte de l'autre nouveauté."),
+            Item(systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill",
+                 title: "Tracé de ligne",
+                 description: "Les tracés sur les cartes suivent désormais les routes"),
         ]
     )
 

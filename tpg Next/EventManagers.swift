@@ -7,6 +7,7 @@
 
 import Foundation
 import tpgNextFunc
+import MapKit
 
 public class StopManager: ObservableObject {
     @Published public var stopEvents: [StopEvent] = []
@@ -72,16 +73,29 @@ public class StopManager: ObservableObject {
 class LineManager: ObservableObject {
     @Published var LineEvents: [LineEvent] = []
     @Published var operatorName: String = ""
+    /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
+    /// vide si l'API n'a pas fourni de tracé pour cette course.
+    var track: [CLLocationCoordinate2D]?
     let dateFormatter = DateFormatter()
-    
-    public func selectJourney(_ stopEvent: StopEvent, completion: @escaping () -> Void = {}) {
-        fetchTransportJourney(with: stopEvent) { success, data in
+
+    public func selectJourney(_ stopEvent: StopEvent, track: Bool = false, completion: @escaping () -> Void = {}) {
+        if track {
+            self.track = nil
+        }
+        fetchTransportJourney(with: stopEvent, track: track) { success, data in
             if success, let data = data?.data(using: .utf8) {
-                parseJourneyEvents(from: data) { lineEvents, operatorName in
-                    self.LineEvents = lineEvents
-                    self.operatorName = operatorName
-                    //                        print("LineEvents updated: \(self.LineEvents), \(operatorName)")
-                    completion()
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let coordinates = track ? parseJourneyTrack(from: data) : nil
+                    parseJourneyEvents(from: data) { lineEvents, operatorName in
+                        self.LineEvents = lineEvents
+                        // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
+                        self.operatorName = operatorName.isEmpty ? stopEvent.operatorName : operatorName
+                        if let coordinates {
+                            self.track = coordinates
+                        }
+                        //                        print("LineEvents updated: \(self.LineEvents), \(operatorName)")
+                        completion()
+                    }
                 }
             } else {
                 completion()

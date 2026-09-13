@@ -117,17 +117,11 @@ struct ContentView: View {
                 calculateClosestBusStops(from: userLocation, stops: radiusList, nb: 3) { success, stops in
                     DispatchQueue.main.async {
                         closestStops = stops
-                        
-                        for stop in stops {
-                            if watchFavorites.favoriteStops.contains(stop) {
-                                closeStop = stop
-                                if withSelection {
-                                    selected = stop
-                                }
-                                return
-                            }
-                        }
-                            closeStop = closestStops.first
+                        // Même règle que l'iPhone et le widget. La comparaison se fait par
+                        // sloid : l'égalité complète de `Stop` échoue dès qu'un champ secondaire
+                        // diffère entre la copie synchronisée depuis l'iPhone et la base locale.
+                        let favoriteSloids = Set(watchFavorites.favoriteStops.map { sloidHarmonizer(code: $0.sloid) })
+                        closeStop = NearbyStopSelector.prioritized(stops, from: userLocation, favoriteSloids: favoriteSloids).first
                         if withSelection {
                             selected = closeStop
                         }

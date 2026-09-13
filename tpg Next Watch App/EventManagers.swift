@@ -76,7 +76,8 @@ class LineManager: ObservableObject {
             if success, let data = data?.data(using: .utf8) {
                 parseJourneyEvents(from: data) { lineEvents, operatorName in
                     self.LineEvents = lineEvents
-                    self.operatorName = operatorName
+                    // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
+                    self.operatorName = operatorName.isEmpty ? stopEvent.operatorName : operatorName
                     //                        print("LineEvents updated: \(self.LineEvents), \(operatorName)")
                     completion()
                 }
