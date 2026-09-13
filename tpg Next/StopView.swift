@@ -32,11 +32,7 @@ struct SortedStopEventsView: View {
                             Image(systemName: "arrow.right")
                             SmallStopTitleView(stopName: splitLine.1)
                             Spacer()
-                            if quay == "" {
-                                Image(systemName: "questionmark.square.fill")
-                            } else {
-                                Image(systemName: "\(quay).square.fill".lowercased())
-                            }
+                            QuayIcon(quay: quay)
                         }
                         .frame(height: 30)
 //                        .background(Rectangle().fill(.red))
@@ -44,29 +40,12 @@ struct SortedStopEventsView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
-                                    let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
+                                    let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime)
                                     NavigationLink {
                                         LineView(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: stopEvent.lineName)
                                     } label: {
                                     Group {
-                                            if time.text == "0" {
-                                                transportIcon(with: stopEvent.transportType)
-                                                    .frame(width: 15)
-                                            } else {
-                                                if time.text.count > 6 {
-                                                    HStack(spacing: 2) {
-                                                        let splitTime = time.text.split(separator: ";")
-                                                        Text(splitTime[0])
-                                                        Text(splitTime[1])
-                                                            .foregroundStyle(time.color)
-                                                            .minimumScaleFactor(0.5)
-                                                    }
-                                                } else {
-                                                    Text(time.text)
-                                                        .foregroundStyle(time.color)
-                                                }
-                                                
-                                            }
+                                            DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                         }
                                         .foregroundStyle(determineColor(for: stopEvent.estimatedTime))
                                         .padding(.horizontal, 17)
@@ -457,16 +436,7 @@ struct StopView: View {
                         }
                     }
                     
-                        Button(action: {
-                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
-                        }) {
-                            Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                        }
-                        Button(action: {
-                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
-                        }) {
-                            Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                        }
+                        TripActionsMenu(stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), includesQuickTrip: false)
                 } label: {
                         Label("", systemImage: "ellipsis")
                             .padding(.horizontal, 5)

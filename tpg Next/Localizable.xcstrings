@@ -430,6 +430,9 @@
         }
       }
     },
+    "Autorisez la localisation pour voir les départs à proximité." : {
+
+    },
     "avec %lld minutes d'avance" : {
       "localizations" : {
         "en" : {
@@ -1060,7 +1063,7 @@
         }
       }
     },
-    "Position indisponible. Autorisez la localisation pour voir les départs à proximité." : {
+    "Position introuvable pour l'instant." : {
 
     },
     "Prévenir 1' avant" : {

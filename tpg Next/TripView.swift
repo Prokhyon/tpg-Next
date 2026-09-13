@@ -114,6 +114,35 @@ class ItineraryViewModel: ObservableObject {
     }
 }
 
+/// « Partir d'ici », « Aller ici » et, au besoin, « Trajet rapide » pour un arrêt.
+/// À placer dans un `contextMenu` ou un `Menu`.
+struct TripActionsMenu: View {
+    @EnvironmentObject var tripViewModel: ItineraryViewModel
+    @EnvironmentObject var navigationModel: NavigationModel
+    let stop: Stop
+    var includesQuickTrip = true
+
+    var body: some View {
+        Button {
+            tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
+        } label: {
+            Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
+        }
+        Button {
+            tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
+        } label: {
+            Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
+        }
+        if includesQuickTrip {
+            Button {
+                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
+            } label: {
+                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
+            }
+        }
+    }
+}
+
 class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var searchQuery: String = "" {
         didSet {
@@ -181,26 +210,10 @@ struct TripElementView: View {
     var body: some View {
         VStack(alignment: .center) {
             HStack {
-                let startTime = displayTimeOrMinutesRemaining(for: event.startTime, estimatedInput: event.startTime, with: showTime)
-                if startTime.text  == "0" { transportIcon(with: event.legs.first?.transportTypeName ?? "Bus")
-                            .frame(width:55)
-                    } else {
-                        if startTime.text.count > 6 {
-                            let splitTime = splitString(startTime.text, separator: ";" )
-                            VStack {
-                                Text(splitTime.0)
-                                Text(splitTime.1).foregroundStyle(startTime.color)
-                                
-                            }
-                            .frame(width:55)
-                            .minimumScaleFactor(0.5)
-                        } else {
-                            Text(startTime.text)
-                                .frame(width:55)
-                                .minimumScaleFactor(0.5)
-                                .foregroundStyle(startTime.color)
-                        }
-                    }
+                let startTime = departureDisplay(timetabled: event.startTime, estimated: event.startTime, showTime: showTime)
+                DepartureTimeView(startTime, transportType: event.legs.first?.transportTypeName ?? "Bus", iconWidth: 55)
+                    .frame(width: 55)
+                    .minimumScaleFactor(0.5)
                     Spacer()
 
                     // Scrollable icon area
@@ -237,25 +250,10 @@ struct TripElementView: View {
                 }
                 .frame(minWidth: 200, maxHeight: 30)
                     Spacer()
-                let endTime = displayTimeOrMinutesRemaining(for: event.endTime, estimatedInput: event.endTime, with: showTime)
-                if endTime.text  == "0" { transportIcon(with: event.legs.last?.transportTypeName ?? "Bus")
-                            .frame(width:55)
-                } else {
-                    if endTime.text.count > 6 {
-                        let splitTime = splitString(endTime.text, separator: ";" )
-                        VStack {
-                            Text(splitTime.0)
-                            Text(splitTime.1).foregroundStyle(endTime.color)
-                        }
-                        .frame(width:55)
-                        .minimumScaleFactor(0.5)
-                    } else {
-                        Text(endTime.text)
-                            .frame(width:55)
-                            .minimumScaleFactor(0.5)
-                            .foregroundStyle(endTime.color)
-                    }
-                }
+                let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime)
+                DepartureTimeView(endTime, transportType: event.legs.last?.transportTypeName ?? "Bus", iconWidth: 55)
+                    .frame(width: 55)
+                    .minimumScaleFactor(0.5)
             }
             .padding(.horizontal)
             

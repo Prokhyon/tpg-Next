@@ -49,41 +49,17 @@ struct StopEventView: View  {
     var body: some View {
 //                .stroke(event.journeyRef == (previousLineRef ?? "") ? .accent : .clear, lineWidth: 3)
         VStack {
-            let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime,  with: showTime)
+            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime)
             HStack {
                 BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 Image(systemName: "arrow.right").font(.caption)
                 SmallStopTitleView(stopName: event.destination)
             }
             HStack {
-                if transportTime.text == "0" {
-                    transportIcon(with: event.transportType)
-                        .frame(width: 15)
-                        .padding(4)
-                } else {
-                    if transportTime.text.count > 6 {
-                        let splitTime = splitString(transportTime.text, separator: ";" )
-                        HStack(spacing: 5) {
-                            Text(splitTime.0)
-                            Text(splitTime.1)
-                                .foregroundStyle(transportTime.color)
-                                .minimumScaleFactor(0.5)
-                        }
-                        .padding(4)
-                        
-                    } else {
-                        Text(transportTime.text)
-                            .padding(4)
-                            .minimumScaleFactor(0.5)
-                            .foregroundStyle(transportTime.color)
-                    }
-                }
+                DepartureTimeView(transportTime, transportType: event.transportType, layout: .inline(spacing: 5), iconWidth: 15)
+                    .padding(4)
                 Spacer()
-                if event.plannedQuay == "" {
-                    Image(systemName: "questionmark.square.fill")
-                } else {
-                    Image(systemName: "\(event.plannedQuay).square.fill".lowercased())
-                }
+                QuayIcon(quay: event.plannedQuay)
             }
             
         }
@@ -322,29 +298,12 @@ struct StopSortedView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
                         ForEach(stopEventsList, id: \.id) { stopEvent in
-                            let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
+                            let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime)
                             Button(action: {
                                 //define navigation
                             }) {
                                 Group {
-                                    if time.text == "0" {
-                                        transportIcon(with: stopEvent.transportType)
-                                            .frame(width: 15)
-                                    } else {
-                                        if time.text.count > 6 {
-                                            HStack(spacing: 2) {
-                                                let splitTime = time.text.split(separator: ";")
-                                                Text(splitTime[0])
-                                                Text(splitTime[1])
-                                                    .foregroundStyle(time.color)
-                                                    .minimumScaleFactor(0.5)
-                                            }
-                                        } else {
-                                            Text(time.text)
-                                                .foregroundStyle(time.color)
-                                        }
-                                        
-                                    }
+                                    DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                 }
                                 .padding(.horizontal)
                                 
@@ -363,11 +322,7 @@ struct StopSortedView: View {
                     Image(systemName: "arrow.right")
                     SmallStopTitleView(stopName: destination)
                     Spacer()
-                    if quay == "" {
-                        Image(systemName: "questionmark.square.fill")
-                    } else {
-                        Image(systemName: "\(quay).square.fill".lowercased())
-                    }
+                    QuayIcon(quay: quay)
                 }
                 .padding(.horizontal, 12)
             }

@@ -349,31 +349,13 @@ struct LineEventElementView: View {
                         SmallStopTitleView(stopName: eventName)
                     }
                     Spacer()
-                    let transportTime = displayTimeOrMinutesRemaining(for: timetabledTime, estimatedInput: estimatedTime, with: showTime)
-                    if transportTime.text == "0" && displayIcon {
-                        transportIcon(with: transportType).frame(width: 10)
-                    } else {
-                        if transportTime.text.count > 6 { //Time with delay
-                            let splitTime = splitString(transportTime.text, separator: ";" )
-                            VStack(spacing: 0) {
-                                Text(splitTime.0)
-                                Text(splitTime.1).foregroundStyle(transportTime.color)
-                                    .minimumScaleFactor(0.5)
-                            }
-                            .padding(.vertical, 4)
-                        } else {
-                            Text(transportTime.text)
-                                .padding(.vertical, 4)
-                                .minimumScaleFactor(0.5)
-                                .foregroundStyle(transportTime.color)
-                        }
-                    }
-                    if plannedQuay == "" { //Unkown quay
-                        Image(systemName: "questionmark.square.fill")
-                    } else if plannedQuay == "ignore" { //Used for trip, if no transport connection
+                    let transportTime = departureDisplay(timetabled: timetabledTime, estimated: estimatedTime, showTime: showTime)
+                    DepartureTimeView(transportTime, transportType: transportType, iconWidth: 10, showsIcon: displayIcon)
+                        .padding(.vertical, 4)
+                    if plannedQuay == "ignore" { // Étape d'itinéraire sans transport : pas de quai
                         Image(systemName: "dot.square.fill")
                     } else {
-                        Image(systemName: "\(plannedQuay.lowercased()).square.fill")
+                        QuayIcon(quay: plannedQuay)
                     }
                 }
                     .foregroundStyle(.primary)

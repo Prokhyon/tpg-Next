@@ -48,16 +48,7 @@ struct NotificationContextMenu: View {
             if itinerary {
                 Divider()
                 
-                Button(action: {
-                    tripModel.outerTrip(tab: navigationModel, isDeparture: true, stop: createStop(nomarret: event.stopPointName, sloid: sloidHarmonizer(code: stopID)), isQuickTrip: false)
-                }) {
-                    Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                }
-                Button(action: {
-                    tripModel.outerTrip(tab: navigationModel, isDeparture: false, stop: createStop(nomarret: event.stopPointName, sloid: sloidHarmonizer(code: stopID)), isQuickTrip: false)
-                }) {
-                    Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                }
+                TripActionsMenu(stop: createStop(nomarret: event.stopPointName, sloid: sloidHarmonizer(code: stopID)), includesQuickTrip: false)
             }
         }
     }
