@@ -62,10 +62,8 @@ public struct Quay: Codable, Identifiable, Hashable {
         outputFormatter1.timeZone = TimeZone(secondsFromGMT: 0)
         let requestTimestamp = outputFormatter1.string(from: timeRequest)
         
-        let outputFormatter2 = DateFormatter()
-        outputFormatter2.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        outputFormatter2.timeZone = TimeZone.current
-        let depArrTime = outputFormatter2.string(from: timeRequest)
+        // En UTC explicite : une heure locale sans fuseau n'est juste que si le téléphone est à l'heure suisse.
+        let depArrTime = requestTimestamp
         
         let xmlString = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -317,7 +315,7 @@ public struct Quay: Codable, Identifiable, Hashable {
 
 
 public func createStopEventFromTripLeg(tripLeg: TripLeg) -> StopEvent {
-    let stopEvent = StopEvent(stopPointName: "", stopId: "", plannedQuay: "", timetabledTime: "", estimatedTime: "", lineName: tripLeg.publishedLineName, origin: "", destination: tripLeg.legDestination, transportType: tripLeg.transportTypeName, operatorName: tripLeg.legOperator, journeyRef: tripLeg.journeyRef, operatingDayRef: "\(tripLeg.legBoardTimetableTime.dropLast(10))")
+    let stopEvent = StopEvent(stopPointName: "", stopId: tripLeg.legBoardStopId, plannedQuay: "", timetabledTime: tripLeg.legBoardTimetableTime, estimatedTime: "", lineName: tripLeg.publishedLineName, origin: "", destination: tripLeg.legDestination, transportType: tripLeg.transportTypeName, operatorName: tripLeg.legOperator, journeyRef: tripLeg.journeyRef, operatingDayRef: tripLeg.resolvedOperatingDayRef)
     return stopEvent
 }
 

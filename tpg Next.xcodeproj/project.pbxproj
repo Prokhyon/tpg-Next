@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B08 /* WidgetPreviews.swift */; };
-		7BADCAFE0000000000000C07 /* tpg Next Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000A01 /* tpg Next Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		780452D02D9446A9004722F5 /* RegularTrips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780452CF2D94469B004722F5 /* RegularTrips.swift */; };
 		7813BE8D2C23389A005FAFBF /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7813BE8C2C23389A005FAFBF /* SearchView.swift */; };
 		7813BE932C23737A005FAFBF /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7813BE922C23737A005FAFBF /* HomeView.swift */; };
@@ -23,6 +21,8 @@
 		7829E4002D2298380049A10B /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7835AAC12C68E4E400F77E4F /* LineMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7835AAC02C68E4E400F77E4F /* LineMapView.swift */; };
 		7835AAC32C6A4BC900F77E4F /* TripMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7835AAC22C6A4BC900F77E4F /* TripMapView.swift */; };
+		7855070F3055703F00B892A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B05 /* Assets.xcassets */; };
+		78550712305578AD00B892A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40A2C2094F20083C4C6 /* Assets.xcassets */; };
 		7857887E2CD28F9400196E1C /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 7857887D2CD28F9400196E1C /* InfoPlist.xcstrings */; };
 		786C183B2C660CF800C214AA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786C183A2C660CF800C214AA /* MapView.swift */; };
 		786C183E2C67624E00C214AA /* ClusterMap in Frameworks */ = {isa = PBXBuildFile; productRef = 786C183D2C67624E00C214AA /* ClusterMap */; };
@@ -39,9 +39,7 @@
 		78AC0DF93044A9EC0062E467 /* BasicViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786AF4022D59157B0047017E /* BasicViews.swift */; };
 		78AC0DFA3044AA0B0062E467 /* BasicViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786AF4022D59157B0047017E /* BasicViews.swift */; };
 		78AC0DFD3044AB280062E467 /* StopView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78AC0DFC3044AB280062E467 /* StopView 2.swift */; };
-		78AC0DFF3044ABBC0062E467 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40A2C2094F20083C4C6 /* Assets.xcassets */; };
 		78B074592CAC537E000474C9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B074582CAC537E000474C9 /* SettingsView.swift */; };
-		7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000A001 /* WhatsNewView.swift */; };
 		78B4B1A52CBFE80C00F3D0D5 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */; };
 		78C254702E1D664D00115169 /* Updates.md in Resources */ = {isa = PBXBuildFile; fileRef = 78C2546F2E1D664D00115169 /* Updates.md */; };
 		78C3C1122CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf in Resources */ = {isa = PBXBuildFile; fileRef = 78C3C1112CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf */; };
@@ -52,22 +50,17 @@
 		78E81CDD2C3D34BC0021DC5D /* NotificationFunc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */; };
 		78E9E2C82DA7BB6D00CACDC0 /* lineTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E9E2C72DA7BB6600CACDC0 /* lineTest.swift */; };
 		78FE35632C31A1CD00698FEE /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FE35622C31A1CD00698FEE /* TripView.swift */; };
+		7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000A001 /* WhatsNewView.swift */; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
 		7BADCAFE0000000000000C04 /* DeparturesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B04 /* DeparturesWidget.swift */; };
-		7BADCAFE0000000000000C05 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B05 /* Assets.xcassets */; };
 		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
+		7BADCAFE0000000000000C07 /* tpg Next Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000A01 /* tpg Next Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B08 /* WidgetPreviews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		7BADCAFE0000000000000102 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 7BADCAFE0000000000000F01;
-			remoteInfo = "tpg Next Widget";
-		};
 		7824633D2D21C6B900CDE4D2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
@@ -88,6 +81,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 782463362D21C6B800CDE4D2;
 			remoteInfo = tpgNextFunc;
+		};
+		7BADCAFE0000000000000102 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7BADCAFE0000000000000F01;
+			remoteInfo = "tpg Next Widget";
 		};
 		7BADCAFE0000000000000104 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -146,7 +146,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		7BADCAFE0000000000000B08 /* WidgetPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPreviews.swift; sourceTree = "<group>"; };
 		780452CF2D94469B004722F5 /* RegularTrips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegularTrips.swift; sourceTree = "<group>"; };
 		7813BE8C2C23389A005FAFBF /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		7813BE922C23737A005FAFBF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -174,7 +173,6 @@
 		7898B4D32C81F72300D64621 /* StopMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopMapView.swift; sourceTree = "<group>"; };
 		78AC0DFC3044AB280062E467 /* StopView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopView 2.swift"; sourceTree = "<group>"; };
 		78B074582CAC537E000474C9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000A001 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; usesTabs = 0; };
 		78C2546F2E1D664D00115169 /* Updates.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Updates.md; sourceTree = "<group>"; };
 		78C3C1112CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = tpgNextNotificationSound.caf; sourceTree = "<group>"; };
@@ -187,6 +185,7 @@
 		78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFunc.swift; sourceTree = "<group>"; };
 		78E9E2C72DA7BB6600CACDC0 /* lineTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = lineTest.swift; sourceTree = "<group>"; };
 		78FE35622C31A1CD00698FEE /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
+		7A1C0DE0000000000000A001 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B02 /* DeparturesProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeparturesProvider.swift; sourceTree = "<group>"; };
@@ -195,6 +194,7 @@
 		7BADCAFE0000000000000B05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B06 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B07 /* tpg Next Widget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tpg Next Widget.entitlements"; sourceTree = "<group>"; };
+		7BADCAFE0000000000000B08 /* WidgetPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPreviews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -471,7 +471,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					782463362D21C6B800CDE4D2 = {
 						CreatedOnToolsVersion = 16.0;
@@ -548,8 +548,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				78AC0DFF3044ABBC0062E467 /* Assets.xcassets in Resources */,
-				7BADCAFE0000000000000C05 /* Assets.xcassets in Resources */,
+				78550712305578AD00B892A5 /* Assets.xcassets in Resources */,
+				7855070F3055703F00B892A5 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -617,11 +617,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		7BADCAFE0000000000000101 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;
-			targetProxy = 7BADCAFE0000000000000102 /* PBXContainerItemProxy */;
-		};
 		7824633E2D21C6B900CDE4D2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
@@ -645,6 +640,11 @@
 			isa = PBXTargetDependency;
 			productRef = 786C18432C6762BB00C214AA /* ClusterMapSwiftUI */;
 		};
+		7BADCAFE0000000000000101 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;
+			targetProxy = 7BADCAFE0000000000000102 /* PBXContainerItemProxy */;
+		};
 		7BADCAFE0000000000000103 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
@@ -658,10 +658,10 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -699,10 +699,10 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -744,7 +744,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"tpg Next Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
@@ -777,7 +776,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"tpg Next Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
@@ -837,6 +835,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -861,6 +860,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -903,6 +903,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -920,6 +921,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
@@ -936,7 +938,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"tpg Next/Preview Content\"";
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "tpg-Next-Info.plist";
@@ -974,7 +975,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"tpg Next/Preview Content\"";
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "tpg-Next-Info.plist";
@@ -1009,7 +1009,6 @@
 				CODE_SIGN_ENTITLEMENTS = "tpg Next Widget/tpg Next Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "tpg Next Widget/Info.plist";
@@ -1042,7 +1041,6 @@
 				CODE_SIGN_ENTITLEMENTS = "tpg Next Widget/tpg Next Widget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = EE4866DK5Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "tpg Next Widget/Info.plist";

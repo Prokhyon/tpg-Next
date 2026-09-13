@@ -61,7 +61,7 @@ struct FullTripView: View {
                                         .contentShape(.contextMenuPreview, Capsule())
                                         .if(!dateStringHasPassed(with: leg.legBoardEstimatedTime, equalReturnsTrue: false)) { view in
                                             view.contextMenu {
-                                                NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: "\(leg.legBoardTimetableTime.dropLast(10))"), stopID: leg.legBoardStopId)
+                                                NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef), stopID: leg.legBoardStopId)
                                             }
                                         }
                                         
@@ -93,7 +93,7 @@ struct FullTripView: View {
                                         .contentShape(.contextMenuPreview, Capsule())
                                         .if(!dateStringHasPassed(with: leg.legAlightEstimatedTime, equalReturnsTrue: false)) { view in
                                             view.contextMenu {
-                                                NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: "\(leg.legAlightTimetableTime.dropLast(10))", stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
+                                                NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
                                             }
                                         }
                                     }
@@ -181,7 +181,7 @@ struct FullTripView: View {
                                     .padding(.horizontal, 20)
                                     .glassEffect(.regular.interactive())
                                     .glassEffectID("title", in: namespace)
-                                fullTripViewTimeDate(duration: fullTrip.duration, date: String(fullTrip.startTime.dropLast(10)))
+                                fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
                                     .foregroundStyle(.text)
                                     .frame(height: 70)
                                     .padding(.horizontal, 20)
@@ -204,7 +204,7 @@ struct FullTripView: View {
                                         .shadow(color: Color.customShadows, radius: 2, y: 1.5)
                                 }
                             Spacer()
-                            fullTripViewTimeDate(duration: fullTrip.duration, date: String(fullTrip.startTime.dropLast(10)))
+                            fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
                                 .frame(height: 70)
                                 .padding(.horizontal, 20)
                                 .background {

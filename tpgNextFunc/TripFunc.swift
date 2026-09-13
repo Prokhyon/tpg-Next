@@ -52,6 +52,8 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
     
     public var legDestination: String
     public var journeyRef: String
+    /// Optionnel : les itinéraires enregistrés avant qu'il soit lu n'en ont pas (voir `resolvedOperatingDayRef`).
+    public var operatingDayRef: String? = nil
     public var publishedLineName: String
     public var legDuration: String
     public var transferDuration: String
@@ -68,6 +70,43 @@ public struct LegIntermediate: Codable, Identifiable, Hashable {
     public var stopName: String
     public var longitude: String
     public var latitude: String
+}
+
+extension TripLeg {
+    /// Jour d'exploitation de la course, à passer à l'OJPTripInfoRequest. À défaut (itinéraire
+    /// enregistré avant qu'il soit lu), on l'estime : jusque vers 4 h, les courses de nuit
+    /// appartiennent au jour d'exploitation de la veille. `fetchTransportJourney` rattrape les écarts.
+    public var resolvedOperatingDayRef: String {
+        if let operatingDayRef, !operatingDayRef.isEmpty {
+            return operatingDayRef
+        }
+        guard let date = ISO8601DateFormatter().date(from: legBoardTimetableTime) else {
+            return String(legBoardTimetableTime.prefix(10))
+        }
+        let swissTimeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = swissTimeZone
+        let nightDate = calendar.component(.hour, from: date) < 4 ? date.addingTimeInterval(-86_400) : date
+        return dayString(from: nightDate, in: swissTimeZone)
+    }
+}
+
+/// Date locale (yyyy-MM-dd) d'une heure OJP en UTC, pour l'affichage : couper la chaîne
+/// UTC donne la veille pour les trajets entre minuit et 2 h.
+public func localDayString(fromUTC isoString: String) -> String {
+    guard let date = ISO8601DateFormatter().date(from: isoString) else {
+        return String(isoString.prefix(10))
+    }
+    return dayString(from: date, in: .current)
+}
+
+private func dayString(from date: Date, in timeZone: TimeZone) -> String {
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .gregorian)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = timeZone
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter.string(from: date)
 }
 
 public enum ParserError: Error {
@@ -320,6 +359,8 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
                 currentTripLeg?.id = currentTextContent
             case "ojp:JourneyRef":
                 currentTripLeg?.journeyRef = currentTextContent
+            case "ojp:OperatingDayRef":
+                currentTripLeg?.operatingDayRef = currentTextContent
             case "ojp:TransferMode":
                 if currentTextContent == "walk" {
                     currentTripLeg?.transfer = true

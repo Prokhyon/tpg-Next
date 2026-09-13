@@ -14,6 +14,8 @@ struct TripMapView: View {
     var isPreview: Bool = false
     
     @State private var polylines: [Int : MKPolyline] = [:]
+    /// Tracé réel des étapes en transport, par index d'étape.
+    @State private var legTracks: [Int : [CLLocationCoordinate2D]] = [:]
     
     var body: some View {
             ZStack {
@@ -30,9 +32,13 @@ struct TripMapView: View {
                         }
                     }
                     
+                    ForEach(transitSegments) { segment in
+                        MapPolyline(coordinates: segment.coordinates)
+                            .stroke(segment.color, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    }
+
                     ForEach(tripEvent.legs.indices, id: \.self) { index in
                         let leg = tripEvent.legs[index]
-                        let lineColor = LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator)
                         let lineColorInverted = LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator, inverted: true)
                         
                         if leg.transfer {
@@ -75,35 +81,17 @@ struct TripMapView: View {
                             }
                             
                             
-                            if leg.legIntermediates.isEmpty {
-                                MapPolyline(coordinates: [CLLocationCoordinate2D(latitude: Double(leg.legBoardLatitude) ?? 0.0, longitude: Double(leg.legBoardLongitude) ?? 0.0), CLLocationCoordinate2D(latitude: Double(leg.legAlightLatitude) ?? 0.0, longitude: Double(leg.legAlightLongitude) ?? 0.0)])
-                                    .stroke(lineColor, lineWidth: 3)
-                            } else {
-                                ForEach(leg.legIntermediates.indices) { index in
+                            if !isPreview {
+                                ForEach(leg.legIntermediates.indices, id: \.self) { index in
                                     let intermediate = leg.legIntermediates[index]
-                                    
-                                    if !isPreview {
-                                        Annotation(intermediate.stopName, coordinate: CLLocationCoordinate2D(latitude: Double(intermediate.latitude) ?? 0.0, longitude: Double(intermediate.longitude) ?? 0.0), anchor: .center) {
-                                            Circle()
-                                                .strokeBorder(Color.primary, lineWidth: 3)
-                                                .background(
-                                                    Circle()
-                                                        .fill(lineColorInverted)
-                                                )
-                                                .frame(width: 12, height: 12)
-                                        }
-                                    }
-                                    if index == 0 {
-                                        MapPolyline(coordinates: [CLLocationCoordinate2D(latitude: Double(leg.legBoardLatitude) ?? 0.0, longitude: Double(leg.legBoardLongitude) ?? 0.0), CLLocationCoordinate2D(latitude: Double(intermediate.latitude) ?? 0.0, longitude: Double(intermediate.longitude) ?? 0.0)])
-                                            .stroke(lineColor, lineWidth: 3)
-                                    } else {
-                                        let previousIntermediate = leg.legIntermediates[index - 1]
-                                        MapPolyline(coordinates: [CLLocationCoordinate2D(latitude: Double(intermediate.latitude) ?? 0.0, longitude: Double(intermediate.longitude) ?? 0.0), CLLocationCoordinate2D(latitude: Double(previousIntermediate.latitude) ?? 0.0, longitude: Double(previousIntermediate.longitude) ?? 0.0)])
-                                            .stroke(lineColor, lineWidth: 3)
-                                    }
-                                    if index == leg.legIntermediates.count - 1 {
-                                        MapPolyline(coordinates: [CLLocationCoordinate2D(latitude: Double(intermediate.latitude) ?? 0.0, longitude: Double(intermediate.longitude) ?? 0.0), CLLocationCoordinate2D(latitude: Double(leg.legAlightLatitude) ?? 0.0, longitude: Double(leg.legAlightLongitude) ?? 0.0)])
-                                            .stroke(lineColor, lineWidth: 3)
+                                    Annotation(intermediate.stopName, coordinate: CLLocationCoordinate2D(latitude: Double(intermediate.latitude) ?? 0.0, longitude: Double(intermediate.longitude) ?? 0.0), anchor: .center) {
+                                        Circle()
+                                            .strokeBorder(Color.primary, lineWidth: 3)
+                                            .background(
+                                                Circle()
+                                                    .fill(lineColorInverted)
+                                            )
+                                            .frame(width: 12, height: 12)
                                     }
                                 }
                             }
@@ -134,6 +122,7 @@ struct TripMapView: View {
                 .onAppear {
                     print("calculating")
                     calculateRoutes()
+                    loadLegTracks()
                     print("tripmap start: ", tripEvent.startCoordinates)
                 }
                 .mapControls {
@@ -172,6 +161,44 @@ struct TripMapView: View {
 //            .toolbar(.hidden, for: .navigationBar)
     }
     
+    /// MapKit ne redessine pas une MapPolyline dont seules les coordonnées changent : l'id porte
+    /// donc la source de la géométrie, pour que la ligne droite soit remplacée par le tracé.
+    private struct MapSegment: Identifiable {
+        let id: String
+        let coordinates: [CLLocationCoordinate2D]
+        let color: Color
+    }
+
+    private var transitSegments: [MapSegment] {
+        tripEvent.legs.indices.compactMap { index -> MapSegment? in
+            let leg = tripEvent.legs[index]
+            guard !leg.transfer else { return nil }
+            let color = LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator)
+            if let track = legTracks[index] {
+                return MapSegment(id: "\(index)-track", coordinates: track, color: color)
+            }
+            let stops = leg.trackStops.filter { $0.latitude != 0 && $0.longitude != 0 }
+            guard stops.count >= 2 else { return nil }
+            return MapSegment(id: "\(index)-straight", coordinates: stops, color: color)
+        }
+    }
+
+    func loadLegTracks() {
+        for index in tripEvent.legs.indices where !tripEvent.legs[index].transfer && legTracks[index] == nil {
+            let leg = tripEvent.legs[index]
+            if let key = leg.trackCacheKey, let cached = LineTrackCache.load(key: key) {
+                legTracks[index] = cached
+            } else if !isPreview {
+                // L'aperçu du menu contextuel ne dure que quelques secondes : cache uniquement.
+                fetchLegTrack(for: leg) { track in
+                    if let track {
+                        legTracks[index] = track
+                    }
+                }
+            }
+        }
+    }
+
     func calculateRoutes() {
         polylines.removeAll()
         

@@ -34,20 +34,40 @@ public enum NearbyStopSelector {
                                   using reader: StopIndexReader,
                                   favoriteSloids: Set<String>) -> Selection? {
         let candidates = reader.nearest(to: coordinate, limit: candidateCount, maxDistance: searchRadius)
-        guard let closest = candidates.first else { return nil }
+        guard let first = prioritized(candidates, favoriteSloids: favoriteSloids).first else { return nil }
+        return Selection(stop: first.stop,
+                         distance: first.distance,
+                         isFavorite: favoriteSloids.contains(sloidHarmonizer(code: first.stop.sloid)))
+    }
 
-        let isFavorite = { (stop: Stop) in favoriteSloids.contains(sloidHarmonizer(code: stop.sloid)) }
+    /// La règle, isolée pour être partagée par l'app, la montre et le widget.
+    ///
+    /// Reçoit les arrêts proches triés du plus proche au plus lointain et renvoie
+    /// la même liste avec l'arrêt à afficher en tête ; l'ordre des autres est conservé.
+    /// - Si le plus proche est à `favoriteOverrideDistance` ou moins, rien ne bouge.
+    /// - Sinon, le favori **le plus proche** passe en tête, s'il y en a un.
+    public static func prioritized(_ candidates: [(stop: Stop, distance: CLLocationDistance)],
+                                   favoriteSloids: Set<String>) -> [(stop: Stop, distance: CLLocationDistance)] {
+        guard let closest = candidates.first,
+              closest.distance > favoriteOverrideDistance,
+              let index = candidates.firstIndex(where: { favoriteSloids.contains(sloidHarmonizer(code: $0.stop.sloid)) }),
+              index > 0 else { return candidates }
+        var reordered = candidates
+        reordered.insert(reordered.remove(at: index), at: 0)
+        return reordered
+    }
 
-        // On est pratiquement sur l'arrêt : aucun favori ne devrait le supplanter.
-        if closest.distance <= favoriteOverrideDistance {
-            return Selection(stop: closest.stop, distance: closest.distance, isFavorite: isFavorite(closest.stop))
+    /// Variante pour les appelants qui ont une liste d'arrêts triée et une position,
+    /// sans les distances.
+    public static func prioritized(_ stops: [Stop],
+                                   from location: CLLocation,
+                                   favoriteSloids: Set<String>) -> [Stop] {
+        let candidates = stops.map { stop in
+            (stop: stop,
+             distance: CLLocation(latitude: stop.wgs84Coordinates.lat,
+                                  longitude: stop.wgs84Coordinates.lon).distance(from: location))
         }
-
-        if let favorite = candidates.first(where: { isFavorite($0.stop) }) {
-            return Selection(stop: favorite.stop, distance: favorite.distance, isFavorite: true)
-        }
-
-        return Selection(stop: closest.stop, distance: closest.distance, isFavorite: false)
+        return prioritized(candidates, favoriteSloids: favoriteSloids).map(\.stop)
     }
 
     /// Les sloids des favoris, normalisés pour la comparaison.

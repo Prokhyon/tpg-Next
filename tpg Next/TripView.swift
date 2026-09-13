@@ -38,6 +38,11 @@ class ItineraryViewModel: ObservableObject {
     @Published var selectedTextField: Int = 1
 
     @Published var selectedField: TripField? = .departure
+
+    var hasDeparture: Bool { departureStop != nil || departureGeoPosition != nil }
+    var hasArrival: Bool { arrivalStop != nil || arrivalGeoPosition != nil }
+    /// Départ et arrivée renseignés : la recherche d'itinéraire peut être lancée.
+    var canSearch: Bool { hasDeparture && hasArrival }
     
     func invertStops() {
         departureSearchText = ""
@@ -340,8 +345,6 @@ struct TripView: View {
     @State var timeAnimate = false
     
     var body: some View {
-        var hasDeparture = (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)
-        var hasArrival = (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil)
         ZStack {
             VStack {
                     let resultsView = VStack {switch results {
@@ -414,10 +417,10 @@ struct TripView: View {
                     } else if focusField == .departure {
                         viewModel.selectedField = .departure
                     } else if focusField == nil {
-                        if !hasDeparture {
+                        if !viewModel.hasDeparture {
                             viewModel.departureSearchText = ""
                         }
-                        if !hasArrival {
+                        if !viewModel.hasArrival {
                             viewModel.arrivalSearchText = ""
                         }
                     }
@@ -738,7 +741,7 @@ struct TripView: View {
                                     .pickerStyle(.segmented)
                                     Button {
                                         
-                                        if (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil) &&  (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil) {
+                                        if viewModel.canSearch {
                                             withAnimation {
                                                 searchTrips()
                                                 viewModel.tripDone = true
@@ -749,8 +752,9 @@ struct TripView: View {
                                             .foregroundStyle(.white)
                                             .padding(.vertical, 10)
                                             .padding(.horizontal)
-                                            .glassEffect(.regular.tint(.accentColor).interactive())
+                                            .glassEffect(.regular.tint(viewModel.canSearch ? .accentColor : .gray).interactive(viewModel.canSearch))
                                     }
+                                    .disabled(!viewModel.canSearch)
                                 }
                             } else {
                                 HStack {
@@ -758,17 +762,18 @@ struct TripView: View {
                                         .frame(width: 220)
                                     
                                     Button {
-                                        if (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil) &&  (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil) {
+                                        if viewModel.canSearch {
                                             searchTrips()
                                             viewModel.tripDone = true
                                         }
                                     } label: {
                                         Capsule()
-                                            .fill(.accent)
+                                            .fill(viewModel.canSearch ? .accent : .gray)
                                             .shadow(color: Color.customShadows, radius: 1, y: 0.8)
                                             .frame(width: 110, height: 45)
                                             .overlay(Text("Rechercher").foregroundStyle(.white))
                                     }
+                                    .disabled(!viewModel.canSearch)
                                 }
                             }
                         }
@@ -1252,7 +1257,7 @@ struct TripView: View {
         
         var body: some View {
             let textFieldSelected = viewModel.selectedTextField == fieldNumber
-            let hasSelection = (fieldNumber == 1 && (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)) || (fieldNumber == 2 && (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil))
+            let hasSelection = (fieldNumber == 1 && viewModel.hasDeparture) || (fieldNumber == 2 && viewModel.hasArrival)
             ZStack {
                 HStack {
                     if hasSelection && !focus.wrappedValue {
@@ -1387,7 +1392,7 @@ struct TripView: View {
         
         var body: some View {
             let selected = viewModel.selectedField == field
-            let hasSelection = (field == .departure && (viewModel.departureStop != nil || viewModel.departureGeoPosition != nil)) || (field == .arrival && (viewModel.arrivalStop != nil || viewModel.arrivalGeoPosition != nil))
+            let hasSelection = (field == .departure && viewModel.hasDeparture) || (field == .arrival && viewModel.hasArrival)
             ZStack {
                 HStack {
                     HStack {

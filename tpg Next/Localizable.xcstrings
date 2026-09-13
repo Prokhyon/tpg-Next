@@ -342,6 +342,9 @@
         }
       }
     },
+    "Affichez les prochains départs d'un arrêt proche ou sélectionné directement sur l'écran d'accueil" : {
+
+    },
     "Ajouter aux favoris" : {
       "localizations" : {
         "en" : {
@@ -353,6 +356,7 @@
       }
     },
     "Ajoutez un arrêt aux favoris depuis la recherche ou son menu" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -361,6 +365,9 @@
           }
         }
       }
+    },
+    "Ajoutez un arrêt aux favoris en cliquant sur l'étoile depuis la recherche ou le menu d'une page arrêt" : {
+
     },
     "Aller ici" : {
       "comment" : "Other: Use as destination",
@@ -592,6 +599,9 @@
           }
         }
       }
+    },
+    "Continuer" : {
+
     },
     "Dans un premier temps, quelques autorisations afin d'améliorer votre expérience:" : {
       "localizations" : {
@@ -856,6 +866,9 @@
         }
       }
     },
+    "Les tracés sur les cartes suivent désormais les routes" : {
+
+    },
     "Lieux" : {
       "localizations" : {
         "en" : {
@@ -945,6 +958,9 @@
           }
         }
       }
+    },
+    "Nouveautés" : {
+
     },
     "NSLocationWhenInUseUsageDescriptio" : {
       "extractionState" : "manual",
@@ -1375,6 +1391,9 @@
     "This Week’s Trips" : {
       "shouldTranslate" : false
     },
+    "Tracé de ligne" : {
+
+    },
     "Trajet rapide" : {
       "localizations" : {
         "en" : {
@@ -1435,6 +1454,9 @@
           }
         }
       }
+    },
+    "Widgets" : {
+
     }
   },
   "version" : "1.0"
