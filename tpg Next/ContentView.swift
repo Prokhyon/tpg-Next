@@ -81,6 +81,8 @@ struct ContentView: View {
     @EnvironmentObject var appRequirementsClass: AppRequirementsClass
     @StateObject var savedTripsModel = SavedTripsModel()
     @StateObject var regularTripsModel = RegularTripsModel()
+    /// Une seule instance, partagée par la recherche et l'itinéraire : chacun avait la sienne.
+    @StateObject var recentSearchModel = RecentSearch()
     @StateObject var itineraryViewModel = ItineraryViewModel()
     @StateObject private var keyboardResponder = KeyboardResponder()
     @StateObject private var tripManager = TripManager()
@@ -91,11 +93,10 @@ struct ContentView: View {
     
     @State private var viewingTrip = false
     @State private var showMenu = false
-    @AppStorage("ShowWelcome") var showWelcome = true
+    @AppStorage(SettingKey.showWelcome) var showWelcome = true
     @AppStorage(WhatsNew.lastSeenKey) var lastSeenWhatsNew = ""
     @State private var showWhatsNew = false
     @State var autoRefresh = true
-    @AppStorage("UseCircleButton") var useCircleButton = false
     
     var testingNewDock: Bool = false
     
@@ -158,6 +159,7 @@ struct ContentView: View {
                     }
                 }
                 .environmentObject(itineraryViewModel)
+                .environmentObject(recentSearchModel)
                 .environmentObject(navigationModel)
                 .environmentObject(appRequirementsClass)
             if #available(iOS 26, *), !testingNewDock {

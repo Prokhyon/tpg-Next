@@ -68,7 +68,7 @@ public enum SharedStorage {
     // MARK: - Réglages d'affichage
 
     /// Les réglages que le widget doit connaître pour formater les départs comme l'app.
-    private static let mirroredSettingKeys = ["DelayTimeIntegrated"]
+    private static let mirroredSettingKeys = [SettingKey.delayIncludedInTime]
 
     /// Recopie les réglages `@AppStorage` de l'app vers le groupe. À appeler au lancement
     /// et à chaque modification : `@AppStorage` écrit dans `.standard`, que l'extension ne voit pas.

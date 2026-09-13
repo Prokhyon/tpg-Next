@@ -14,7 +14,7 @@ struct FullTripView: View {
     @EnvironmentObject var appRequirementsClass: AppRequirementsClass
     var fullTrip: TripEvent
     @StateObject private var lineManager = LineManager()
-    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
     
     @Namespace private var namespace
@@ -147,7 +147,6 @@ struct FullTripView: View {
                     .contentMargins(.bottom, 40, for: .automatic)
                     .onAppear {
                         showTime = timeDefault
-                        UINavigationBar.setTransparentAppearance()
                     }
                 }
                 if #available(iOS 26, *) {
@@ -265,6 +264,8 @@ struct FullTripView: View {
 
             }
         .navigationTitle("Détail itinéraire") // Set back button text
+        // Barre transparente pour cet écran seulement : l'ancien réglage UIKit s'appliquait à toute l'app.
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {

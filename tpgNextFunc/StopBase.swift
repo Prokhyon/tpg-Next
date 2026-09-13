@@ -49,51 +49,6 @@ extension CLLocationCoordinate2D {
 //    }
 //}
 
-public struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
-    public var coordinate: CLLocationCoordinate2D
-    public var id: String
-    public var name: String
-
-    public init(coordinate: CLLocationCoordinate2D, id: String, name: String) {
-        self.coordinate = coordinate
-        self.id = id
-        self.name = name
-    }
-
-    // Custom equality implementation
-    public static func == (lhs: LocationStop, rhs: LocationStop) -> Bool {
-        return lhs.id == rhs.id &&
-               lhs.name == rhs.name &&
-               lhs.coordinate.latitude == rhs.coordinate.latitude &&
-               lhs.coordinate.longitude == rhs.coordinate.longitude
-    }
-
-    // Custom hashing implementation
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(name)
-        hasher.combine(coordinate.latitude)
-        hasher.combine(coordinate.longitude)
-    }
-}
-
-//Code copied from ClusterMap Framework in order to keep LocationStop in this framework without using ClusterMap
-protocol CoordinateIdentifiable {
-    /// The geographical coordinate of the object.
-    var coordinate: CLLocationCoordinate2D { get set }
-
-    /// A Boolean value that determines whether the object should be included in clustering operations.
-    ///
-    /// The default value is `true`.
-    var shouldCluster: Bool { get }
-}
-
-extension CoordinateIdentifiable {
-    var shouldCluster: Bool { true }
-}
-//End of copied code
-
-
 public struct Stop: Codable, Identifiable, Hashable, Equatable {
     public let name: String
     public let sloid: String
@@ -196,12 +151,13 @@ extension String {
 }
 
 public class StopStore: ObservableObject {
-    @Published public var stops: [Stop] = []
+    @Published public private(set) var stops: [Stop] = []
     @Published public var searchText: String = ""
     @Published public private(set) var filteredStops: [Stop] = []
     @Published public private(set) var activeStops: [Stop] = []
-    @Published public var mapStops: [LocationStop] = []
     @Published public var location: CLLocation?
+    /// Vrai une fois la base chargée, ce qui se fait en arrière-plan.
+    @Published public private(set) var isLoaded = false
     
     private var cancellables = Set<AnyCancellable>()
     /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
@@ -211,52 +167,71 @@ public class StopStore: ObservableObject {
     private let debounceInterval: TimeInterval = 0.3 // 300ms debounce interval
 
     public init() {
-        loadAllStops()
         setupSearch()
-    }
-
-    // MARK: - Data Loading and Initialization
-
-    private func loadAllStops() {
-        let stopFiles = ["FullStopsCH", "TrainStopsFR"] // Replace with actual JSON file names
-
-        for file in stopFiles {
-            loadStops(from: file)
+        // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
+        // (et bien plus longtemps sur la montre).
+        DispatchQueue.global(qos: .userInitiated).async {
+            let loaded = Self.loadAllStops()
+            var unique: [String: Stop] = [:]
+            for stop in loaded {
+                unique[stop.sloid] = stop
+            }
+            let active = Array(unique.values)
+            let index = active.map { (key: $0.name.normalized().lowercased(), stop: $0) }
+            DispatchQueue.main.async {
+                self.stops = loaded
+                self.stopsBySloid = unique
+                self.activeStops = active
+                self.searchIndex = index
+                self.isLoaded = true
+                // Une recherche tapée pendant le chargement est relancée sur la base complète.
+                Task { @MainActor in
+                    self.updateSearchResults()
+                }
+            }
         }
-
-        filterActiveStops()
     }
+
+    /// Rend la main une fois la base chargée, tout de suite si elle l'est déjà.
+    @MainActor
+    public func waitUntilLoaded() async {
+        for await loaded in $isLoaded.values where loaded {
+            return
+        }
+    }
+
+    // MARK: - Chargement
 
     /// La base des arrêts est embarquée dans tpgNextFunc, pas dans les apps,
     /// pour que iOS et watchOS partagent exactement les mêmes fichiers.
     private static let stopsBundle = Bundle(for: StopStore.self)
 
-    private func loadStops(from fileName: String) {
-        guard let url = Self.stopsBundle.url(forResource: fileName, withExtension: "json") else {
+    private static func loadAllStops() -> [Stop] {
+        ["FullStopsCH", "TrainStopsFR"].flatMap(loadStops(from:))
+    }
+
+    private static func loadStops(from fileName: String) -> [Stop] {
+        guard let url = stopsBundle.url(forResource: fileName, withExtension: "json") else {
             Log.data.error("\(fileName).json introuvable dans le bundle")
-            return
+            return []
+        }
+
+        struct TempStop: Codable {
+            let designationOfficial: String?
+            let sloid: String?
+            let number: String?
+            let isoCountryCode: String?
+            let cantonName: String?
+            let meansOfTransport: String?
+            let wgs84East: Double?
+            let wgs84North: Double?
         }
 
         do {
-            let data = try Data(contentsOf: url)
-
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-            struct TempStop: Codable {
-                let designationOfficial: String?
-                let sloid: String?
-                let number: String?
-                let isoCountryCode: String?
-                let cantonName: String?
-                let meansOfTransport: String?
-                let wgs84East: Double?
-                let wgs84North: Double?
-            }
-
-            let tempStops = try decoder.decode([TempStop].self, from: data)
-
-            let filteredStops = tempStops.compactMap { tempStop -> Stop? in
+            let tempStops = try decoder.decode([TempStop].self, from: Data(contentsOf: url))
+            let stops = tempStops.compactMap { tempStop -> Stop? in
                 guard let name = tempStop.designationOfficial,
                       let sloid = tempStop.sloid,
                       let codedidoc = tempStop.number,
@@ -269,22 +244,12 @@ public class StopStore: ObservableObject {
                 }
                 return Stop(name: name, sloid: sloid, codedidoc: codedidoc, country: country, canton: canton, meansOfTransport: meansOfTransport, wgs84Coordinates: Coordinates(lon: wgs84East, lat: wgs84North))
             }
-
-            Log.data.debug("\(fileName).json : \(filteredStops.count) arrêts")
-            self.stops.append(contentsOf: filteredStops)
+            Log.data.debug("\(fileName).json : \(stops.count) arrêts")
+            return stops
         } catch {
             Log.data.error("Lecture de \(fileName).json impossible : \(error.localizedDescription)")
+            return []
         }
-    }
-
-    private func filterActiveStops() {
-        var uniqueStops: [String: Stop] = [:]
-        for stop in stops {
-            uniqueStops[stop.sloid] = stop
-        }
-        stopsBySloid = uniqueStops
-        activeStops = Array(uniqueStops.values)
-        searchIndex = activeStops.map { (key: $0.name.normalized().lowercased(), stop: $0) }
     }
 
     // MARK: - Search Logic with Combine Debounce

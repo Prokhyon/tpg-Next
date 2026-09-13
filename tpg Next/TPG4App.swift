@@ -50,6 +50,8 @@ struct TPG4App: App {
                 .environmentObject(favoritesViewModel)
                 .environmentObject(appRequirementsClass)
                 .task {
+                    // La base se charge en arrière-plan : on l'attend avant de s'en servir.
+                    await stopStore.waitUntilLoaded()
                     // Relie les favoris à la base : les noms suivent alors la base
                     // au lieu de rester figés sur l'instantané enregistré.
                     favoritesViewModel.attach(stopStore: stopStore)

@@ -281,7 +281,7 @@ struct TripView: View {
     @EnvironmentObject var appRequirementsClass: AppRequirementsClass
     @StateObject private var locationViewModel = LocationSearchViewModel()
     @StateObject var locationManager = LocationManager()
-    @StateObject var recentSearchModel = RecentSearch()
+    @EnvironmentObject var recentSearchModel: RecentSearch
 
     
     @FocusState var focusField: TripField?
@@ -302,7 +302,7 @@ struct TripView: View {
     @State private var switchAnimate: Bool = false
     @State private var switchRotation: Bool = false
     
-    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     
     enum Results {
         case empty, favorites, search, closeStops, tripResults, loading, error
@@ -1830,6 +1830,7 @@ struct TripView_Previews: PreviewProvider {
                     .environmentObject(savedTripsModel)
                     .environmentObject(regularTripsModel)
                     .environmentObject(appRequirementsClass)
+                    .environmentObject(RecentSearch())
                     .background(Image("tpgMap"))
             }
         

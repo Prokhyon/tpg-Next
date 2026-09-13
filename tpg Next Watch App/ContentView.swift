@@ -102,6 +102,9 @@ struct ContentView: View {
         .onAppear {
             getLocation(withSelection: true)
         }
+        .onChange(of: stopStore.isLoaded) {
+            getLocation(withSelection: true)
+        }
         .onChange(of: scenePhase) {
             if scenePhase == .active {
                 getLocation(withSelection: true)
@@ -109,6 +112,8 @@ struct ContentView: View {
         }
     }
     private func getLocation(withSelection: Bool) {
+        // La base se charge en arrière-plan : `onChange(of: stopStore.isLoaded)` relance la recherche.
+        guard stopStore.isLoaded else { return }
         locationManager.requestLocation { location in
             if let userLocation = location ?? locationManager.userLocation {
                 let stopList = stopStore.activeStops

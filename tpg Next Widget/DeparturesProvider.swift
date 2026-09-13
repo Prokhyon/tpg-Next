@@ -164,23 +164,15 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     // MARK: - Réseau
 
+    /// `nil` en cas d'échec réseau, vide si l'arrêt n'a pas de départ. La requête a son
+    /// propre délai d'attente et se termine toujours : plus besoin de la borner ici.
     private func fetchDepartures(for stop: Stop) async -> [StopEvent]? {
-        let empty: [StopEvent]? = nil
-        return await withTimeout(seconds: 20, fallback: empty) {
-            await withCheckedContinuation { (continuation: CheckedContinuation<[StopEvent]?, Never>) in
-                fetchTransportDepartures(with: stop.name,
-                                         stopSloid: stop.sloid,
-                                         stopEventNumber: requestedDepartures,
-                                         timeRequest: Date()) { data in
-                    guard let data else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    parseStopEvents(from: data, stopCode: stop.sloid) { events, _, error in
-                        continuation.resume(returning: error == nil ? events : [])
-                    }
-                }
-            }
+        do {
+            return try await fetchStopEvents(stopName: stop.name, stopSloid: stop.sloid, count: requestedDepartures).events
+        } catch is ParserError {
+            return []
+        } catch {
+            return nil
         }
     }
 }
@@ -252,30 +244,6 @@ private final class LocationFetcher: NSObject, CLLocationManagerDelegate, @unche
 }
 
 // MARK: - Utilitaires
-
-/// Le rendu d'un widget ne doit pas rester suspendu : toute attente est bornée.
-/// Borne l'attente **sans dépendre de la coopération de l'opération**.
-///
-/// `withTaskGroup` ne convient pas ici : il attend toutes ses tâches filles avant
-/// de rendre la main, et `cancelAll()` ne peut rien contre une
-/// `withCheckedContinuation` jamais reprise — l'annulation est coopérative et une
-/// continuation n'est pas un point d'annulation. Une réponse réseau ou un délégué
-/// de localisation muet suspendait donc la construction de la timeline pour
-/// toujours, et WidgetKit restait sur son placeholder.
-///
-/// Ici l'opération tourne dans une tâche non structurée : si elle ne répond pas,
-/// elle est simplement abandonnée (l'extension est éphémère) et l'appelant reçoit
-/// `fallback` à l'échéance.
-func withTimeout<T>(seconds: Double,
-                    fallback: T,
-                    operation: @escaping () async -> T) async -> T {
-    let box = SingleResume<T>()
-    return await withCheckedContinuation { continuation in
-        box.attach(continuation)
-        Task { box.resolve(await operation()) }
-        DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { box.resolve(fallback) }
-    }
-}
 
 /// Garantit qu'une continuation est reprise exactement une fois, quel que soit
 /// le nombre de candidats en course.

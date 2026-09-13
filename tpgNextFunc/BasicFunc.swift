@@ -68,7 +68,7 @@ extension String {
 ///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
 public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool, at now: Date = Date()) -> (text: String, color: Color) {
     // Lu dans le groupe d'app : @AppStorage écrit dans .standard, invisible depuis le widget.
-    let delayTimeIntegrated = SharedStorage.bool(forSetting: "DelayTimeIntegrated")
+    let delayTimeIntegrated = SharedStorage.bool(forSetting: SettingKey.delayIncludedInTime)
     let estimatedInput = estimatedInput.isEmpty ? timetableInput : estimatedInput
     guard let timetableTime = OJPDate.date(from: timetableInput),
           let estimatedTime = OJPDate.date(from: estimatedInput) else {

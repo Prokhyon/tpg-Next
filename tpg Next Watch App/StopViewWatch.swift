@@ -119,10 +119,8 @@ struct StopView: View {
     @State private var showMenu = false
     
     var groupedStopEvents: [String: [StopEvent]] {
-            Dictionary(grouping: stopManager.stopEvents) { stopEvent in
-                "\(stopEvent.lineName);\(stopEvent.destination)"
-            }
-        }
+        stopManager.stopEvents.groupedByLineAndDestination()
+    }
 
     var filteredStopEvents: [String: [StopEvent]] {
             if selectedFilters.isEmpty {
@@ -143,7 +141,7 @@ struct StopView: View {
                 if viewLineSorted {
                     ZStack {
                         TabView {
-                            ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                            ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
                                 let splitLine = splitString(key, separator: ";")
                                 StopSortedView(lineName: splitLine.0, destination: splitLine.1, currentStopName: stopName, stopEventsList: filteredStopEvents[key]!, showTime: $showTime)
                                     .containerBackground(LineColors.lineColor(for: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName).gradient,
@@ -307,28 +305,6 @@ struct StopView: View {
         // Une heure absente ou illisible veut dire « les départs à partir de maintenant ».
         guard let time, let date = stringToDate(with: time) else { return Date() }
         return date
-    }
-    private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
-        let lhsComponents = lhs.split(separator: ";")
-        let rhsComponents = rhs.split(separator: ";")
-        
-        let lhsLineName = lhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let lhsDestination = lhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        let rhsLineName = rhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let rhsDestination = rhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        // Sort primarily by LineName
-        if lhsLineName != rhsLineName {
-            if let lhsLineNameInt = Int(lhsLineName), let rhsLineNameInt = Int(rhsLineName) {
-                return lhsLineNameInt < rhsLineNameInt
-            } else {
-                return lhsLineName < rhsLineName
-            }
-        }
-        
-        // If LineName is the same, sort by Destination
-        return lhsDestination < rhsDestination
     }
 }
 
