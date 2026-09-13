@@ -203,6 +203,14 @@ struct MapView: View {
                         await dataSource.addAnnotations()
                     }
                 }
+                // La base se charge en arrière-plan : la carte l'attend si elle s'ouvre avant.
+                .onChange(of: stopStore.isLoaded) {
+                    dataSource.setStopStore(stopStore.activeStops)
+                    Task {
+                        await dataSource.removeAnnotations()
+                        await dataSource.addAnnotations()
+                    }
+                }
             }
     }
     func FilterQuays() {

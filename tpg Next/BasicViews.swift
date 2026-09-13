@@ -188,7 +188,7 @@ struct StopIcon: View {
 }
 
 struct ShowTimeButton: View {
-    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @Binding var showTime: Bool
     @State private var rotation: Double = 0
     @State private var imageName: String = "hourglass"

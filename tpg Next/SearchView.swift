@@ -16,7 +16,7 @@ struct SearchView: View {
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var tripViewModel: ItineraryViewModel
     @EnvironmentObject var navigationModel: NavigationModel
-    @ObservedObject var recentSearchModel = RecentSearch()
+    @EnvironmentObject var recentSearchModel: RecentSearch
     @StateObject var locationManager = LocationManager()
     @EnvironmentObject var savedTripsModel: SavedTripsModel
     
@@ -28,7 +28,7 @@ struct SearchView: View {
     
     @FocusState private var isFocused: Bool
     
-    @AppStorage("homeFavorites") var homeFavorites = false
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     
     //    var futureTrips: [TripEvent] = []
     var futureTrips: [TripEvent] {
@@ -297,6 +297,7 @@ struct SearchView_Previews: PreviewProvider {
             SearchView(/*futureTrips: [fullTripTest.Trip]*/)
                 .environmentObject(favoritesViewModel)
                 .environmentObject(stopStore)
+                .environmentObject(RecentSearch())
 //                    .background(Background())
             }
             

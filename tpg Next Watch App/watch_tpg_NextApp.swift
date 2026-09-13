@@ -35,7 +35,7 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
     
-    private let userDefaultsKey = "favoriteStops"
+    private static let store = CodableStore<[Stop]>(key: "favoriteStops")
     
     override init() {
         super.init()
@@ -76,25 +76,15 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
     }
     
     private func saveFavorites() {
-        do {
-            let data = try JSONEncoder().encode(favoriteStops)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
-        }
+        Self.store.save(favoriteStops)
     }
-    
+
     private func loadFavorites() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let stops = try JSONDecoder().decode([Stop].self, from: data)
-                self.favoriteStops = stops
-            } catch {
-                Log.data.error("Lecture des favoris impossible : \(error.localizedDescription)")
-            }
+        if let stops = Self.store.load() {
+            favoriteStops = stops
         }
     }
-    
+
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         guard activationState == .activated else { return }
         // Un contexte poussé pendant que l'app montre était éteinte attend déjà ici.

@@ -163,10 +163,8 @@ struct StopView: View {
 
     
     var groupedStopEvents: [String: [StopEvent]] {
-            Dictionary(grouping: stopManager.stopEvents) { stopEvent in
-                "\(stopEvent.lineName);\(stopEvent.destination)"
-            }
-        }
+        stopManager.stopEvents.groupedByLineAndDestination()
+    }
 
     var filteredStopEvents: [String: [StopEvent]] {
             if selectedFilters.isEmpty {
@@ -181,8 +179,8 @@ struct StopView: View {
     
     @State private var selectedFilters: Set<String> = []
         
-    @AppStorage("GoupedDefault") var groupedDefault = false
-//    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
+//    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     
     @Namespace var topID
     @Namespace var bottomID
@@ -195,7 +193,7 @@ struct StopView: View {
                                 LazyVStack(spacing: 0) {
                                     
                                     if viewLineSorted {
-                                        ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                                        ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
                                             SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: $previousLineRef, stopName: stopName, stopSloid: stopSloid)
                                         }
                                     } else {
@@ -551,7 +549,7 @@ struct StopView: View {
                     .padding()
                 
                     let scroll = VStack {
-                        ForEach(groupedStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                        ForEach(groupedStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
 //                            let splitLineOperator = splitString(key, separator: "$")
                             let splitLine = splitString(key, separator: ";")
                             Button(action: {
@@ -661,28 +659,6 @@ struct StopView: View {
         // veut simplement dire « les départs à partir de maintenant ».
         guard let time, let date = stringToDate(with: time) else { return Date() }
         return date
-    }
-    private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
-        let lhsComponents = lhs.split(separator: ";")
-        let rhsComponents = rhs.split(separator: ";")
-        
-        let lhsLineName = lhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let lhsDestination = lhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        let rhsLineName = rhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let rhsDestination = rhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        // Sort primarily by LineName
-        if lhsLineName != rhsLineName {
-            if let lhsLineNameInt = Int(lhsLineName), let rhsLineNameInt = Int(rhsLineName) {
-                return lhsLineNameInt < rhsLineNameInt
-            } else {
-                return lhsLineName < rhsLineName
-            }
-        }
-        
-        // If LineName is the same, sort by Destination
-        return lhsDestination < rhsDestination
     }
     private func startTimer() {
         timer = Timer.publish(every: 30, on: .main, in: .common)

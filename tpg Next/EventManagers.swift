@@ -63,66 +63,40 @@ public class TripManager: ObservableObject {
 
 
 public class SavedTripsModel: ObservableObject {
+    private static let store = CodableStore<[TripEvent]>(key: "savedTrips")
+
     @Published public var savedTrips: [TripEvent] {
-        didSet {
-            saveTrips()
-        }
+        didSet { Self.store.save(savedTrips) }
     }
-    
-    private let userDefaultsKey = "savedTrips"
-    
+
     init() {
-        self.savedTrips = []
-        loadTrips()
+        savedTrips = Self.store.load() ?? []
     }
 
     public func addTrip(_ trip: TripEvent) {
         if !savedTrips.contains(trip) {
             savedTrips.append(trip)
-            saveTrips()
         }
     }
-    
+
     public func removeTrip(_ trip: TripEvent) {
-        savedTrips.removeAll(where: { $0.id == trip.id })
-        saveTrips()
+        savedTrips.removeAll { $0.id == trip.id }
     }
-    
+
     public func tripIsSaved(_ trip: TripEvent) -> Bool {
-        return savedTrips.contains(trip)
-    }
-    
-    private func saveTrips() {
-        do {
-            let data = try JSONEncoder().encode(savedTrips)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des itinéraires impossible : \(error.localizedDescription)")
-        }
-    }
-    
-    private func loadTrips() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let trips = try JSONDecoder().decode([TripEvent].self, from: data)
-                self.savedTrips = trips
-            } catch {
-                Log.data.error("Lecture des itinéraires impossible : \(error.localizedDescription)")
-            }
-        }
+        savedTrips.contains(trip)
     }
 }
 
 public class RegularTripsModel: ObservableObject {
+    private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
+
     @Published public var regularTrips: [RegularTrip] {
-        didSet { saveTrips() }
+        didSet { Self.store.save(regularTrips) }
     }
 
-    private let userDefaultsKey = "regularTrips"
-
     init() {
-        self.regularTrips = []
-        loadTrips()
+        regularTrips = Self.store.load() ?? []
     }
 
     public func addTrip(_ trip: RegularTrip) {
@@ -134,43 +108,20 @@ public class RegularTripsModel: ObservableObject {
     public func removeTrip(_ trip: RegularTrip) {
         regularTrips.removeAll { $0.id == trip.id }
     }
-
-    private func saveTrips() {
-        do {
-            let data = try JSONEncoder().encode(regularTrips)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des trajets réguliers impossible : \(error.localizedDescription)")
-        }
-    }
-
-    private func loadTrips() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let trips = try JSONDecoder().decode([RegularTrip].self, from: data)
-                self.regularTrips = trips
-            } catch {
-                Log.data.error("Lecture des trajets réguliers impossible : \(error.localizedDescription)")
-            }
-        }
-    }
 }
 
 
 class RecentSearch: ObservableObject {
+    private static let store = CodableStore<[RecentSearchItem]>(key: "savedSearch")
+
     @Published public var searchItems: [RecentSearchItem] {
-        didSet {
-            saveSearch()
-        }
+        didSet { Self.store.save(searchItems) }
     }
-    
-    private let userDefaultsKey = "savedSearch"
-    
+
     init() {
-        self.searchItems = []
-        loadSearch()
+        searchItems = Self.store.load() ?? []
     }
-    
+
     func add(name: String, isStop: Bool, stop: Stop?, geoCoordinates: Coordinates?) {
         let item = RecentSearchItem(name: name, isStop: isStop, stop: stop, geoCoordinates: geoCoordinates)
         searchItems.removeAll { $0.name == item.name }
@@ -179,27 +130,7 @@ class RecentSearch: ObservableObject {
             searchItems.removeLast()
         }
     }
-    
-    private func saveSearch() {
-        do {
-            let data = try JSONEncoder().encode(searchItems)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des recherches récentes impossible : \(error.localizedDescription)")
-        }
-    }
-    
-    private func loadSearch() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let items = try JSONDecoder().decode([RecentSearchItem].self, from: data)
-                self.searchItems = items
-            } catch {
-                Log.data.error("Lecture des recherches récentes impossible : \(error.localizedDescription)")
-            }
-        }
-    }
-    
+
     struct RecentSearchItem: Encodable, Decodable, Hashable {
         var name: String
         var isStop: Bool

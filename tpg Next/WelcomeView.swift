@@ -47,7 +47,7 @@ struct WelcomeView: View {
         @Binding var viewingWelcome: Bool
         @StateObject var locationManager = LocationManager()
         let notificationManager = NotificationManager.shared
-        @AppStorage("NotificationAsked") var notificationAuthorizationAsked = false
+        @AppStorage(SettingKey.notificationAsked) var notificationAuthorizationAsked = false
         
         var body: some View {
             VStack(alignment: .leading) {

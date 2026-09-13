@@ -51,13 +51,12 @@ public struct Quay: Codable, Identifiable, Hashable {
 }
 
 
-/// Les prochains départs d'un arrêt (OJP 1.0). `completion` reçoit la réponse brute,
-/// `nil` en cas d'échec, sur le thread principal.
-public func fetchTransportDepartures(with stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping (Data?) -> Void) {
+/// La requête `OJPStopEventRequest` (OJP 1.0) des `count` prochains départs à partir de `date`.
+func stopEventRequestXML(stopName: String, stopSloid: String, count: Int, at date: Date) -> String {
     let requestTimestamp = OJPDate.string(from: Date())
     // En UTC explicite : une heure locale sans fuseau n'est juste que si le téléphone est à l'heure suisse.
-    let depArrTime = OJPDate.string(from: timeRequest)
-    let xmlString = """
+    let depArrTime = OJPDate.string(from: date)
+    return """
     <?xml version="1.0" encoding="UTF-8"?>
     <OJP xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.siri.org.uk/siri" version="1.0" xmlns:ojp="http://www.vdv.de/ojp" xsi:schemaLocation="http://www.siri.org.uk/siri ../ojp-xsd-v1.0/OJP.xsd">
         <OJPRequest>
@@ -76,7 +75,7 @@ public func fetchTransportDepartures(with stopName: String, stopSloid: String, s
                         <ojp:DepArrTime>\(depArrTime)</ojp:DepArrTime>
                     </ojp:Location>
                     <ojp:Params>
-                        <ojp:NumberOfResults>\(stopEventNumber)</ojp:NumberOfResults>
+                        <ojp:NumberOfResults>\(count)</ojp:NumberOfResults>
                         <ojp:StopEventType>departure</ojp:StopEventType>
                         <ojp:IncludeRealtimeData>true</ojp:IncludeRealtimeData>
                     </ojp:Params>
@@ -85,7 +84,24 @@ public func fetchTransportDepartures(with stopName: String, stopSloid: String, s
         </OJPRequest>
     </OJP>
     """
-    OJPClient.post(xmlString, to: .v1) { completion(try? $0.get()) }
+}
+
+/// Les prochains départs d'un arrêt. `completion` reçoit la réponse brute,
+/// `nil` en cas d'échec, sur le thread principal.
+public func fetchTransportDepartures(with stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping (Data?) -> Void) {
+    let xml = stopEventRequestXML(stopName: stopName, stopSloid: stopSloid, count: stopEventNumber, at: timeRequest)
+    OJPClient.post(xml, to: .v1) { completion(try? $0.get()) }
+}
+
+/// Les prochains départs d'un arrêt et ses quais, en `async`.
+/// Lève `OJPClient.Failure` en cas d'échec réseau, `ParserError` si l'API n'a pas de départ.
+public func fetchStopEvents(stopName: String, stopSloid: String, count: Int, at date: Date = Date()) async throws -> (events: [StopEvent], quays: [Quay]) {
+    let data = try await OJPClient.post(stopEventRequestXML(stopName: stopName, stopSloid: stopSloid, count: count, at: date), to: .v1)
+    let result = parseStopEventsSync(from: data, stopCode: stopSloid)
+    if let error = result.error {
+        throw error
+    }
+    return (result.events, result.quays)
 }
 
 /// Les départs et les quais d'une réponse `OJPStopEventRequest`, décodés hors du thread

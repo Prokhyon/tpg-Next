@@ -11,12 +11,11 @@ import tpgNextFunc
 import WidgetKit
 
 struct SettingsView: View {
-    @AppStorage("homeFavorites") var homeFavorites = false
-    @AppStorage("translucentUI") var translucentUI = false
-    @AppStorage("GoupedDefault") var groupedDefault = false
-    @AppStorage("TimeDefault") var timeDefault = false
-    @AppStorage("DelayTimeIntegrated") var delayTimeIntegrated = false
-    @AppStorage("ShowWelcome") var showWelcome = true
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
+    @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
+    @AppStorage(SettingKey.delayIncludedInTime) var delayTimeIntegrated = false
+    @AppStorage(SettingKey.showWelcome) var showWelcome = true
     @Namespace private var animation
     @State private var circleButtonMessage = false
     @State var showMail: Bool = false

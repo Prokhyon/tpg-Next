@@ -125,7 +125,7 @@ struct DepartureDisplayTests {
 
     @Test func timeModeShowsTheDelay() {
         #expect(display("2026-09-13T10:05:00Z", showTime: true) == localTime("2026-09-13T10:05:00Z"))
-        if !SharedStorage.bool(forSetting: "DelayTimeIntegrated") {
+        if !SharedStorage.bool(forSetting: SettingKey.delayIncludedInTime) {
             #expect(display("2026-09-13T10:05:00Z", "2026-09-13T10:08:00Z", showTime: true) == "\(localTime("2026-09-13T10:05:00Z"));(+3')")
         }
     }

@@ -50,14 +50,16 @@ struct OJPDateTests {
 struct StopStoreTests {
     private static let store = StopStore()
 
-    @Test func stopsAreFoundBySloidOrQuay() {
+    @Test func stopsAreFoundBySloidOrQuay() async {
+        await Self.store.waitUntilLoaded()
         #expect(Self.store.findStop(id: "ch:1:sloid:87061")?.name == "Genève, Rive")
         #expect(Self.store.findStop(id: "ch:1:sloid:87061:0:111210")?.name == "Genève, Rive")
         #expect(Self.store.findStop(id: "ch:1:sloid:87057")?.name == "Genève, gare Cornavin")
         #expect(Self.store.findStop(id: "ch:1:sloid:0") == nil)
     }
 
-    @Test func activeStopsAreUnique() {
+    @Test func activeStopsAreUnique() async {
+        await Self.store.waitUntilLoaded()
         let sloids = Self.store.activeStops.map(\.sloid)
         #expect(sloids.count > 20_000)
         #expect(Set(sloids).count == sloids.count)

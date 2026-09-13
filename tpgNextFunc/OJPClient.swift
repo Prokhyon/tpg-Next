@@ -31,36 +31,60 @@ public enum OJPClient {
         return URLSession(configuration: configuration)
     }()
 
-    /// Envoie une requête XML et rend la réponse brute, sur `completionQueue`.
-    ///
-    /// Un statut HTTP hors 2xx (clé refusée, quota dépassé) est un échec : la réponse,
-    /// qui n'est alors pas du OJP, finissait sinon dans les parseurs et donnait une liste vide.
-    public static func post(_ body: String,
-                            to version: Version,
-                            completionQueue: DispatchQueue = .main,
-                            completion: @escaping (Result<Data, Failure>) -> Void) {
+    private static func request(_ body: String, to version: Version) -> URLRequest {
         var request = URLRequest(url: version.url)
         request.httpMethod = "POST"
         request.setValue("text/XML", forHTTPHeaderField: "Content-Type")
         request.setValue("application/xml", forHTTPHeaderField: "Accept")
         request.setValue(keySelect(), forHTTPHeaderField: "Authorization")
         request.httpBody = Data(body.utf8)
+        return request
+    }
 
-        session.dataTask(with: request) { data, response, error in
-            let result: Result<Data, Failure>
-            if let error {
-                result = .failure(.network(error))
-            } else if let status = (response as? HTTPURLResponse)?.statusCode, !(200..<300).contains(status) {
-                result = .failure(.http(status: status))
-            } else if let data, !data.isEmpty {
-                result = .success(data)
-            } else {
-                result = .failure(.emptyResponse)
-            }
-            if case .failure(let failure) = result {
-                Log.network.error("OJP \(version.rawValue) : \(String(describing: failure))")
-            }
+    /// Un statut HTTP hors 2xx (clé refusée, quota dépassé) est un échec : la réponse,
+    /// qui n'est alors pas du OJP, finissait sinon dans les parseurs et donnait une liste vide.
+    private static func validate(_ data: Data?, _ response: URLResponse?, _ error: Error?) -> Result<Data, Failure> {
+        if let error {
+            return .failure(.network(error))
+        }
+        if let status = (response as? HTTPURLResponse)?.statusCode, !(200..<300).contains(status) {
+            return .failure(.http(status: status))
+        }
+        guard let data, !data.isEmpty else {
+            return .failure(.emptyResponse)
+        }
+        return .success(data)
+    }
+
+    private static func log(_ result: Result<Data, Failure>, _ version: Version) {
+        if case .failure(let failure) = result {
+            Log.network.error("OJP \(version.rawValue) : \(String(describing: failure))")
+        }
+    }
+
+    /// Envoie une requête XML et rend la réponse brute, sur `completionQueue`.
+    public static func post(_ body: String,
+                            to version: Version,
+                            completionQueue: DispatchQueue = .main,
+                            completion: @escaping (Result<Data, Failure>) -> Void) {
+        session.dataTask(with: request(body, to: version)) { data, response, error in
+            let result = validate(data, response, error)
+            log(result, version)
             completionQueue.async { completion(result) }
         }.resume()
+    }
+
+    /// Variante `async`, qui se termine toujours (réponse, erreur ou délai dépassé) et
+    /// s'annule avec la tâche appelante. Lève `OJPClient.Failure`.
+    public static func post(_ body: String, to version: Version) async throws -> Data {
+        let result: Result<Data, Failure>
+        do {
+            let (data, response) = try await session.data(for: request(body, to: version))
+            result = validate(data, response, nil)
+        } catch {
+            result = .failure(.network(error))
+        }
+        log(result, version)
+        return try result.get()
     }
 }

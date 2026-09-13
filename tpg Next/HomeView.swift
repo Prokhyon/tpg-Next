@@ -162,7 +162,7 @@ struct HomeDepartures: View {
     /// Position refusée ou introuvable : sans ça l'accueil restait sur « Chargement... ».
     @State private var locationFailed = false
     @State private var currentIndex = 0
-    @AppStorage("homeFavorites") var homeFavorites = false
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     var testing: Bool = false
 //    @State var autoRefresh = true
     
@@ -285,6 +285,11 @@ struct HomeDepartures: View {
         .onAppear {
                 setupLocationAndTimer()
         }
+        .onChange(of: stopStore.isLoaded) {
+            if !testing {
+                getLocation()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 setupLocationAndTimer()
         }
@@ -315,6 +320,8 @@ struct HomeDepartures: View {
     }
     
     private func getLocation() {
+        // La base se charge en arrière-plan : `onChange(of: stopStore.isLoaded)` relance la recherche.
+        guard stopStore.isLoaded else { return }
         locationManager.requestLocation { location in
             if let userLocation = location ?? locationManager.userLocation {
                 locationFailed = false
@@ -626,8 +633,7 @@ struct HomeView: View {
     @State private var isExpanded: Bool = false
     @State private var maxRows: Int = 5
     var testing: Bool
-    @AppStorage("homeFavorites") var homeFavorites = false
-    @AppStorage("UseCircleButton") var useCircleButton = false
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
         
     var body: some View {
             GeometryReader { geometry in
