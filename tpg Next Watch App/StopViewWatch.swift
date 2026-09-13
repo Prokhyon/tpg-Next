@@ -304,11 +304,9 @@ struct StopView: View {
         }
     }
     func timeRequest(for time: String?) -> Date {
-        if time != nil {
-            return stringToDate(with: time!)!
-        } else {
-            return Date()
-        }
+        // Une heure absente ou illisible veut dire « les départs à partir de maintenant ».
+        guard let time, let date = stringToDate(with: time) else { return Date() }
+        return date
     }
     private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
         let lhsComponents = lhs.split(separator: ";")

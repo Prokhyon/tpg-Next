@@ -449,11 +449,47 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
 
 
 
+/// `<ojp:PlaceRef>` d'un départ ou d'une arrivée : l'arrêt, ou les coordonnées d'un lieu.
+/// `nil` si l'élément attendu manque.
+private func placeRefXML(stop: Stop?, geoPosition: GeoPosition?, useGeoPosition: Bool) -> String? {
+    let reference: String
+    let name: String
+    if useGeoPosition {
+        guard let geoPosition else { return nil }
+        reference = """
+        <ojp:GeoPosition>
+            <Longitude>\(geoPosition.coordinate.longitude)</Longitude>
+            <Latitude>\(geoPosition.coordinate.latitude)</Latitude>
+        </ojp:GeoPosition>
+        """
+        name = geoPosition.name
+    } else {
+        guard let stop else { return nil }
+        reference = "<ojp:StopPlaceRef>\(stop.sloid.xmlEscaped)</ojp:StopPlaceRef>"
+        name = stop.name
+    }
+    return """
+    <ojp:PlaceRef>
+        \(reference)
+        <ojp:LocationName>
+            <ojp:Text>\(name.xmlEscaped)</ojp:Text>
+        </ojp:LocationName>
+    </ojp:PlaceRef>
+    """
+}
+
 //Send XMLrequest
     public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Bool, String?) -> Void) {
         
         let urlString = "https://api.opentransportdata.swiss/ojp2020"
         guard let url = URL(string: urlString) else { return }
+        // Sans déballage forcé : un lieu attendu mais absent faisait planter l'app.
+        guard let origin = placeRefXML(stop: departureStop, geoPosition: departureGeoPosition, useGeoPosition: geoDeparture),
+              let destination = placeRefXML(stop: arrivalStop, geoPosition: arrivalGeoPosition, useGeoPosition: geoArrival) else {
+            Log.network.error("Itinéraires : départ ou arrivée manquant")
+            completion(false, nil)
+            return
+        }
         
         let outputFormatter1 = DateFormatter()
         outputFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
@@ -476,35 +512,11 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
                 <ojp:OJPTripRequest>
                     <RequestTimestamp>\(outputString1)</RequestTimestamp>
                     <ojp:Origin>
-                        <ojp:PlaceRef>
-                        \(geoDeparture ? """
-                                <ojp:GeoPosition>
-                                <Longitude>\(departureGeoPosition!.coordinate.longitude)</Longitude>
-                                <Latitude>\(departureGeoPosition!.coordinate.latitude)</Latitude>
-                                </ojp:GeoPosition>
-                                """ : """
-                                        <ojp:StopPlaceRef>\(departureStop!.sloid)</ojp:StopPlaceRef>
-                                        """)
-                            <ojp:LocationName>
-                                <ojp:Text>\(geoDeparture ? departureGeoPosition!.name : departureStop!.name)</ojp:Text>
-                            </ojp:LocationName>
-                        </ojp:PlaceRef>
+                        \(origin)
                         \(isArrivalTime ? "" : "<ojp:DepArrTime>\(tripTime)</ojp:DepArrTime>")
                     </ojp:Origin>
                     <ojp:Destination>
-                        <ojp:PlaceRef>
-                        \(geoArrival ? """
-                             <ojp:GeoPosition>
-                                   <Longitude>\(arrivalGeoPosition!.coordinate.longitude)</Longitude>
-                                   <Latitude>\(arrivalGeoPosition!.coordinate.latitude)</Latitude>
-                                </ojp:GeoPosition>
-                             """ : """
-                         <ojp:StopPlaceRef>\(arrivalStop!.sloid)</ojp:StopPlaceRef>
-                         """)
-                            <ojp:LocationName>
-                                <ojp:Text>\(geoArrival ? arrivalGeoPosition!.name : arrivalStop!.name)</ojp:Text>
-                            </ojp:LocationName>
-                        </ojp:PlaceRef>
+                        \(destination)
                         \(isArrivalTime ? "<ojp:DepArrTime>\(tripTime)</ojp:DepArrTime>" : "")
                     </ojp:Destination>
                     <ojp:Params>
@@ -531,13 +543,13 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 Log.network.error("Itinéraires : \(error.localizedDescription)")
-                completion(false, nil)
+                DispatchQueue.main.async { completion(false, nil) }
                 return
             }
             
             guard let data = data else {
                 Log.network.error("Itinéraires : réponse vide")
-                completion(false, nil)
+                DispatchQueue.main.async { completion(false, nil) }
                 return
             }
 //            print("Request: \(xmlString)")

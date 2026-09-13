@@ -14,6 +14,56 @@ public func keySelect() -> String {
     Secrets.ojpAPIKeys.randomElement() ?? ""
 }
 
+/// Minutes d'une durée ISO 8601 telle que renvoyée par OJP (`PT20M`, `PT1H5M`, `P1DT2H`).
+///
+/// Découper la chaîne à la main (`dropFirst(2).dropLast(1)`) affichait « 2' » pour `PT2H`
+/// et « 1H5' » pour `PT1H5M`. `nil` si la chaîne n'est pas une durée.
+public func durationMinutes(_ iso: String) -> Int? {
+    guard iso.hasPrefix("P") else { return nil }
+    var total = 0.0
+    var number = ""
+    var inTime = false
+    var found = false
+    for character in iso.dropFirst() {
+        switch character {
+        case "T":
+            inTime = true
+        case "0"..."9", ".":
+            number.append(character)
+        default:
+            guard let value = Double(number) else { return nil }
+            number = ""
+            switch (character, inTime) {
+            case ("D", false): total += value * 1440
+            case ("H", true): total += value * 60
+            case ("M", true): total += value
+            case ("S", true): total += value / 60
+            default: return nil
+            }
+            found = true
+        }
+    }
+    return found && number.isEmpty ? Int(total.rounded()) : nil
+}
+
+/// Une durée ISO 8601 lisible : « 20' » sous l'heure, « 1h05 » au-delà.
+public func durationText(_ iso: String) -> String {
+    guard let minutes = durationMinutes(iso) else { return "" }
+    return minutes < 60 ? "\(minutes)'" : String(format: "%dh%02d", minutes / 60, minutes % 60)
+}
+
+extension String {
+    /// Le texte prêt à être inséré dans une requête XML : un `&` ou un `<` dans un nom
+    /// de lieu rendait sinon toute la requête invalide.
+    public var xmlEscaped: String {
+        replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+}
+
 /// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
 ///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
 public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool, at now: Date = Date()) -> (text: String, color: Color) {

@@ -31,17 +31,28 @@ enum Tabs: String, Equatable, Hashable {
 
 class NavigationModel: ObservableObject {
     @Published var selectedTab: Tabs = .home
-//    @Published var homePath: NavigationPath
-    @Published var tripPath: NavigationPath
-    @Published var mapPath: NavigationPath
-    @Published var searchPath: NavigationPath
-    
+    /// Ouvertures depuis une notification ou le widget, poussées sur la pile des départs.
+    @Published var selectedStopViewData: StopViewData?
+    @Published var selectedLineViewData: LineViewData?
+    /// Identité de la pile de chaque onglet. Les écrans sont poussés par des
+    /// `NavigationLink(destination:)`, sans chemin à vider : changer l'identité recrée
+    /// la pile, donc revient à sa racine.
+    @Published private var stackResets: [Tabs: Int] = [:]
+
     init(selectedTab: Tabs = .home) {
         self.selectedTab = selectedTab
-//        self.homePath = NavigationPath()
-        self.tripPath = NavigationPath()
-        self.mapPath = NavigationPath()
-        self.searchPath = NavigationPath()
+    }
+
+    func stackID(_ tab: Tabs) -> Int {
+        stackResets[tab, default: 0]
+    }
+
+    func popToRoot(_ tab: Tabs) {
+        if tab == .home {
+            selectedStopViewData = nil
+            selectedLineViewData = nil
+        }
+        stackResets[tab, default: 0] += 1
     }
 }
 
@@ -77,8 +88,6 @@ struct ContentView: View {
     @StateObject var locationManager = LocationManager()
     @StateObject var navigationModel = NavigationModel()
     
-    @State private var selectedStopViewData: StopViewData? = nil
-    @State private var selectedLineViewData: LineViewData? = nil
     
     @State private var viewingTrip = false
     @State private var showMenu = false
@@ -93,7 +102,6 @@ struct ContentView: View {
     @State var lastUsedTime: Date?
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
-    @State var homePath = NavigationPath()
     
     var body: some View {
         ZStack {
@@ -104,7 +112,7 @@ struct ContentView: View {
 //                                .background(Background())
                                 // Doivent rester à l'intérieur du NavigationStack : appliquées
                                 // sur la pile elle-même, les destinations ne sont jamais poussées.
-                                .navigationDestination(item: $selectedStopViewData) { data in
+                                .navigationDestination(item: $navigationModel.selectedStopViewData) { data in
                                     StopView(
                                         stopName: data.stopName,
                                         stopSloid: data.stopID,
@@ -114,12 +122,13 @@ struct ContentView: View {
                                         previousLineTime: data.estimatedTime.isEmpty ? nil : data.estimatedTime
                                     )
                                 }
-                                .navigationDestination(item: $selectedLineViewData) { data in
+                                .navigationDestination(item: $navigationModel.selectedLineViewData) { data in
                                     LineView(stopEvent: data.event,
                                              currentStop: data.stop,
                                              currentLine: data.event.lineName)
                                 }
                         }
+                        .id(navigationModel.stackID(.home))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                     Tab("Itinéraire", systemImage: "point.bottomleft.forward.to.point.topright.scurvepath", value: .trip) {
@@ -127,8 +136,8 @@ struct ContentView: View {
                             TripView(tripManager: tripManager)
 //                                .background(Background())
                         }
+                        .id(navigationModel.stackID(.trip))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
-//                        .id(navigationModel.tripNavigationId)
                         .environmentObject(savedTripsModel)
                         .environmentObject(regularTripsModel)
                     }
@@ -136,6 +145,7 @@ struct ContentView: View {
                         NavigationStack() {
                             MapView()
                         }
+                        .id(navigationModel.stackID(.map))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                     Tab(value: .search, role: .search) {
@@ -143,6 +153,7 @@ struct ContentView: View {
                             SearchView()
                         }
                         .environmentObject(savedTripsModel)
+                        .id(navigationModel.stackID(.search))
                         .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                 }
@@ -264,13 +275,13 @@ struct ContentView: View {
                let stopName = userInfo["stopName"] as? String,
                let journeyRef = userInfo["journeyRef"] as? String,
                let estimatedTime = userInfo["estimatedTime"] as? String {
-                selectedStopViewData = StopViewData(
+                navigationModel.selectedStopViewData = StopViewData(
                     stopID: stopID,
                     stopName: stopName,
                     journeyRef: journeyRef,
                     estimatedTime: estimatedTime
                 )
-                selectedLineViewData = nil
+                navigationModel.selectedLineViewData = nil
                 navigationModel.selectedTab = .home
             }
         }
@@ -289,8 +300,8 @@ struct ContentView: View {
 
             switch url.host {
             case "stop":
-                selectedLineViewData = nil
-                selectedStopViewData = StopViewData(
+                navigationModel.selectedLineViewData = nil
+                navigationModel.selectedStopViewData = StopViewData(
                     stopID: sloid,
                     stopName: stopName,
                     journeyRef: "",
@@ -309,8 +320,8 @@ struct ContentView: View {
                     transportType: query("transportType"),
                     operatorName: query("operator")
                 )
-                selectedStopViewData = nil
-                selectedLineViewData = LineViewData(
+                navigationModel.selectedStopViewData = nil
+                navigationModel.selectedLineViewData = LineViewData(
                     event: event,
                     stop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: sloid))
                 )
@@ -501,7 +512,7 @@ struct DockView: View {
             let search = navigationModel.selectedTab == .search
             Button(action: {
                 if navigationModel.selectedTab == tab {
-                    resetNavigation()
+                    navigationModel.popToRoot(tab)
                 } else {
                     
                     withAnimation(.spring(duration: 0.3)) {
@@ -523,30 +534,6 @@ struct DockView: View {
 //                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: navigationModel.selectedTab)
             }
             .frame(width: !search ? nil : 40, height: !search ? 50 : 40)
-        }
-        func saveNavigation() {
-            switch tab {
-                case .home:
-                navigationModel.tripPath = NavigationPath()
-                case .trip:
-                    navigationModel.tripPath = NavigationPath()
-                case .map:
-                    navigationModel.mapPath = NavigationPath()
-                case .search:
-                    navigationModel.searchPath = NavigationPath()
-            }
-        }
-        func resetNavigation() {
-            switch tab {
-                case .home:
-                    navigationModel.tripPath = NavigationPath()
-                case .trip:
-                    navigationModel.tripPath = NavigationPath()
-                case .map:
-                    navigationModel.mapPath = NavigationPath()
-                case .search:
-                    navigationModel.searchPath = NavigationPath()
-            }
         }
     }
 }

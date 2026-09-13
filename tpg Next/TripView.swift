@@ -39,8 +39,10 @@ class ItineraryViewModel: ObservableObject {
 
     @Published var selectedField: TripField? = .departure
 
-    var hasDeparture: Bool { departureStop != nil || departureGeoPosition != nil }
-    var hasArrival: Bool { arrivalStop != nil || arrivalGeoPosition != nil }
+    /// Renseigné seulement si l'élément réellement envoyé à l'API existe : l'arrêt,
+    /// ou le lieu quand `geoDeparture` est vrai.
+    var hasDeparture: Bool { geoDeparture ? departureGeoPosition != nil : departureStop != nil }
+    var hasArrival: Bool { geoArrival ? arrivalGeoPosition != nil : arrivalStop != nil }
     /// Départ et arrivée renseignés : la recherche d'itinéraire peut être lancée.
     var canSearch: Bool { hasDeparture && hasArrival }
     
@@ -84,6 +86,12 @@ class ItineraryViewModel: ObservableObject {
     }
     
     func outerTrip(tab: NavigationModel, isDeparture: Bool, stop: Stop, isQuickTrip: Bool) {
+        // Les lieux partent avec l'ancien arrêt : un « Ma position » précédent
+        // (geoDeparture resté vrai) était sinon envoyé à la place de l'arrêt choisi.
+        departureGeoPosition = nil
+        geoDeparture = false
+        arrivalGeoPosition = nil
+        geoArrival = false
         if isDeparture {
             //        print("TripViewAppear: inputDeparture != nil && inputArrival == nil")
             departureStop = stop
@@ -101,8 +109,7 @@ class ItineraryViewModel: ObservableObject {
         }
         tripDone = false
         quickTrip = isQuickTrip
-//        tab.tripNavigationId = "trip"
-        tab.tripPath = NavigationPath()
+        tab.popToRoot(.trip)
         tab.selectedTab = .trip
     }
 }
@@ -205,7 +212,7 @@ struct TripElementView: View {
                                 if !(leg.publishedLineName == "") {
                                     BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
                                         .padding(2)
-                                } else if /*!*/leg.transfer && Int(leg.transferWalkDuration.dropFirst(2).dropLast(1)) ?? 0 >= 5 {
+                                } else if /*!*/leg.transfer && durationMinutes(leg.transferWalkDuration) ?? 0 >= 5 {
                                     Image(systemName: "figure.walk").font(.caption)
                                 }
                             }
@@ -257,11 +264,7 @@ struct TripElementView: View {
                 Text(": \(event.transfers)")
                     .padding(.trailing)
                 Image(systemName: "timer")
-                if event.duration.count == 7 {
-                    Text(": \(event.duration.dropFirst(2).dropLast(1))")
-                } else {
-                    Text(": \(event.duration.dropFirst(2).dropLast(1))'")
-                }
+                Text(": \(durationText(event.duration))")
             }
         }
         .padding(.horizontal)
@@ -1750,11 +1753,7 @@ struct SavedTripView: View {
                     Text(" : \(event.transfers)")
                         .padding(.trailing)
                     Image(systemName: "timer")
-                    if event.duration.count == 7 {
-                        Text(" : \(event.duration.dropFirst(2).dropLast(1))")
-                    } else {
-                        Text(" : \(event.duration.dropFirst(2).dropLast(1))'")
-                    }
+                    Text(" : \(durationText(event.duration))")
                 // Scrollable icon area
                 ZStack {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -1764,7 +1763,7 @@ struct SavedTripView: View {
                                 if !(leg.publishedLineName == "") {
                                     BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
                                         .padding(2)
-                                } else if leg.transfer && Int(leg.transferWalkDuration.dropFirst(2).dropLast(1)) ?? 0 >= 5 {
+                                } else if leg.transfer && durationMinutes(leg.transferWalkDuration) ?? 0 >= 5 {
                                     Image(systemName: "figure.walk").font(.caption)
                                 }
                             }

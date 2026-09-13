@@ -107,8 +107,8 @@ private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls:
                 <siri:RequestorRef>tpgNext</siri:RequestorRef>
                 <OJPTripInfoRequest>
                     <siri:RequestTimestamp>\(outputString1)</siri:RequestTimestamp>
-                    <JourneyRef>\(journeyRef)</JourneyRef>
-                    <OperatingDayRef>\(operatingDayRef)</OperatingDayRef>
+                    <JourneyRef>\(journeyRef.xmlEscaped)</JourneyRef>
+                    <OperatingDayRef>\(operatingDayRef.xmlEscaped)</OperatingDayRef>
                     <Params>
                         <IncludeCalls>\(calls ? "true" : "false")</IncludeCalls>
                         <IncludeService>\(calls ? "true" : "false")</IncludeService>
