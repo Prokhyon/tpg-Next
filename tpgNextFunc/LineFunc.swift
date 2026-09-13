@@ -10,7 +10,6 @@ import SwiftUI
 import Combine
 
 
-var responseLine = ""
 
 public struct LineEvent: Codable, Identifiable, Hashable {
     
@@ -49,9 +48,6 @@ public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, c
 
     func finish(_ response: String?) {
         DispatchQueue.main.async {
-            if let response {
-                responseLine = response
-            }
             completion(response != nil, response)
         }
     }
@@ -81,7 +77,7 @@ public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, c
             if fallback == nil && !events.isEmpty {
                 fallback = response
             }
-            print("Course \(journeyRef) introuvable pour le jour \(days[index]), essai suivant")
+            Log.network.info("Course \(journeyRef) introuvable pour le jour \(days[index]), essai suivant")
             attempt(index + 1)
         }
     }
@@ -123,7 +119,6 @@ private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls:
         </OJPRequest>
     </OJP>
     """
-    print(xmlString)
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
@@ -134,16 +129,15 @@ private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls:
 
     URLSession.shared.dataTask(with: request) { data, _, error in
         if let error {
-            print("Error: \(error)")
+            Log.network.error("Course : \(error.localizedDescription)")
             completion(nil)
             return
         }
         guard let data, let responseString = String(data: data, encoding: .utf8) else {
-            print("No data received")
+            Log.network.error("Course : réponse vide")
             completion(nil)
             return
         }
-        print("Response: \(responseString)")
         completion(responseString)
     }.resume()
 }

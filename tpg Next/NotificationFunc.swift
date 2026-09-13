@@ -82,24 +82,6 @@ struct NotificationContextMenu: View {
 
 
 
-func splitNotificationIdentifier(_ input: String) -> (String, String, String, String, String, Double) {
-    let parts = input.split(separator: "_")
-    
-    guard parts.count == 6 else {
-        return (input, "", "", "", "", 0)
-    }
-    
-    let type = parts[0].trimmingCharacters(in: .whitespaces)
-    let stopId = parts[1].trimmingCharacters(in: .whitespaces)
-    let lineName = parts[2].trimmingCharacters(in: .whitespaces)
-    let destination = parts[3].trimmingCharacters(in: .whitespaces)
-    let time = parts[4].trimmingCharacters(in: .whitespaces)
-    let notificationInterval = Double(parts[5]) ?? 0
-    
-    print(type, stopId, lineName, destination, time, notificationInterval)
-    return (type, stopId, lineName, destination, time, notificationInterval)
-}
-
 struct NotificationInfo: Equatable {
     let id: String
     let stopID: String
@@ -108,36 +90,22 @@ struct NotificationInfo: Equatable {
 }
 
 func parseIdentifier(_ identifier: String) -> NotificationInfo? {
-    print("parsing: \(identifier)")
     let parts = identifier.split(separator: "_")
-    guard parts.count == 3 else { print("parsing error"); return nil }
+    guard parts.count == 3 else { return nil }
     
     let stopID = String(parts[0])
     let journeyRef = String(parts[1])
     let notificationInterval = Double(parts[2])
-    print("stopID: \(stopID), journeyRef: \(journeyRef), notificationInterval: \(notificationInterval?.description ?? "nil")")
 
     
     return NotificationInfo(id: identifier, stopID: stopID, journeyRef: journeyRef, notificationInterval: notificationInterval ?? 0.0)
 }
 
-func timeSplitter(_ input: String) -> (String, String, String) {
-    let parts = input.split(separator: ";")
-    
-    guard parts.count == 3 else {
-        return (input, "", "")
-    }
-    
-    let timetableTime = parts[0].trimmingCharacters(in: .whitespaces)
-    let delay = parts[1].trimmingCharacters(in: .whitespaces)
-    let estimatedTime = parts[2].trimmingCharacters(in: .whitespaces)
-    
-    return (timetableTime, delay, estimatedTime)
-}
-
 class NotificationManager {
     @Published var isNotificationAuthorized: Bool = false
     static let shared = NotificationManager()
+    /// Clé du `StopEvent` encodé dans le `userInfo` de chaque rappel.
+    static let stopEventKey = "stopEvent"
     
     init() {
         checkAuthorizationStatus()
@@ -150,13 +118,9 @@ class NotificationManager {
                     self.isNotificationAuthorized = granted
                 }
                 if let error = error {
-                    print("Notification authorization request failed: \(error.localizedDescription)")
+                    Log.notifications.error("Demande d'autorisation impossible : \(error.localizedDescription)")
                 }
-                if granted {
-                    print("Notification authorization granted.")
-                } else {
-                    print("Notification authorization denied.")
-                }
+                Log.notifications.info("Notifications \(granted ? "autorisées" : "refusées")")
             }
         }
 
@@ -178,11 +142,16 @@ class NotificationManager {
         content.subtitle = title.1
         content.body = message
         content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
-        content.userInfo = ["stopID": stopEvent.stopId, "stopName": stopEvent.stopPointName, "journeyRef": stopEvent.journeyRef, "estimatedTime": stopEvent.estimatedTime]
+        var userInfo: [String: Any] = ["stopID": stopEvent.stopId, "stopName": stopEvent.stopPointName, "journeyRef": stopEvent.journeyRef, "estimatedTime": stopEvent.estimatedTime]
+        // Le départ complet, pour reconstruire la liste des rappels prévus après une relance de l'app.
+        if let encoded = try? JSONEncoder().encode(stopEvent) {
+            userInfo[Self.stopEventKey] = encoded
+        }
+        content.userInfo = userInfo
         
         let timeInterval = date.timeIntervalSinceNow
         guard timeInterval > 0 else {
-            print("Notification time has already passed. Not scheduling.")
+            Log.notifications.debug("Heure du rappel dépassée, rien à prévoir")
             return
         }
         
@@ -191,16 +160,15 @@ class NotificationManager {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
+                Log.notifications.error("Rappel non enregistré : \(error.localizedDescription)")
             } else {
-                print("Notification scheduled for \(date) with message: \(message)")
+                Log.notifications.debug("Rappel prévu pour \(date)")
             }
         }
     }
 
     func cancelNotification(identifier: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
-        print("Cancelled notification with identifier: \(identifier)")
     }
     
     func getPendingNotifications(completion: @escaping ([UNNotificationRequest]) -> Void) {
@@ -222,14 +190,13 @@ class BusNotificationManager: ObservableObject {
 
     // Schedule notifications based on both timetabledTime and estimatedTime
     func scheduleNotifications(for stopEvent: StopEvent, lineEvent: LineEvent?, stopID: String, notificationInterval: Double, completionHandler: @escaping (Bool) -> ()) {
-        print("Scheduling notifications for stopEvent: \(stopEvent.lineName), stopPoint: \(stopEvent.stopPointName)")
         
 
         let timetableDate = dateFromString(lineEvent?.timetabledTime ?? stopEvent.timetabledTime)
         let estimatedDate = dateFromString(lineEvent?.estimatedTime ?? stopEvent.estimatedTime)
         
         guard let timetableDate = timetableDate else {
-            print("Invalid timetable date.")
+            Log.notifications.error("Heure de départ illisible, rappel non prévu")
             return completionHandler(false)
         }
 
@@ -269,29 +236,59 @@ class BusNotificationManager: ObservableObject {
         let nextCheckTime = now.addingTimeInterval(halfInterval)
         
         if halfInterval > 60 { // Only schedule if more than 1 minute to check
-            print("Scheduling update check at \(nextCheckTime)")
+            Log.notifications.debug("Vérification du retard prévue à \(nextCheckTime)")
             DispatchQueue.main.asyncAfter(deadline: .now() + halfInterval) {
                 self.updateNotifications(for: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
             }
         }
     }
 
-    // Handle updates
+    /// Recale les rappels sur la dernière heure estimée.
+    ///
+    /// La course est redemandée à l'API et lue une fois la réponse arrivée : l'ancienne
+    /// version lisait le résultat avant la réponse, et ne recalait donc jamais rien.
+    /// Tant que l'heure ne bouge pas, une nouvelle vérification est prévue à mi-chemin.
+    /// Ne fonctionne que tant que l'app reste en mémoire.
     func updateNotifications(for stopEvent: StopEvent, stopID: String, notificationInterval: Double) {
         let lineManager = LineManager()
-        lineManager.selectJourney(stopEvent)
-        
-        guard let updatedEvent = lineManager.LineEvents.first(where: { $0.sloid == stopID || $0.stopPlaceRef == stopID }) else {
-                print("No relevant updates found for stopEvent.")
+        lineManager.selectJourney(stopEvent) { [self] in
+            let stopSloid = sloidHarmonizer(code: stopID)
+            let candidates = lineManager.LineEvents.filter { $0.stopPlaceRef == stopID || $0.sloid == stopSloid }
+            // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
+            guard let updatedEvent = candidates.first(where: { $0.timetabledTime == stopEvent.timetabledTime }) ?? candidates.first else {
+                Log.notifications.info("Arrêt introuvable dans la course, rappel laissé tel quel")
                 return
             }
+            guard !updatedEvent.estimatedTime.isEmpty, updatedEvent.estimatedTime != stopEvent.estimatedTime else {
+                scheduleUpdateCheck(at: dateFromString(stopEvent.estimatedTime) ?? Date(), stopEvent: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
+                return
+            }
+            Log.notifications.info("Heure estimée modifiée, rappels recalés")
+            var updatedStopEvent = stopEvent
+            updatedStopEvent.estimatedTime = updatedEvent.estimatedTime
+            scheduleNotifications(for: updatedStopEvent, lineEvent: nil, stopID: stopID, notificationInterval: notificationInterval) { _ in }
+        }
+    }
 
-            if updatedEvent.estimatedTime != stopEvent.estimatedTime {
-                print("Estimated time has changed. Rescheduling notifications.")
-                self.scheduleNotifications(for: stopEvent, lineEvent: updatedEvent, stopID: stopID, notificationInterval: notificationInterval) { success in
-                    
+    /// Reconstruit la liste des rappels prévus à partir de ceux que le système garde en attente.
+    ///
+    /// Tenue seulement en mémoire, la liste était vide après chaque relance et gardait les
+    /// rappels déjà passés. Un rappel créé avant l'ajout du départ dans `userInfo` n'y figure
+    /// que s'il a été prévu pendant la session en cours.
+    func refreshScheduledNotifications() {
+        notificationManager.getPendingNotifications { [self] requests in
+            var scheduled: [String: StopEvent] = [:]
+            for request in requests {
+                let key = String(request.identifier.dropFirst(10))
+                if let data = request.content.userInfo[NotificationManager.stopEventKey] as? Data,
+                   let stopEvent = try? JSONDecoder().decode(StopEvent.self, from: data) {
+                    scheduled[key] = stopEvent
+                } else if let known = scheduledNotificationIdentifiers[key] {
+                    scheduled[key] = known
                 }
             }
+            scheduledNotificationIdentifiers = scheduled
+        }
     }
     
     private func scheduleNotification(at date: Date, for stopEvent: StopEvent, delay: Double, identifier: String, isTimetabled: Bool, notificationInterval: Double) {
@@ -366,7 +363,6 @@ class NotificationConfirmationViewModel: ObservableObject {
         withAnimation(.bouncy(duration: 0.5)) {
             showConfirmation = true
         }
-        print("confirmationShow, \(showConfirmation)")
         
         // Automatically hide after 2 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

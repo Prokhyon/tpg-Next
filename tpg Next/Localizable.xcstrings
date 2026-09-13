@@ -32,17 +32,6 @@
     "%@" : {
       "shouldTranslate" : false
     },
-    "%@ - %@" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ - %2$@"
-          }
-        }
-      },
-      "shouldTranslate" : false
-    },
     "%@ aurait du arriver mais arrivera %@" : {
       "localizations" : {
         "en" : {
@@ -793,9 +782,6 @@
         }
       }
     },
-    "Hello, World!" : {
-      "shouldTranslate" : false
-    },
     "Heure d'arrivée par défaut:" : {
       "localizations" : {
         "en" : {
@@ -1083,6 +1069,9 @@
         }
       }
     },
+    "Position indisponible. Autorisez la localisation pour voir les départs à proximité." : {
+
+    },
     "Prévenir 1' avant" : {
       "localizations" : {
         "en" : {
@@ -1297,12 +1286,6 @@
     "Save Trip" : {
       "shouldTranslate" : false
     },
-    "Screen height via UIScreen: %lld" : {
-      "shouldTranslate" : false
-    },
-    "Screen width via UIScreen: %lld" : {
-      "shouldTranslate" : false
-    },
     "Select days to repeat:" : {
       "shouldTranslate" : false
     },
@@ -1336,9 +1319,6 @@
         }
       }
     },
-    "Sizes" : {
-      "shouldTranslate" : false
-    },
     "Suivant" : {
       "localizations" : {
         "en" : {
@@ -1369,9 +1349,6 @@
         }
       }
     },
-    "Test" : {
-
-    },
     "Testez-les !" : {
       "localizations" : {
         "en" : {
@@ -1381,12 +1358,6 @@
           }
         }
       }
-    },
-    "This VStack height: %lld" : {
-      "shouldTranslate" : false
-    },
-    "This VStack width: %lld" : {
-      "shouldTranslate" : false
     },
     "This Week’s Trips" : {
       "shouldTranslate" : false

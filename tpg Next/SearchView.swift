@@ -130,9 +130,6 @@ struct SearchView: View {
                                             }) {
                                                 Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
                                             }
-                                            .onAppear(perform: {
-                                                print(trip.startCoordinates)
-                                            })
                                         }
                                         //                                        .padding(15)
                                         .padding(.vertical, 5)
@@ -242,7 +239,7 @@ struct SearchView: View {
                         if let userLocation = locationManager.userLocation {
                             stopStore.location = userLocation
                         } else {
-                            print("Location error")
+                            Log.location.error("Position indisponible")
                         }
                         locationManager.locationUpdateHandler = nil
                     }
@@ -274,7 +271,6 @@ struct SearchView: View {
         } else {
             favoritesViewModel.addFavorite(stop)
         }
-        print(favoritesViewModel.favoriteStops)
     }
     func formatDate(_ date: Date?) -> String {
         if let date = date {

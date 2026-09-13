@@ -21,39 +21,6 @@ struct watch_tpg_Next_Watch_AppApp: App {
                 .accentColor(Color.primary)
                 .environmentObject(stopStore)
                 .environmentObject(watchFavorites)
-//            TestWatchView()
-        }
-    }
-}
-
-class ExtensionDelegate: NSObject, WKExtensionDelegate, WCSessionDelegate {
-    
-    func applicationDidFinishLaunching() {
-        setupWCSession()
-    }
-    
-    func applicationDidBecomeActive() {
-        requestSyncFromPhone()
-    }
-    
-    private func setupWCSession() {
-        if WCSession.isSupported() {
-            let session = WCSession.default
-            session.delegate = self
-            session.activate()
-        }
-    }
-    
-    private func requestSyncFromPhone() {
-        guard WCSession.default.isReachable else { return }
-        WCSession.default.sendMessage(["requestSync": true], replyHandler: nil) { error in
-            print("Failed to request sync: \(error)")
-        }
-    }
-    
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        if activationState == .activated {
-            requestSyncFromPhone()
         }
     }
 }
@@ -104,7 +71,7 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 self.favoriteStops = stops // le didSet enregistre
             }
         } catch {
-            print("Decoding error: \(error)")
+            Log.sync.error("Favoris reçus illisibles : \(error.localizedDescription)")
         }
     }
     
@@ -113,7 +80,7 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(favoriteStops)
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         } catch {
-            print("Error encoding favorite stops: \(error)")
+            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
         }
     }
     
@@ -123,7 +90,7 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 let stops = try JSONDecoder().decode([Stop].self, from: data)
                 self.favoriteStops = stops
             } catch {
-                print("Error decoding favorite stops: \(error)")
+                Log.data.error("Lecture des favoris impossible : \(error.localizedDescription)")
             }
         }
     }

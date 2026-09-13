@@ -120,10 +120,8 @@ struct TripMapView: View {
                 }
                 .mapStyle(.standard(pointsOfInterest: .excludingAll))
                 .onAppear {
-                    print("calculating")
                     calculateRoutes()
                     loadLegTracks()
-                    print("tripmap start: ", tripEvent.startCoordinates)
                 }
                 .mapControls {
                     if !isPreview {
@@ -233,7 +231,7 @@ struct TripMapView: View {
         let directions = MKDirections(request: request)
         directions.calculate { response, error in
             guard let route = response?.routes.first else {
-                print("Error calculating route: \(String(describing: error))")
+                Log.ui.error("Itinéraire à pied indisponible : \(String(describing: error))")
                 return
             }
             

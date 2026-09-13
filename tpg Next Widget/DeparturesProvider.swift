@@ -246,7 +246,7 @@ private final class LocationFetcher: NSObject, CLLocationManagerDelegate, @unche
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Widget location failed: \(error.localizedDescription)")
+        Log.location.error("Position du widget indisponible : \(error.localizedDescription)")
         result.resolve(nil)
     }
 }

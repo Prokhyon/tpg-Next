@@ -9,7 +9,6 @@ import SwiftUI
 import Foundation
 import Combine
 
-var responseStop = ""
 
 // Model to hold the data
 public struct StopEvent: Codable, Identifiable, Hashable {
@@ -106,13 +105,13 @@ public struct Quay: Codable, Identifiable, Hashable {
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Error: \(error)")
+                Log.network.error("Départs : \(error.localizedDescription)")
                 completion(false, nil)
                 return
             }
             
             guard let data = data else {
-                print("No data received")
+                Log.network.error("Départs : réponse vide")
                 completion(false, nil)
                 return
             }
@@ -120,8 +119,6 @@ public struct Quay: Codable, Identifiable, Hashable {
             if let responseString = String(data: data, encoding: .utf8) {
                 DispatchQueue.main.async {
 //                    print(xmlString)
-                    responseStop = responseString
-                    print("Stop Response: " + responseString)
                     completion(true, responseString)
                 }
             }
@@ -304,8 +301,6 @@ public struct Quay: Codable, Identifiable, Hashable {
         
         DispatchQueue.global(qos: .background).async {
             let parserDelegate = StopEventParserDelegate(stopCode: stopCode)
-            let parser = XMLParser(data: data)
-            parser.delegate = parserDelegate
             let (stopEvents, positions, error) = parserDelegate.parse(data: data)
             DispatchQueue.main.async {
                 completion(stopEvents, positions, error)
@@ -327,66 +322,4 @@ public func createEssentialStopEvent(journeyRef: String, operatingDayRef: String
 public func createStop(nomarret: String?, sloid: String) -> Stop {
     let stop = Stop(name: nomarret ?? "", sloid: sloid, codedidoc: "", country: "", canton: "", meansOfTransport: "", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0))
     return stop
-}
-
-
-enum Identifier {
-    case intId(Int)
-    case stringId(String)
-}
-
-public func saveStopEventsToFile(stopEvents: [StopEvent]) {
-    let fileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("stopEvents.json")
-    do {
-        let data = try JSONEncoder().encode(stopEvents)
-        try data.write(to: fileURL)
-        print("Stop events saved to \(fileURL)")
-    } catch {
-        print("Error saving stop events: \(error)")
-    }
-}
-
-public func loadStopEventsFromFile() -> [StopEvent]? {
-    let fileURL = Bundle.main.bundleURL.appendingPathComponent("TestData/stopEvents.json")
-    do {
-        let data = try Data(contentsOf: fileURL)
-        let stopEvents = try JSONDecoder().decode([StopEvent].self, from: data)
-        print("Stop events loaded from \(fileURL)")
-        print(stopEvents)
-        return stopEvents
-    } catch {
-        print("Error loading stop events: \(error)")
-        return nil
-    }
-}
-
-public func loadStopEventsFromAssets() -> [StopEvent]? {
-    guard let asset = NSDataAsset(name: "stopEvents") else {
-        print("Error: Could not find stopEvents in the asset catalog.")
-        return nil
-    }
-
-    do {
-        let stopEvents = try JSONDecoder().decode([StopEvent].self, from: asset.data)
-        print("Stop events loaded from assets: \(stopEvents)")
-        return stopEvents
-    } catch {
-        print("Error decoding stop events from assets: \(error)")
-        return nil
-    }
-}
-
-// Update each element in the array
-public func changeTime(_ myArray: inout [StopEvent]) {
-    // DateFormatter setup
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    formatter.timeZone = TimeZone(abbreviation: "UTC") // Ensure consistent timezone
-    
-    for i in 0..<myArray.count {
-            let randomInterval = TimeInterval.random(in: 0...(15 * 60)) // Random time between 0 and 15 minutes
-            let newDate = Date().addingTimeInterval(randomInterval)
-        myArray[i].timetabledTime = formatter.string(from: newDate) // Convert back to string
-        myArray[i].estimatedTime = formatter.string(from: newDate)
-    }
 }

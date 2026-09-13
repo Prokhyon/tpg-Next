@@ -21,9 +21,6 @@
         }
       }
     },
-    "detail" : {
-      "shouldTranslate" : false
-    },
     "Pas de départs trouvés" : {
 
     },
@@ -46,15 +43,6 @@
           }
         }
       }
-    },
-    "Test1" : {
-      "shouldTranslate" : false
-    },
-    "Test2" : {
-      "shouldTranslate" : false
-    },
-    "Test3" : {
-      "shouldTranslate" : false
     },
     "Trier par horaire" : {
       "localizations" : {

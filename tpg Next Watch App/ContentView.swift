@@ -110,10 +110,9 @@ struct ContentView: View {
     }
     private func getLocation(withSelection: Bool) {
         locationManager.requestLocation { location in
-            if let userLocation = locationManager.userLocation {
+            if let userLocation = location ?? locationManager.userLocation {
                 let stopList = stopStore.activeStops
                 let radiusList = stopsInBoundingBox(from: userLocation, radius: 1000, stops: stopList)
-                print(radiusList)
                 calculateClosestBusStops(from: userLocation, stops: radiusList, nb: 3) { success, stops in
                     DispatchQueue.main.async {
                         closestStops = stops
@@ -129,7 +128,7 @@ struct ContentView: View {
                 }
                 stopStore.location = userLocation
             } else {
-                print("Location error")
+                Log.location.error("Position indisponible")
             }
             locationManager.locationUpdateHandler = nil
         }

@@ -1,6 +1,0 @@
-framework module tpgNextFunc {
-  umbrella header "tpgNextFunc.h"
-  export *
-
-  module * { export * }
-}

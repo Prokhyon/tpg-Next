@@ -19,7 +19,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 //        span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007)
 //    )
     @Published var locationStatus: CLAuthorizationStatus?
-    var locationUpdateHandler: ((CLLocation) -> Void)?
+    var locationUpdateHandler: ((CLLocation?) -> Void)?
 //    var accuracy = CLLocationAccuracy?.self
 
     override init() {
@@ -62,7 +62,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         // Repli du widget : sans autorisation « Toujours », l'extension n'a pas le droit
         // de demander la position et se rabat sur la dernière connue de l'app.
         SharedStorage.saveLastKnownLocation(location)
-        print(#function, location)
+        Log.location.debug("Position reçue : \(location)")
         // Stop updating location after the first update
         locationManager.stopUpdatingLocation()
         locationUpdateHandler?(location)
@@ -70,11 +70,14 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         self.locationStatus = status
-        print(#function, statusString)
+        Log.location.info("Autorisation de localisation : \(self.statusString)")
     }
 
+    /// Sans ce rappel, un refus ou une absence de signal laissait l'appelant attendre
+    /// indéfiniment (écran bloqué sur « Chargement... »).
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print(#function, error.localizedDescription)
+        Log.location.error("Position indisponible : \(error.localizedDescription)")
+        locationUpdateHandler?(nil)
     }
 }
 
