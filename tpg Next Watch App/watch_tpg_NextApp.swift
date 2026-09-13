@@ -12,24 +12,25 @@ import Combine
 
 @main
 struct watch_tpg_Next_Watch_AppApp: App {
-    @StateObject private var stopStore = StopStore()
-    @StateObject private var watchFavorites = WatchFavoritesViewModel()
+    @State private var stopStore = StopStore()
+    @State private var watchFavorites = WatchFavoritesViewModel()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .accentColor(Color.primary)
-                .environmentObject(stopStore)
-                .environmentObject(watchFavorites)
+                .environment(stopStore)
+                .environment(watchFavorites)
         }
     }
 }
 
 
-class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
+@Observable
+class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     static let shared = WatchFavoritesViewModel()
     
-    @Published var favoriteStops: [Stop] = [] {
+    var favoriteStops: [Stop] = [] {
         didSet {
             saveFavorites()
         }

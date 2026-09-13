@@ -11,9 +11,9 @@ import tpgNextFunc
 import Combine
 
 struct LineMapView: View {
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject private var lineManager = LineManager()
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @Environment(StopStore.self) var stopStore
+    @State private var lineManager = LineManager()
     @State var autoRefresh = true
     @State var lineEvents: [LineEvent]
     var lineName: String
@@ -212,19 +212,19 @@ struct lineMapPreview: PreviewProvider {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
         let date = "2026-03-30"
-        @StateObject var fullTripTest = FullTripTest()
+        @State var fullTripTest = FullTripTest()
         
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var regularTripsModel = RegularTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-            @StateObject var itineraryViewModel = ItineraryViewModel()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var regularTripsModel = RegularTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+            @State var itineraryViewModel = ItineraryViewModel()
         return LineMapView(lineEvents: [], lineName: "A", operatorName: "tpg", destination: "Meinier, Eglise",stopEvent: StopEvent(stopPointName: "Genève, Rive", stopId: "ch:1:sloid:87061:0:450545", plannedQuay: "I", timetabledTime: "\(date)T11:13:00Z", estimatedTime: "\(date)T11:13:00Z", lineName: "A", origin: "Genève, Rive", destination: "Gy, temple", transportType: "bus", operatorName: "Transports Publics Genevois", journeyRef: "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791918", operatingDayRef: date))
-            .environmentObject(itineraryViewModel)
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(savedTripsModel)
-            .environmentObject(regularTripsModel)
-            .environmentObject(appRequirementsClass)
+            .environment(itineraryViewModel)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(savedTripsModel)
+            .environment(regularTripsModel)
+            .environment(appRequirementsClass)
         
 //        VStack {
 //            HStack {

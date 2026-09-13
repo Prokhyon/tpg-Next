@@ -5,13 +5,15 @@
 //  Created by Loris Thomas on 29.12.2024.
 //
 
+import Observation
 import Foundation
 import tpgNextFunc
 import MapKit
 
-public class TripManager: ObservableObject {
-    @Published public var tripEvents: [TripEvent] = []
-    @Published public var tripError: Bool = false
+@Observable
+public class TripManager {
+    public var tripEvents: [TripEvent] = []
+    public var tripError: Bool = false
     
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
     /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
@@ -66,10 +68,11 @@ public class TripManager: ObservableObject {
 }
 
 
-public class SavedTripsModel: ObservableObject {
+@Observable
+public class SavedTripsModel {
     private static let store = CodableStore<[TripEvent]>(key: "savedTrips")
 
-    @Published public var savedTrips: [TripEvent] {
+    public var savedTrips: [TripEvent] {
         didSet { Self.store.save(savedTrips) }
     }
 
@@ -92,10 +95,11 @@ public class SavedTripsModel: ObservableObject {
     }
 }
 
-public class RegularTripsModel: ObservableObject {
+@Observable
+public class RegularTripsModel {
     private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
 
-    @Published public var regularTrips: [RegularTrip] {
+    public var regularTrips: [RegularTrip] {
         didSet { Self.store.save(regularTrips) }
     }
 
@@ -115,10 +119,11 @@ public class RegularTripsModel: ObservableObject {
 }
 
 
-class RecentSearch: ObservableObject {
+@Observable
+class RecentSearch {
     private static let store = CodableStore<[RecentSearchItem]>(key: "savedSearch")
 
-    @Published public var searchItems: [RecentSearchItem] {
+    public var searchItems: [RecentSearchItem] {
         didSet { Self.store.save(searchItems) }
     }
 

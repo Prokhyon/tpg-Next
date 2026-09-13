@@ -5,21 +5,35 @@
 //  Position ponctuelle et arrêts proches, partagés par l'app et la montre.
 //
 
+import Observation
 import Foundation
 import Combine
 import CoreLocation
 
-public final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let locationManager = CLLocationManager()
-    @Published public private(set) var userLocation: CLLocation?
-    @Published public private(set) var locationStatus: CLAuthorizationStatus?
+@Observable
+public final class LocationManager: NSObject, CLLocationManagerDelegate {
+    /// Créé au premier usage. Une vue qui tient un `LocationManager` dans `@State` en recrée
+    /// un à chaque reconstruction et ne garde que le premier : les autres ne doivent rien coûter.
+    @ObservationIgnored private lazy var locationManager: CLLocationManager = {
+        let manager = CLLocationManager()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        return manager
+    }()
+    public private(set) var userLocation: CLLocation?
+    private var authorizationStatus: CLAuthorizationStatus?
     /// Rappelé à chaque demande, avec `nil` si la position n'a pas pu être obtenue.
     public var locationUpdateHandler: ((CLLocation?) -> Void)?
 
+    /// L'autorisation de localisation. La lire crée le gestionnaire, qui la renseigne aussitôt
+    /// (l'écran de bienvenue la consulte avant toute demande de position).
+    public var locationStatus: CLAuthorizationStatus? {
+        _ = locationManager
+        return authorizationStatus
+    }
+
     public override init() {
         super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
     public func requestLocationAuthorization() {
@@ -28,7 +42,7 @@ public final class LocationManager: NSObject, ObservableObject, CLLocationManage
 
     /// La cause du dernier échec, `nil` après une position obtenue. `.denied` : l'utilisateur
     /// doit autoriser la localisation ; autre chose : la position est introuvable pour l'instant.
-    @Published public private(set) var lastFailure: CLError.Code?
+    public private(set) var lastFailure: CLError.Code?
 
     /// Nouveaux essais sur `locationUnknown`, une erreur passagère : iOS n'a pas encore de position.
     private var retriesLeft = 0
@@ -62,7 +76,7 @@ public final class LocationManager: NSObject, ObservableObject, CLLocationManage
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        locationStatus = manager.authorizationStatus
+        authorizationStatus = manager.authorizationStatus
         Log.location.info("Autorisation de localisation : \(manager.authorizationStatus.rawValue)")
         guard awaitsAuthorization, manager.authorizationStatus != .notDetermined else { return }
         awaitsAuthorization = false

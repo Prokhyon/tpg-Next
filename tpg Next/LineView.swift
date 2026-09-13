@@ -59,10 +59,10 @@ struct FloatingLineTitle: View {
 }
 
 struct LineView: View {
-    @StateObject private var lineManager = LineManager()
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
+    @State private var lineManager = LineManager()
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
     var autoRefresh: Bool = true
     
     var stopEvent: StopEvent
@@ -302,7 +302,7 @@ struct LineEventElementView: View {
 
 struct LineView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var appRequirementsClass = AppRequirementsClass()
+        @State var appRequirementsClass = AppRequirementsClass()
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
         let date = "2025-09-12"
@@ -315,9 +315,9 @@ struct LineView_Previews: PreviewProvider {
                          currentStop: ShortStop(name: "Genève, Rive", sloid: "ch:1:sloid:87061"),
                          currentLine: "A")
             }
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(appRequirementsClass)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(appRequirementsClass)
 //        return LineEventElementView(currentLine: "A", operatorName: "tpg", transportType: "Bus", currentStopCodedidoc: "1", eventCodedidoc: "1", eventName: "Meinier, église", estimatedTime: "2025-06-27T18:18:18Z", timetabledTime: "2025-06-27T18:18:18Z", plannedQuay: "H", showTime: $showTime)
     }
 }

@@ -26,21 +26,22 @@ struct TripPoint {
     }
 }
 
-class ItineraryViewModel: ObservableObject {
+@Observable
+class ItineraryViewModel {
     /// Texte cherché dans les arrêts pour le champ actif (départ ou arrivée).
-    @Published var stopQuery = ""
+    var stopQuery = ""
 
-    @Published var departure = TripPoint()
-    @Published var arrival = TripPoint()
-    @Published var selectedTime = Date()
-    @Published var isArrivalTime = false
+    var departure = TripPoint()
+    var arrival = TripPoint()
+    var selectedTime = Date()
+    var isArrivalTime = false
 
-    @Published var tripDone = false
-    @Published var quickTrip = false
+    var tripDone = false
+    var quickTrip = false
 
-    @Published var selectedTextField: Int = 1
+    var selectedTextField: Int = 1
 
-    @Published var selectedField: TripField? = .departure
+    var selectedField: TripField? = .departure
 
     /// Départ et arrivée renseignés : la recherche d'itinéraire peut être lancée.
     var canSearch: Bool { departure.endpoint != nil && arrival.endpoint != nil }
@@ -78,13 +79,14 @@ class ItineraryViewModel: ObservableObject {
     }
 }
 
-class LocationSearchViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
-    @Published var searchQuery: String = "" {
+@Observable
+class LocationSearchViewModel: NSObject, MKLocalSearchCompleterDelegate {
+    var searchQuery: String = "" {
         didSet {
             updateSearchResults()
         }
     }
-    @Published var searchResults = [MKLocalSearchCompletion]()
+    var searchResults = [MKLocalSearchCompletion]()
     
     private var completer: MKLocalSearchCompleter
     

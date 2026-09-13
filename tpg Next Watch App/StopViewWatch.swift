@@ -51,9 +51,9 @@ struct StopEventView: View  {
 }
 
 struct StopView: View {
-    @StateObject private var stopManager = StopManager()
+    @State private var stopManager = StopManager()
     @State private var stopEvents: [StopEvent] = []
-    @EnvironmentObject var stopStore: StopStore
+    @Environment(StopStore.self) var stopStore
     let stopName: String
     let stopSloid: String
     var previousLineRef: String?
@@ -304,14 +304,14 @@ struct StopMenuView: View {
 
 struct StopView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var stopStore = StopStore()
-        @StateObject var watchFavorites = WatchFavoritesViewModel()
+        @State var stopStore = StopStore()
+        @State var watchFavorites = WatchFavoritesViewModel()
         @State var autoRefresh: Bool = false
         @State var viewLineSorted: Bool = false
         @State var showTime: Bool = false
         
         return StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:93006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
-            .environmentObject(stopStore)
-            .environmentObject(watchFavorites)
+            .environment(stopStore)
+            .environment(watchFavorites)
     }
 }

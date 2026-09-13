@@ -10,10 +10,10 @@ import MapKit
 import tpgNextFunc
 
 struct FullTripView: View {
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
+    @Environment(SavedTripsModel.self) var savedTripsModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
     var fullTrip: TripEvent
-    @StateObject private var lineManager = LineManager()
+    @State private var lineManager = LineManager()
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
     
@@ -270,16 +270,16 @@ struct fullTripViewTimeDate: View {
 
 struct FullTripView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-//        @StateObject var favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+//        @State var favoritesViewModel = FavoritesViewModel()
+        @State var fullTripTest = FullTripTest()
         @State var autoRefresh: Bool = false
         
         return NavigationStack() {
             FullTripView(fullTrip: fullTripTest.Trip)
-                .environmentObject(savedTripsModel)
-                .environmentObject(appRequirementsClass)
+                .environment(savedTripsModel)
+                .environment(appRequirementsClass)
 //                .background(Background())
                     .navigationTitle("Genève, Rive") // Set back button text
                     .navigationBarTitleDisplayMode(.inline)

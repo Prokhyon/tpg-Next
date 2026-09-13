@@ -12,8 +12,8 @@ import tpgNextFunc
 /// « Partir d'ici », « Aller ici » et, au besoin, « Trajet rapide » pour un arrêt.
 /// À placer dans un `contextMenu` ou un `Menu`.
 struct TripActionsMenu: View {
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
     let stop: Stop
     var includesQuickTrip = true
 
@@ -39,16 +39,16 @@ struct TripActionsMenu: View {
 }
 
 struct TripView: View {
-    @ObservedObject var tripManager = TripManager()
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
-    @EnvironmentObject var regularTripsModel: RegularTripsModel
-    @EnvironmentObject var viewModel: ItineraryViewModel
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @StateObject private var locationViewModel = LocationSearchViewModel()
-    @StateObject var locationManager = LocationManager()
-    @EnvironmentObject var recentSearchModel: RecentSearch
+    var tripManager = TripManager()
+    @Environment(SavedTripsModel.self) var savedTripsModel
+    @Environment(RegularTripsModel.self) var regularTripsModel
+    @Environment(ItineraryViewModel.self) var viewModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @State private var locationViewModel = LocationSearchViewModel()
+    @State var locationManager = LocationManager()
+    @Environment(RecentSearch.self) var recentSearchModel
 
     
     @FocusState var focusField: TripField?
@@ -87,10 +87,10 @@ struct TripView: View {
                     case .favorites:
 //                        ListView()
                         ResultsFavoritesView(viewModel: viewModel, results: $results)
-                            .environmentObject(recentSearchModel)
+                            .environment(recentSearchModel)
                     case.search:
                         ResultsSearchView(viewModel: viewModel, locationViewModel: locationViewModel, results: $results, focusField: $focusField)
-                            .environmentObject(recentSearchModel)
+                            .environment(recentSearchModel)
                     case.closeStops:
                         ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
                     case.tripResults:
@@ -297,7 +297,7 @@ struct TripView: View {
                                         .frame(height: 40)
                                         .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
 
-                                    TripFieldButton(viewModel: viewModel, searchText: $viewModel.departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
+                                    TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
                                         .frame(width: 40, height: 40)
                                         .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
                                         }
@@ -310,7 +310,7 @@ struct TripView: View {
                                         .frame(height: 40)
                                         .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
 
-                                    TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
+                                    TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
                                         .frame(width: 40, height: 40)
                                         .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
                                         }
@@ -330,7 +330,7 @@ struct TripView: View {
                         let bottomTripSearch = VStack(spacing: 15) {
                             
                             HStack {
-                                DatePicker(selection: $viewModel.selectedTime) {
+                                DatePicker(selection: Bindable(viewModel).selectedTime) {
                                     Text("Date et heure:")
                                 }
                                 .padding(.trailing, 5)
@@ -348,7 +348,7 @@ struct TripView: View {
                             
                             if #available(iOS 26, *) {
                                 HStack {
-                                    Picker("", selection: $viewModel.isArrivalTime) {
+                                    Picker("", selection: Bindable(viewModel).isArrivalTime) {
                                         Text("Départ").tag(false)
                                         Text("Arrivée").tag(true)
                                     }
@@ -372,7 +372,7 @@ struct TripView: View {
                                 }
                             } else {
                                 HStack {
-                                    CustomPicker(secondSelected: $viewModel.isArrivalTime, height: 45, firstOption: String(localized: "Départ"), firstIcon: nil, secondOption: String(localized: "Arrivée"), secondIcon: nil, animation: animation)
+                                    CustomPicker(secondSelected: Bindable(viewModel).isArrivalTime, height: 45, firstOption: String(localized: "Départ"), firstIcon: nil, secondOption: String(localized: "Arrivée"), secondIcon: nil, animation: animation)
                                         .frame(width: 220)
                                     
                                     Button {
@@ -423,7 +423,7 @@ struct TripView: View {
         .navigationDestination(isPresented: $showTripDetail) {
             if let trip = selectedSavedTrip {
                 FullTripView(fullTrip: trip)
-                    .environmentObject(savedTripsModel)
+                    .environment(savedTripsModel)
             }
         }
         .sheet(isPresented: $showSavedTrips) {
@@ -432,8 +432,8 @@ struct TripView: View {
                 showTripDetail = true
                 showSavedTrips = false
             })
-                .environmentObject(savedTripsModel)
-                .environmentObject(regularTripsModel)
+                .environment(savedTripsModel)
+                .environment(regularTripsModel)
                 .presentationDetents([.fraction(0.99)])
                 .presentationCornerRadius(35)
                 .presentationBackground(.thinMaterial)
@@ -513,25 +513,25 @@ struct TripView_Previews: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var fullTripTest = FullTripTest()
         
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var regularTripsModel = RegularTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-            @StateObject var itineraryViewModel = ItineraryViewModel()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var regularTripsModel = RegularTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+            @State var itineraryViewModel = ItineraryViewModel()
         @State var boolTest: Bool = true
         @State var showTime: Bool = true
         
         return
             NavigationStack {
                 TripView(tripManager: TripManager())
-                    .environmentObject(itineraryViewModel)
-                    .environmentObject(stopStore)
-                    .environmentObject(favoritesViewModel)
-                    .environmentObject(savedTripsModel)
-                    .environmentObject(regularTripsModel)
-                    .environmentObject(appRequirementsClass)
-                    .environmentObject(RecentSearch())
+                    .environment(itineraryViewModel)
+                    .environment(stopStore)
+                    .environment(favoritesViewModel)
+                    .environment(savedTripsModel)
+                    .environment(regularTripsModel)
+                    .environment(appRequirementsClass)
+                    .environment(RecentSearch())
                     .background(Image("tpgMap"))
             }
         

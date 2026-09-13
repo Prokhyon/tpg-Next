@@ -12,13 +12,13 @@ import Foundation
 import tpgNextFunc
 
 struct NotificationContextMenu: View {
-    @EnvironmentObject var tripModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(ItineraryViewModel.self) var tripModel
+    @Environment(NavigationModel.self) var navigationModel
     let transportNotificationManager = BusNotificationManager.shared
     let notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
     let event: StopEvent
     let stopID: String
-//    @ObservedObject var path: ViewStateStack
+//    var path: ViewStateStack
     var itinerary = false
     
     var body: some View {
@@ -92,8 +92,9 @@ func parseIdentifier(_ identifier: String) -> NotificationInfo? {
     return NotificationInfo(id: identifier, stopID: stopID, journeyRef: journeyRef, notificationInterval: notificationInterval ?? 0.0)
 }
 
+@Observable
 class NotificationManager {
-    @Published var isNotificationAuthorized: Bool = false
+    var isNotificationAuthorized: Bool = false
     static let shared = NotificationManager()
     /// Clé du `StopEvent` encodé dans le `userInfo` de chaque rappel.
     static let stopEventKey = "stopEvent"
@@ -172,11 +173,12 @@ class NotificationManager {
 }
 
 
-class BusNotificationManager: ObservableObject {
+@Observable
+class BusNotificationManager {
     static let shared = BusNotificationManager()
     
-    @Published var scheduledNotificationIdentifiers: [String:StopEvent] = [:]
-    private var cancellables = Set<AnyCancellable>()
+    var scheduledNotificationIdentifiers: [String:StopEvent] = [:]
+    @ObservationIgnored private var cancellables = Set<AnyCancellable>()
     let notificationManager = NotificationManager.shared
 
     // Schedule notifications based on both timetabledTime and estimatedTime
@@ -339,13 +341,14 @@ class BusNotificationManager: ObservableObject {
     }
 }
 
-class NotificationConfirmationViewModel: ObservableObject {
+@Observable
+class NotificationConfirmationViewModel {
     static let shared = NotificationConfirmationViewModel()
     
     
-    @Published var showConfirmation: Bool = false
-    @Published var confirmationMessage: String = ""
-    @Published var errorMessage: Bool = false
+    var showConfirmation: Bool = false
+    var confirmationMessage: String = ""
+    var errorMessage: Bool = false
     
     func show(message: String, error: Bool) {
         confirmationMessage = message

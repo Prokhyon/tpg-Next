@@ -6,17 +6,19 @@
 //  Chacune en avait sa copie, et les deux avaient divergé.
 //
 
+import Observation
 import Foundation
 import Combine
 import CoreLocation
 
 /// Les départs d'un arrêt.
-public final class StopManager: ObservableObject {
-    @Published public private(set) var stopEvents: [StopEvent] = []
-    @Published public private(set) var stopError = false
+@Observable
+public final class StopManager {
+    public private(set) var stopEvents: [StopEvent] = []
+    public private(set) var stopError = false
     /// Le code d'erreur OJP, par exemple `STOPEVENT_LOCATIONUNSERVED`.
-    @Published public private(set) var stopErrorMessage = ""
-    @Published public private(set) var quays: [Quay] = []
+    public private(set) var stopErrorMessage = ""
+    public private(set) var quays: [Quay] = []
 
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
     /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
@@ -61,9 +63,10 @@ public final class StopManager: ObservableObject {
 }
 
 /// Les arrêts d'une course, et au besoin son tracé.
-public final class LineManager: ObservableObject {
-    @Published public private(set) var lineEvents: [LineEvent] = []
-    @Published public private(set) var operatorName = ""
+@Observable
+public final class LineManager {
+    public private(set) var lineEvents: [LineEvent] = []
+    public private(set) var operatorName = ""
     /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
     /// vide si l'API n'a pas fourni de tracé pour cette course.
     public private(set) var track: [CLLocationCoordinate2D]?
