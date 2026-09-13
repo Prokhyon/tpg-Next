@@ -9,104 +9,9 @@ import Foundation
 import tpgNextFunc
 import MapKit
 
-public class StopManager: ObservableObject {
-    @Published public var stopEvents: [StopEvent] = []
-    @Published public var stopError: Bool = false
-    @Published public var stopErrorMessage: String = ""
-    
-    
-    @Published public var quays: [Quay] = []
-    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
-    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
-    private var latestRequest = 0
-    public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
-        self.stopError = false
-        latestRequest += 1
-        let request = latestRequest
-        self.stopErrorMessage = ""
-        
-        
-        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { success, data in
-            if success, let data = data?.data(using: .utf8) {
-                parseStopEvents(from: data, stopCode: stopSloid) { stopEvents, quays, error in
-                    guard request == self.latestRequest else { return }
-                    if let error = error {
-                            switch error {
-                            case .noEventFound(let msg):
-                                self.stopError = true
-                                self.stopErrorMessage = msg
-                                Log.network.info("Aucun départ : \(msg)")
-                            default:
-                                self.stopError = true
-                                Log.network.error("Départs : réponse illisible")
-                            }
-                            return
-                        }
-                    DispatchQueue.main.async {
-                        self.stopEvents = stopEvents
-                        self.quays = quays
-                        //                            saveStopEventsToFile(stopEvents: stopEvents)
-                        Log.network.debug("\(stopEvents.count) départs reçus")
-                        completion()
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    guard request == self.latestRequest else { return }
-                    self.stopError = true
-                    Log.network.error("Départs : requête échouée")
-                    completion()
-                }
-            }
-        }
-    }
-}
-
-class LineManager: ObservableObject {
-    @Published var LineEvents: [LineEvent] = []
-    @Published var operatorName: String = ""
-    /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
-    /// vide si l'API n'a pas fourni de tracé pour cette course.
-    var track: [CLLocationCoordinate2D]?
-    let dateFormatter = DateFormatter()
-
-    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
-    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
-    private var latestRequest = 0
-
-    public func selectJourney(_ stopEvent: StopEvent, track: Bool = false, completion: @escaping () -> Void = {}) {
-        latestRequest += 1
-        let request = latestRequest
-        if track {
-            self.track = nil
-        }
-        fetchTransportJourney(with: stopEvent, track: track) { success, data in
-            if success, let data = data?.data(using: .utf8) {
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let coordinates = track ? parseJourneyTrack(from: data) : nil
-                    parseJourneyEvents(from: data) { lineEvents, operatorName in
-                        guard request == self.latestRequest else { return }
-                        self.LineEvents = lineEvents
-                        // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
-                        self.operatorName = operatorName.isEmpty ? stopEvent.operatorName : operatorName
-                        if let coordinates {
-                            self.track = coordinates
-                        }
-                        //                        print("LineEvents updated: \(self.LineEvents), \(operatorName)")
-                        completion()
-                    }
-                }
-            } else {
-                completion()
-            }
-        }
-    }
-}
-
 public class TripManager: ObservableObject {
     @Published public var tripEvents: [TripEvent] = []
     @Published public var tripError: Bool = false
-    let dateFormatter = DateFormatter()
     
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
     /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
@@ -116,39 +21,41 @@ public class TripManager: ObservableObject {
         self.tripError = false
         latestRequest += 1
         let request = latestRequest
-        //        print((departureGeoPosition ?? departureStop) ?? "emptyDeparture")
-        //        print((arrivalGeoPosition ?? arrivalStop) ?? "emptyArrival")
-        fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { success, data in
+        fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { data in
             guard request == self.latestRequest else { return }
-            if success {
-                // Parse XML response
-                if success, let data = data?.data(using: .utf8) {
-                    let startCoordinate = geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates
-                    //                        print(startCoordinate ?? "empty startCoordinates")
-                    let endCoordinate = geoArrival ? arrivalGeoPosition?.coordinate.toCoordinates : arrivalStop?.wgs84Coordinates
-                    let startName = geoDeparture ? departureGeoPosition?.name : departureStop?.name
-                    let endName = geoArrival ? arrivalGeoPosition?.name : arrivalStop?.name
-                    let emptyCoordinates: Coordinates = Coordinates(lon: 0.0, lat: 0.0)
-                    
-                    do {
-                        let tripEvents = try parseTripEvents(from: data, startCoordinate: startCoordinate ?? emptyCoordinates, endCoordinates: endCoordinate ?? emptyCoordinates, startName: startName ?? "", endName: endName ?? "", startCode: departureStop?.sloid, endCode: arrivalStop?.sloid, geoDeparture: geoDeparture, geoArrival: geoArrival)
-                        self.tripEvents = tripEvents
-                    } catch ParserError.noEventFound(let message) {
+            guard let data else {
+                self.tripError = true
+                return
+            }
+            let startCoordinate = (geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates) ?? Coordinates(lon: 0, lat: 0)
+            let endCoordinate = (geoArrival ? arrivalGeoPosition?.coordinate.toCoordinates : arrivalStop?.wgs84Coordinates) ?? Coordinates(lon: 0, lat: 0)
+            let startName = (geoDeparture ? departureGeoPosition?.name : departureStop?.name) ?? ""
+            let endName = (geoArrival ? arrivalGeoPosition?.name : arrivalStop?.name) ?? ""
+
+            // Décodage hors du thread principal ; seul le résultat y revient.
+            DispatchQueue.global(qos: .userInitiated).async {
+                let result = Result {
+                    try parseTripEvents(from: data, startCoordinate: startCoordinate, endCoordinates: endCoordinate, startName: startName, endName: endName, startCode: departureStop?.sloid, endCode: arrivalStop?.sloid, geoDeparture: geoDeparture, geoArrival: geoArrival)
+                }
+                DispatchQueue.main.async {
+                    guard request == self.latestRequest else { return }
+                    switch result {
+                    case .success(var trips):
+                        // Repris tel quel : l'itinéraire dont la première étape n'a ni transfert
+                        // ni ligne arrive en dernier, et passe en tête.
+                        if let firstLeg = trips.last?.legs.first, !firstLeg.transfer, firstLeg.publishedLineName.isEmpty {
+                            trips.insert(trips.removeLast(), at: 0)
+                        }
+                        self.tripEvents = trips
+                    case .failure(let error):
                         self.tripError = true
-                        Log.network.info("Aucun itinéraire : \(message)")
-                    } catch {
-                        self.tripError = true
-                        Log.network.error("Itinéraires : réponse illisible")
+                        if let parserError = error as? ParserError, case .noEventFound(let message) = parserError {
+                            Log.network.info("Aucun itinéraire : \(message)")
+                        } else {
+                            Log.network.error("Itinéraires : réponse illisible")
+                        }
                     }
                 }
-                if !(self.tripEvents.last?.legs.first?.transfer ?? true) && self.tripEvents.last?.legs.first?.publishedLineName == "" {
-                    let transferLast: TripEvent = self.tripEvents.last!
-                    var tripEventsTransfer: [TripEvent] = self.tripEvents.dropLast()
-                    tripEventsTransfer.insert(transferLast, at: 0)
-                    self.tripEvents = tripEventsTransfer
-                }
-            } else {
-                self.tripError = true
             }
         }
     }

@@ -127,7 +127,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     /// Un départ reste affiché une demi-minute après son heure, comme dans l'app.
     private func hasDeparted(_ event: StopEvent, at date: Date) -> Bool {
-        guard let departure = DateParsing.date(from: event.estimatedTime.isEmpty ? event.timetabledTime : event.estimatedTime) else {
+        guard let departure = OJPDate.date(from: event.estimatedTime.isEmpty ? event.timetabledTime : event.estimatedTime) else {
             return false
         }
         return departure.addingTimeInterval(30) < date
@@ -171,8 +171,8 @@ struct DeparturesProvider: AppIntentTimelineProvider {
                 fetchTransportDepartures(with: stop.name,
                                          stopSloid: stop.sloid,
                                          stopEventNumber: requestedDepartures,
-                                         timeRequest: Date()) { success, response in
-                    guard success, let data = response?.data(using: .utf8) else {
+                                         timeRequest: Date()) { data in
+                    guard let data else {
                         continuation.resume(returning: nil)
                         return
                     }
@@ -294,19 +294,5 @@ private final class SingleResume<T>: @unchecked Sendable {
         continuation = nil
         lock.unlock()
         pending?.resume(returning: value)
-    }
-}
-
-enum DateParsing {
-    /// Le format des heures renvoyées par OJP, en UTC.
-    private static let formatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter
-    }()
-
-    static func date(from string: String) -> Date? {
-        formatter.date(from: string)
     }
 }

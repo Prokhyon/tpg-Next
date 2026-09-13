@@ -143,8 +143,7 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
 public func journeyMatches(_ events: [LineEvent], stopRef: String?, timetabledTime: String?) -> Bool {
     guard !events.isEmpty else { return false }
     let stop = (stopRef?.isEmpty ?? true) ? nil : stopRef
-    let formatter = ISO8601DateFormatter()
-    let expected = timetabledTime.flatMap { formatter.date(from: $0) }
+    let expected = timetabledTime.flatMap(OJPDate.date(from:))
     guard stop != nil || expected != nil else { return true }
 
     return events.contains { event in
@@ -152,7 +151,7 @@ public func journeyMatches(_ events: [LineEvent], stopRef: String?, timetabledTi
             [event.stopPlaceRef, event.sloid].contains { $0 == stop || $0.hasPrefix(stop + ":") }
         } ?? true
         let timeMatches = expected.map { expected in
-            formatter.date(from: event.timetabledTime).map { abs($0.timeIntervalSince(expected)) <= 300 } ?? false
+            OJPDate.date(from: event.timetabledTime).map { abs($0.timeIntervalSince(expected)) <= 300 } ?? false
         } ?? true
         return stopMatches && timeMatches
     }

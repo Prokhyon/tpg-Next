@@ -253,7 +253,7 @@ class BusNotificationManager: ObservableObject {
         let lineManager = LineManager()
         lineManager.selectJourney(stopEvent) { [self] in
             let stopSloid = sloidHarmonizer(code: stopID)
-            let candidates = lineManager.LineEvents.filter { $0.stopPlaceRef == stopID || $0.sloid == stopSloid }
+            let candidates = lineManager.lineEvents.filter { $0.stopPlaceRef == stopID || $0.sloid == stopSloid }
             // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
             guard let updatedEvent = candidates.first(where: { $0.timetabledTime == stopEvent.timetabledTime }) ?? candidates.first else {
                 Log.notifications.info("Arrêt introuvable dans la course, rappel laissé tel quel")
@@ -344,8 +344,7 @@ class BusNotificationManager: ObservableObject {
     }
 
     private func dateFromString(_ dateString: String) -> Date? {
-        let dateFormatter = ISO8601DateFormatter()
-        return dateFormatter.date(from: dateString)
+        OJPDate.date(from: dateString)
     }
 }
 

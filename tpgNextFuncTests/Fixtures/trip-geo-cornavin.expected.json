@@ -1,0 +1,562 @@
+[
+  {
+    "duration" : "PT14M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:08:24Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-B3AF2279-6A0E-4402-A6CC-0A55AF245484",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT6M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653679",
+        "legAlightEstimatedTime" : "2026-09-13T16:08:24Z",
+        "legAlightLatitude" : "46.20889",
+        "legAlightLongitude" : "6.14021",
+        "legAlightQuay" : "K",
+        "legAlightStopId" : "ch:1:sloid:87057:0:783875",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-09-13T16:08:00Z",
+        "legBoardEstimatedTime" : "2026-09-13T16:01:00Z",
+        "legBoardLatitude" : "46.20130",
+        "legBoardLongitude" : "6.13997",
+        "legBoardQuay" : "S",
+        "legBoardStopId" : "ch:1:sloid:92804:0:570344",
+        "legBoardStopName" : "Genève, Cirque",
+        "legBoardTimetableTime" : "2026-09-13T16:00:00Z",
+        "legDestination" : "Vernier-Village",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20235",
+            "longitude" : "6.14187",
+            "stopId" : "ch:1:sloid:95022:0:159093",
+            "stopName" : "Genève, Théâtre"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20506",
+            "longitude" : "6.14298",
+            "stopId" : "ch:1:sloid:87387:0:358648",
+            "stopName" : "Genève, Bel-Air"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20760",
+            "longitude" : "6.14237",
+            "stopId" : "ch:1:sloid:92812:0:215234",
+            "stopName" : "Genève, Coutance"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "operatingDayRef" : "2026-09-13",
+        "publishedLineName" : "19",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Bus"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T15:55:00Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT9M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:07:00Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-C225BE5C-9378-4357-A85F-9ECB96D66332",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-10-Dimanche-35072874",
+        "legAlightEstimatedTime" : "2026-09-13T16:07:00Z",
+        "legAlightLatitude" : "46.21040",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-09-13T16:05:00Z",
+        "legBoardEstimatedTime" : "2026-09-13T15:59:36Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-09-13T15:58:00Z",
+        "legDestination" : "Nations",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.14060",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "operatingDayRef" : "2026-09-13",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T15:58:36Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT12M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:11:30Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-C5AD2AD8-F210-48A8-B5EA-995C286ADCDA",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT3M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-18-10-Dimanche-35073467",
+        "legAlightEstimatedTime" : "2026-09-13T16:11:30Z",
+        "legAlightLatitude" : "46.20992",
+        "legAlightLongitude" : "6.14146",
+        "legAlightQuay" : "H",
+        "legAlightStopId" : "ch:1:sloid:87057:0:89811",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-09-13T16:11:00Z",
+        "legBoardEstimatedTime" : "2026-09-13T16:02:54Z",
+        "legBoardLatitude" : "46.19809",
+        "legBoardLongitude" : "6.14305",
+        "legBoardQuay" : "E",
+        "legBoardStopId" : "ch:1:sloid:87907:0:104748",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-09-13T16:02:00Z",
+        "legDestination" : "CERN",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20099",
+            "longitude" : "6.14386",
+            "stopId" : "ch:1:sloid:92885:0:364009",
+            "stopName" : "Genève, Place de Neuve"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20487",
+            "longitude" : "6.14346",
+            "stopId" : "ch:1:sloid:87387:0:222999",
+            "stopName" : "Genève, Bel-Air"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14229",
+            "stopId" : "ch:1:sloid:92812:0:167424",
+            "stopName" : "Genève, Coutance"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "operatingDayRef" : "2026-09-13",
+        "publishedLineName" : "18",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T15:59:54Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT12M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:11:24Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-2006A164-5897-4BC1-BE15-35D4819C8DBA",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT5M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35915930",
+        "legAlightEstimatedTime" : "2026-09-13T16:11:24Z",
+        "legAlightLatitude" : "46.21040",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-09-13T16:10:00Z",
+        "legBoardEstimatedTime" : "2026-09-13T16:05:00Z",
+        "legBoardLatitude" : "46.20081",
+        "legBoardLongitude" : "6.14060",
+        "legBoardQuay" : "P",
+        "legBoardStopId" : "ch:1:sloid:92804:0:601267",
+        "legBoardStopName" : "Genève, Cirque",
+        "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
+        "legDestination" : "Jardin Botanique",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "operatingDayRef" : "2026-09-13",
+        "publishedLineName" : "1",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Bus"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T16:00:00Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT9M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:12:42Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-4AAE054D-A85F-4CBE-8506-BD2588D31573",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-10-Dimanche-35072875",
+        "legAlightEstimatedTime" : "2026-09-13T16:12:42Z",
+        "legAlightLatitude" : "46.21040",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-09-13T16:13:00Z",
+        "legBoardEstimatedTime" : "2026-09-13T16:05:24Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-09-13T16:06:00Z",
+        "legDestination" : "Nations",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.14060",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "operatingDayRef" : "2026-09-13",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T16:04:24Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT19M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-09-13T16:17:58Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-69AB0E6D-A65C-4B43-99A9-90EC8A197455",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT19M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-09-13T15:59:00Z",
+    "transfers" : "0"
+  }
+]

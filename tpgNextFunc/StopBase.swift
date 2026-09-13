@@ -199,11 +199,15 @@ public class StopStore: ObservableObject {
     @Published public var stops: [Stop] = []
     @Published public var searchText: String = ""
     @Published public private(set) var filteredStops: [Stop] = []
-    @Published public var activeStops: [Stop] = []
+    @Published public private(set) var activeStops: [Stop] = []
     @Published public var mapStops: [LocationStop] = []
     @Published public var location: CLLocation?
     
     private var cancellables = Set<AnyCancellable>()
+    /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
+    private var stopsBySloid: [String: Stop] = [:]
+    /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
+    private var searchIndex: [(key: String, stop: Stop)] = []
     private let debounceInterval: TimeInterval = 0.3 // 300ms debounce interval
 
     public init() {
@@ -278,7 +282,9 @@ public class StopStore: ObservableObject {
         for stop in stops {
             uniqueStops[stop.sloid] = stop
         }
+        stopsBySloid = uniqueStops
         activeStops = Array(uniqueStops.values)
+        searchIndex = activeStops.map { (key: $0.name.normalized().lowercased(), stop: $0) }
     }
 
     // MARK: - Search Logic with Combine Debounce
@@ -303,17 +309,14 @@ public class StopStore: ObservableObject {
 
         let normalizedSearchText = searchText.normalized().lowercased()
         
-        let matchingStops = activeStops.filter { stop in
-            stop.name.normalized().lowercased().contains(normalizedSearchText)
-        }
+        let matchingStops = searchIndex.filter { $0.key.contains(normalizedSearchText) }.map(\.stop)
 
         if let currentLocation = location {
-            filteredStops = matchingStops.sorted {
-                CLLocation(latitude: $0.wgs84Coordinates.lat, longitude: $0.wgs84Coordinates.lon)
-                    .distance(from: currentLocation) <
-                CLLocation(latitude: $1.wgs84Coordinates.lat, longitude: $1.wgs84Coordinates.lon)
-                    .distance(from: currentLocation)
-            }
+            // Distances calculées une fois par arrêt, et non à chaque comparaison du tri.
+            filteredStops = matchingStops
+                .map { (stop: $0, distance: CLLocation(latitude: $0.wgs84Coordinates.lat, longitude: $0.wgs84Coordinates.lon).distance(from: currentLocation)) }
+                .sorted { $0.distance < $1.distance }
+                .map(\.stop)
         } else {
             filteredStops = matchingStops.sorted { $0.name < $1.name }
         }
@@ -323,7 +326,7 @@ public class StopStore: ObservableObject {
 
     public func findStop(id: String) -> Stop? {
         let harmonizedID = sloidHarmonizer(code: id)
-        return activeStops.first { $0.sloid == harmonizedID }
+        return stopsBySloid[harmonizedID]
     }
 }
 

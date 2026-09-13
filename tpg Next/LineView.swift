@@ -72,7 +72,7 @@ struct LineView: View {
                                         NavigationLink {
                                             StopView(stopName: event.stopPointName, stopSloid: event.sloid, previousLineRef: stopEvent.journeyRef, previousLineName: currentLine, previousLineTime: event.timetabledTime)
                                         } label: {
-                                            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid ?? "noCurrentStop", eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
+                                            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
                                         }
                                         .foregroundStyle(.primary)
                                         .onAppear {
@@ -98,7 +98,7 @@ struct LineView: View {
                                             }
                                         }
                                         .background(
-                                            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineManager.LineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere)
+                                            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineManager.lineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere)
                                         )
                                     }
                                 }
@@ -268,7 +268,7 @@ struct LineView: View {
 //            print(operatorName)
             lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
 //            print(lineColor)
-            lineEvents = self.lineManager.LineEvents
+            lineEvents = self.lineManager.lineEvents
         }
     }
 }

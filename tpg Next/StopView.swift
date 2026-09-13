@@ -693,8 +693,7 @@ struct StopView: View {
     }
     
     private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
-        let formatter = ISO8601DateFormatter()
-        let dates = events.compactMap { formatter.date(from: $0.estimatedTime) }.sorted()
+        let dates = events.compactMap { OJPDate.date(from: $0.estimatedTime) }.sorted()
 
         guard dates.count > 2 else {
             return 10 // Valeur par défaut minimale

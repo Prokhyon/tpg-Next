@@ -189,7 +189,7 @@ struct LineMapView: View {
         lineManager.selectJourney(stopEvent, track: requestTrack) {
 //            operatorName = self.lineManager.operatorName
 //            lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
-            lineEvents = self.lineManager.LineEvents
+            lineEvents = self.lineManager.lineEvents
             guard requestTrack, let coordinates = lineManager.track,
                   let newKey = LineTrackCache.key(for: lineEvents) else { return }
             if coordinates.count >= 2 {
