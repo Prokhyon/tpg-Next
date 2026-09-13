@@ -99,17 +99,8 @@ struct StopMapView: View {
                         HStack {
                             Spacer()
                             VStack {
-                                if #available(iOS 26, *) {
-                                    MapUserLocationButton(scope: mapScope)
-                                        .glassEffect()
-                                } else {
-                                    MapUserLocationButton(scope: mapScope)
-                                        .background {
-                                            Circle()
-                                                .foregroundStyle(.ultraThinMaterial)
-                                                .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                        }
-                                }
+                                MapUserLocationButton(scope: mapScope)
+                                    .tpgSurface(in: Circle())
                                 MapCompass(scope: mapScope)
                             }
                             .padding(.horizontal)

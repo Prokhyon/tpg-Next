@@ -15,33 +15,7 @@ struct SmallStopTitleView: View {
 
     var body: some View {
         HStack {
-            let splitStopName = splitString(stopName, separator: ",")
-            if splitStopName.1.isEmpty {
-                HStack {
-                    Text(splitStopName.0)
-                        .font(.headline)
-                        .bold()
-                        .minimumScaleFactor(0.5)
-                    if let transportType {
-                        if transportType == "TRAIN" {
-                            Image(systemName: "lightrail").font(.subheadline)
-                        } else if transportType == "BOAT" {
-                            Image(systemName: "ferry").font(.subheadline)
-                        }
-                    }
-                }
-            } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0)
-                            .font(.caption)
-                            .minimumScaleFactor(0.4)
-                        Text(splitStopName.1)
-                            .font(.callout)
-                            .bold()
-                            .minimumScaleFactor(0.5)
-                            .lineLimit(1)
-                    }
-            }
+            StopNameView(stopName, style: .row, transportType: transportType)
             Spacer()
         }
     }
@@ -73,6 +47,115 @@ struct SmallStopTitleView: View {
 //    let remainingWidth = UIScreen.main.bounds.width - textWidth - 10 // Adjust padding
 //    print("Remaining width for top text:", remainingWidth)
 //}
+
+// MARK: - Surfaces flottantes
+
+/// Titres et boutons flottants : Liquid Glass sur iOS 26, matériau et ombre avant.
+enum TPGSurface {
+    static var isGlass: Bool {
+        if #available(iOS 26, *) { return true } else { return false }
+    }
+}
+
+extension View {
+    /// Pose la vue sur une surface flottante.
+    /// - Parameters:
+    ///   - interactive: le verre réagit au toucher (iOS 26).
+    ///   - legacy: le matériau avant iOS 26, `nil` pour aucun fond.
+    ///   - glassID: identifiant de morphing entre surfaces d'un même `TPGGlassContainer` (iOS 26).
+    func tpgSurface<S: Shape>(in shape: S, interactive: Bool = false, legacy: Material? = .ultraThinMaterial,
+                              glassID: String? = nil, namespace: Namespace.ID? = nil) -> some View {
+        modifier(TPGSurfaceModifier(shape: shape, interactive: interactive, legacy: legacy, glassID: glassID, namespace: namespace))
+    }
+
+    func tpgSurface(interactive: Bool = false, legacy: Material? = .ultraThinMaterial,
+                    glassID: String? = nil, namespace: Namespace.ID? = nil) -> some View {
+        tpgSurface(in: Capsule(), interactive: interactive, legacy: legacy, glassID: glassID, namespace: namespace)
+    }
+
+    /// Le fond d'avant iOS 26 seulement : sur iOS 26 le système pose déjà le verre (barre d'outils).
+    @ViewBuilder func legacySurface(material: Material = .ultraThinMaterial) -> some View {
+        if TPGSurface.isGlass {
+            self
+        } else {
+            tpgSurface(legacy: material)
+        }
+    }
+
+    /// Couleur du contenu posé sur du verre ; avant iOS 26 le contenu garde la sienne.
+    @ViewBuilder func glassForegroundStyle(_ color: Color) -> some View {
+        if TPGSurface.isGlass {
+            foregroundStyle(color)
+        } else {
+            self
+        }
+    }
+}
+
+private struct TPGSurfaceModifier<S: Shape>: ViewModifier {
+    let shape: S
+    let interactive: Bool
+    let legacy: Material?
+    let glassID: String?
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            let glass = content.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+            if let glassID, let namespace {
+                glass.glassEffectID(glassID, in: namespace)
+            } else {
+                glass
+            }
+        } else if let legacy {
+            content.background {
+                shape
+                    .fill(legacy)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+/// `GlassEffectContainer` sur iOS 26, pour que les surfaces voisines fusionnent ; le contenu tel quel avant.
+struct TPGGlassContainer<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        if #available(iOS 26, *) {
+            GlassEffectContainer { content }
+        } else {
+            content
+        }
+    }
+}
+
+/// Voile flou en haut de l'écran, sous le titre flottant. Rien sur iOS 26 : la barre de
+/// navigation estompe déjà le contenu qui défile dessous.
+struct LegacyTopFade: View {
+    var body: some View {
+        if !TPGSurface.isGlass {
+            VStack(spacing: 0) {
+                Rectangle()
+                    .foregroundStyle(.ultraThickMaterial)
+                    .frame(height: 50)
+                Rectangle()
+                    .foregroundStyle(.ultraThickMaterial)
+                    .frame(height: 100)
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .trailing) {
+                                ScrollMask(leading: true, vertical: true, gradientLength: 100)
+                            }
+                    }
+                Spacer()
+            }
+            .ignoresSafeArea(edges: .top)
+        }
+    }
+}
 
 struct BasicElement: View {
     var transparent = false

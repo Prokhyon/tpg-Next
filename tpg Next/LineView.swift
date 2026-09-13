@@ -36,12 +36,33 @@ struct LineViewTitle: View {
     }
 }
 
+/// Le titre de ligne flottant en haut de la liste et de la carte.
+struct FloatingLineTitle: View {
+    var destination: String
+    var currentLine: String
+    var operatorName: String
+
+    var body: some View {
+        HStack {
+            Rectangle()
+                .fill(.clear)
+                .frame(width: 50, height: 1)
+            LineViewTitle(destination: destination, currentLine: currentLine, operatorName: operatorName)
+                .glassForegroundStyle(Color.text)
+            Rectangle()
+                .fill(.clear)
+                .frame(maxWidth: 50, maxHeight: 1)
+        }
+        .padding(10)
+        .tpgSurface(legacy: .thinMaterial)
+    }
+}
+
 struct LineView: View {
     @StateObject private var lineManager = LineManager()
     @EnvironmentObject var stopStore: StopStore
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @State private var timer: AnyCancellable?
     var autoRefresh: Bool = true
     
     var stopEvent: StopEvent
@@ -110,104 +131,16 @@ struct LineView: View {
                             }
                         }
                     }
-                    .onAppear {
+                    .periodicRefresh(repeats: autoRefresh) { _ in
                         getLineEvents(for: stopEvent)
-                        if autoRefresh {
-                            timer = Timer.publish(every: 30, on: .main, in: .common)
-                                .autoconnect()
-                                .sink { _ in
-                                    getLineEvents(for: stopEvent)
-                                }
-                        }
-                    }
-                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                        if autoRefresh {
-                            getLineEvents(for: stopEvent)
-                            timer = Timer.publish(every: 30, on: .main, in: .common)
-                                .autoconnect()
-                                .sink { _ in
-                                    getLineEvents(for: stopEvent)
-                                }
-                        }
-                    }
-                    .onDisappear {
-                        timer?.cancel()
-                    }
-                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                        timer?.cancel()
-                    }
-                    .onChange(of: autoRefresh) {
-                        if !autoRefresh {
-                            timer?.cancel()
-                        } else {
-                            getLineEvents(for: stopEvent)
-                            timer = Timer.publish(every: 30, on: .main, in: .common)
-                                .autoconnect()
-                                .sink { _ in
-                                    getLineEvents(for: stopEvent)
-                                }
-                        }
                     }
                     
-                    if #available(iOS 26, *) {
-                    } else {
-                        VStack(spacing: 0) {
-                            Rectangle()
-                                .foregroundStyle(.ultraThickMaterial)
-                                .frame(height: 50)
-                            Rectangle()
-                                .foregroundStyle(.ultraThickMaterial)
-                                .frame(height: 100)
-                                .mask {
-                                    Rectangle()
-                                        .overlay(alignment: .trailing) {
-                                            ScrollMask(leading: true, vertical: true, gradientLength: 100)
-                                        }
-                                }
-                            Spacer()
-                        }
-                        //                    .blur(radius: 10)
-                        .ignoresSafeArea(edges: .top)
-                    }
+                    LegacyTopFade()
                     //Top card
                     VStack {
                         HStack {
-                        if #available(iOS 26, *) {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
-                                        .foregroundStyle(Color.text)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .glassEffect()
-                                .offset(x: -50)
-                                
-                            } else {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
-                                    Rectangle()
-                                        .fill(.clear)
-//                                        .frame(width: 50, height: 1)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .background {
-                                    Capsule()
-//                                        .frame(width: geometry.size.width-100, height: 90)
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-//                                        .padding(.trailing, 200)
-                                }
-                                .offset(x: -50)
-                            }
+                        FloatingLineTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
+                            .offset(x: -50)
                             Spacer()
                         }
                         Spacer()

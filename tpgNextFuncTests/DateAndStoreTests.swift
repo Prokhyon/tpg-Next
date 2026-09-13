@@ -64,4 +64,25 @@ struct StopStoreTests {
         #expect(sloids.count > 20_000)
         #expect(Set(sloids).count == sloids.count)
     }
+
+    @Test func searchIgnoresAccentsSpacesAndHyphens() async {
+        await Self.store.waitUntilLoaded()
+        let names = Set(Self.store.search("geneve rive").map(\.name))
+        #expect(names.contains("Genève, Rive"))
+        #expect(Self.store.search("Plan-les-Ouates").map(\.name) == Self.store.search("planlesouates").map(\.name))
+    }
+
+    /// Des espaces seuls se normalisent en "" : la recherche rendait alors toute la base.
+    @Test func blankQueryFindsNothing() async {
+        await Self.store.waitUntilLoaded()
+        #expect(Self.store.search("").isEmpty)
+        #expect(Self.store.search("   ").isEmpty)
+    }
+
+    @Test func searchSortsByNameWithoutLocation() async {
+        await Self.store.waitUntilLoaded()
+        let names = Self.store.search("cornavin").map(\.name)
+        #expect(!names.isEmpty)
+        #expect(names == names.sorted())
+    }
 }

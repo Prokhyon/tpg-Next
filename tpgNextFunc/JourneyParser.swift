@@ -134,6 +134,10 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
             events[index].latitude = place.latitude
         }
     }
+    // L'API répète parfois un arrêt (même quai, même heure, Order 1 et 2). Deux lignes de
+    // même identifiant laissaient un vide dans la liste de la course (LazyVStack).
+    var seen = Set<String>()
+    events = events.filter { seen.insert($0.id).inserted }
     let operatorName = delegate.operatorName.isEmpty ? (operatorNames[delegate.operatorRef] ?? "") : delegate.operatorName
     return (events, operatorName)
 }

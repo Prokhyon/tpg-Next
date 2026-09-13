@@ -15,7 +15,6 @@ struct LineMapView: View {
     @EnvironmentObject var stopStore: StopStore
     @StateObject private var lineManager = LineManager()
     @State var autoRefresh = true
-    @State private var timer: AnyCancellable?
     @State var lineEvents: [LineEvent]
     var lineName: String
     var operatorName: String
@@ -75,42 +74,8 @@ struct LineMapView: View {
                     }
                     VStack {
                         HStack {
-                            if #available(iOS 26, *) {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
-                                        .foregroundStyle(Color.text)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .glassEffect()
-                                .offset(x: -50, y: 0)
-                                
-                            } else {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
-                                    Rectangle()
-                                        .fill(.clear)
-                                    //                                        .frame(width: 50, height: 1)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .background {
-                                    Capsule()
-                                    //                                        .frame(width: geometry.size.width-100, height: 90)
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                    //                                        .padding(.trailing, 200)
-                                }
-                                .offset(x: 0)
-                            }
+                            FloatingLineTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
+                                .offset(x: TPGSurface.isGlass ? -50 : 0)
                             Spacer()
                         }
                         Spacer()
@@ -134,46 +99,11 @@ struct LineMapView: View {
                         Text("") // Visible title
                     }
                 }
-                .onAppear {
+                .periodicRefresh(repeats: autoRefresh) { _ in
                     getLineEvents(for: stopEvent)
-                    if autoRefresh {
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    if autoRefresh {
-                        getLineEvents(for: stopEvent)
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
-                }
-                .onDisappear {
-                    timer?.cancel()
                 }
                 .onChange(of: lineEvents) {
                     updateTrackSegments()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                    timer?.cancel()
-                }
-                .onChange(of: autoRefresh) {
-                    if !autoRefresh {
-                        timer?.cancel()
-                    } else {
-                        getLineEvents(for: stopEvent)
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
                 }
             }
     }

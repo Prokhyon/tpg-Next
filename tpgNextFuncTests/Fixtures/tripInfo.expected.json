@@ -12,17 +12,6 @@
       "timetabledTime" : "2026-09-13T15:37:00Z"
     },
     {
-      "estimatedTime" : "2026-09-13T15:37:00Z",
-      "latitude" : "46.24796",
-      "longitude" : "6.20061",
-      "plannedQuay" : "B",
-      "previousCall" : true,
-      "sloid" : "ch:1:sloid:92725",
-      "stopPlaceRef" : "ch:1:sloid:92725:0:325673",
-      "stopPointName" : "Collonge-Bellerive, Bois-Caran",
-      "timetabledTime" : "2026-09-13T15:37:00Z"
-    },
-    {
       "estimatedTime" : "2026-09-13T15:42:24Z",
       "latitude" : "46.24328",
       "longitude" : "6.19838",

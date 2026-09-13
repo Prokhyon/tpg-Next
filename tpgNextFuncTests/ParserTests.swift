@@ -107,6 +107,14 @@ struct JourneyParserTests {
         }
     }
 
+    /// La réponse enregistrée répète Bois-Caran (Order 1 et 2) : une seule ligne doit en rester,
+    /// sinon la liste de la course affiche un vide à sa place.
+    @Test func eventIdsAreUnique() throws {
+        let ids = parseJourneyEventsSync(from: try Fixture.data("tripInfo")).events.map(\.id)
+        #expect(Set(ids).count == ids.count)
+        #expect(ids.filter { $0 == "ch:1:sloid:927252026-09-13T15:37:00Z" }.count == 1)
+    }
+
     /// La course enregistrée est celle du premier départ de Rive : elle doit y passer à la même heure.
     @Test func journeyMatchesTheDepartureItCameFrom() async throws {
         let departures = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")

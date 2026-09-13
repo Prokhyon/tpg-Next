@@ -15,6 +15,8 @@ enum TripField: Hashable {
     }
 
 class ItineraryViewModel: ObservableObject {
+    /// Texte cherché dans les arrêts pour le champ actif (départ ou arrivée).
+    @Published var stopQuery = ""
     
     @Published var departureStop: Stop?
     @Published var departureGeoPosition: GeoPosition?
@@ -393,11 +395,11 @@ struct TripView: View {
             }
             .onChange(of: viewModel.departureSearchText) {
                 locationViewModel.searchQuery = viewModel.departureSearchText
-                stopStore.searchText = viewModel.departureSearchText
+                viewModel.stopQuery = viewModel.departureSearchText
             }
             .onChange(of: viewModel.arrivalSearchText) {
                 locationViewModel.searchQuery = viewModel.arrivalSearchText
-                stopStore.searchText = viewModel.arrivalSearchText
+                viewModel.stopQuery = viewModel.arrivalSearchText
             }
             .onChange(of: tripManager.tripEvents) {
                 withAnimation {
@@ -470,60 +472,9 @@ struct TripView: View {
                 if results == .tripResults {
                     HStack {
                         Spacer()
-                        if #available(iOS 26, *) {
-//                            HStack {
-//                                Button(action: {
-//                                    withAnimation {
-//                                        adjustTime(byAdding: -timeChange())
-//                                        searchTrips()
-//                                    }
-//                                }) {
-//                                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                        .padding()
-//                                        .symbolEffect(.bounce.up.byLayer, value: viewModel.selectedTime)
-//                                }
-//                                Button(action: {
-//                                    withAnimation {
-//                                        adjustTime(byAdding: timeChange())
-//                                        searchTrips()
-//                                    }
-//                                }) {
-//                                    Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                        .padding()
-//                                        .symbolEffect(.bounce.down.byLayer, value: viewModel.selectedTime)
-//                                }
-//                            }
-                            AdjustTimeButton(moveTime: moveTime)
-                            .foregroundStyle(.primary)
-                            .glassEffect(.regular.interactive())
-                        } else {
-//                            HStack {
-//                                Button(action: {
-//                                    withAnimation {
-//                                        adjustTime(byAdding: -timeChange())
-//                                        searchTrips()
-//                                    }
-//                                }) {
-//                                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                        .padding()
-//                                }
-//                                Button(action: {
-//                                    withAnimation {
-//                                        adjustTime(byAdding: timeChange())
-//                                        searchTrips()
-//                                    }
-//                                }) {
-//                                    Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                        .padding()
-//                                }
-//                            }
-                            AdjustTimeButton(moveTime: moveTime)
-                            .background {
-                                Capsule()
-                                    .foregroundStyle(.ultraThinMaterial)
-                                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                            }
-                        }
+                        AdjustTimeButton(moveTime: moveTime)
+                            .glassForegroundStyle(.primary)
+                            .tpgSurface(interactive: true)
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 10)
@@ -553,10 +504,10 @@ struct TripView: View {
                                     switchAnimate.toggle()
                                     viewModel.invertStops()
                                     if viewModel.selectedField == .departure {
-                                        stopStore.searchText = viewModel.departureSearchText
+                                        viewModel.stopQuery = viewModel.departureSearchText
                                         viewModel.selectedField = .arrival
                                     } else if viewModel.selectedField == .arrival {
-                                        stopStore.searchText = viewModel.arrivalSearchText
+                                        viewModel.stopQuery = viewModel.arrivalSearchText
                                         viewModel.selectedField = .departure
                                     }
                                     viewModel.tripDone = false
@@ -572,107 +523,43 @@ struct TripView: View {
 //                            .symbolEffect(.rotate, value: switchRotation)
                     }
                     VStack(spacing: 10) {
-                        if #available(iOS 26, *) {
-                            GlassEffectContainer {
-                                HStack {
-                                    VStack(spacing: 10) {
-                                        if focusField != .arrival {
-                                            HStack {
-                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
-                                                    .frame(height: 40)
-                                                    .glassEffect(.regular.interactive())
-                                                    .glassEffectID("departure", in: animation)
-                                                
-                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.departureSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
-                                                    .frame(width: 40, height: 40)
-                                                    .glassEffect(.regular.interactive())
-                                                    .glassEffectID("departureButton", in: animation)
-                                            }
-                                            .padding(.vertical, focusField == .departure ? 10 : 0)
-                                            .offset(y: switchAnimate ? 25 : 0)
+                        TPGGlassContainer {
+                            HStack {
+                                VStack(spacing: 10) {
+                                    if focusField != .arrival {
+                                        HStack {
+                                    TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
+                                        .frame(height: 40)
+                                        .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
+
+                                    TripFieldButton(viewModel: viewModel, searchText: $viewModel.departureSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
+                                        .frame(width: 40, height: 40)
+                                        .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
                                         }
-                                        if focusField != .departure {
-                                            HStack {
-                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
-                                                    .frame(height: 40)
-                                                    .glassEffect(.regular.interactive())
-                                                    .glassEffectID("arrival", in: animation)
-                                                
-                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrivalSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
-                                                    .frame(width: 40, height: 40)
-                                                    .glassEffect(.regular.interactive())
-                                                    .glassEffectID("arrivalButton", in: animation)
-                                            }
-                                            .padding(.vertical, focusField == .arrival ? 10 : 0)
-                                            .offset(y: switchAnimate ? -25 : 0)
-                                        }
+                                        .padding(.vertical, focusField == .departure ? 10 : 0)
+                                        .offset(y: switchAnimate ? 25 : 0)
                                     }
-                                    if focusField == nil {
-                                        switchButton
-                                            .frame(width: 60, height: 60)
-                                            .glassEffect(.regular.interactive())
+                                    if focusField != .departure {
+                                        HStack {
+                                    TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
+                                        .frame(height: 40)
+                                        .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
+
+                                    TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrivalSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
+                                        .frame(width: 40, height: 40)
+                                        .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
+                                        }
+                                        .padding(.vertical, focusField == .arrival ? 10 : 0)
+                                        .offset(y: switchAnimate ? -25 : 0)
                                     }
                                 }
-                                .padding(.horizontal)
+                                if focusField == nil {
+                                    switchButton
+                                        .frame(width: 60, height: 60)
+                                        .tpgSurface(interactive: true)
+                                }
                             }
-//                            .padding(.top, 20)
-                        } else {
-                                HStack {
-                                    VStack(spacing: 10) {
-                                        if focusField != .arrival {
-                                            HStack {
-                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
-                                                    .frame(height: 40)
-                                                    .background {
-                                                        Capsule()
-                                                            .foregroundStyle(.ultraThinMaterial)
-                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                                    }
-                                                
-                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.departureSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
-                                                    .frame(width: 40, height: 40)
-                                                    .background {
-                                                        Capsule()
-                                                            .foregroundStyle(.ultraThinMaterial)
-                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                                    }
-                                            }
-                                            .padding(.vertical, focusField == .departure ? 10 : 0)
-                                            .offset(y: switchAnimate ? 25 : 0)
-                                        }
-                                        if focusField != .departure {
-                                            HStack {
-                                                TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
-                                                    .frame(height: 40)
-                                                    .background {
-                                                        Capsule()
-                                                            .foregroundStyle(.ultraThinMaterial)
-                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                                    }
-                                                
-                                                TripFieldButton(viewModel: viewModel, searchText: $viewModel.arrivalSearchText, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
-                                                    .frame(width: 40, height: 40)
-                                                    .background {
-                                                        Capsule()
-                                                            .foregroundStyle(.ultraThinMaterial)
-                                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                                    }
-                                            }
-                                            .padding(.vertical, focusField == .arrival ? 10 : 0)
-                                            .offset(y: switchAnimate ? -25 : 0)
-                                        }
-                                    }
-                                    if focusField == nil {
-                                        switchButton
-                                            .frame(width: 60, height: 60)
-                                            .background {
-                                                Capsule()
-                                                    .foregroundStyle(.ultraThinMaterial)
-                                                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                            }
-                                    }
-                                }
-                                .padding(.horizontal)
+                            .padding(.horizontal)
                         }
                         
                         let bottomTripSearch = VStack(spacing: 15) {
@@ -748,22 +635,10 @@ struct TripView: View {
                                 }
                             })
                         if focusField == nil {
-                            if #available(iOS 26, *) {
-                                bottomTripSearch
-                                    .glassEffect(in: .rect(cornerRadius: 35))
-                                //                                .shadow(color: Color.black.opacity(0.05), radius: 20)
-                                    .padding(.horizontal)
-                                    .padding(.bottom, 20)
-                            } else {
-                                bottomTripSearch
-                                    .background {
-                                        RoundedRectangle(cornerRadius: 35.0)
-                                            .foregroundStyle(.ultraThinMaterial)
-                                            .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                    }
-                                    .padding(.horizontal)
-                                    .padding(.bottom, 70)
-                            }
+                            bottomTripSearch
+                                .tpgSurface(in: .rect(cornerRadius: 35))
+                                .padding(.horizontal)
+                                .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
                         }
                     }
 //                    .shadow(color: .black.opacity(0.08), radius: 15)
@@ -904,6 +779,7 @@ struct TripView: View {
         @State private var resultTitle: String?
         @State private var resultDetail: searchResultItem?
         @State private var locationSearch = false
+        @State private var stopResults: [Stop] = []
         
         var focusField: FocusState<TripField?>.Binding
         
@@ -915,8 +791,10 @@ struct TripView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
+                    // Sur le sélecteur : le seul enfant toujours présent de la LazyVStack.
+                    .searchingStops(viewModel.stopQuery, results: $stopResults)
                     if !locationSearch {
-                        if !stopStore.filteredStops.isEmpty {
+                        if !stopResults.isEmpty {
                             HStack {
                                 Text("Arrêts")
                                     .font(.title3).bold()
@@ -924,7 +802,7 @@ struct TripView: View {
                             }
                             .padding(.horizontal, 30)
                         }
-                        ForEach(stopStore.filteredStops) { stop in
+                        ForEach(stopResults) { stop in
                             Button(action: {
                                 let geoPosition = GeoPosition(name: stop.name, coordinate: CLLocationCoordinate2D(latitude: Double(stop.wgs84Coordinates.lat), longitude: Double(stop.wgs84Coordinates.lon)))
                                 withAnimation {
@@ -945,7 +823,7 @@ struct TripView: View {
                                     viewModel.tripDone = false
                                     focusField.wrappedValue = nil
                                     recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
-                                    stopStore.searchText = ""
+                                    viewModel.stopQuery = ""
                                 }
                             }) {
                                 BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
@@ -983,7 +861,7 @@ struct TripView: View {
                                             results = Results.favorites
                                             viewModel.tripDone = false
                                             focusField.wrappedValue = nil
-                                            stopStore.searchText = ""
+                                            viewModel.stopQuery = ""
                                             recentSearchModel.add(name: "\(result.title);\(result.subtitle)", isStop: false, stop: nil, geoCoordinates: coordinate.toCoordinates)
                                         }
                                     }
