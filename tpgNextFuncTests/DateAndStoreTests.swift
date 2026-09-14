@@ -88,6 +88,50 @@ struct StopStoreTests {
     }
 }
 
+@Suite("Heures des modèles")
+struct EventDateTests {
+    private func stopEvent(timetabled: String, estimated: String) -> StopEvent {
+        StopEvent(stopPointName: "", stopId: "", plannedQuay: "", timetabledTime: timetabled, estimatedTime: estimated, lineName: "",
+                  origin: "", destination: "", transportType: "", operatorName: "", journeyRef: timetabled, operatingDayRef: "")
+    }
+
+    @Test func departureFallsBackToTimetable() {
+        #expect(stopEvent(timetabled: "2026-09-13T10:05:00Z", estimated: "").departureDate == iso8601.date(from: "2026-09-13T10:05:00Z"))
+        #expect(stopEvent(timetabled: "2026-09-13T10:05:00Z", estimated: "2026-09-13T10:07:00Z").departureDate == iso8601.date(from: "2026-09-13T10:07:00Z"))
+    }
+
+    /// Formats mélangés : trier le texte des heures estimées mettait ces départs dans le désordre.
+    @Test func sortsByActualDeparture() {
+        let events = [
+            stopEvent(timetabled: "2026-09-13T12:10:00+02:00", estimated: ""),                 // 10:10 UTC
+            stopEvent(timetabled: "2026-09-13T10:05:00Z", estimated: "2026-09-13T10:20:00.000Z"),
+            stopEvent(timetabled: "2026-09-13T10:00:00Z", estimated: ""),
+        ]
+        #expect(events.sortedByDeparture().map(\.journeyRef) == ["2026-09-13T10:00:00Z", "2026-09-13T12:10:00+02:00", "2026-09-13T10:05:00Z"])
+    }
+
+    /// Sans temps réel, l'heure estimée d'une étape est vide : l'étape passée l'était quand même.
+    @Test func legTimesFallBackToTimetable() {
+        let leg = TripLeg(id: "1", legBoardStopName: "", legBoardStopId: "", legBoardQuay: "",
+                          legBoardTimetableTime: "2026-09-13T10:00:00Z", legBoardEstimatedTime: "", legBoardLongitude: "", legBoardLatitude: "",
+                          legAlightStopName: "", legAlightStopId: "", legAlightQuay: "",
+                          legAlightTimetableTime: "2026-09-13T10:30:00Z", legAlightEstimatedTime: "2026-09-13T10:32:00Z", legAlightLongitude: "", legAlightLatitude: "",
+                          legIntermediates: [], legDestination: "", journeyRef: "", publishedLineName: "", legDuration: "",
+                          transferDuration: "", transferWalkDuration: "", transferBuffer: "", transportTypeName: "", legOperator: "")
+        #expect(leg.boardDate == iso8601.date(from: "2026-09-13T10:00:00Z"))
+        #expect(leg.alightDate == iso8601.date(from: "2026-09-13T10:32:00Z"))
+        #expect(hasPassed(leg.boardDate, includingCurrentMinute: false, now: iso8601.date(from: "2026-09-13T10:15:00Z")!))
+    }
+
+    @Test func passedAtTheMinute() {
+        let now = iso8601.date(from: "2026-09-13T10:00:30Z")!
+        #expect(hasPassed(iso8601.date(from: "2026-09-13T09:59:59Z"), includingCurrentMinute: false, now: now))
+        #expect(!hasPassed(iso8601.date(from: "2026-09-13T10:00:00Z"), includingCurrentMinute: false, now: now))
+        #expect(hasPassed(iso8601.date(from: "2026-09-13T10:00:59Z"), includingCurrentMinute: true, now: now))
+        #expect(!hasPassed(nil, includingCurrentMinute: true, now: now))
+    }
+}
+
 @Suite("Extrémités d'itinéraire")
 struct TripEndpointTests {
     private let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE",

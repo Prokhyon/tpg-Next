@@ -39,13 +39,13 @@ struct LineMapView: View {
                                 let splitStopName = splitString(event.stopPointName, separator: ",")
                                 Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(event.latitude) ?? 0.0, longitude: Double(event.longitude) ?? 0.0), anchor: .center) {
                                     StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true), currentStop: event.sloid == currentStopSloid && event.sloid != "")
-                                        .opacity(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) ? 0.4 : 1)
+                                        .opacity(hasPassed(event.departureDate, includingCurrentMinute: false) ? 0.4 : 1)
                                 }
                             } else {
                                 let splitStopName = splitString(event.stopPointName, separator: ",")
                                 Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(event.latitude) ?? 0.0, longitude: Double(event.longitude) ?? 0.0), anchor: .center) {
                                     StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true), currentStop: event.sloid == currentStopSloid && event.sloid != "", size: 12)
-                                        .opacity(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) ? 0.4 : 1)
+                                        .opacity(hasPassed(event.departureDate, includingCurrentMinute: false) ? 0.4 : 1)
                                 }
                             }
                         }
@@ -147,7 +147,7 @@ struct LineMapView: View {
         return (0..<(lineEvents.count - 1)).compactMap { index in
             let coordinates = segments?[index] ?? [coordinate(of: lineEvents[index]), coordinate(of: lineEvents[index + 1])]
             guard coordinates.count >= 2 else { return nil }
-            return MapSegment(id: "\(source)-\(index)", coordinates: coordinates, passed: dateStringHasPassed(with: lineEvents[index].estimatedTime, equalReturnsTrue: false))
+            return MapSegment(id: "\(source)-\(index)", coordinates: coordinates, passed: hasPassed(lineEvents[index].departureDate, includingCurrentMinute: false))
         }
     }
 

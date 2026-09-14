@@ -484,9 +484,9 @@ struct TripView: View {
     }
     
     func timeChange() -> Int {
-        let tripEventsSorted = tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime })
-        let firstTime: Date = stringToDate(with: tripEventsSorted.first?.startTime ?? "") ?? Date()
-        let lastTime: Date = stringToDate(with: tripEventsSorted.last?.startTime ?? "") ?? Date()
+        let tripEventsSorted = tripManager.tripEvents.sortedByStart()
+        let firstTime: Date = tripEventsSorted.first?.startDate ?? Date()
+        let lastTime: Date = tripEventsSorted.last?.startDate ?? Date()
         let timeChange = lastTime.timeIntervalSince(firstTime)/60
         
         return Int(timeChange)

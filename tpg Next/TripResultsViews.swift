@@ -302,7 +302,7 @@ extension TripView {
         var body: some View {
             LazyVStack(spacing: 5) {
 
-                ForEach(tripManager.tripEvents.sorted(by: { $0.startTime < $1.startTime }), id: \.id) { event in
+                ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
                         NavigationLink {
                             FullTripView(fullTrip: event)
 //                                .environment(savedTripsModel)

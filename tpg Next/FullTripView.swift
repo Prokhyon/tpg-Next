@@ -59,7 +59,7 @@ struct FullTripView: View {
                                         }
                                         .foregroundStyle(.primary)
                                         .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!dateStringHasPassed(with: leg.legBoardEstimatedTime, equalReturnsTrue: false)) { view in
+                                        .if(!hasPassed(leg.boardDate, includingCurrentMinute: false)) { view in
                                             view.contextMenu {
                                                 NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef), stopID: leg.legBoardStopId)
                                             }
@@ -91,7 +91,7 @@ struct FullTripView: View {
                                         }
                                         .foregroundStyle(.primary)
                                         .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!dateStringHasPassed(with: leg.legAlightEstimatedTime, equalReturnsTrue: false)) { view in
+                                        .if(!hasPassed(leg.alightDate, includingCurrentMinute: false)) { view in
                                             view.contextMenu {
                                                 NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
                                             }

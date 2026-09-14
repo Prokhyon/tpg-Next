@@ -481,7 +481,7 @@ struct SmallStopView: View {
     private func DeparturesList() -> some View {
         VStack(spacing: 0) {
             if !stopManager.stopEvents.isEmpty {
-                ForEach(isQuay ? filteredEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }).prefix(3) : stopManager.stopEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }).prefix(3), id: \.id) { event in
+                ForEach(isQuay ? filteredEvents.sortedByDeparture().prefix(3) : stopManager.stopEvents.sortedByDeparture().prefix(3), id: \.id) { event in
                     NavigationLink {
                         LineView(stopEvent: event, currentStop: ShortStop(name: stop.name, sloid: sloidHarmonizer(code: stop.sloid)), currentLine: event.lineName)
                     } label: {

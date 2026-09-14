@@ -64,18 +64,14 @@ extension String {
     }
 }
 
-/// `true` si l'heure OJP est passée, à la minute près : les secondes sont ignorées.
+/// `hasPassed` pour une heure OJP en texte, quand on n'a pas le modèle sous la main.
 /// - Parameter equalReturnsTrue: la minute en cours compte déjà comme passée.
 public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = Date()) -> Bool {
-    guard let date = OJPDate.date(from: dateString) else {
-        if !dateString.isEmpty {
-            Log.data.error("Date illisible : \(dateString)")
-        }
-        return false
+    let date = OJPDate.date(from: dateString)
+    if date == nil && !dateString.isEmpty {
+        Log.data.error("Date illisible : \(dateString)")
     }
-    let minute = (date.timeIntervalSince1970 / 60).rounded(.down)
-    let currentMinute = (now.timeIntervalSince1970 / 60).rounded(.down)
-    return equalReturnsTrue ? minute <= currentMinute : minute < currentMinute
+    return hasPassed(date, includingCurrentMinute: equalReturnsTrue, now: now)
 }
 
 public func stringToDate(with dateString: String) -> Date? {
