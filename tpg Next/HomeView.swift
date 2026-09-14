@@ -221,6 +221,9 @@ struct HomeDepartures: View {
                         VStack(spacing: 0) {
                             Spacer(minLength: 0)
                             SmallStopView(stop: stop(index), isHome: isHome, testing: testing)
+                                // Hauteur naturelle, pas celle de la page : mesurée dans une page trop
+                                // basse, la carte se comprimait et la page ne grandissait jamais.
+                                .fixedSize(horizontal: false, vertical: true)
                                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                                     pageContentHeight = max(pageContentHeight, height)
                                 }

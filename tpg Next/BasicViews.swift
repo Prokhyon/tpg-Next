@@ -198,7 +198,10 @@ private struct BasicElementBackground: ViewModifier {
             // De l'air au-dessus et au-dessous quand le texte agrandi remplit la capsule.
             .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
             .frame(minHeight: minHeight)
-            .background { BasicElement(transparent: transparent, highlighted: highlighted) }
+            .background {
+                BasicElement(transparent: transparent, highlighted: highlighted,
+                             cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
+            }
     }
 }
 
@@ -208,9 +211,16 @@ struct BasicElement: View {
     var button = false
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
     var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
-    
+    /// Rectangle arrondi plutôt que capsule : les extrémités en demi-cercle d'une ligne très
+    /// haute (texte agrandi) mordaient sur son contenu.
+    var cornerRadius: CGFloat? = nil
+
+    private var shape: AnyShape {
+        cornerRadius.map { AnyShape(RoundedRectangle(cornerRadius: $0)) } ?? AnyShape(Capsule())
+    }
+
     var body: some View {
-        Capsule()
+        shape
             .fill(button ? .accent : .color1.opacity(transparent ? 0.5 : 1))
             .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
             .shadow(color: .customShadows.opacity(0.2), radius: 7)
