@@ -270,6 +270,9 @@ struct StopView: View {
                         }
                         .padding()
                         .foregroundStyle(.primary)
+                        // Plafonnés, comme les barres d'outils du système : en taille d'accessibilité,
+                        // ces boutons flottants masquaient le bas de la liste.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                     .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
