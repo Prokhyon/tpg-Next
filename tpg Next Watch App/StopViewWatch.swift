@@ -187,11 +187,11 @@ struct StopView: View {
             StopMenuView(showMenu: $showMenu, showTime: $showTime, viewLineSorted: $viewLineSorted)
         }
         .periodicRefresh(repeats: autoRefresh) { trigger in
-            // Au retour dans l'app, la liste repart de l'heure d'origine : l'heure
-            // demandée au premier affichage serait dépassée.
-            if trigger == .start {
-                timeRequest = timeRequest(for: previousLineTime)
-            }
+            // Chaque rafraîchissement repart de maintenant : les bus déjà partis quittent la
+            // liste. Ouvert depuis une course, l'arrêt part de son heure de passage, gardée
+            // tant qu'elle est à venir.
+            let origin = timeRequest(for: previousLineTime)
+            timeRequest = trigger == .start ? origin : max(Date(), origin)
             getStopEvents()
         }
     }
