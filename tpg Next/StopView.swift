@@ -10,6 +10,7 @@ import Combine
 import tpgNextFunc
 
 struct SortedStopEventsView: View {
+    @Environment(\.displayTime) private var now
     var key: String
     var filteredStopEvents: [String: [StopEvent]]
     var groupedStopEvents: [String: [StopEvent]]
@@ -40,14 +41,14 @@ struct SortedStopEventsView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
-                                    let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime)
+                                    let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
                                     NavigationLink {
                                         LineView(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: stopEvent.lineName)
                                     } label: {
                                     Group {
                                             DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                         }
-                                        .foregroundStyle(determineColor(for: stopEvent.estimatedTime))
+                                        .foregroundStyle(determineColor(for: stopEvent.estimatedTime, now: now))
                                         .padding(.horizontal, 17)
                                         .padding(.vertical, 5)
                                         .background(
@@ -59,7 +60,7 @@ struct SortedStopEventsView: View {
                                     }
                                     .padding(2)
                                     .contentShape(.contextMenuPreview, Capsule())
-                                    .if(!hasPassed(stopEvent.departureDate, includingCurrentMinute: false)) { view in
+                                    .if(!hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
                                         view.contextMenu {
                                             NotificationContextMenu(event: stopEvent, stopID: stopSloid)
                                         } preview: {
@@ -112,6 +113,7 @@ struct SortedStopEventsView: View {
 }
 
 struct StopView: View {
+    @Environment(\.displayTime) private var now
     @State private var stopManager = StopManager()
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(ItineraryViewModel.self) var tripViewModel
@@ -182,11 +184,11 @@ struct StopView: View {
                                                 LineView(stopEvent: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: event.lineName)
                                             }label: {
                                                 StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
-                                                    .foregroundStyle(determineColor(for: event.estimatedTime))
+                                                    .foregroundStyle(determineColor(for: event.estimatedTime, now: now))
                                             }
                                             .contentShape(.contextMenuPreview, Capsule())
                                             .padding(.horizontal, 15)
-                                            .if(!hasPassed(event.departureDate, includingCurrentMinute: false)) { view in
+                                            .if(!hasPassed(event.departureDate, includingCurrentMinute: false, now: now)) { view in
                                                 view.contextMenu {
                                                     NotificationContextMenu(event: event, stopID: stopSloid)
                                                 }

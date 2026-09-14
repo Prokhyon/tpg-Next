@@ -18,6 +18,7 @@ struct watch_tpg_Next_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tickingClock()
                 .accentColor(Color.primary)
                 .environment(stopStore)
                 .environment(watchFavorites)

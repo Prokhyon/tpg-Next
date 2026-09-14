@@ -59,6 +59,7 @@ struct FloatingLineTitle: View {
 }
 
 struct LineView: View {
+    @Environment(\.displayTime) private var now
     @State private var lineManager = LineManager()
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
@@ -113,7 +114,7 @@ struct LineView: View {
                                         .contentShape(.contextMenuPreview, Capsule())
                                         .padding(.horizontal, 15)
                                         .padding(.vertical, 5)
-                                        .if(!hasPassed(event.departureDate, includingCurrentMinute: false)) { view in
+                                        .if(!hasPassed(event.departureDate, includingCurrentMinute: false, now: now)) { view in
                                             view.contextMenu {
                                                 NotificationContextMenu(event: StopEvent(stopPointName: event.stopPointName, stopId: event.sloid, plannedQuay: event.plannedQuay, timetabledTime: event.timetabledTime, estimatedTime: event.estimatedTime, lineName: currentLine, origin: stopEvent.origin, destination: stopEvent.destination, transportType: stopEvent.transportType, operatorName: operatorName, journeyRef: stopEvent.journeyRef, operatingDayRef: stopEvent.operatingDayRef), stopID: event.sloid, itinerary: true)
                                             }
@@ -207,6 +208,7 @@ struct LineView: View {
 }
 
 struct LineBackground: View {
+    @Environment(\.displayTime) private var now
     var event: LineEvent
     var firstEventId: String?
     var lastEventId: String?
@@ -218,16 +220,16 @@ struct LineBackground: View {
             if event.id == firstEventId {
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: false) ? lineColor.opacity(0.3) : lineColor)
+                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? lineColor.opacity(0.3) : lineColor)
                     .position(x: 45, y: geometry.size.height / 4 * 3)
             } else if event.id == lastEventId {
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true) ? lineColor.opacity(0.3) : lineColor)
+                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? lineColor.opacity(0.3) : lineColor)
                     .position(x: 45, y: geometry.size.height / 4)
             } else {
-                var colorUp = hasPassed(event.departureDate, includingCurrentMinute: true)
-                let colorDown = hasPassed(event.departureDate, includingCurrentMinute: false)
+                var colorUp = hasPassed(event.departureDate, includingCurrentMinute: true, now: now)
+                let colorDown = hasPassed(event.departureDate, includingCurrentMinute: false, now: now)
                 
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
@@ -250,6 +252,7 @@ struct LineBackground: View {
 }
 
 struct LineEventElementView: View {
+    @Environment(\.displayTime) private var now
     var currentLine: String
     var operatorName: String
     var transportType: String
@@ -282,7 +285,7 @@ struct LineEventElementView: View {
                         SmallStopTitleView(stopName: eventName)
                     }
                     Spacer()
-                    let transportTime = departureDisplay(timetabled: timetabledTime, estimated: estimatedTime, showTime: showTime)
+                    let transportTime = departureDisplay(timetabled: timetabledTime, estimated: estimatedTime, showTime: showTime, at: now)
                     DepartureTimeView(transportTime, transportType: transportType, iconWidth: 10, showsIcon: displayIcon)
                         .padding(.vertical, 4)
                     if plannedQuay == "ignore" { // Étape d'itinéraire sans transport : pas de quai
@@ -294,7 +297,7 @@ struct LineEventElementView: View {
                     .foregroundStyle(.primary)
 //                .foregroundStyle(pastEventPossible ? determineColor(for: estimatedTime): .primary)
                     // Même règle que le trait de la ligne : sans temps réel, l'heure prévue.
-                    .opacity(pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false) ? 0.3 : 1)
+                    .opacity(pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false, now: now) ? 0.3 : 1)
                 .padding(.horizontal)
             )
             .padding(5)

@@ -11,6 +11,7 @@ import MapKit
 import tpgNextFunc
 
 struct SearchView: View {
+    @Environment(\.displayTime) private var now
     //    var path: ViewStateStack
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
@@ -34,7 +35,7 @@ struct SearchView: View {
     //    var futureTrips: [TripEvent] = []
     var futureTrips: [TripEvent] {
         savedTripsModel.savedTrips.sortedByStart().filter { trip in
-            !hasPassed(trip.startDate, includingCurrentMinute: false)
+            !hasPassed(trip.startDate, includingCurrentMinute: false, now: now)
         }
     }
     
@@ -95,7 +96,7 @@ struct SearchView: View {
                             ScrollView(.horizontal) {
                                 HStack {
                                     ForEach(futureTrips, id: \.self) { trip in
-                                        //                            if !hasPassed(trip.startDate, includingCurrentMinute: false) {
+                                        //                            if !hasPassed(trip.startDate, includingCurrentMinute: false, now: now) {
                                         NavigationLink {
                                             FullTripView(fullTrip: trip)
                                         } label: {
