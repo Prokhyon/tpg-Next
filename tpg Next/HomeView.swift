@@ -147,6 +147,8 @@ struct HomeDepartures: View {
     /// Position refusée ou introuvable : sans ça l'accueil restait sur « Chargement... ».
     @State private var locationFailed = false
     @State private var currentIndex = 0
+    /// Hauteur de la plus grande carte d'arrêt affichée : les pages grandissent avec le texte.
+    @State private var pageContentHeight: CGFloat = 0
     @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     var testing: Bool = false
 //    @State var autoRefresh = true
@@ -154,118 +156,35 @@ struct HomeDepartures: View {
     var body: some View {
                         VStack(spacing:0) {
                             if testing {
-                                ZStack {
-                                TabView(selection: $currentIndex.animation()) {
-                                    ForEach(0..<testStop.count, id: \.self) { index in
-                                        VStack(spacing:0) {
-                                            Spacer()
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                            SmallStopView(stop: testStop[index], isHome: true, testing: true)
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                .padding(.bottom, 20)
-//                                                        .padding(.top, 20)
-                                        }
-//                                                .background(Rectangle().fill(.red))
-                                        
-                                        .tag(index)
-                                    }
-                                }
-                                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-//                                        .background(Rectangle().fill(.red))
-                                    VStack {
-                                        HStack {
-                                            Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                .font(.title)
-                                                .bold()
-                                                .padding(.leading, 15)
-                                            Spacer()
-                                        }
-                                        Spacer()
-                                        Fancy3DotsIndexView(numberOfPages: testStop.count, currentIndex: currentIndex)
-                                    }
-                                }
-                                .frame(height: 320)
+                                departuresPager(count: testStop.count, isHome: true, testing: true) { testStop[$0] }
                             } else if !homeFavorites {
                                 if calculationSuccess {
                                     if !closestStops.isEmpty {
-                                        ZStack {
-                                        TabView(selection: $currentIndex.animation()) {
-                                            ForEach(0..<closestStops.count, id: \.self) { index in
-                                                VStack(spacing:0) {
-                                                    Spacer()
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                    SmallStopView(stop: closestStops[index], isHome: true)
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                        .padding(.bottom, 20)
-//                                                        .padding(.top, 20)
-                                                }
-//                                                .background(Rectangle().fill(.red))
-                                                
-                                                .tag(index)
-                                            }
-                                        }
-                                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-//                                        .background(Rectangle().fill(.red))
-                                            VStack {
-                                                HStack {
-                                                    Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                        .font(.title)
-                                                        .bold()
-                                                        .padding(.leading, 15)
-                                                    Spacer()
-                                                }
-                                                Spacer()
-                                                Fancy3DotsIndexView(numberOfPages: closestStops.count, currentIndex: currentIndex)
-                                            }
-                                        }
-                                        .frame(height: 320)
-                                        
+                                        departuresPager(count: closestStops.count, isHome: true, testing: false) { closestStops[$0] }
                                     } else {
-                                            Text("Pas d'arrêt à proximité trouvé.")
+                                        Text("Pas d'arrêt à proximité trouvé.")
                                             .padding(.top, 70)
                                     }
                                 } else if locationFailed {
-                                        Group {
-                                            if locationManager.lastFailure == .denied {
-                                                Text("Autorisez la localisation pour voir les départs à proximité.")
-                                            } else {
-                                                Text("Position introuvable pour l'instant.")
-                                            }
+                                    Group {
+                                        if locationManager.lastFailure == .denied {
+                                            Text("Autorisez la localisation pour voir les départs à proximité.")
+                                        } else {
+                                            Text("Position introuvable pour l'instant.")
                                         }
-                                        .multilineTextAlignment(.center)
-                                        .padding(.top, 70)
-                                        .padding(.horizontal)
+                                    }
+                                    .multilineTextAlignment(.center)
+                                    .padding(.top, 70)
+                                    .padding(.horizontal)
                                 } else {
-                                        Text("Chargement...")
+                                    Text("Chargement...")
                                         .padding(.top, 70)
                                 }
                             } else {
                                 if favoritesViewModel.favoriteStops.count > 0 {
-                                    ZStack {
-                                        TabView(selection: $currentIndex.animation()) {
-                                            ForEach(0..<min(3, favoritesViewModel.favoriteStops.count), id: \.self) { index in
-                                                let shortStop = favoritesViewModel.favoriteStops[index]
-                                                VStack(spacing:0) {
-                                                    Spacer()
-                                                    SmallStopView(stop: createStop(nomarret: shortStop.name, sloid: shortStop.sloid) , isHome: false, testing: testing)
-                                                        .padding(.bottom, 20)
-                                                }
-                                                .tag(index)
-                                            }
-                                        }
-                                        .frame(height: 320)
-                                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                                        VStack {
-                                            HStack {
-                                                Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                    .font(.title)
-                                                    .bold()
-                                                    .padding(.leading, 15)
-                                                Spacer()
-                                            }
-                                            Spacer()
-                                            Fancy3DotsIndexView(numberOfPages: min(3, favoritesViewModel.favoriteStops.count), currentIndex: currentIndex)
-                                        }
+                                    departuresPager(count: min(3, favoritesViewModel.favoriteStops.count), isHome: false, testing: testing) { index in
+                                        let shortStop = favoritesViewModel.favoriteStops[index]
+                                        return createStop(nomarret: shortStop.name, sloid: shortStop.sloid)
                                     }
                                 } else {
                                     Text("Pas d'arrets en favoris")
@@ -279,6 +198,42 @@ struct HomeDepartures: View {
         }
         .onChange(of: stopStore.isLoaded) {
             getLocation()
+        }
+    }
+
+    /// Les départs de quelques arrêts, un par page, sous le titre de la section.
+    ///
+    /// Le titre était superposé en haut de pages de hauteur fixe (320), les cartes collées en
+    /// bas : avec un texte agrandi, la carte montait sous le titre. Il est désormais au-dessus,
+    /// et les pages prennent la hauteur de la plus grande carte (au moins l'ancienne place).
+    private func departuresPager(count: Int, isHome: Bool, testing: Bool, stop: @escaping (Int) -> Stop) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(homeFavorites ? "Départs" : "Départs à proximité")
+                    .font(.title)
+                    .bold()
+                    .padding(.leading, 15)
+                Spacer()
+            }
+            ZStack(alignment: .bottom) {
+                TabView(selection: $currentIndex.animation()) {
+                    ForEach(0..<count, id: \.self) { index in
+                        VStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            SmallStopView(stop: stop(index), isHome: isHome, testing: testing)
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                                    pageContentHeight = max(pageContentHeight, height)
+                                }
+                                .padding(.bottom, 20)
+                        }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                // 320 moins la ligne du titre, désormais au-dessus : même place qu'avant.
+                .frame(height: max(286, pageContentHeight + 20))
+                Fancy3DotsIndexView(numberOfPages: count, currentIndex: currentIndex)
+            }
         }
     }
 
@@ -511,7 +466,7 @@ struct SmallStopView: View {
                 }
             }
         }
-        .frame(height: 170)
+        .heightGrowingWithText(170)
     }
     
     private func DeparturesTestList() -> some View {
@@ -520,7 +475,7 @@ struct SmallStopView: View {
             StopEventView(event: StopEvent(stopPointName: "", stopId: "2", plannedQuay: "b", timetabledTime: "2025/09/24T17:49:00Z", estimatedTime: "", lineName: "12", origin: "", destination: "Thônex, Moillesulaz", transportType: "", operatorName: "Transports Publics Genevois", journeyRef: "1", operatingDayRef: ""), showTime: false, mapVersion: !isHome)
             StopEventView(event: StopEvent(stopPointName: "", stopId: "3", plannedQuay: "c", timetabledTime: "2025/09/24T17:50:00Z", estimatedTime: "", lineName: "17", origin: "", destination: "Lancy-Bachet, gare", transportType: "", operatorName: "Transports Publics Genevois", journeyRef: "1", operatingDayRef: ""), showTime: false, mapVersion: !isHome)
         }
-        .frame(height: 170)
+        .heightGrowingWithText(170)
     }
     
     private func refreshDepartures() {

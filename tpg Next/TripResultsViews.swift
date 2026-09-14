@@ -224,16 +224,13 @@ extension TripView {
                                 }
                             } label: {
 //                                RoundedRectangle(cornerRadius: 20)
-                                BasicElement()
-                                    .frame(height: 45)
-                                    .overlay(
                                         HStack {
                                             Text("Utiliser la position actuelle")
                                             Spacer()
                                             Image(systemName: "location.circle").font(.title2).foregroundStyle(.accent)
                                         }
                                             .padding(.horizontal, 20)
-                                    )
+                                            .basicElementBackground(minHeight: 45)
                                     .padding(.horizontal, 30)
                             }
                             HStack {

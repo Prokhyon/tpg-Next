@@ -33,9 +33,10 @@ public struct StopNameView: View {
         public static let header = Style(single: .title3, locality: .callout, name: .title2)
         /// Carte d'arrêt de l'accueil et des cartes.
         public static let card = Style(single: .title3, locality: .subheadline, name: .title3, icon: .headline)
-        /// Ligne de liste.
+        /// Ligne de liste. Les limites de lignes ne jouent qu'avec un texte agrandi : sans elles,
+        /// un nom se coupait presque syllabe par syllabe au lieu de rapetisser.
         public static let row = Style(single: .headline, locality: .caption, name: .callout,
-                                      localityScale: 0.4, nameLineLimit: 1)
+                                      localityScale: 0.4, singleLineLimit: 2, localityLineLimit: 1, nameLineLimit: 1)
         /// Montre.
         public static let compact = Style(single: .headline, locality: .caption2, name: .caption,
                                           singleScale: 0.2, localityScale: 0.2, nameScale: 0.3,

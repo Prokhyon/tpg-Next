@@ -41,10 +41,8 @@ struct StopEventView: View  {
 //                .stroke(.borderColor.opacity(1), lineWidth: 1)
 //                .shadow(color: .customShadows.opacity(0.2), radius: 10)
             //            .shadow(color: LineColors.lineColor(for: event.lineName, operatorName: event.operatorName).opacity(0.3), radius: 3)
-            BasicElement(transparent: mapVersion ,highlighted: event.journeyRef == (previousLineRef ?? ""))
-//            .shadow(color: LineColors.lineColor(for: event.lineName, operatorName: event.operatorName).opacity(0.3), radius: 3)
-                .frame(height: 50)
-                .overlay(content)
+            content
+                .basicElementBackground(minHeight: 50, transparent: mapVersion, highlighted: event.journeyRef == (previousLineRef ?? ""))
                 .padding(5)
     }
 }

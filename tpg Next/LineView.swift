@@ -77,6 +77,8 @@ struct LineView: View {
     @State private var showTime = false
     @State private var lineEvents: [LineEvent] = []
     @State private var busIsHere: Bool = false
+    /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
+    @State private var titleHeight: CGFloat = 0
 
     var body: some View {
             GeometryReader { geometry in
@@ -125,7 +127,7 @@ struct LineView: View {
                                     }
                                 }
                             }
-                            .contentMargins(.top, 95.0, for: .automatic)
+                            .contentMargins(.top, max(95.0, titleHeight + 10), for: .automatic)
                             .contentMargins(.bottom, appRequirementsClass.version26 ? 0.0 : 60, for: .automatic)
                             .refreshable {
                                 getLineEvents(for: stopEvent)
@@ -142,6 +144,7 @@ struct LineView: View {
                         HStack {
                         FloatingLineTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
                             .offset(x: -50)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
                             Spacer()
                         }
                         Spacer()
@@ -272,11 +275,6 @@ struct LineEventElementView: View {
 //            .stroke(currentStop ? .accent : .border, lineWidth: 1)
 //            .fill(.thinMaterial)
 //            .fill(.color1)
-        BasicElement(highlighted: currentStop)
-            .frame(height: 45)
-//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-//            .shadow(color: .customShadows.opacity(0.2), radius: 10)
-            .overlay(
                 HStack {
                     StopIcon(color: LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true))
                     if geoPositionDisplay {
@@ -299,8 +297,8 @@ struct LineEventElementView: View {
                     // Même règle que le trait de la ligne : sans temps réel, l'heure prévue.
                     .opacity(pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false, now: now) ? 0.3 : 1)
                 .padding(.horizontal)
-            )
-            .padding(5)
+                .basicElementBackground(minHeight: 45, highlighted: currentStop)
+                .padding(5)
     }
 }
 

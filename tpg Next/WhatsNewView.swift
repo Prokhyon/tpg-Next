@@ -27,7 +27,7 @@ struct WhatsNew {
         items: [
             Item(systemImage: "widget.medium",
                  title: "Widgets",
-                 description: "Affichez les prochains départs d'un arrêt proche ou sélectionné directement sur l'écran d'accueil"),
+                 description: "Affichez les prochains départs d'un arrêt directement sur l'écran d'accueil"),
             Item(systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill",
                  title: "Tracé de ligne",
                  description: "Les tracés sur les cartes suivent désormais les routes"),
@@ -53,6 +53,8 @@ struct WhatsNewView: View {
                     ForEach(whatsNew.items) { item in
                         HStack(alignment: .top, spacing: 15) {
                             Image(systemName: item.systemImage)
+//                                .resizable()
+//                                .aspectRatio(contentMode: .fit)
                                 .font(.title)
                                 .foregroundStyle(.accent)
                                 .frame(width: 45)

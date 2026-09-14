@@ -122,6 +122,10 @@ public func parseJourneyEvents(from data: Data, completion: @escaping ([LineEven
 public struct BusLineIcon: View {
     let lineName: String
     let operatorName: String
+    /// Plafond de hauteur et largeur minimale du badge : identiques à la taille de texte
+    /// normale, ils grandissent avec elle (le numéro était écrasé à grande taille).
+    @ScaledMetric private var maxHeight: CGFloat = 25
+    @ScaledMetric private var minWidth: CGFloat = 35
     
     public init(lineName: String, operatorName: String) {
         self.lineName = lineName
@@ -134,7 +138,7 @@ public struct BusLineIcon: View {
                    
                    .padding(.horizontal, 8)
                    .padding(.vertical, 4)
-                   .frame(minWidth: 35, maxHeight: 25)
+                   .frame(minWidth: minWidth, maxHeight: maxHeight)
                    .background(
 //                       RoundedRectangle(cornerRadius: 10)
                     Capsule()
