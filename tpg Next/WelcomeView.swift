@@ -21,9 +21,9 @@ struct WelcomeView: View {
     var body: some View {
         VStack {
                 switch page {
-                case .page1: WelcomePage1(page: $page, viewingWelcome: $viewingWelcome).transition(.opacity).padding()
-                case .page2: WelcomePage2(page: $page, viewingWelcome: $viewingWelcome).transition(.opacity).padding()
-                case .page3: WelcomePage3(page: $page, viewingWelcome: $viewingWelcome).transition(.opacity).padding()
+                case .page1: WelcomePage1(page: $page, viewingWelcome: $viewingWelcome).padding().scrollingWhenTooTall().transition(.opacity)
+                case .page2: WelcomePage2(page: $page, viewingWelcome: $viewingWelcome).padding().scrollingWhenTooTall().transition(.opacity)
+                case .page3: WelcomePage3(page: $page, viewingWelcome: $viewingWelcome).padding().scrollingWhenTooTall().transition(.opacity)
                 }
             HStack(spacing: 10) {
                 Spacer()
@@ -72,25 +72,26 @@ struct WelcomeView: View {
                     }
                 } label: {
                     if locationManager.locationStatus == .authorizedWhenInUse || locationManager.locationStatus == .authorizedAlways {
-                        BasicElement()
-                            .frame(height: 40)
-                            .overlay(HStack(spacing: 10) {
-                                Text("Accès autorisé")
-                                Image(systemName: "checkmark")
-                            }.foregroundStyle(.accent))
+                        HStack(spacing: 10) {
+                            Text("Accès autorisé")
+                            Image(systemName: "checkmark")
+                        }
+                        .foregroundStyle(.accent)
+                        .frame(maxWidth: .infinity)
+                        .basicElementBackground(minHeight: 40)
                     } else if locationManager.locationStatus == .denied {
-                        BasicElement()
-                            .frame(height: 40)
-                            .overlay(HStack(spacing: 10) {
-                                Text("Accès refusé")
-                                Image(systemName: "xmark")
-                            }.foregroundStyle(.red))
+                        HStack(spacing: 10) {
+                            Text("Accès refusé")
+                            Image(systemName: "xmark")
+                        }
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity)
+                        .basicElementBackground(minHeight: 40)
                     } else {
-                    BasicElement(button: true)
-                            .frame(height: 40)
-                            .overlay(Text("Choisir")
-                                .foregroundStyle(.white)
-                            )
+                    Text("Choisir")
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .basicElementBackground(minHeight: 40, button: true)
                     }
                 }
                 Spacer()
@@ -110,24 +111,27 @@ struct WelcomeView: View {
                 } label: {
                     if notificationAuthorizationAsked {
                         if notificationManager.isNotificationAuthorized {
-                            BasicElement()
-                                .frame(height: 40)
-                                .overlay(HStack(spacing: 10) {
-                                    Text("Accès autorisé")
-                                    Image(systemName: "checkmark")
-                                }.foregroundStyle(.accent))
+                            HStack(spacing: 10) {
+                                Text("Accès autorisé")
+                                Image(systemName: "checkmark")
+                            }
+                            .foregroundStyle(.accent)
+                            .frame(maxWidth: .infinity)
+                            .basicElementBackground(minHeight: 40)
                         } else if !notificationManager.isNotificationAuthorized {
-                            BasicElement()
-                                .frame(height: 40)
-                                .overlay(HStack(spacing: 10) {
-                                    Text("Accès refusé")
-                                    Image(systemName: "xmark")
-                                }.foregroundStyle(.red))
+                            HStack(spacing: 10) {
+                                Text("Accès refusé")
+                                Image(systemName: "xmark")
+                            }
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity)
+                            .basicElementBackground(minHeight: 40)
                         }
                     } else {
-                        BasicElement(button: true)
-                            .frame(height: 40)
-                            .overlay(Text("Choisir").foregroundStyle(.white))
+                        Text("Choisir")
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .basicElementBackground(minHeight: 40, button: true)
                     }
                 }
                 Spacer()
@@ -140,7 +144,7 @@ struct WelcomeView: View {
                         } label: {
                             Text("Suivant").foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 30)
+                                .frame(minHeight: 30)
                         }
                         .buttonStyle(.glassProminent)
                         .disabled(notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined ? false : true)
@@ -152,7 +156,7 @@ struct WelcomeView: View {
                         } label: {
                             Text("Suivant").foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 30)
+                                .frame(minHeight: 30)
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(notificationAuthorizationAsked && locationManager.locationStatus != .notDetermined ? false : true)
@@ -243,7 +247,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Suivant").foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 30)
+                            .frame(minHeight: 30)
                     }
                     .buttonStyle(.glassProminent)
                 } else {
@@ -254,7 +258,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Suivant").foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 30)
+                            .frame(minHeight: 30)
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -393,7 +397,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Terminer").foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 30)
+                            .frame(minHeight: 30)
                     }
                     .buttonStyle(.glassProminent)
                 } else {
@@ -404,7 +408,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Terminer").foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 30)
+                            .frame(minHeight: 30)
                     }
                     .buttonStyle(.borderedProminent)
                 }

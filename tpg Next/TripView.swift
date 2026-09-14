@@ -294,7 +294,7 @@ struct TripView: View {
                                     if focusField != .arrival {
                                         HStack {
                                     TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
-                                        .frame(height: 40)
+                                        .heightGrowingWithText(40)
                                         .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
 
                                     TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
@@ -307,7 +307,7 @@ struct TripView: View {
                                     if focusField != .departure {
                                         HStack {
                                     TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
-                                        .frame(height: 40)
+                                        .heightGrowingWithText(40)
                                         .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
 
                                     TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
@@ -381,11 +381,16 @@ struct TripView: View {
                                             viewModel.tripDone = true
                                         }
                                     } label: {
-                                        Capsule()
-                                            .fill(viewModel.canSearch ? .accent : .gray)
-                                            .shadow(color: Color.customShadows, radius: 1, y: 0.8)
-                                            .frame(width: 110, height: 45)
-                                            .overlay(Text("Rechercher").foregroundStyle(.white))
+                                        // Au moins 110 × 45 : le bouton s'élargit avec un texte agrandi.
+                                        Text("Rechercher")
+                                            .foregroundStyle(.white)
+                                            .padding(.horizontal, 12)
+                                            .frame(minWidth: 110, minHeight: 45)
+                                            .background {
+                                                Capsule()
+                                                    .fill(viewModel.canSearch ? .accent : .gray)
+                                                    .shadow(color: Color.customShadows, radius: 1, y: 0.8)
+                                            }
                                     }
                                     .disabled(!viewModel.canSearch)
                                 }

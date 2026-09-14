@@ -138,7 +138,7 @@ struct MapView: View {
                             if let selectedResult {
                                 if isQuaySloid(selectedResult) {
                                     SmallStopView(stop: createStop(nomarret: selectedStop?.name, sloid: selectedResult), quay: returnQuayFromId(id: selectedResult)?.quayName ?? "?", isQuay: true, stopEventNumber: filteredQuays.count*10, testing: !autoRefresh)
-                                        .frame(height: 250)
+                                        .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
                                         .transition(.opacity)
                                         .onAppear {
@@ -149,7 +149,7 @@ struct MapView: View {
                                         }
                                 } else if let stop = stopStore.findStop(id: selectedResult) {
                                     SmallStopView(stopManager: stopManager, stop: stop, stopEventNumber: 20, testing: !autoRefresh)
-                                        .frame(height: 250)
+                                        .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
                                         .transition(.opacity)
                                 }

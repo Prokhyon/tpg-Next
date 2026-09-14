@@ -66,7 +66,7 @@ struct FavoriteView: View {
                 }
                 LazyVGrid(columns: columns, spacing: 8) {
                     if favoritesViewModel.favoriteStops.count > maxRows*2 {
-                        let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(maxRows * columns.count - (isExpanded ? 0 : 1)))
+                        let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(max(0, maxRows * columns.count - (isExpanded ? 0 : 1))))
                         ForEach(favorites, id: \.self) { stop in
                             FavoriteStopView(stop: stop)
                         }
@@ -509,7 +509,7 @@ struct HomeView: View {
                                     .font(.title)
                                     .bold()
                                     .padding(.leading, 15)
-                                    .frame(height: 20.0)
+                                    .heightGrowingWithText(20)
                                 Spacer()
 //                                Button(action: {
 //                                    self.showSettings.toggle()
@@ -525,7 +525,10 @@ struct HomeView: View {
                                 .padding(.trailing, 15)
                             }
                             
-                            FavoriteView(isExpanded: $isExpanded, maxRows: Int((UIScreen.main.bounds.height/168).rounded()))//168 used to obtain the right amount of rows based on the screen size. 3 for the SE, 4 for the mini and 5 for regular size.
+                            // Une rangée de favoris pour 168 points de hauteur de fenêtre : 3 à 5 selon l'iPhone, au moins 1
+                            // (au premier passage, la fenêtre mesure 0 et `prefix(-1)` plantait). La fenêtre
+                            // et non l'écran (`UIScreen.main`) : sur iPad ou en multifenêtre, elle est plus petite.
+                            FavoriteView(isExpanded: $isExpanded, maxRows: max(1, Int(((geometry.size.height + geometry.safeAreaInsets.top + geometry.safeAreaInsets.bottom) / 168).rounded())))
                             VStack(spacing: 0) {
 
                                 
@@ -535,7 +538,8 @@ struct HomeView: View {
                             Spacer()
                         }
                     }
-                    .scrollDisabled(isExpanded ? false : true)
+                    // Toujours défilable : bloqué tant que la grille des favoris n'était pas dépliée,
+                    // l'accueil cachait ses départs avec beaucoup de favoris ou un texte agrandi.
                     VStack {
                         BackdropBlurView(radius: 5)
                             .frame(height: geometry.safeAreaInsets.top)

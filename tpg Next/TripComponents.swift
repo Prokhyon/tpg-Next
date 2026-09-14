@@ -11,6 +11,8 @@ import tpgNextFunc
 
 struct TripElementView: View {
     @Environment(\.displayTime) private var now
+    /// Hauteur de la rangée de badges : 30 à la taille normale, plus avec un texte agrandi.
+    @ScaledMetric private var iconRowHeight: CGFloat = 30
     var event: TripEvent
     var showTime: Bool = true
     var body: some View {
@@ -54,7 +56,7 @@ struct TripElementView: View {
                     }
 
                 }
-                .frame(minWidth: 200, maxHeight: 30)
+                .frame(minWidth: 200, maxHeight: iconRowHeight)
                     Spacer()
                 let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime, at: now)
                 DepartureTimeView(endTime, transportType: event.legs.last?.transportTypeName ?? "Bus", iconWidth: 55)
@@ -111,63 +113,42 @@ struct CustomPicker: View {
     var name = "shape"
     var animation: Namespace.ID
     @State var firstSelected: Bool = true
+
+    /// Une option : la pastille de l'option choisie glisse de l'une à l'autre et suit la hauteur
+    /// du texte (elle restait à `height`, et un texte agrandi en débordait).
+    private func pickerOption(isSelected: Bool, icon: String?, title: String, select: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation { select() }
+        } label: {
+            HStack {
+                Spacer()
+                if let icon {
+                    Image(systemName: icon)
+                }
+                Text(title)
+                Spacer()
+            }
+            .scaleEffect(isSelected ? 1 : 0.9)
+            .frame(minHeight: height)
+        }
+        .background {
+            if isSelected {
+                BasicElement()
+                    .matchedGeometryEffect(id: name, in: animation)
+            }
+        }
+    }
+
     var body: some View {
             HStack {
-                ZStack {
-                        if firstSelected {
-//                            RoundedRectangle(cornerRadius: 20)
-                            BasicElement()
-                                .frame(height: height)
-                                .matchedGeometryEffect(id: name, in: animation)
-                        }
-                    Button {
-                                            withAnimation {
-                                                firstSelected = true
-                                            }
-                    } label: {
-                        
-                        HStack {
-                            Spacer()
-                            if firstIcon != nil {
-                                Image(systemName: firstIcon!)
-                            }
-                            Text(firstOption)
-                            Spacer()
-                        }
-                        .scaleEffect(firstSelected ?  1 : 0.9)
-                    }
-                }
-                ZStack {
-                        if !firstSelected {
-//                            RoundedRectangle(cornerRadius: 20)
-                            BasicElement()
-                                .frame(height: height)
-                                .matchedGeometryEffect(id: name, in: animation)
-                        }
-                    Button {
-                                            withAnimation {
-                                                firstSelected = false
-                                            }
-                    } label: {
-                        HStack {
-                            Spacer()
-                            if secondIcon != nil {
-                                Image(systemName: secondIcon!)
-                            }
-                            Text(secondOption)
-                            Spacer()
-                        }
-                        .scaleEffect(!firstSelected ?  1 : 0.9)
-                    }
-                }
+                pickerOption(isSelected: firstSelected, icon: firstIcon, title: firstOption) { firstSelected = true }
+                pickerOption(isSelected: !firstSelected, icon: secondIcon, title: secondOption) { firstSelected = false }
             }
             .foregroundStyle(.primary)
             .background {
-//                RoundedRectangle(cornerRadius: 20)
                 Capsule()
                     .stroke(.gray.opacity(0.3), lineWidth: 2)
-                    .frame(height: height-3)
-//                    .padding(5)
+                    .padding(.vertical, 1.5)
             }
             .onAppear {
                 firstSelected = !secondSelected

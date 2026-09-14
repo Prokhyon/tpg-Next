@@ -161,12 +161,21 @@ extension View {
     /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
     /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
     /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
-    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false) -> some View {
-        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted))
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, button: Bool = false) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, button: button))
     }
 }
 
 extension View {
+    /// La vue telle quelle si elle tient en hauteur, dans un `ScrollView` sinon (texte agrandi,
+    /// petit écran). Un `ScrollView` permanent écraserait ses `Spacer` et changerait sa mise en page.
+    func scrollingWhenTooTall() -> some View {
+        ViewThatFits(in: .vertical) {
+            self
+            ScrollView { self }
+        }
+    }
+
     /// Hauteur fixe à la taille de texte normale, minimale au-delà : le contenu agrandi
     /// étend alors le cadre au lieu de déborder.
     func heightGrowingWithText(_ height: CGFloat) -> some View {
@@ -192,6 +201,7 @@ private struct BasicElementBackground: ViewModifier {
     let minHeight: CGFloat
     let transparent: Bool
     let highlighted: Bool
+    let button: Bool
 
     func body(content: Content) -> some View {
         content
@@ -199,7 +209,7 @@ private struct BasicElementBackground: ViewModifier {
             .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
             .frame(minHeight: minHeight)
             .background {
-                BasicElement(transparent: transparent, highlighted: highlighted,
+                BasicElement(transparent: transparent, highlighted: highlighted, button: button,
                              cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
             }
     }
