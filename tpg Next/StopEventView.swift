@@ -10,6 +10,7 @@ import Combine
 import tpgNextFunc
 
 struct StopEventView: View  {
+    @Environment(\.displayTime) private var now
     var event: StopEvent
     var showTime: Bool
     var previousLineRef: String?
@@ -17,7 +18,7 @@ struct StopEventView: View  {
     
     var body: some View {
         let content = HStack {
-            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime)
+            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
             BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
             Image(systemName: "arrow.right").font(.caption)
             SmallStopTitleView(stopName: event.destination)

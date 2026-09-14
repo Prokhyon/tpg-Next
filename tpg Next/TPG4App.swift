@@ -46,6 +46,7 @@ struct TPG4App: App {
         WindowGroup {
 //            StoryboardView()
             ContentView()
+                .tickingClock()
                 .environment(stopStore)
                 .environment(favoritesViewModel)
                 .environment(appRequirementsClass)

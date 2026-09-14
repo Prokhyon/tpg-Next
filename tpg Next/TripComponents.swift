@@ -10,12 +10,13 @@ import MapKit
 import tpgNextFunc
 
 struct TripElementView: View {
+    @Environment(\.displayTime) private var now
     var event: TripEvent
     var showTime: Bool = true
     var body: some View {
         VStack(alignment: .center) {
             HStack {
-                let startTime = departureDisplay(timetabled: event.startTime, estimated: event.startTime, showTime: showTime)
+                let startTime = departureDisplay(timetabled: event.startTime, estimated: event.startTime, showTime: showTime, at: now)
                 DepartureTimeView(startTime, transportType: event.legs.first?.transportTypeName ?? "Bus", iconWidth: 55)
                     .frame(width: 55)
                     .minimumScaleFactor(0.5)
@@ -55,7 +56,7 @@ struct TripElementView: View {
                 }
                 .frame(minWidth: 200, maxHeight: 30)
                     Spacer()
-                let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime)
+                let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime, at: now)
                 DepartureTimeView(endTime, transportType: event.legs.last?.transportTypeName ?? "Bus", iconWidth: 55)
                     .frame(width: 55)
                     .minimumScaleFactor(0.5)

@@ -186,8 +186,9 @@ public func startsWithVowel(_ word: String) -> Bool {
     return vowels.contains(firstChar)
 }
 
-public func determineColor(for time: String) -> Color {
-    if dateStringHasPassed(with: time, equalReturnsTrue: false) {
+/// - Parameter now: l'heure d'affichage (`\.displayTime`), pour que la couleur suive l'horloge.
+public func determineColor(for time: String, now: Date = Date()) -> Color {
+    if dateStringHasPassed(with: time, equalReturnsTrue: false, now: now) {
         return Color.gray
     } else {
         return Color.primary

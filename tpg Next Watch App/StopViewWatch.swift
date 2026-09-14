@@ -21,6 +21,7 @@ struct SmallStopTitleView: View {
 }
 
 struct StopEventView: View  {
+    @Environment(\.displayTime) private var now
     var event: StopEvent
     var showTime: Bool
     var previousLineRef: String?
@@ -28,7 +29,7 @@ struct StopEventView: View  {
     var body: some View {
 //                .stroke(event.journeyRef == (previousLineRef ?? "") ? .accent : .clear, lineWidth: 3)
         VStack {
-            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime)
+            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
             HStack {
                 BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 Image(systemName: "arrow.right").font(.caption)
@@ -51,6 +52,7 @@ struct StopEventView: View  {
 }
 
 struct StopView: View {
+    @Environment(\.displayTime) private var now
     @State private var stopManager = StopManager()
     @State private var stopEvents: [StopEvent] = []
     @Environment(StopStore.self) var stopStore
@@ -220,7 +222,7 @@ struct StopView: View {
     func determineColor(for event: StopEvent) -> Color {
         /*if event.journeyRef == previousLineRef {
             return Color.accentColor
-        } else*/ if hasPassed(event.departureDate, includingCurrentMinute: false) {
+        } else*/ if hasPassed(event.departureDate, includingCurrentMinute: false, now: now) {
             return Color.gray
         } else {
             return Color.primary
@@ -235,6 +237,7 @@ struct StopView: View {
 
 
 struct StopSortedView: View {
+    @Environment(\.displayTime) private var now
     var lineName: String
     var destination: String
     var currentStopName: String
@@ -247,7 +250,7 @@ struct StopSortedView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
                         ForEach(stopEventsList, id: \.id) { stopEvent in
-                            let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime)
+                            let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
                             Button(action: {
                                 //define navigation
                             }) {
