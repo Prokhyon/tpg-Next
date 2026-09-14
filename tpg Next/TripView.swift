@@ -49,6 +49,9 @@ struct TripView: View {
     @State private var locationViewModel = LocationSearchViewModel()
     @State var locationManager = LocationManager()
     @Environment(RecentSearch.self) var recentSearchModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Hauteur des champs et de la carte de recherche : les listes de résultats s'arrêtent au-dessus.
+    @State private var searchOverlayHeight: CGFloat = 0
 
     
     @FocusState var focusField: TripField?
@@ -116,13 +119,14 @@ struct TripView: View {
                     .scrollEdgeEffectStyle(.soft, for: .top)
 //                    .scrollDismissesKeyboard(.immediately)
 //                    .contentMargins(.top, 320.0, for: .automatic)
-                    .contentMargins(.bottom, (results == .tripResults) ? 340 : (focusField != nil) ? 70 : 270, for: .automatic)
+                    // Au moins la hauteur des champs et de la carte de recherche, qui grandit avec le texte.
+                    .contentMargins(.bottom, (results == .tripResults) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
                 } else {
                     ScrollView {
                         resultsView
                     }
                     .scrollDismissesKeyboard(.immediately)
-                    .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? 340 : (focusField != nil) ? 70 : 270 , for: .automatic)
+                    .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
                     .contentMargins(.bottom, appRequirementsClass.version26 ? 0: 75, for: .automatic)
                 }
             }
@@ -295,10 +299,12 @@ struct TripView: View {
                                         HStack {
                                     TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
                                         .heightGrowingWithText(40)
+                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                         .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
 
                                     TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
                                         .frame(width: 40, height: 40)
+                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                         .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
                                         }
                                         .padding(.vertical, focusField == .departure ? 10 : 0)
@@ -308,10 +314,12 @@ struct TripView: View {
                                         HStack {
                                     TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
                                         .heightGrowingWithText(40)
+                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                         .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
 
                                     TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
                                         .frame(width: 40, height: 40)
+                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                         .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
                                         }
                                         .padding(.vertical, focusField == .arrival ? 10 : 0)
@@ -321,6 +329,7 @@ struct TripView: View {
                                 if focusField == nil {
                                     switchButton
                                         .frame(width: 60, height: 60)
+                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                         .tpgSurface(interactive: true)
                                 }
                             }
@@ -329,19 +338,35 @@ struct TripView: View {
                         
                         let bottomTripSearch = VStack(spacing: 15) {
                             
-                            HStack {
-                                DatePicker(selection: Bindable(viewModel).selectedTime) {
-                                    Text("Date et heure:")
+                            let resetTimeButton = Button(action: {
+                                viewModel.selectedTime = Date()
+                                viewModel.tripDone = false
+                                timeAnimate.toggle()
+                            }) {
+                                Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                                    .symbolEffect(.rotate, value: timeAnimate)
+                                    .font(.title2)
+                            }
+                            // Jusqu'à la taille de texte par défaut, le libellé reste à gauche (sur deux
+                            // lignes au besoin) ; au-delà, il passe au-dessus : il s'étirait sinon à une
+                            // ou deux lettres par ligne.
+                            if dynamicTypeSize <= .large {
+                                HStack {
+                                    DatePicker(selection: Bindable(viewModel).selectedTime) {
+                                        Text("Date et heure:")
+                                    }
+                                    .padding(.trailing, 5)
+                                    resetTimeButton
                                 }
-                                .padding(.trailing, 5)
-                                Button(action: {
-                                    viewModel.selectedTime = Date()
-                                    viewModel.tripDone = false
-                                    timeAnimate.toggle()
-                                }) {
-                                    Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                                        .symbolEffect(.rotate, value: timeAnimate)
-                                        .font(.title2)
+                            } else {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text("Date et heure:")
+                                    HStack {
+                                        DatePicker("Date et heure:", selection: Bindable(viewModel).selectedTime)
+                                            .labelsHidden()
+                                        Spacer()
+                                        resetTimeButton
+                                    }
                                 }
                             }
                             
@@ -406,11 +431,15 @@ struct TripView: View {
                             })
                         if focusField == nil {
                             bottomTripSearch
+                                // Plafonnée comme les barres d'outils : en taille d'accessibilité, elle
+                                // couvrait l'écran.
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                 .tpgSurface(in: .rect(cornerRadius: 35))
                                 .padding(.horizontal)
                                 .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
                         }
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { searchOverlayHeight = $0 }
 //                    .shadow(color: .black.opacity(0.08), radius: 15)
                     .background {
                         ZStack {
