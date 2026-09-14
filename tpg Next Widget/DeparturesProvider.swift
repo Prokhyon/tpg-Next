@@ -106,7 +106,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
             guard let events = await fetchDepartures(for: target.stop) else {
                 return [DeparturesEntry(date: now, stop: target.stop, events: [], status: .networkError, distance: target.distance)]
             }
-            let sorted = events.sorted { $0.estimatedTime < $1.estimatedTime }
+            let sorted = events.sortedByDeparture()
             guard !sorted.isEmpty else {
                 return [DeparturesEntry(date: now, stop: target.stop, events: [], status: .noDepartures, distance: target.distance)]
             }
@@ -127,7 +127,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     /// Un départ reste affiché une demi-minute après son heure, comme dans l'app.
     private func hasDeparted(_ event: StopEvent, at date: Date) -> Bool {
-        guard let departure = OJPDate.date(from: event.estimatedTime.isEmpty ? event.timetabledTime : event.estimatedTime) else {
+        guard let departure = event.departureDate else {
             return false
         }
         return departure.addingTimeInterval(30) < date

@@ -135,7 +135,7 @@ struct StopView: View {
                             }
                         }
                         .padding(.leading, 10)
-                        ForEach(allFilteredStopEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }), id: \.id) { event in
+                        ForEach(allFilteredStopEvents.sortedByDeparture(), id: \.id) { event in
                             
                             Button(action: {
                                 //define navigation
@@ -220,7 +220,7 @@ struct StopView: View {
     func determineColor(for event: StopEvent) -> Color {
         /*if event.journeyRef == previousLineRef {
             return Color.accentColor
-        } else*/ if dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) {
+        } else*/ if hasPassed(event.departureDate, includingCurrentMinute: false) {
             return Color.gray
         } else {
             return Color.primary

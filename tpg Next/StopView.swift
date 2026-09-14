@@ -59,7 +59,7 @@ struct SortedStopEventsView: View {
                                     }
                                     .padding(2)
                                     .contentShape(.contextMenuPreview, Capsule())
-                                    .if(!dateStringHasPassed(with: stopEvent.estimatedTime, equalReturnsTrue: false)) { view in
+                                    .if(!hasPassed(stopEvent.departureDate, includingCurrentMinute: false)) { view in
                                         view.contextMenu {
                                             NotificationContextMenu(event: stopEvent, stopID: stopSloid)
                                         } preview: {
@@ -154,7 +154,7 @@ struct StopView: View {
             }
     }
     var allFilteredStopEvents: [StopEvent] {
-        filteredStopEvents.values.flatMap { $0 }.sorted(by: { $0.estimatedTime < $1.estimatedTime })
+        filteredStopEvents.values.flatMap { $0 }.sortedByDeparture()
     }
     
     @State private var selectedFilters: Set<String> = []
@@ -186,7 +186,7 @@ struct StopView: View {
                                             }
                                             .contentShape(.contextMenuPreview, Capsule())
                                             .padding(.horizontal, 15)
-                                            .if(!dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false)) { view in
+                                            .if(!hasPassed(event.departureDate, includingCurrentMinute: false)) { view in
                                                 view.contextMenu {
                                                     NotificationContextMenu(event: event, stopID: stopSloid)
                                                 }
@@ -510,7 +510,7 @@ struct StopView: View {
         return date
     }
     private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
-        let dates = events.compactMap { OJPDate.date(from: $0.estimatedTime) }.sorted()
+        let dates = events.compactMap(\.departureDate).sorted()
 
         guard dates.count > 2 else {
             return 10 // Valeur par défaut minimale

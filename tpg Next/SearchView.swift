@@ -33,8 +33,8 @@ struct SearchView: View {
     
     //    var futureTrips: [TripEvent] = []
     var futureTrips: [TripEvent] {
-        savedTripsModel.savedTrips.sorted(by: { $0.startTime < $1.startTime }).filter { trip in
-            !dateStringHasPassed(with: trip.startTime, equalReturnsTrue: false)
+        savedTripsModel.savedTrips.sortedByStart().filter { trip in
+            !hasPassed(trip.startDate, includingCurrentMinute: false)
         }
     }
     
@@ -85,7 +85,7 @@ struct SearchView: View {
                         }
                         .padding(.horizontal)
                         HStack {
-                            Text(formatDate(stringToDate(with: activeFutureTrip?.startTime ?? "") ?? nil))
+                            Text(formatDate(activeFutureTrip?.startDate))
                                 .font(.headline)
                             //                                .padding(.top)
                             Spacer()
@@ -95,7 +95,7 @@ struct SearchView: View {
                             ScrollView(.horizontal) {
                                 HStack {
                                     ForEach(futureTrips, id: \.self) { trip in
-                                        //                            if !dateStringHasPassed(with: trip.startTime, equalReturnsTrue: false) {
+                                        //                            if !hasPassed(trip.startDate, includingCurrentMinute: false) {
                                         NavigationLink {
                                             FullTripView(fullTrip: trip)
                                         } label: {

@@ -34,7 +34,7 @@ struct SavedTripsView: View {
                             }
                             .padding(.horizontal, 30)
                             // Display events for this date
-                            ForEach(groupedEvents[date]!.sorted(by: { $0.startTime < $1.startTime }), id: \.self) { trip in
+                            ForEach(groupedEvents[date]!.sortedByStart(), id: \.self) { trip in
                                 Button(action: {
                                     onTripSelected(trip)
                                 }) {
@@ -115,7 +115,7 @@ struct SavedTripsView: View {
     var groupedEvents: [Date: [TripEvent]] {
         let combined = savedTripsModel.savedTrips + weeklyGeneratedTrips
         return Dictionary(grouping: combined) { event in
-            if let date = stringToDate(with: event.startTime) {
+            if let date = event.startDate {
                 return Calendar.current.startOfDay(for: date)
             } else {
                 return Calendar.current.startOfDay(for: Date())
@@ -150,7 +150,7 @@ struct SavedTripView: View {
                                 .background(Circle().fill(.color1))
                                 .frame(width: 18, height: 18)
                             SmallStopTitleView(stopName: event.startName)
-                            Text(dateToString(with: stringToDate(with: event.startTime) ?? Date()))
+                            Text(dateToString(with: event.startDate ?? Date()))
                             Spacer()
                         }
                             .padding(.horizontal)
@@ -206,7 +206,7 @@ struct SavedTripView: View {
                                 .background(Circle().fill(.color1))
                                 .frame(width: 18, height: 18)
                             SmallStopTitleView(stopName: event.endName)
-                            Text(dateToString(with: stringToDate(with: event.endTime) ?? Date()))
+                            Text(dateToString(with: event.endDate ?? Date()))
                             Spacer()
                         }
                             .padding(.horizontal)
