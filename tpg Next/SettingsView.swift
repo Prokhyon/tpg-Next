@@ -30,26 +30,19 @@ struct SettingsView: View {
                                         FavoritesOrderView()
                                             .navigationTitle("Ordre des favoris")
                                     } label: {
-                                        BasicElement()
-                                            .frame(height: 50)
-                                            .padding(.vertical, 5)
-                                            .overlay(
                                         HStack {
                                             Text("Ordre des favoris").minimumScaleFactor(0.5)
                                             Spacer()
                                             Image(systemName: "chevron.right")
                                         }
-                                        .padding()
-                                        )
+                                        .padding(.horizontal)
+                                        .basicElementBackground(minHeight: 50)
+                                        .padding(.vertical, 5)
                                     }
                             NavigationLink {
                                 ScheduledNotifications()
                                     .navigationTitle("Rappels prévus")
                             } label: {
-                                BasicElement()
-                                    .frame(height: 50)
-                                    .padding(.vertical, 5)
-                                    .overlay(
                                 HStack {
                                     Spacer()
                                     Text("Rappels prévus").minimumScaleFactor(0.5).padding(.vertical, 5)
@@ -57,8 +50,8 @@ struct SettingsView: View {
                                     Image(systemName: "chevron.right")
                                 }
                                 .padding(.horizontal)
-                                .frame(height: 50)
-                                )
+                                .basicElementBackground(minHeight: 50)
+                                .padding(.vertical, 5)
                             }
                         }
                         
@@ -119,9 +112,6 @@ struct SettingsView: View {
                         Button {
                             showWelcome = true
                         } label: {
-                            BasicElement()
-                                .frame(height: 50)
-                                .overlay(
                                     HStack {
                                         Text("Revoir le message de démarrage")
                                         Spacer()
@@ -131,17 +121,14 @@ struct SettingsView: View {
                                             Image(systemName: "doc.plaintext.fill")
                                         }
                                     }
-                                        .padding(.horizontal)
-                                )
+                            .padding(.horizontal)
+                            .basicElementBackground(minHeight: 50)
                                 .padding(.vertical, 5)
                         }
                         
                         Button {
                             showMail.toggle()
                         } label: {
-                            BasicElement()
-                                .frame(height: 50)
-                                .overlay(
                                     HStack {
                                         Text("Un problème, une question, une envie ?")
                                         Spacer()
@@ -151,8 +138,8 @@ struct SettingsView: View {
                                             Image(systemName: "exclamationmark.bubble")
                                         }
                                     }
-                                        .padding(.horizontal)
-                                )
+                            .padding(.horizontal)
+                            .basicElementBackground(minHeight: 50)
                                 .padding(.vertical, 5)
                         }
 //                        Spacer()
@@ -181,7 +168,7 @@ struct FavoritesOrderView: View {
                 List {
                     ForEach(favoritesViewModel.favoriteStops) { favorite in
                             SmallStopTitleView(stopName: favorite.name)
-                                .frame(height: 30)
+                                .heightGrowingWithText(30)
                                 .padding(.horizontal, 20)
                     }
                     .onMove { indices, newOffset in
@@ -229,9 +216,6 @@ struct ScheduledNotifications: View {
                         ForEach(Array(transportNotificationManager.scheduledNotificationIdentifiers.keys), id: \.self) { key in
                             let stopEvent = transportNotificationManager.scheduledNotificationIdentifiers[key]!
                             
-                            BasicCard()
-                                .frame(height: 120)
-                                .overlay(
                                     HStack {
                                         VStack(spacing: 0) {
                                             HStack {
@@ -255,8 +239,9 @@ struct ScheduledNotifications: View {
                                         }
                                         .padding(5)
                                     }
-                                        .padding(.horizontal, 15)
-                                )
+                            .padding(.horizontal, 15)
+                            .frame(minHeight: 120)
+                            .background(BasicCard())
                                 .padding(.vertical, 5)
                                 .padding(.horizontal, 10)
                                 .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))

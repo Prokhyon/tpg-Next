@@ -110,7 +110,7 @@ struct StopMapView: View {
                             if let selectedResult {
                                 SmallStopView(stop: createStop(nomarret: stopName, sloid: selectedResult), quay: returnQuayFromId(id: selectedResult)?.quayName ?? "?", isQuay: true, stopEventNumber: filteredQuays.count*10, testing: !autoRefresh)
 //                                    .frame(width: geometry.size.width-30, height: 250)
-                                    .frame(height: 250)
+                                    .heightGrowingWithText(250)
                                     .padding(.horizontal, 15)
                                     .transition(.opacity)
                             }

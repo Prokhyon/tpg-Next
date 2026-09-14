@@ -304,14 +304,10 @@ extension TripView {
                             FullTripView(fullTrip: event)
 //                                .environment(savedTripsModel)
                         } label: {
-                            BasicElement()
-                            .padding(4)
-                            .frame(height: 80)
-//                            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                            .overlay(
-                                TripElementView(event: event, showTime: showTime)
-                                    .padding(.horizontal, 20)
-                            )
+                            TripElementView(event: event, showTime: showTime)
+                                .padding(.horizontal, 20)
+                                .basicElementBackground(minHeight: 72)
+                                .padding(4)
                             
 //                            TripElementView(event: event, showTime: showTime)
 //                                .padding(.horizontal)
