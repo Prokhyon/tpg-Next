@@ -157,6 +157,51 @@ struct LegacyTopFade: View {
     }
 }
 
+extension View {
+    /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
+    /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
+    /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted))
+    }
+}
+
+extension View {
+    /// Hauteur fixe à la taille de texte normale, minimale au-delà : le contenu agrandi
+    /// étend alors le cadre au lieu de déborder.
+    func heightGrowingWithText(_ height: CGFloat) -> some View {
+        modifier(HeightGrowingWithText(height: height))
+    }
+}
+
+private struct HeightGrowingWithText: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let height: CGFloat
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if dynamicTypeSize > .large {
+            content.frame(minHeight: height)
+        } else {
+            content.frame(height: height)
+        }
+    }
+}
+
+private struct BasicElementBackground: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let minHeight: CGFloat
+    let transparent: Bool
+    let highlighted: Bool
+
+    func body(content: Content) -> some View {
+        content
+            // De l'air au-dessus et au-dessous quand le texte agrandi remplit la capsule.
+            .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
+            .frame(minHeight: minHeight)
+            .background { BasicElement(transparent: transparent, highlighted: highlighted) }
+    }
+}
+
 struct BasicElement: View {
     var transparent = false
     var highlighted = false
@@ -201,11 +246,6 @@ struct BasicLocationView: View {
 //        Capsule()
 //            .fill(.color1)
 //            .stroke(.border, lineWidth: 1)
-        BasicElement()
-            .frame(height: 45)
-//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-//            .shadow(color: .customShadows.opacity(0.2), radius: 10)
-            .overlay(
                 HStack {
                     if showFavorite, let favoriteAction = favoriteAction {
                         Button(action: favoriteAction) {
@@ -232,8 +272,7 @@ struct BasicLocationView: View {
                     }
                 }
                     .padding(.horizontal, 20)
-            )
-
+                    .basicElementBackground(minHeight: 45)
     }
 }
 

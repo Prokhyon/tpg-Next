@@ -139,11 +139,6 @@ struct SavedTripView: View {
         VStack(alignment: .center) {
             HStack {
 //                RoundedRectangle(cornerRadius: 20.0)
-                BasicElement()
-                    .frame(height: 45)
-//                    .foregroundStyle(.thinMaterial)
-//                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                    .overlay (
                         HStack {
                             Circle()
                                 .strokeBorder(.primary, lineWidth: 5)
@@ -154,7 +149,7 @@ struct SavedTripView: View {
                             Spacer()
                         }
                             .padding(.horizontal)
-                        )
+                            .basicElementBackground(minHeight: 45)
             }
             HStack(spacing: 0) {
                     Image(systemName: "arrowshape.bounce.forward")
@@ -197,9 +192,6 @@ struct SavedTripView: View {
             .padding(.vertical, 3)
             HStack {
 //                RoundedRectangle(cornerRadius: 20.0)
-                BasicElement()
-                    .frame(height: 45)
-                    .overlay (
                         HStack {
                             Circle()
                                 .strokeBorder(.primary, lineWidth: 5)
@@ -210,7 +202,7 @@ struct SavedTripView: View {
                             Spacer()
                         }
                             .padding(.horizontal)
-                        )
+                            .basicElementBackground(minHeight: 45)
             }
             
         }

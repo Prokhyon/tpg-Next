@@ -124,6 +124,8 @@ struct StopView: View {
     @Environment(StopStore.self) var stopStore
     /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
     @State private var refreshGeneration = 0
+    /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
+    @State private var titleHeight: CGFloat = 0
     let stopName: String
     let stopSloid: String
     @State var previousLineRef: String?
@@ -209,7 +211,7 @@ struct StopView: View {
                                 }
                             }
                         }
-                        .contentMargins(.top, 90.0, for: .automatic)
+                        .contentMargins(.top, max(90.0, titleHeight + 10), for: .automatic)
                         .contentMargins(.bottom, appRequirementsClass.version26 ? 75.0 : 125, for: .automatic)
                         
                         .refreshable {
@@ -239,6 +241,7 @@ struct StopView: View {
                             .padding(.vertical, TPGSurface.isGlass ? 5 : 0)
                             .tpgSurface(interactive: true)
                             .offset(x: 50)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
                         }
                         Spacer()
 
@@ -594,6 +597,7 @@ extension View {
     let favoritesViewModel = FavoritesViewModel()
     let appRequirementsClass = AppRequirementsClass()
     let navigationModel = NavigationModel()
+    let tripViewModel = ItineraryViewModel()
 
     return NavigationStack {
         ZStack {
@@ -601,6 +605,7 @@ extension View {
                 .environment(favoritesViewModel)
                 .environment(appRequirementsClass)
                 .environment(stopStore)
+                .environment(tripViewModel)
                 .navigationTitle("Genève, Rive")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

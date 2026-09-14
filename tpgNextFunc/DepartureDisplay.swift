@@ -108,17 +108,24 @@ public struct DepartureTimeView: View {
     public var body: some View {
         switch display {
         case .atStop where showsIcon:
+            // Au moins la largeur de l'icône : elle grandit avec le texte et débordait
+            // sur la destination quand la place réservée restait fixe.
             transportIcon(with: transportType)
-                .frame(width: iconWidth)
+                .fixedSize()
+                .frame(minWidth: iconWidth)
         case .plannedWithDelay(let planned, let delay):
             stack {
                 Text(planned)
+                    .lineLimit(1)
                 Text(delay)
                     .foregroundStyle(Color.accent)
+                    .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
         default:
+            // Une seule ligne : avec un texte agrandi, « 16:17 » passait sinon à la ligne.
             Text(display.text)
+                .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .foregroundStyle(display.isHighlighted ? Color.accent : Color.primary)
         }
