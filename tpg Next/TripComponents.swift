@@ -13,6 +13,8 @@ struct TripElementView: View {
     @Environment(\.displayTime) private var now
     /// Hauteur de la rangée de badges : 30 à la taille normale, plus avec un texte agrandi.
     @ScaledMetric private var iconRowHeight: CGFloat = 30
+    /// Largeur visible de la zone des badges : peu de badges restent centrés, trop de badges défilent.
+    @State private var iconAreaWidth: CGFloat = 0
     var event: TripEvent
     var showTime: Bool = true
     var body: some View {
@@ -40,8 +42,9 @@ struct TripElementView: View {
                             Spacer()
                         }
                         .padding(.horizontal, 10)
-                        .frame(minWidth: 200)
+                        .frame(minWidth: iconAreaWidth)
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { iconAreaWidth = $0 }
                     .mask {
                         Rectangle()
                             .overlay(alignment: .leading) {
@@ -56,7 +59,9 @@ struct TripElementView: View {
                     }
 
                 }
-                .frame(minWidth: 200, maxHeight: iconRowHeight)
+                .frame(maxWidth: .infinity, maxHeight: iconRowHeight) // 200 points minimum élargissaient la liste au-delà de l'écran
+                // Avant les espaces flexibles : à parts égales, la zone n'avait qu'un tiers de la place.
+                .layoutPriority(1)
                     Spacer()
                 let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime, at: now)
                 DepartureTimeView(endTime, transportType: event.legs.last?.transportTypeName ?? "Bus", iconWidth: 55)
