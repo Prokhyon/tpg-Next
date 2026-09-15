@@ -85,6 +85,43 @@ struct TripParserTests {
         }
     }
 
+    /// OJP ne donne pas de `Duration` aux bus et trams : leur place sur la frise vient de leurs heures.
+    @Test(arguments: cases)
+    func legsArePlacedInTime(_ testCase: (fixture: String, geoDeparture: Bool)) throws {
+        let trips = try parse(testCase.fixture, geoDeparture: testCase.geoDeparture)
+        for trip in trips {
+            let spans = trip.legSpans
+            #expect(spans.count == trip.legs.count)
+            var previousEnd = 0.0
+            for span in spans {
+                #expect(span.range.lowerBound >= 0 && span.range.upperBound <= 1)
+                // Au plus quelques secondes de recouvrement, jamais d'étape en arrière.
+                #expect(span.range.lowerBound >= previousEnd - 0.05)
+                previousEnd = span.range.upperBound
+                if !span.leg.publishedLineName.isEmpty {
+                    #expect(span.leg.legDuration.isEmpty)
+                    #expect((span.leg.duration ?? 0) > 0)
+                    #expect(span.range.upperBound > span.range.lowerBound)
+                    #expect(span.walk == nil)
+                } else if let walk = span.walk {
+                    #expect(span.range.lowerBound == walk.lowerBound && walk.upperBound <= span.range.upperBound)
+                }
+            }
+            #expect(abs(previousEnd - 1) < 0.05)
+        }
+    }
+
+    /// Les pointillés prennent la part marchée de la correspondance, le reste est de l'attente.
+    @Test func walkTakesItsShareOfTheChange() throws {
+        let trip = FullTripTest().Trip // 45 minutes, correspondance de 15:10:42 à 15:20:42
+        let change = try #require(trip.legSpans.first { $0.leg.id == "B" })
+        let walk = try #require(change.walk)
+        let walkMinutes = try #require(change.leg.walkDuration) / 60
+        #expect(walkMinutes < 10)
+        #expect(abs((change.range.upperBound - change.range.lowerBound) - 10.0 / 45) < 0.001)
+        #expect(abs((walk.upperBound - walk.lowerBound) - walkMinutes / 45) < 0.001)
+    }
+
     @Test(arguments: cases)
     func outputIsUnchanged(_ testCase: (fixture: String, geoDeparture: Bool)) throws {
         try Fixture.assertSnapshot(try parse(testCase.fixture, geoDeparture: testCase.geoDeparture), named: testCase.fixture)
