@@ -35,6 +35,75 @@ extension TripLeg {
     public var boardDate: Date? { OJPDate.date(from: legBoardEstimatedTime) ?? OJPDate.date(from: legBoardTimetableTime) }
     /// La descente : heure estimée si elle est connue, sinon prévue.
     public var alightDate: Date? { OJPDate.date(from: legAlightEstimatedTime) ?? OJPDate.date(from: legAlightTimetableTime) }
+
+    /// La durée de l'étape. OJP ne donne une `Duration` qu'aux étapes à pied : celle d'un bus
+    /// ou d'un tram (`TimedLeg`) vient de ses heures de montée et de descente.
+    public var duration: TimeInterval? {
+        if let boardDate, let alightDate {
+            return alightDate.timeIntervalSince(boardDate)
+        }
+        return durationMinutes(transfer ? transferDuration : legDuration).map { TimeInterval($0 * 60) }
+    }
+}
+
+/// La place d'une étape sur la frise d'un itinéraire, en fractions du trajet :
+/// 0 au départ, 1 à l'arrivée.
+public struct TripLegSpan: Identifiable {
+    public let leg: TripLeg
+    public let range: ClosedRange<Double>
+    /// La part marchée d'une étape à pied : le début de la correspondance, la suite étant
+    /// de l'attente. `nil` pour un bus ou un tram.
+    public let walk: ClosedRange<Double>?
+    public var id: String { leg.id }
+}
+
+extension TripLeg {
+    /// Le temps de marche d'une étape à pied. Une correspondance le donne à part de l'attente ;
+    /// un trajet entièrement à pied (`ContinuousLeg`) n'a que sa durée. `nil` pour un bus ou un tram.
+    public var walkDuration: TimeInterval? {
+        guard transfer else { return nil }
+        return (durationMinutes(transferWalkDuration) ?? durationMinutes(transferDuration)).map { TimeInterval($0 * 60) }
+    }
+}
+
+extension TripEvent {
+    /// Les étapes placées dans le temps. Additionner leurs durées ne suffit pas : les attentes
+    /// entre deux véhicules n'ont pas d'étape à elles.
+    ///
+    /// Un bus ou un tram se place à ses heures. Une étape à pied n'en a pas : elle couvre toute
+    /// la correspondance, jusqu'à la montée suivante (ou l'arrivée), et sa marche n'en occupe
+    /// que le début. Sa `Duration` compte une marge et déborderait parfois sur le bus d'après.
+    /// Sans heures lisibles, les étapes se partagent la frise à parts égales.
+    public var legSpans: [TripLegSpan] {
+        guard let startDate, let endDate, endDate > startDate else {
+            let count = Double(legs.count)
+            return legs.enumerated().map { index, leg in
+                let range = Double(index) / count...Double(index + 1) / count
+                return TripLegSpan(leg: leg, range: range, walk: leg.transfer ? range : nil)
+            }
+        }
+        let total = endDate.timeIntervalSince(startDate)
+        func fraction(_ date: Date) -> Double {
+            min(max(date.timeIntervalSince(startDate) / total, 0), 1)
+        }
+        func range(_ start: Date, _ end: Date) -> ClosedRange<Double> {
+            fraction(start)...max(fraction(start), fraction(end))
+        }
+        var cursor = startDate
+        return legs.enumerated().map { index, leg in
+            let start = leg.boardDate ?? cursor
+            let end: Date
+            if let alightDate = leg.alightDate {
+                end = alightDate
+            } else {
+                let next = index + 1 < legs.count ? legs[index + 1].boardDate : endDate
+                end = max(start, next ?? start.addingTimeInterval(leg.duration ?? 0))
+            }
+            cursor = max(cursor, end)
+            let walkEnd = leg.walkDuration.map { min(start.addingTimeInterval($0), end) }
+            return TripLegSpan(leg: leg, range: range(start, end), walk: walkEnd.map { range(start, $0) })
+        }
+    }
 }
 
 /// `true` si `date` est passée, à la minute près : les secondes sont ignorées.
