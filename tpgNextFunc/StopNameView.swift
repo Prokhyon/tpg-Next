@@ -52,15 +52,32 @@ public struct StopNameView: View {
     let stopName: String
     let style: Style
     let transportType: String?
+    let alignment: HorizontalAlignment
 
-    /// - Parameter transportType: `"TRAIN"` ou `"BOAT"` ajoute l'icône après un nom sans commune.
-    public init(_ stopName: String, style: Style, transportType: String? = nil) {
+    /// - Parameters:
+    ///   - transportType: `"TRAIN"` ou `"BOAT"` ajoute l'icône après un nom sans commune.
+    ///   - alignment: `.trailing` pour un nom placé à droite, comme l'arrivée d'un itinéraire.
+    public init(_ stopName: String, style: Style, transportType: String? = nil, alignment: HorizontalAlignment = .leading) {
         self.stopName = stopName
         self.style = style
         self.transportType = transportType
+        self.alignment = alignment
     }
 
     public var body: some View {
+        content
+            .multilineTextAlignment(textAlignment)
+    }
+
+    private var textAlignment: TextAlignment {
+        switch alignment {
+        case .trailing: .trailing
+        case .center: .center
+        default: .leading
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         let parts = splitString(stopName, separator: ",")
         if parts.1.isEmpty {
             HStack {
@@ -76,7 +93,7 @@ public struct StopNameView: View {
                 }
             }
         } else {
-            VStack(alignment: .leading, spacing: style.spacing) {
+            VStack(alignment: alignment, spacing: style.spacing) {
                 Text(parts.0)
                     .font(style.locality)
                     .foregroundStyle(style.dimsLocality ? AnyShapeStyle(.secondary) : AnyShapeStyle(.foreground))

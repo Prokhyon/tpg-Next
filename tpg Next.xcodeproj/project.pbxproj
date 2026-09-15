@@ -49,6 +49,7 @@
 		7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */; };
 		7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B021 /* TripResultsViews.swift */; };
 		7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B031 /* TripComponents.swift */; };
+		7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B051 /* TripTimeline.swift */; };
 		7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B041 /* SavedTripsView.swift */; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
@@ -190,6 +191,7 @@
 		7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItineraryViewModel.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B021 /* TripResultsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripResultsViews.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B031 /* TripComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripComponents.swift; sourceTree = "<group>"; };
+		7A1C0DE0000000000000B051 /* TripTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTimeline.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B041 /* SavedTripsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedTripsView.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
@@ -324,6 +326,7 @@
 				7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */,
 				7A1C0DE0000000000000B021 /* TripResultsViews.swift */,
 				7A1C0DE0000000000000B031 /* TripComponents.swift */,
+				7A1C0DE0000000000000B051 /* TripTimeline.swift */,
 				7A1C0DE0000000000000B041 /* SavedTripsView.swift */,
 				78D8519A2CFF0EB8002810D5 /* FullTripView.swift */,
 				78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */,
@@ -626,6 +629,7 @@
 				7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */,
 				7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */,
 				7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */,
+				7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */,
 				7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */,
 				78D8519B2CFF0EB8002810D5 /* FullTripView.swift in Sources */,
 				7835AAC12C68E4E400F77E4F /* LineMapView.swift in Sources */,
