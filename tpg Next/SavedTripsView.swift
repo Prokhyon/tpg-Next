@@ -132,79 +132,37 @@ struct SavedTripsView: View {
         }
 }
 
+/// Un itinéraire enregistré : les heures et le résumé, la frise, puis le départ et
+/// l'arrivée, chacun sous son arrêt.
 struct SavedTripView: View {
     var event: TripEvent
-    
+
     var body: some View {
-        VStack(alignment: .center) {
+        VStack(spacing: 4) {
             HStack {
-//                RoundedRectangle(cornerRadius: 20.0)
-                        HStack {
-                            Circle()
-                                .strokeBorder(.primary, lineWidth: 5)
-                                .background(Circle().fill(.color1))
-                                .frame(width: 18, height: 18)
-                            SmallStopTitleView(stopName: event.startName)
-                            Text(dateToString(with: event.startDate ?? Date()))
-                            Spacer()
-                        }
-                            .padding(.horizontal)
-                            .basicElementBackground(minHeight: 45)
-            }
-            HStack(spacing: 0) {
+                Text(dateToString(with: event.startDate ?? Date()))
+                Spacer()
+                HStack {
                     Image(systemName: "arrowshape.bounce.forward")
-                    Text(" : \(event.transfers)")
+                    Text(": \(event.transfers)")
                         .padding(.trailing)
                     Image(systemName: "timer")
-                    Text(" : \(durationText(event.duration))")
-                // Scrollable icon area
-                ZStack {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            Spacer()
-                            ForEach(event.legs, id: \.id) { leg in
-                                if !(leg.publishedLineName == "") {
-                                    BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
-                                        .padding(2)
-                                } else if leg.transfer && durationMinutes(leg.transferWalkDuration) ?? 0 >= 5 {
-                                    Image(systemName: "figure.walk").font(.caption)
-                                }
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 10)
-                    }
-                    .mask {
-                        Rectangle()
-                            .overlay(alignment: .leading) {
-                                ScrollMask(leading: true, vertical: false, gradientLength: 25)
-                            }
-                    }
-                    .mask {
-                        Rectangle()
-                            .overlay(alignment: .trailing) {
-                                ScrollMask(leading: false, vertical: false, gradientLength: 25)
-                            }
-                    }
-                    
+                    Text(": \(durationText(event.duration))")
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                Spacer()
+                Text(dateToString(with: event.endDate ?? Date()))
             }
-            .padding(.vertical, 3)
-            HStack {
-//                RoundedRectangle(cornerRadius: 20.0)
-                        HStack {
-                            Circle()
-                                .strokeBorder(.primary, lineWidth: 5)
-                                .background(Circle().fill(.color1))
-                                .frame(width: 18, height: 18)
-                            SmallStopTitleView(stopName: event.endName)
-                            Text(dateToString(with: event.endDate ?? Date()))
-                            Spacer()
-                        }
-                            .padding(.horizontal)
-                            .basicElementBackground(minHeight: 45)
+            // Aux tailles d'accessibilité, les deux heures ne laissaient que « : » entre elles.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            TripTimeline(event: event)
+            HStack(alignment: .top, spacing: 12) {
+                StopNameView(event.startName, style: .row)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                StopNameView(event.endName, style: .row, alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            
         }
     }
 }
