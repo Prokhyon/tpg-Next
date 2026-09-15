@@ -55,28 +55,40 @@ private struct TripTimeline: View {
     let event: TripEvent
     /// Hauteur de la frise : 30 à la taille normale, plus avec un texte agrandi.
     @ScaledMetric private var height: CGFloat = 30
-    /// Diamètre des arrêts de départ et d'arrivée, sous lesquels passent la piste et les barres.
+    /// Diamètre des arrêts de départ et d'arrivée : la piste passe dessous et semble en sortir.
     private let endpointSize: CGFloat = 18
+    /// Largeur des fondus d'une frise qui défile. Ils débordent d'autant dans la marge
+    /// posée autour de la frise par `TripElementView`, qui doit donc être au moins aussi large.
+    private let fadeLength: CGFloat = 15
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             content
             ScrollView(.horizontal, showsIndicators: false) {
                 content
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, fadeLength)
             }
+            // Le contour des badges dépasse de la frise : rogné par le ScrollView, le haut et
+            // le bas des badges disparaissaient. Seuls les fondus limitent la vue, et
+            // uniquement sur les côtés.
+            .scrollClipDisabled()
             .mask {
                 Rectangle()
                     .overlay(alignment: .leading) {
-                        ScrollMask(leading: true, vertical: false, gradientLength: 15)
+                        ScrollMask(leading: true, vertical: false, gradientLength: fadeLength)
                     }
+                    .padding(.vertical, -8)
             }
             .mask {
                 Rectangle()
                     .overlay(alignment: .trailing) {
-                        ScrollMask(leading: false, vertical: false, gradientLength: 15)
+                        ScrollMask(leading: false, vertical: false, gradientLength: fadeLength)
                     }
+                    .padding(.vertical, -8)
             }
+            // Les fondus débordent dans la marge autour de la frise : défilée jusqu'à un bout,
+            // la frise a son arrêt aligné sur celui des frises qui ne défilent pas.
+            .padding(.horizontal, -fadeLength)
         }
         .frame(height: height)
     }
@@ -90,7 +102,7 @@ private struct TripTimeline: View {
                 // La piste pleine, interrompue là où l'on marche.
                 ForEach(Array(trackRanges(spans).enumerated()), id: \.offset) { _, range in
                     RoundedRectangle(cornerRadius: 5)
-                        .frame(height: 3)
+                        .frame(height: 2)
                         .timelineFill(range, reachesEnds: true)
                 }
                 ForEach(spans) { span in
@@ -98,9 +110,10 @@ private struct TripTimeline: View {
                     if !leg.publishedLineName.isEmpty {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator))
-                            .frame(height: 7)
-                            .padding(.horizontal, 2) // deux étapes qui se suivent restent distinctes
-                            .timelineFill(span.range, reachesEnds: true)
+                            .frame(height: 5)
+                            // Distinctes entre elles et des arrêts de départ et d'arrivée.
+                            .padding(.horizontal, 2)
+                            .timelineFill(span.range)
                         BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
                             .background {
                                 Capsule()
@@ -109,21 +122,21 @@ private struct TripTimeline: View {
                             .timelineBadge(span.range)
                     } else if let walk = drawnWalk(span) {
                         DottedLine()
-                            .stroke(Color.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0, 5]))
-                            .frame(height: 3)
+                            .stroke(Color.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [0, 3]))
+                            .frame(height: 2)
                             // Les points ne touchent ni la piste pleine ni les arrêts.
-                            .padding(.horizontal, 5)
+//                            .padding(.horizontal, 3)
                             .timelineFill(walk)
-                        if (leg.walkDuration ?? 0) >= 5 * 60 {
-                            Image(systemName: "figure.walk")
-                                .font(.caption)
-//                                .background {
-//                                    Circle()
-//                                        .fill(.color1)
-//                                        .blur(radius: 3)
-//                                }
-                                .timelineBadge(walk)
-                        }
+//                        if (leg.walkDuration ?? 0) >= 5 * 60 {
+//                            Image(systemName: "figure.walk")
+//                                .font(.caption)
+////                                .background {
+////                                    Circle()
+////                                        .fill(.color1)
+////                                        .blur(radius: 3)
+////                                }
+//                                .timelineBadge(walk)
+//                        }
                     }
                 }
             }
