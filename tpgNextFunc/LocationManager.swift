@@ -52,13 +52,25 @@ public final class LocationManager: NSObject, CLLocationManagerDelegate {
     public func requestLocation(completion: @escaping (CLLocation?) -> Void) {
         locationUpdateHandler = completion
         retriesLeft = 2
-        // Sans autorisation encore demandée (accueil passé, app réinstallée), `requestLocation`
-        // échouerait sans rien proposer : on demande d'abord l'autorisation.
-        if locationManager.authorizationStatus == .notDetermined {
-            awaitsAuthorization = true
-            locationManager.requestWhenInUseAuthorization()
-        } else {
+        // L'autorisation vient du délégué, jamais de `locationManager.authorizationStatus` :
+        // cette lecture attend la réponse du service de localisation, sur le fil principal.
+        // Quand ce service ne répondait pas, l'app restait figée sur l'écran d'accueil.
+        switch authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
             locationManager.requestLocation()
+        case .denied, .restricted:
+            lastFailure = .denied
+            completion(nil)
+        default:
+            // Pas encore connue (le délégué la donne peu après la création du gestionnaire),
+            // ou jamais demandée (accueil passé, app réinstallée) : `requestLocation`
+            // échouerait sans rien proposer. Le délégué enchaîne dès qu'il la reçoit.
+            awaitsAuthorization = true
+            if authorizationStatus == .notDetermined {
+                locationManager.requestWhenInUseAuthorization()
+            } else {
+                _ = locationManager
+            }
         }
     }
 
@@ -78,7 +90,11 @@ public final class LocationManager: NSObject, CLLocationManagerDelegate {
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
         Log.location.info("Autorisation de localisation : \(manager.authorizationStatus.rawValue)")
-        guard awaitsAuthorization, manager.authorizationStatus != .notDetermined else { return }
+        guard awaitsAuthorization else { return }
+        guard manager.authorizationStatus != .notDetermined else {
+            manager.requestWhenInUseAuthorization()
+            return
+        }
         awaitsAuthorization = false
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
