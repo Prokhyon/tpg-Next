@@ -14,27 +14,38 @@ struct DeparturesWidgetView: View {
     @Environment(\.widgetFamily) private var family
     var entry: DeparturesEntry
 
-    /// Trois départs sur le format moyen, sept sur le grand.
-    private var rowCount: Int { family == .systemLarge ? 7 : 3 }
+    /// Deux départs sur le petit format, trois sur le moyen, sept sur le grand.
+    private var rowCount: Int {
+        switch family {
+        case .systemSmall: 3
+        case .systemLarge: 7
+        default: 3
+        }
+    }
 
     /// WidgetKit impose 16 pt de marge par défaut, trop large pour des lignes de
     /// départ. `contentMarginsDisabled()` les retire et on reprend la main ici.
     /// C'est le seul endroit à toucher pour resserrer ou aérer le contenu.
     private let contentInsets = EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
+    /// Le petit format n'a pas la place de 16 pt de chaque côté.
+    private let smallContentInsets = EdgeInsets(top: 12, leading: 10, bottom: 12, trailing: 10)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let stop = entry.stop {
-                HeaderView(stop: stop, distance: entry.distance)
+                HeaderView(stop: stop, distance: entry.distance, compact: family == .systemSmall)
             }
 
             if entry.status == .ok {
                 VStack(spacing: 4) {
                     ForEach(entry.events.prefix(rowCount), id: \.id) { event in
-                        // `Link` ne vaut que pour les formats moyen et grand — les seuls
-                        // que le widget déclare. Tout tap qui ne tombe pas sur un `Link`
-                        // retombe sur `widgetURL`, donc sur la page de l'arrêt.
-                        if let lineURL = lineLink(for: event) {
+                        // Le petit format ignore `Link` : tout le widget ouvre l'arrêt,
+                        // avec une ligne plus serrée.
+                        // Ailleurs, tout tap qui ne tombe pas sur un `Link` retombe sur
+                        // `widgetURL`, donc sur la page de l'arrêt.
+                        if family == .systemSmall {
+                            CompactDepartureRow(event: event, referenceDate: entry.date)
+                        } else if let lineURL = lineLink(for: event) {
                             Link(destination: lineURL) {
                                 DepartureRow(event: event, referenceDate: entry.date)
                             }
@@ -51,7 +62,7 @@ struct DeparturesWidgetView: View {
                 StatusView(status: entry.status)
             }
         }
-        .padding(contentInsets)
+        .padding(family == .systemSmall ? smallContentInsets : contentInsets)
 
         .widgetURL(deepLink)
         // Obligatoire depuis iOS 17 : sans ça WidgetKit refuse de dessiner le widget
@@ -104,12 +115,18 @@ struct DeparturesWidgetView: View {
 struct HeaderView: View {
     let stop: Stop
     let distance: CLLocationDistance?
+    /// Petit format : la distance chiffrée prendrait la place du nom, seule l'icône reste.
+    var compact = false
 
     var body: some View {
         HStack(alignment: .center) {
             StopNameView(stop.name, style: .widget)
             Spacer(minLength: 4)
-            if let distance {
+            if distance != nil, compact {
+                Image(systemName: "location.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else if let distance {
                 Label("\(Int(distance.rounded())) m", systemImage: "location.fill")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -133,12 +150,12 @@ struct DepartureRow: View {
     let referenceDate: Date
 
     /// « Thônex, Vallard » devient « Vallard » : la commune ne tient pas dans un widget.
-    private var shortDestination: String {
-        let split = splitString(event.destination, separator: ",")
+    private var shortDestination: String { Self.shortDestination(event.destination) }
+
+    static func shortDestination(_ destination: String) -> String {
+        let split = splitString(destination, separator: ",")
         return split.1.isEmpty ? split.0 : split.1
     }
-    
-    @Environment(\.widgetRenderingMode) var widgetRenderingMode
 
     var body: some View {
         let departure = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: false, at: referenceDate)
@@ -160,20 +177,57 @@ struct DepartureRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background {
-            switch widgetRenderingMode {
-            case .fullColor:
-                BasicElement(transparent: true)
-//                    .opacity(0.7)
-            case .accented:
-                BasicElement()
-                    .opacity(0.1)
-            case .vibrant:
-                BasicElement().opacity(0.2)
-            default:
-                BasicElement().opacity(0.5)
-            }
-            
+        .background { RowBackground() }
+    }
+}
+
+/// Le petit format : ligne à gauche, destination au centre sur deux lignes au
+/// besoin, décompte à droite avec le quai en dessous.
+struct CompactDepartureRow: View {
+    let event: StopEvent
+    let referenceDate: Date
+
+    var body: some View {
+        let departure = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: false, at: referenceDate)
+        HStack(spacing: 6) {
+            BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, width: 30, height: 20)
+                .font(.caption)
+                
+            Text(DepartureRow.shortDestination(event.destination))
+                .font(.caption2)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 2)
+//            VStack(alignment: .center, spacing: 1) {
+                DepartureTimeView(departure, transportType: event.transportType)
+                    .font(.caption)
+                    .bold()
+                    .lineLimit(1)
+                QuayIcon(quay: event.plannedQuay, dimsUnknown: true)
+                    .font(.caption2)
+//            }
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 4)
+        .background { RowBackground() }
+    }
+}
+
+/// Le fond d'une ligne, plus discret quand l'écran d'accueil est teinté ou transparent.
+struct RowBackground: View {
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+
+    var body: some View {
+        switch widgetRenderingMode {
+        case .fullColor:
+            BasicElement(transparent: true)
+        case .accented:
+            BasicElement().opacity(0.1)
+        case .vibrant:
+            BasicElement().opacity(0.2)
+        default:
+            BasicElement().opacity(0.5)
         }
     }
 }

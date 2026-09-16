@@ -91,6 +91,20 @@ extension TripLeg {
     }
 }
 
+extension TripEvent {
+    /// Le véhicule du départ, pour son icône. Une première étape à pied donne le piéton :
+    /// l'heure affichée est alors celle du départ à pied, pas celle d'un bus.
+    public var startTransportType: String { transportType(of: legs.first) }
+
+    /// Le véhicule de l'arrivée, pour son icône : le piéton quand le trajet finit à pied.
+    public var endTransportType: String { transportType(of: legs.last) }
+
+    private func transportType(of leg: TripLeg?) -> String {
+        guard let leg else { return "Bus" }
+        return leg.transfer || leg.publishedLineName.isEmpty ? "walk" : leg.transportTypeName
+    }
+}
+
 /// Date locale (yyyy-MM-dd) d'une heure OJP en UTC, pour l'affichage : couper la chaîne
 /// UTC donne la veille pour les trajets entre minuit et 2 h.
 public func localDayString(fromUTC isoString: String) -> String {

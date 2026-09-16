@@ -60,7 +60,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7829E3ED2D2297EA0049A10B"
             BuildableName = "tpg Next Watch App.app"
-            BlueprintName = "tpg Next Watch App"
             ReferencedContainer = "container:tpg Next.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -77,7 +76,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7829E3ED2D2297EA0049A10B"
             BuildableName = "tpg Next Watch App.app"
-            BlueprintName = "tpg Next Watch App"
             ReferencedContainer = "container:tpg Next.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -92,7 +92,6 @@ struct SearchView: View {
                             Spacer()
                         }
                         .padding(.horizontal)
-                        GeometryReader { geometry in
                             ScrollView(.horizontal) {
                                 HStack {
                                     ForEach(futureTrips, id: \.self) { trip in
@@ -131,24 +130,23 @@ struct SearchView: View {
                             .scrollTargetLayout()
                             .scrollTargetBehavior(.viewAligned)
                             .scrollPosition(id: $activeFutureTrip)
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .top) {
-                                        ScrollMask(leading: false, vertical: true, gradientLength: 10)
-                                    }
-                            }
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .bottom) {
-                                        ScrollMask(leading: true, vertical: true, gradientLength: 10)
-                                    }
-                            }
+//                            .mask {
+//                                Rectangle()
+//                                    .overlay(alignment: .top) {
+//                                        ScrollMask(leading: false, vertical: true, gradientLength: 10)
+//                                    }
+//                            }
+//                            .mask {
+//                                Rectangle()
+//                                    .overlay(alignment: .bottom) {
+//                                        ScrollMask(leading: true, vertical: true, gradientLength: 10)
+//                                    }
+//                            }
                             //                            .padding(.vertical)
                             //                            .scrollTargetBehavior(.paging)
                             .onAppear {
                                 activeFutureTrip = futureTrips.first
                             }
-                        }
                     }
                 }
             } else {
