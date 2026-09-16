@@ -389,7 +389,14 @@
       }
     },
     "Aperçus d'itinéraire" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip previews"
+          }
+        }
+      }
     },
     "Appuyez longuement sur un horaire pour programmer un rappel. Vous pourrez voir les rappels prévus depuis les paramètres." : {
       "localizations" : {
@@ -585,8 +592,8 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Switch the display of a vehicle’s arrival time between it’s timetable and remaining time"
+            "state" : "translated",
+            "value" : "Switch the display of a vehicle’s arrival time between its timetable and remaining time"
           }
         }
       }
@@ -1445,7 +1452,14 @@
       }
     },
     "Tracés de ligne" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line routes"
+          }
+        }
+      }
     },
     "Trajet rapide" : {
       "localizations" : {
@@ -1478,7 +1492,14 @@
       }
     },
     "Une timeline simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attente dans les résultats et itinéraires enregistrés" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved trips and results now display a simplified timeline with lines, changes, walks  and waits"
+          }
+        }
+      }
     },
     "Utiliser la position actuelle" : {
       "localizations" : {

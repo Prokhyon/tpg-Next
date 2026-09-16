@@ -49,8 +49,8 @@
 		7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */; };
 		7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B021 /* TripResultsViews.swift */; };
 		7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B031 /* TripComponents.swift */; };
-		7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B051 /* TripTimeline.swift */; };
 		7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B041 /* SavedTripsView.swift */; };
+		7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B051 /* TripTimeline.swift */; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
@@ -191,8 +191,8 @@
 		7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItineraryViewModel.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B021 /* TripResultsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripResultsViews.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B031 /* TripComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripComponents.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B051 /* TripTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTimeline.swift; sourceTree = "<group>"; };
 		7A1C0DE0000000000000B041 /* SavedTripsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedTripsView.swift; sourceTree = "<group>"; };
+		7A1C0DE0000000000000B051 /* TripTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTimeline.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B02 /* DeparturesProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeparturesProvider.swift; sourceTree = "<group>"; };
@@ -810,7 +810,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -842,7 +842,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
