@@ -29,6 +29,17 @@ enum Tabs: String, Equatable, Hashable {
 
 
 
+extension View {
+    /// Choisir l'onglet Recherche active aussitôt son champ (iOS 26). Sans effet avant.
+    @ViewBuilder func searchTabActivatesField() -> some View {
+        if #available(iOS 26, *) {
+            tabViewSearchActivation(.searchTabSelection)
+        } else {
+            self
+        }
+    }
+}
+
 @Observable
 class NavigationModel {
     var selectedTab: Tabs = .home
@@ -165,6 +176,7 @@ struct ContentView: View {
                 .environment(recentSearchModel)
                 .environment(navigationModel)
                 .environment(appRequirementsClass)
+                .searchTabActivatesField()
             if #available(iOS 26, *), !testingNewDock {
             } else {
                 if !(keyboardResponder.isKeyboardVisible && navigationModel.selectedTab != .search) {

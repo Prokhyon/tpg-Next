@@ -125,6 +125,26 @@ extension PreviewData {
 
 // MARK: - Aperçus du widget entier
 
+#Preview("Petit — proximité", as: .systemSmall) {
+    DeparturesWidget()
+} timeline: {
+    PreviewData.entry()
+}
+
+#Preview("Petit — retards et nom long", as: .systemSmall) {
+    DeparturesWidget()
+} timeline: {
+    PreviewData.entry(stop: PreviewData.longNameStop,
+                      events: PreviewData.edgeCaseEvents,
+                      distance: nil)
+}
+
+#Preview("Petit — aucun départ", as: .systemSmall) {
+    DeparturesWidget()
+} timeline: {
+    PreviewData.entry(events: [], status: .noDepartures)
+}
+
 #Preview("Moyen — proximité", as: .systemMedium) {
     DeparturesWidget()
 } timeline: {

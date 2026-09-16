@@ -14,10 +14,10 @@ struct TripElementView: View {
     var event: TripEvent
     var showTime: Bool = true
     var body: some View {
-        VStack(alignment: .center, spacing: 2) {
+        VStack(alignment: .center, spacing: 6) {
             HStack {
                 let startTime = departureDisplay(timetabled: event.startTime, estimated: event.startTime, showTime: showTime, at: now)
-                DepartureTimeView(startTime, transportType: event.legs.first?.transportTypeName ?? "Bus", iconWidth: 55)
+                DepartureTimeView(startTime, transportType: event.startTransportType, iconWidth: 55)
                     .frame(width: 55)
                     .minimumScaleFactor(0.5)
                 Spacer()
@@ -34,7 +34,7 @@ struct TripElementView: View {
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 Spacer()
                 let endTime = departureDisplay(timetabled: event.endTime, estimated: event.endTime, showTime: showTime, at: now)
-                DepartureTimeView(endTime, transportType: event.legs.last?.transportTypeName ?? "Bus", iconWidth: 55)
+                DepartureTimeView(endTime, transportType: event.endTransportType, iconWidth: 55)
                     .frame(width: 55)
                     .minimumScaleFactor(0.5)
             }

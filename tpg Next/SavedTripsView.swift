@@ -138,7 +138,7 @@ struct SavedTripView: View {
     var event: TripEvent
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             HStack {
                 Text(dateToString(with: event.startDate ?? Date()))
                 Spacer()

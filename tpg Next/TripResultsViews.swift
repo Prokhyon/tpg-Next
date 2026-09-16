@@ -323,7 +323,7 @@ extension TripView {
                     }
                     .foregroundStyle(.primary)
                     .contentShape(.contextMenuPreview, Capsule())
-                    .padding(.horizontal, 25)
+                    .padding(.horizontal, 10)
                     .contextMenu {
                         if savedTripsModel.tripIsSaved(event) {
                             Button(action: {
