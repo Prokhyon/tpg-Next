@@ -16,6 +16,7 @@ extension QuayAccess {
         case .withAssistance: "Accès en fauteuil avec aide"
         case .notWheelchairAccessible: "Quai non accessible en fauteuil"
         case .alternativeTransport: "Transport de substitution pour fauteuil"
+        @unknown default: "Accès au quai"
         }
     }
 
@@ -25,6 +26,7 @@ extension QuayAccess {
         case .withAssistance: "figure.roll.runningpace"
         case .notWheelchairAccessible: "xmark.circle"
         case .alternativeTransport: "car.side"
+        @unknown default: "figure.roll"
         }
     }
 }

@@ -70,6 +70,8 @@ public final class LineManager {
     /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
     /// vide si l'API n'a pas fourni de tracé pour cette course.
     public private(set) var track: [CLLocationCoordinate2D]?
+    /// Le véhicule de la course (mode, plancher bas, suppression).
+    public private(set) var service: JourneyService?
 
     /// Voir `StopManager.latestRequest`.
     private var latestRequest = 0
@@ -91,9 +93,11 @@ public final class LineManager {
             DispatchQueue.global(qos: .userInitiated).async {
                 let coordinates = track ? parseJourneyTrack(from: data) : nil
                 let result = parseJourneyEventsSync(from: data)
+                let service = parseJourneyServiceSync(from: data)
                 DispatchQueue.main.async {
                     guard request == self.latestRequest else { return }
                     self.lineEvents = result.events
+                    self.service = service
                     // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
                     self.operatorName = result.operatorName.isEmpty ? stopEvent.operatorName : result.operatorName
                     if let coordinates {

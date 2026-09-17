@@ -17,6 +17,8 @@ import tpgNextFunc
 final class JourneyTrackModel {
     private(set) var events: [LineEvent]
     private(set) var operatorName = ""
+    /// Le véhicule : mode, plancher bas, suppression.
+    private(set) var service: JourneyService?
     /// Un segment de tracé par intervalle entre deux arrêts, `nil` tant que le tracé manque.
     private(set) var segments: [[CLLocationCoordinate2D]]?
 
@@ -30,12 +32,15 @@ final class JourneyTrackModel {
         self.events = events
     }
 
-    func load(_ stopEvent: StopEvent) {
+    /// - Parameter includeTrack: sans carte à l'écran (liste de la ligne sur iPhone), le tracé
+    ///   n'est pas demandé : la réponse est près de deux fois plus légère.
+    func load(_ stopEvent: StopEvent, includeTrack: Bool = true) {
         // Autre course : on repart de zéro. À la première course, les arrêts reçus à la
         // création (carte ouverte depuis la ligne) restent affichés en attendant la réponse.
         if let journeyRef, journeyRef != stopEvent.journeyRef {
             events = []
             operatorName = ""
+            service = nil
             segments = nil
             track = nil
             trackKey = nil
@@ -45,12 +50,13 @@ final class JourneyTrackModel {
         if let currentKey, currentKey != trackKey, let cached = LineTrackCache.load(key: currentKey) {
             applyTrack(cached, key: currentKey)
         }
-        let requestTrack = currentKey == nil || currentKey != trackKey
+        let requestTrack = includeTrack && (currentKey == nil || currentKey != trackKey)
         let requested = stopEvent.journeyRef
         lineManager.selectJourney(stopEvent, track: requestTrack) { [weak self] in
             guard let self, self.journeyRef == requested else { return }
             events = lineManager.lineEvents
             operatorName = lineManager.operatorName
+            service = lineManager.service
             guard requestTrack, let coordinates = lineManager.track,
                   let newKey = LineTrackCache.key(for: events) else {
                 updateSegments()

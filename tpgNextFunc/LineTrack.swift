@@ -248,3 +248,48 @@ public func fetchLegTrack(for leg: TripLeg, completion: @escaping ([CLLocationCo
         }
     }
 }
+
+
+/// Position estimée du véhicule d'une course, sans GPS : entre les deux arrêts qui encadrent
+/// `now`, au prorata du temps écoulé entre leurs heures de départ (estimées si connues).
+///
+/// Suit le tracé routier quand `segments` en fournit un par intervalle, une ligne droite sinon.
+/// `nil` avant le départ du premier arrêt ou après le terminus.
+public func estimatedVehiclePosition(events: [LineEvent], segments: [[CLLocationCoordinate2D]]?, at now: Date) -> CLLocationCoordinate2D? {
+    guard events.count >= 2 else { return nil }
+    for index in 0..<(events.count - 1) {
+        guard let start = events[index].departureDate, let end = events[index + 1].departureDate,
+              start <= now, now < end else { continue }
+        let duration = end.timeIntervalSince(start)
+        let fraction = duration > 0 ? now.timeIntervalSince(start) / duration : 0
+        let from = CLLocationCoordinate2D(latitude: Double(events[index].latitude) ?? 0, longitude: Double(events[index].longitude) ?? 0)
+        let to = CLLocationCoordinate2D(latitude: Double(events[index + 1].latitude) ?? 0, longitude: Double(events[index + 1].longitude) ?? 0)
+        var path = [from, to]
+        if let segments, segments.count == events.count - 1, segments[index].count >= 2 {
+            path = segments[index]
+        }
+        return point(along: path, fraction: fraction)
+    }
+    return nil
+}
+
+/// Le point situé à `fraction` (0…1) de la longueur d'un chemin.
+func point(along path: [CLLocationCoordinate2D], fraction: Double) -> CLLocationCoordinate2D? {
+    guard let first = path.first else { return nil }
+    let lengths = zip(path, path.dropFirst()).map { a, b in
+        CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: CLLocation(latitude: b.latitude, longitude: b.longitude))
+    }
+    let total = lengths.reduce(0, +)
+    guard total > 0 else { return first }
+    var remaining = min(max(fraction, 0), 1) * total
+    for (index, length) in lengths.enumerated() {
+        if remaining <= length, length > 0 {
+            let ratio = remaining / length
+            let a = path[index], b = path[index + 1]
+            return CLLocationCoordinate2D(latitude: a.latitude + (b.latitude - a.latitude) * ratio,
+                                          longitude: a.longitude + (b.longitude - a.longitude) * ratio)
+        }
+        remaining -= length
+    }
+    return path.last
+}
