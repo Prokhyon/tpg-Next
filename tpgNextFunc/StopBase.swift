@@ -49,51 +49,6 @@ extension CLLocationCoordinate2D {
 //    }
 //}
 
-public struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
-    public var coordinate: CLLocationCoordinate2D
-    public var id: String
-    public var name: String
-
-    public init(coordinate: CLLocationCoordinate2D, id: String, name: String) {
-        self.coordinate = coordinate
-        self.id = id
-        self.name = name
-    }
-
-    // Custom equality implementation
-    public static func == (lhs: LocationStop, rhs: LocationStop) -> Bool {
-        return lhs.id == rhs.id &&
-               lhs.name == rhs.name &&
-               lhs.coordinate.latitude == rhs.coordinate.latitude &&
-               lhs.coordinate.longitude == rhs.coordinate.longitude
-    }
-
-    // Custom hashing implementation
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(name)
-        hasher.combine(coordinate.latitude)
-        hasher.combine(coordinate.longitude)
-    }
-}
-
-//Code copied from ClusterMap Framework in order to keep LocationStop in this framework without using ClusterMap
-protocol CoordinateIdentifiable {
-    /// The geographical coordinate of the object.
-    var coordinate: CLLocationCoordinate2D { get set }
-
-    /// A Boolean value that determines whether the object should be included in clustering operations.
-    ///
-    /// The default value is `true`.
-    var shouldCluster: Bool { get }
-}
-
-extension CoordinateIdentifiable {
-    var shouldCluster: Bool { true }
-}
-//End of copied code
-
-
 public struct Stop: Codable, Identifiable, Hashable, Equatable {
     public let name: String
     public let sloid: String
@@ -188,71 +143,91 @@ public struct searchResultItem: Identifiable {
 }
 
 extension String {
-    // Function to normalize the string by removing accents and hyphens
+    /// Le texte sans accents ni ponctuation, pour la recherche : « Genève, Rive » devient
+    /// « GeneveRive », que « geneve rive » retrouve. La virgule restait, et « geneve rive »
+    /// ne trouvait pas « Genève, Rive ».
     public func normalized() -> String {
-        let normalizedString = self.folding(options: .diacriticInsensitive, locale: .current)
-        return normalizedString.replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
+        String(folding(options: .diacriticInsensitive, locale: .current).filter { $0.isLetter || $0.isNumber })
     }
 }
 
-public class StopStore: ObservableObject {
-    @Published public var stops: [Stop] = []
-    @Published public var searchText: String = ""
-    @Published public private(set) var filteredStops: [Stop] = []
-    @Published public var activeStops: [Stop] = []
-    @Published public var mapStops: [LocationStop] = []
-    @Published public var location: CLLocation?
+@Observable
+public class StopStore {
+    public private(set) var stops: [Stop] = []
+    public private(set) var activeStops: [Stop] = []
+    public var location: CLLocation?
+    /// Vrai une fois la base chargée, ce qui se fait en arrière-plan.
+    public private(set) var isLoaded = false
+    /// Les appels à `waitUntilLoaded` en attente, repris à la fin du chargement.
+    @ObservationIgnored private var loadWaiters: [CheckedContinuation<Void, Never>] = []
     
-    private var cancellables = Set<AnyCancellable>()
-    private let debounceInterval: TimeInterval = 0.3 // 300ms debounce interval
+    /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
+    private var stopsBySloid: [String: Stop] = [:]
+    /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
+    private var searchIndex: [(key: String, stop: Stop)] = []
 
     public init() {
-        loadAllStops()
-        setupSearch()
-    }
-
-    // MARK: - Data Loading and Initialization
-
-    private func loadAllStops() {
-        let stopFiles = ["FullStopsCH", "TrainStopsFR"] // Replace with actual JSON file names
-
-        for file in stopFiles {
-            loadStops(from: file)
+        // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
+        // (et bien plus longtemps sur la montre).
+        DispatchQueue.global(qos: .userInitiated).async {
+            let loaded = Self.loadAllStops()
+            var unique: [String: Stop] = [:]
+            for stop in loaded {
+                unique[stop.sloid] = stop
+            }
+            let active = Array(unique.values)
+            let index = active.map { (key: $0.name.normalized().lowercased(), stop: $0) }
+            DispatchQueue.main.async {
+                self.stops = loaded
+                self.stopsBySloid = unique
+                self.activeStops = active
+                self.searchIndex = index
+                self.isLoaded = true
+                self.loadWaiters.forEach { $0.resume() }
+                self.loadWaiters = []
+            }
         }
-
-        filterActiveStops()
     }
+
+    /// Rend la main une fois la base chargée, tout de suite si elle l'est déjà.
+    @MainActor
+    public func waitUntilLoaded() async {
+        guard !isLoaded else { return }
+        await withCheckedContinuation { loadWaiters.append($0) }
+    }
+
+    // MARK: - Chargement
 
     /// La base des arrêts est embarquée dans tpgNextFunc, pas dans les apps,
     /// pour que iOS et watchOS partagent exactement les mêmes fichiers.
     private static let stopsBundle = Bundle(for: StopStore.self)
 
-    private func loadStops(from fileName: String) {
-        guard let url = Self.stopsBundle.url(forResource: fileName, withExtension: "json") else {
+    private static func loadAllStops() -> [Stop] {
+        ["FullStopsCH", "TrainStopsFR"].flatMap(loadStops(from:))
+    }
+
+    private static func loadStops(from fileName: String) -> [Stop] {
+        guard let url = stopsBundle.url(forResource: fileName, withExtension: "json") else {
             Log.data.error("\(fileName).json introuvable dans le bundle")
-            return
+            return []
+        }
+
+        struct TempStop: Codable {
+            let designationOfficial: String?
+            let sloid: String?
+            let number: String?
+            let isoCountryCode: String?
+            let cantonName: String?
+            let meansOfTransport: String?
+            let wgs84East: Double?
+            let wgs84North: Double?
         }
 
         do {
-            let data = try Data(contentsOf: url)
-
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-            struct TempStop: Codable {
-                let designationOfficial: String?
-                let sloid: String?
-                let number: String?
-                let isoCountryCode: String?
-                let cantonName: String?
-                let meansOfTransport: String?
-                let wgs84East: Double?
-                let wgs84North: Double?
-            }
-
-            let tempStops = try decoder.decode([TempStop].self, from: data)
-
-            let filteredStops = tempStops.compactMap { tempStop -> Stop? in
+            let tempStops = try decoder.decode([TempStop].self, from: Data(contentsOf: url))
+            let stops = tempStops.compactMap { tempStop -> Stop? in
                 guard let name = tempStop.designationOfficial,
                       let sloid = tempStop.sloid,
                       let codedidoc = tempStop.number,
@@ -265,65 +240,41 @@ public class StopStore: ObservableObject {
                 }
                 return Stop(name: name, sloid: sloid, codedidoc: codedidoc, country: country, canton: canton, meansOfTransport: meansOfTransport, wgs84Coordinates: Coordinates(lon: wgs84East, lat: wgs84North))
             }
-
-            Log.data.debug("\(fileName).json : \(filteredStops.count) arrêts")
-            self.stops.append(contentsOf: filteredStops)
+            Log.data.debug("\(fileName).json : \(stops.count) arrêts")
+            return stops
         } catch {
             Log.data.error("Lecture de \(fileName).json impossible : \(error.localizedDescription)")
+            return []
         }
     }
 
-    private func filterActiveStops() {
-        var uniqueStops: [String: Stop] = [:]
-        for stop in stops {
-            uniqueStops[stop.sloid] = stop
-        }
-        activeStops = Array(uniqueStops.values)
-    }
+    // MARK: - Recherche
 
-    // MARK: - Search Logic with Combine Debounce
+    /// Les arrêts dont le nom contient `query` (accents, espaces et tirets ignorés), du plus
+    /// proche au plus lointain si la position est connue, sinon par ordre alphabétique.
+    /// Chaque écran appelle `searchingStops`, qui garde son propre texte de recherche.
+    public func search(_ query: String) -> [Stop] {
+        let normalizedQuery = query.normalized().lowercased()
+        // Des espaces seuls se normalisent en "" : `contains("")` rendrait toute la base.
+        guard !normalizedQuery.isEmpty else { return [] }
 
-    private func setupSearch() {
-        $searchText
-            .debounce(for: .seconds(debounceInterval), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                Task { @MainActor in
-                    self?.updateSearchResults()
-                }
-            }
-            .store(in: &cancellables)
-    }
-
-    @MainActor private func updateSearchResults() {
-        guard !searchText.isEmpty else {
-            filteredStops = []
-            return
-        }
-
-        let normalizedSearchText = searchText.normalized().lowercased()
-        
-        let matchingStops = activeStops.filter { stop in
-            stop.name.normalized().lowercased().contains(normalizedSearchText)
-        }
+        let matchingStops = searchIndex.filter { $0.key.contains(normalizedQuery) }.map(\.stop)
 
         if let currentLocation = location {
-            filteredStops = matchingStops.sorted {
-                CLLocation(latitude: $0.wgs84Coordinates.lat, longitude: $0.wgs84Coordinates.lon)
-                    .distance(from: currentLocation) <
-                CLLocation(latitude: $1.wgs84Coordinates.lat, longitude: $1.wgs84Coordinates.lon)
-                    .distance(from: currentLocation)
-            }
-        } else {
-            filteredStops = matchingStops.sorted { $0.name < $1.name }
+            // Distances calculées une fois par arrêt, et non à chaque comparaison du tri.
+            return matchingStops
+                .map { (stop: $0, distance: CLLocation(latitude: $0.wgs84Coordinates.lat, longitude: $0.wgs84Coordinates.lon).distance(from: currentLocation)) }
+                .sorted { $0.distance < $1.distance }
+                .map(\.stop)
         }
+        return matchingStops.sorted { $0.name < $1.name }
     }
 
     // MARK: - Utility Function
 
     public func findStop(id: String) -> Stop? {
         let harmonizedID = sloidHarmonizer(code: id)
-        return activeStops.first { $0.sloid == harmonizedID }
+        return stopsBySloid[harmonizedID]
     }
 }
 
@@ -392,15 +343,16 @@ public enum FavoritesStorage {
     }
 }
 
-public class FavoritesViewModel: ObservableObject {
+@Observable
+public class FavoritesViewModel {
     public static let shared = FavoritesViewModel()
 
     /// Les identités persistées, dans l'ordre choisi par l'utilisateur.
-    @Published public private(set) var favorites: [FavoriteStop] = []
+    public private(set) var favorites: [FavoriteStop] = []
 
     /// Les favoris résolus contre la base — c'est ce que consomment les vues.
     /// Même ordre et même cardinalité que `favorites`, donc les index restent alignés.
-    @Published public private(set) var favoriteStops: [Stop] = []
+    public private(set) var favoriteStops: [Stop] = []
 
     private weak var stopStore: StopStore?
 

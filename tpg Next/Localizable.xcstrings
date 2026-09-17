@@ -15,18 +15,16 @@
       }
     },
     "\nTestez ici: (Le rappel ne sera pas programmé)" : {
-
-    },
-    " : %@" : {
-      "shouldTranslate" : false
-    },
-    " : %@'" : {
-      "shouldTranslate" : false
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test here : (No reminder will be set)"
+          }
+        }
+      }
     },
     ": %@" : {
-      "shouldTranslate" : false
-    },
-    ": %@'" : {
       "shouldTranslate" : false
     },
     "%@" : {
@@ -234,9 +232,6 @@
         }
       }
     },
-    "%@'" : {
-      "shouldTranslate" : false
-    },
     "%lld" : {
       "shouldTranslate" : false
     },
@@ -331,8 +326,15 @@
         }
       }
     },
-    "Affichez les prochains départs d'un arrêt proche ou sélectionné directement sur l'écran d'accueil" : {
-
+    "Affichez les prochains départs d'un arrêt directement sur l'écran d'accueil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View a stop’s next departures directly from the home screen"
+          }
+        }
+      }
     },
     "Ajouter aux favoris" : {
       "localizations" : {
@@ -356,7 +358,14 @@
       }
     },
     "Ajoutez un arrêt aux favoris en cliquant sur l'étoile depuis la recherche ou le menu d'une page arrêt" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a stop to favorites by pressing the star from search or the menu of a stop page"
+          }
+        }
+      }
     },
     "Aller ici" : {
       "comment" : "Other: Use as destination",
@@ -375,6 +384,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Switch sorting between time and line"
+          }
+        }
+      }
+    },
+    "Aperçus d'itinéraire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip previews"
           }
         }
       }
@@ -435,6 +454,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No result for « %@ » "
+          }
+        }
+      }
+    },
+    "Autorisez la localisation pour voir les départs à proximité." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grant location permissions to access nearby stops"
           }
         }
       }
@@ -563,8 +592,8 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Switch the display of a vehicle’s arrival time between it’s timetable and remaining time"
+            "state" : "translated",
+            "value" : "Switch the display of a vehicle’s arrival time between its timetable and remaining time"
           }
         }
       }
@@ -590,7 +619,14 @@
       }
     },
     "Continuer" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        }
+      }
     },
     "Dans un premier temps, quelques autorisations afin d'améliorer votre expérience:" : {
       "localizations" : {
@@ -853,7 +889,14 @@
       }
     },
     "Les tracés sur les cartes suivent désormais les routes" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Routes on maps now follow roads"
+          }
+        }
+      }
     },
     "Lieux" : {
       "localizations" : {
@@ -946,7 +989,14 @@
       }
     },
     "Nouveautés" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What’s new"
+          }
+        }
+      }
     },
     "NSLocationWhenInUseUsageDescriptio" : {
       "extractionState" : "manual",
@@ -1027,7 +1077,14 @@
       }
     },
     "Pas d'arrets en favoris" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stop in favorites"
+          }
+        }
+      }
     },
     "Pas d'arrêts trouvés à proximité" : {
       "localizations" : {
@@ -1069,8 +1126,15 @@
         }
       }
     },
-    "Position indisponible. Autorisez la localisation pour voir les départs à proximité." : {
-
+    "Position introuvable pour l'instant." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location currently unavailable"
+          }
+        }
+      }
     },
     "Prévenir 1' avant" : {
       "localizations" : {
@@ -1177,7 +1241,14 @@
       "shouldTranslate" : false
     },
     "Rappel %lld' avant" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder %lld' before"
+          }
+        }
+      }
     },
     "Rappel %lld' avant prévu avec succès" : {
       "localizations" : {
@@ -1190,7 +1261,14 @@
       }
     },
     "Rappel à l'arrivée" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder on arrival"
+          }
+        }
+      }
     },
     "Rappel à l'arrivée prévu avec succès" : {
       "extractionState" : "manual",
@@ -1363,7 +1441,25 @@
       "shouldTranslate" : false
     },
     "Tracé de ligne" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line route"
+          }
+        }
+      }
+    },
+    "Tracés de ligne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line routes"
+          }
+        }
+      }
     },
     "Trajet rapide" : {
       "localizations" : {
@@ -1391,6 +1487,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A problem, question or wish ?"
+          }
+        }
+      }
+    },
+    "Une timeline simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attente dans les résultats et itinéraires enregistrés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved trips and results now display a simplified timeline with lines, changes, walks  and waits"
           }
         }
       }
@@ -1427,7 +1533,14 @@
       }
     },
     "Widgets" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

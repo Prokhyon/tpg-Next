@@ -14,34 +14,14 @@ struct SmallStopTitleView: View {
 
     var body: some View {
         HStack {
-            let splitStopName = splitString(stopName, separator: ",")
-            if splitStopName.1.isEmpty {
-                HStack {
-                    Text(splitStopName.0)
-                        .font(.headline)
-                        .bold()
-                        .minimumScaleFactor(0.2)
-                        .lineLimit(2)
-                }
-            } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0)
-                            .font(.caption2)
-                            .minimumScaleFactor(0.2)
-                            .lineLimit(1)
-                        Text(splitStopName.1)
-                            .font(.caption)
-                            .bold()
-                            .minimumScaleFactor(0.3)
-                            .lineLimit(1)
-                    }
-            }
+            StopNameView(stopName, style: .compact)
             Spacer()
         }
     }
 }
 
 struct StopEventView: View  {
+    @Environment(\.displayTime) private var now
     var event: StopEvent
     var showTime: Bool
     var previousLineRef: String?
@@ -49,41 +29,17 @@ struct StopEventView: View  {
     var body: some View {
 //                .stroke(event.journeyRef == (previousLineRef ?? "") ? .accent : .clear, lineWidth: 3)
         VStack {
-            let transportTime = displayTimeOrMinutesRemaining(for: event.timetabledTime, estimatedInput: event.estimatedTime,  with: showTime)
+            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
             HStack {
                 BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 Image(systemName: "arrow.right").font(.caption)
                 SmallStopTitleView(stopName: event.destination)
             }
             HStack {
-                if transportTime.text == "0" {
-                    transportIcon(with: event.transportType)
-                        .frame(width: 15)
-                        .padding(4)
-                } else {
-                    if transportTime.text.count > 6 {
-                        let splitTime = splitString(transportTime.text, separator: ";" )
-                        HStack(spacing: 5) {
-                            Text(splitTime.0)
-                            Text(splitTime.1)
-                                .foregroundStyle(transportTime.color)
-                                .minimumScaleFactor(0.5)
-                        }
-                        .padding(4)
-                        
-                    } else {
-                        Text(transportTime.text)
-                            .padding(4)
-                            .minimumScaleFactor(0.5)
-                            .foregroundStyle(transportTime.color)
-                    }
-                }
+                DepartureTimeView(transportTime, transportType: event.transportType, layout: .inline(spacing: 5), iconWidth: 15)
+                    .padding(4)
                 Spacer()
-                if event.plannedQuay == "" {
-                    Image(systemName: "questionmark.square.fill")
-                } else {
-                    Image(systemName: "\(event.plannedQuay).square.fill".lowercased())
-                }
+                QuayIcon(quay: event.plannedQuay)
             }
             
         }
@@ -96,12 +52,10 @@ struct StopEventView: View  {
 }
 
 struct StopView: View {
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var viewIsVisible = false
-    @StateObject private var stopManager = StopManager()
+    @Environment(\.displayTime) private var now
+    @State private var stopManager = StopManager()
     @State private var stopEvents: [StopEvent] = []
-    @EnvironmentObject var stopStore: StopStore
-    @State private var timer: AnyCancellable?
+    @Environment(StopStore.self) var stopStore
     let stopName: String
     let stopSloid: String
     var previousLineRef: String?
@@ -119,10 +73,8 @@ struct StopView: View {
     @State private var showMenu = false
     
     var groupedStopEvents: [String: [StopEvent]] {
-            Dictionary(grouping: stopManager.stopEvents) { stopEvent in
-                "\(stopEvent.lineName);\(stopEvent.destination)"
-            }
-        }
+        stopManager.stopEvents.groupedByLineAndDestination()
+    }
 
     var filteredStopEvents: [String: [StopEvent]] {
             if selectedFilters.isEmpty {
@@ -143,7 +95,7 @@ struct StopView: View {
                 if viewLineSorted {
                     ZStack {
                         TabView {
-                            ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                            ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
                                 let splitLine = splitString(key, separator: ";")
                                 StopSortedView(lineName: splitLine.0, destination: splitLine.1, currentStopName: stopName, stopEventsList: filteredStopEvents[key]!, showTime: $showTime)
                                     .containerBackground(LineColors.lineColor(for: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName).gradient,
@@ -185,7 +137,7 @@ struct StopView: View {
                             }
                         }
                         .padding(.leading, 10)
-                        ForEach(allFilteredStopEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }), id: \.id) { event in
+                        ForEach(allFilteredStopEvents.sortedByDeparture(), id: \.id) { event in
                             
                             Button(action: {
                                 //define navigation
@@ -234,40 +186,13 @@ struct StopView: View {
         .sheet(isPresented: $showMenu) {
             StopMenuView(showMenu: $showMenu, showTime: $showTime, viewLineSorted: $viewLineSorted)
         }
-        .onChange(of: scenePhase) {
-            if scenePhase == .active && viewIsVisible {
-                getStopEvents()
-                if autoRefresh {
-                    timer = Timer.publish(every: 30, on: .main, in: .common)
-                        .autoconnect()
-                        .sink { _ in
-                            getStopEvents()
-                        }
-                }
-            } else {
-                timer?.cancel()
-                            }
-            
-        }
-        .onAppear {
-            viewIsVisible = true
-            timeRequest = timeRequest(for: previousLineTime)
+        .periodicRefresh(repeats: autoRefresh) { trigger in
+            // Chaque rafraîchissement repart de maintenant : les bus déjà partis quittent la
+            // liste. Ouvert depuis une course, l'arrêt part de son heure de passage, gardée
+            // tant qu'elle est à venir.
+            let origin = timeRequest(for: previousLineTime)
+            timeRequest = trigger == .start ? origin : max(Date(), origin)
             getStopEvents()
-            if autoRefresh {
-                timer = Timer.publish(every: 30, on: .main, in: .common)
-                    .autoconnect()
-                    .sink { _ in
-                        getStopEvents()
-                    }
-            }
-            requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
-//            if requestNumber > 30 {
-//                getStopEvents()
-//            }
-        }
-        .onDisappear {
-            viewIsVisible = false
-            timer?.cancel()
         }
     }
     
@@ -297,45 +222,22 @@ struct StopView: View {
     func determineColor(for event: StopEvent) -> Color {
         /*if event.journeyRef == previousLineRef {
             return Color.accentColor
-        } else*/ if dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) {
+        } else*/ if hasPassed(event.departureDate, includingCurrentMinute: false, now: now) {
             return Color.gray
         } else {
             return Color.primary
         }
     }
     func timeRequest(for time: String?) -> Date {
-        if time != nil {
-            return stringToDate(with: time!)!
-        } else {
-            return Date()
-        }
-    }
-    private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
-        let lhsComponents = lhs.split(separator: ";")
-        let rhsComponents = rhs.split(separator: ";")
-        
-        let lhsLineName = lhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let lhsDestination = lhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        let rhsLineName = rhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let rhsDestination = rhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        // Sort primarily by LineName
-        if lhsLineName != rhsLineName {
-            if let lhsLineNameInt = Int(lhsLineName), let rhsLineNameInt = Int(rhsLineName) {
-                return lhsLineNameInt < rhsLineNameInt
-            } else {
-                return lhsLineName < rhsLineName
-            }
-        }
-        
-        // If LineName is the same, sort by Destination
-        return lhsDestination < rhsDestination
+        // Une heure absente ou illisible veut dire « les départs à partir de maintenant ».
+        guard let time, let date = stringToDate(with: time) else { return Date() }
+        return date
     }
 }
 
 
 struct StopSortedView: View {
+    @Environment(\.displayTime) private var now
     var lineName: String
     var destination: String
     var currentStopName: String
@@ -348,29 +250,12 @@ struct StopSortedView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
                         ForEach(stopEventsList, id: \.id) { stopEvent in
-                            let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
+                            let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
                             Button(action: {
                                 //define navigation
                             }) {
                                 Group {
-                                    if time.text == "0" {
-                                        transportIcon(with: stopEvent.transportType)
-                                            .frame(width: 15)
-                                    } else {
-                                        if time.text.count > 6 {
-                                            HStack(spacing: 2) {
-                                                let splitTime = time.text.split(separator: ";")
-                                                Text(splitTime[0])
-                                                Text(splitTime[1])
-                                                    .foregroundStyle(time.color)
-                                                    .minimumScaleFactor(0.5)
-                                            }
-                                        } else {
-                                            Text(time.text)
-                                                .foregroundStyle(time.color)
-                                        }
-                                        
-                                    }
+                                    DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                 }
                                 .padding(.horizontal)
                                 
@@ -389,11 +274,7 @@ struct StopSortedView: View {
                     Image(systemName: "arrow.right")
                     SmallStopTitleView(stopName: destination)
                     Spacer()
-                    if quay == "" {
-                        Image(systemName: "questionmark.square.fill")
-                    } else {
-                        Image(systemName: "\(quay).square.fill".lowercased())
-                    }
+                    QuayIcon(quay: quay)
                 }
                 .padding(.horizontal, 12)
             }
@@ -426,14 +307,14 @@ struct StopMenuView: View {
 
 struct StopView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var stopStore = StopStore()
-        @StateObject var watchFavorites = WatchFavoritesViewModel()
+        @State var stopStore = StopStore()
+        @State var watchFavorites = WatchFavoritesViewModel()
         @State var autoRefresh: Bool = false
         @State var viewLineSorted: Bool = false
         @State var showTime: Bool = false
         
         return StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:93006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
-            .environmentObject(stopStore)
-            .environmentObject(watchFavorites)
+            .environment(stopStore)
+            .environment(watchFavorites)
     }
 }

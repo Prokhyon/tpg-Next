@@ -11,12 +11,11 @@ import tpgNextFunc
 import WidgetKit
 
 struct SettingsView: View {
-    @AppStorage("homeFavorites") var homeFavorites = false
-    @AppStorage("translucentUI") var translucentUI = false
-    @AppStorage("GoupedDefault") var groupedDefault = false
-    @AppStorage("TimeDefault") var timeDefault = false
-    @AppStorage("DelayTimeIntegrated") var delayTimeIntegrated = false
-    @AppStorage("ShowWelcome") var showWelcome = true
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
+    @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
+    @AppStorage(SettingKey.delayIncludedInTime) var delayTimeIntegrated = false
+    @AppStorage(SettingKey.showWelcome) var showWelcome = true
     @Namespace private var animation
     @State private var circleButtonMessage = false
     @State var showMail: Bool = false
@@ -31,26 +30,19 @@ struct SettingsView: View {
                                         FavoritesOrderView()
                                             .navigationTitle("Ordre des favoris")
                                     } label: {
-                                        BasicElement()
-                                            .frame(height: 50)
-                                            .padding(.vertical, 5)
-                                            .overlay(
                                         HStack {
                                             Text("Ordre des favoris").minimumScaleFactor(0.5)
                                             Spacer()
                                             Image(systemName: "chevron.right")
                                         }
-                                        .padding()
-                                        )
+                                        .padding(.horizontal)
+                                        .basicElementBackground(minHeight: 50)
+                                        .padding(.vertical, 5)
                                     }
                             NavigationLink {
                                 ScheduledNotifications()
                                     .navigationTitle("Rappels prévus")
                             } label: {
-                                BasicElement()
-                                    .frame(height: 50)
-                                    .padding(.vertical, 5)
-                                    .overlay(
                                 HStack {
                                     Spacer()
                                     Text("Rappels prévus").minimumScaleFactor(0.5).padding(.vertical, 5)
@@ -58,8 +50,8 @@ struct SettingsView: View {
                                     Image(systemName: "chevron.right")
                                 }
                                 .padding(.horizontal)
-                                .frame(height: 50)
-                                )
+                                .basicElementBackground(minHeight: 50)
+                                .padding(.vertical, 5)
                             }
                         }
                         
@@ -120,9 +112,6 @@ struct SettingsView: View {
                         Button {
                             showWelcome = true
                         } label: {
-                            BasicElement()
-                                .frame(height: 50)
-                                .overlay(
                                     HStack {
                                         Text("Revoir le message de démarrage")
                                         Spacer()
@@ -132,17 +121,14 @@ struct SettingsView: View {
                                             Image(systemName: "doc.plaintext.fill")
                                         }
                                     }
-                                        .padding(.horizontal)
-                                )
+                            .padding(.horizontal)
+                            .basicElementBackground(minHeight: 50)
                                 .padding(.vertical, 5)
                         }
                         
                         Button {
                             showMail.toggle()
                         } label: {
-                            BasicElement()
-                                .frame(height: 50)
-                                .overlay(
                                     HStack {
                                         Text("Un problème, une question, une envie ?")
                                         Spacer()
@@ -152,8 +138,8 @@ struct SettingsView: View {
                                             Image(systemName: "exclamationmark.bubble")
                                         }
                                     }
-                                        .padding(.horizontal)
-                                )
+                            .padding(.horizontal)
+                            .basicElementBackground(minHeight: 50)
                                 .padding(.vertical, 5)
                         }
 //                        Spacer()
@@ -174,15 +160,15 @@ struct SettingsView: View {
 }
 
 struct FavoritesOrderView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
 //    @Binding var orderFavorites: Bool
     
     var body: some View {
                 List {
                     ForEach(favoritesViewModel.favoriteStops) { favorite in
                             SmallStopTitleView(stopName: favorite.name)
-                                .frame(height: 30)
+                                .heightGrowingWithText(30)
                                 .padding(.horizontal, 20)
                     }
                     .onMove { indices, newOffset in
@@ -214,7 +200,7 @@ struct FavoritesOrderView: View {
 }
 
 struct ScheduledNotifications: View {
-    @ObservedObject var transportNotificationManager = BusNotificationManager.shared
+    var transportNotificationManager = BusNotificationManager.shared
     
     let notificationManager = NotificationManager.shared
     
@@ -230,9 +216,6 @@ struct ScheduledNotifications: View {
                         ForEach(Array(transportNotificationManager.scheduledNotificationIdentifiers.keys), id: \.self) { key in
                             let stopEvent = transportNotificationManager.scheduledNotificationIdentifiers[key]!
                             
-                            BasicCard()
-                                .frame(height: 120)
-                                .overlay(
                                     HStack {
                                         VStack(spacing: 0) {
                                             HStack {
@@ -256,8 +239,9 @@ struct ScheduledNotifications: View {
                                         }
                                         .padding(5)
                                     }
-                                        .padding(.horizontal, 15)
-                                )
+                            .padding(.horizontal, 15)
+                            .frame(minHeight: 120)
+                            .background(BasicCard())
                                 .padding(.vertical, 5)
                                 .padding(.horizontal, 10)
                                 .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
@@ -333,7 +317,7 @@ struct SettingsView_Previews: PreviewProvider {
         let favoritesViewModel = FavoritesViewModel()
         
         return SettingsView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
     }
 }

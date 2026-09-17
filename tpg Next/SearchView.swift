@@ -11,29 +11,31 @@ import MapKit
 import tpgNextFunc
 
 struct SearchView: View {
-    //    @ObservedObject var path: ViewStateStack
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @ObservedObject var recentSearchModel = RecentSearch()
-    @StateObject var locationManager = LocationManager()
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
+    @Environment(\.displayTime) private var now
+    //    var path: ViewStateStack
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @Environment(RecentSearch.self) var recentSearchModel
+    @State var locationManager = LocationManager()
+    @Environment(SavedTripsModel.self) var savedTripsModel
     
     @State private var resultDetail: searchResultItem?
     @State private var activeFutureTrip: TripEvent?
     //    @State private var recentSearchDestination: RecentSearchItem?
     @State var searchResult: Stop?
+    @State private var stopResults: [Stop] = []
     @State private var showTripDetail = false
     
     @FocusState private var isFocused: Bool
     
-    @AppStorage("homeFavorites") var homeFavorites = false
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     
     //    var futureTrips: [TripEvent] = []
     var futureTrips: [TripEvent] {
-        savedTripsModel.savedTrips.sorted(by: { $0.startTime < $1.startTime }).filter { trip in
-            !dateStringHasPassed(with: trip.startTime, equalReturnsTrue: false)
+        savedTripsModel.savedTrips.sortedByStart().filter { trip in
+            !hasPassed(trip.startDate, includingCurrentMinute: false, now: now)
         }
     }
     
@@ -41,7 +43,7 @@ struct SearchView: View {
 //        let searchView = VStack {}
         let searchView = ZStack {
             VStack(alignment: .leading, spacing: 0) {
-            if stopStore.searchText.isEmpty {
+            if navigationModel.searchQuery.isEmpty {
                 ScrollView {
                     if !recentSearchModel.searchItems.isEmpty {
                         VStack(spacing: 0) {
@@ -67,21 +69,7 @@ struct SearchView: View {
                                         .padding(5)
                                         .contentShape(.contextMenuPreview, Capsule())
                                         .contextMenu {
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                                            }) {
-                                                Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                                            }
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                                            }) {
-                                                Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                                            }
-                                            Button(action: {
-                                                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                                            }) {
-                                                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                                            }
+                                            TripActionsMenu(stop: stop)
                                         }
                                         .padding(.horizontal)
                                     }
@@ -98,17 +86,16 @@ struct SearchView: View {
                         }
                         .padding(.horizontal)
                         HStack {
-                            Text(formatDate(stringToDate(with: activeFutureTrip?.startTime ?? "") ?? nil))
+                            Text(formatDate(activeFutureTrip?.startDate))
                                 .font(.headline)
                             //                                .padding(.top)
                             Spacer()
                         }
                         .padding(.horizontal)
-                        GeometryReader { geometry in
                             ScrollView(.horizontal) {
                                 HStack {
                                     ForEach(futureTrips, id: \.self) { trip in
-                                        //                            if !dateStringHasPassed(with: trip.startTime, equalReturnsTrue: false) {
+                                        //                            if !hasPassed(trip.startDate, includingCurrentMinute: false, now: now) {
                                         NavigationLink {
                                             FullTripView(fullTrip: trip)
                                         } label: {
@@ -143,33 +130,32 @@ struct SearchView: View {
                             .scrollTargetLayout()
                             .scrollTargetBehavior(.viewAligned)
                             .scrollPosition(id: $activeFutureTrip)
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .top) {
-                                        ScrollMask(leading: false, vertical: true, gradientLength: 10)
-                                    }
-                            }
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .bottom) {
-                                        ScrollMask(leading: true, vertical: true, gradientLength: 10)
-                                    }
-                            }
+//                            .mask {
+//                                Rectangle()
+//                                    .overlay(alignment: .top) {
+//                                        ScrollMask(leading: false, vertical: true, gradientLength: 10)
+//                                    }
+//                            }
+//                            .mask {
+//                                Rectangle()
+//                                    .overlay(alignment: .bottom) {
+//                                        ScrollMask(leading: true, vertical: true, gradientLength: 10)
+//                                    }
+//                            }
                             //                            .padding(.vertical)
                             //                            .scrollTargetBehavior(.paging)
                             .onAppear {
                                 activeFutureTrip = futureTrips.first
                             }
-                        }
                     }
                 }
             } else {
-                if stopStore.filteredStops.isEmpty {
-                    Text("Aucun résultat pour « \(stopStore.searchText) »")
+                if stopResults.isEmpty {
+                    Text("Aucun résultat pour « \(navigationModel.searchQuery) »")
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(stopStore.filteredStops) { stop in
+                            ForEach(stopResults) { stop in
                                 Button(action: {
                                     recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
                                     searchResult = stop
@@ -182,21 +168,7 @@ struct SearchView: View {
                                 .padding(5)
                                 .contentShape(.contextMenuPreview, Capsule())
                                 .contextMenu {
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                                    }) {
-                                        Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                                    }
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                                    }) {
-                                        Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                                    }
-                                    Button(action: {
-                                        tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                                    }) {
-                                        Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                                    }
+                                    TripActionsMenu(stop: stop)
                                 }
                             }
                         }
@@ -230,6 +202,7 @@ struct SearchView: View {
                 StopView(stopName: stop.name, stopSloid: stop.sloid)
             }
             .scrollDismissesKeyboard(.immediately)
+            .searchingStops(navigationModel.searchQuery, results: $stopResults)
         
         
             .onAppear {
@@ -253,13 +226,13 @@ struct SearchView: View {
                                    //            .navigationDestination(isPresented: $showTripDetail) {
                                    //                if let stop = selectedSearchResult {
                                    //                    StopView(stopName: stop.title, stopSloid: stop.stop.sloid)
-                                   ////                        .environmentObject(savedTripsModel)
+                                   ////                        .environment(savedTripsModel)
                                    //                }
                                    //            }
                
         if #available(iOS 26, *) {
             searchView
-                .searchable(text: $stopStore.searchText)
+                .searchable(text: Bindable(navigationModel).searchQuery)
         } else {
             searchView
         }
@@ -288,15 +261,16 @@ struct SearchView: View {
 
 struct SearchView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var stopStore = StopStore()
-        @StateObject var favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var stopStore = StopStore()
+        @State var favoritesViewModel = FavoritesViewModel()
+        @State var fullTripTest = FullTripTest()
         @State var showSearch: Bool = true
         
         return NavigationStack() {
             SearchView(/*futureTrips: [fullTripTest.Trip]*/)
-                .environmentObject(favoritesViewModel)
-                .environmentObject(stopStore)
+                .environment(favoritesViewModel)
+                .environment(stopStore)
+                .environment(RecentSearch())
 //                    .background(Background())
             }
             

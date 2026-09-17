@@ -21,9 +21,9 @@ struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
 }
 
 struct MapView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject private var stopManager = StopManager()
-    @StateObject var locationManager = LocationManager()
+    @Environment(StopStore.self) var stopStore
+    @State private var stopManager = StopManager()
+    @State var locationManager = LocationManager()
     @State private var dataSource = DataSource()
     @State private var selectedResult: String?
     @State private var selectedStop: Stop?
@@ -104,7 +104,7 @@ struct MapView: View {
                     }
                     .onChange(of: selectedResult) {
                         if let selectedId = selectedResult,
-                           let stop = stopStore.stops.first(where: { $0.id == selectedId }) {
+                           let stop = stopStore.findStop(id: selectedId) {
                             selectedStop = stop
                             // Set the new camera position to center and zoom on the selected stop
 //                            withAnimation {
@@ -138,7 +138,7 @@ struct MapView: View {
                             if let selectedResult {
                                 if isQuaySloid(selectedResult) {
                                     SmallStopView(stop: createStop(nomarret: selectedStop?.name, sloid: selectedResult), quay: returnQuayFromId(id: selectedResult)?.quayName ?? "?", isQuay: true, stopEventNumber: filteredQuays.count*10, testing: !autoRefresh)
-                                        .frame(height: 250)
+                                        .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
                                         .transition(.opacity)
                                         .onAppear {
@@ -149,7 +149,7 @@ struct MapView: View {
                                         }
                                 } else if let stop = stopStore.findStop(id: selectedResult) {
                                     SmallStopView(stopManager: stopManager, stop: stop, stopEventNumber: 20, testing: !autoRefresh)
-                                        .frame(height: 250)
+                                        .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
                                         .transition(.opacity)
                                 }
@@ -185,7 +185,7 @@ struct MapView: View {
                         }
                     } else {
                         if let selectedId = selectedResult,
-                           let stop = stopStore.stops.first(where: { $0.id == selectedId }) {
+                           let stop = stopStore.findStop(id: selectedId) {
                             // Set the new camera position to center and zoom on the selected stop
                             withAnimation {
                                 position = .region(
@@ -197,6 +197,14 @@ struct MapView: View {
                             }
                         }
                     }
+                    dataSource.setStopStore(stopStore.activeStops)
+                    Task {
+                        await dataSource.removeAnnotations()
+                        await dataSource.addAnnotations()
+                    }
+                }
+                // La base se charge en arrière-plan : la carte l'attend si elle s'ouvre avant.
+                .onChange(of: stopStore.isLoaded) {
                     dataSource.setStopStore(stopStore.activeStops)
                     Task {
                         await dataSource.removeAnnotations()
@@ -270,7 +278,7 @@ extension MapView {
             var count: Int
         }
     @Observable
-    final class DataSource: ObservableObject {
+    final class DataSource {
         private let clusterManager = ClusterManager<LocationStop>()
         private var mapStops: [LocationStop] = []
         let test = [33, 57, 39843, 78925]
@@ -351,8 +359,8 @@ struct MapView2_Previews: PreviewProvider {
         let keyboardResponder = KeyboardResponder()
 
         return MapView()
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(keyboardResponder)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(keyboardResponder)
     }
 }

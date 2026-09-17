@@ -10,11 +10,12 @@ import MapKit
 import tpgNextFunc
 
 struct FullTripView: View {
-    @EnvironmentObject var savedTripsModel: SavedTripsModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
+    @Environment(\.displayTime) private var now
+    @Environment(SavedTripsModel.self) var savedTripsModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
     var fullTrip: TripEvent
-    @StateObject private var lineManager = LineManager()
-    @AppStorage("TimeDefault") var timeDefault = false
+    @State private var lineManager = LineManager()
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
     
     @Namespace private var namespace
@@ -59,7 +60,7 @@ struct FullTripView: View {
                                         }
                                         .foregroundStyle(.primary)
                                         .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!dateStringHasPassed(with: leg.legBoardEstimatedTime, equalReturnsTrue: false)) { view in
+                                        .if(!hasPassed(leg.boardDate, includingCurrentMinute: false, now: now)) { view in
                                             view.contextMenu {
                                                 NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef), stopID: leg.legBoardStopId)
                                             }
@@ -91,7 +92,7 @@ struct FullTripView: View {
                                         }
                                         .foregroundStyle(.primary)
                                         .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!dateStringHasPassed(with: leg.legAlightEstimatedTime, equalReturnsTrue: false)) { view in
+                                        .if(!hasPassed(leg.alightDate, includingCurrentMinute: false, now: now)) { view in
                                             view.contextMenu {
                                                 NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
                                             }
@@ -106,21 +107,21 @@ struct FullTripView: View {
                                         if leg.transferWalkDuration.isEmpty { //if walk leg without waiting time, display only the walking time
                                             Image(systemName: "figure.walk")
                                                 .padding(.leading, 30)
-                                            Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferDuration))
                                             Spacer()
                                         } else {
                                             Image(systemName: "timer") //Time between previous leg arrival and next leg departure
                                                 .padding(.leading, 30)
-                                            Text("\(leg.transferDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferDuration))
                                                 .padding(.trailing, 30)
                                             Image(systemName: "figure.walk")//walk time
-                                            Text("\(leg.transferWalkDuration.dropFirst(2).dropLast(1))'")
+                                            Text(durationText(leg.transferWalkDuration))
                                             Spacer()
                                         }
                                     } else if leg.publishedLineName.isEmpty { //Used if trip without transport, only walking
                                         Image(systemName: "figure.walk")
                                             .padding(.leading, 30)
-                                        Text("\(fullTrip.duration.dropFirst(2).dropLast(1))'")
+                                        Text(durationText(fullTrip.duration))
                                             .padding(.trailing, 30)
                                         Spacer()
                                     }
@@ -147,71 +148,26 @@ struct FullTripView: View {
                     .contentMargins(.bottom, 40, for: .automatic)
                     .onAppear {
                         showTime = timeDefault
-                        UINavigationBar.setTransparentAppearance()
                     }
                 }
-                if #available(iOS 26, *) {
-                } else {
-                    VStack(spacing: 0) {
-                        Rectangle()
-                            .foregroundStyle(.ultraThickMaterial)
-                            .frame(height: 50)
-                        Rectangle()
-                            .foregroundStyle(.ultraThickMaterial)
-                            .frame(height: 100)
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .trailing) {
-                                        ScrollMask(leading: true, vertical: true, gradientLength: 100)
-                                    }
-                            }
-                        Spacer()
-                    }
-                    //                    .blur(radius: 10)
-                    .ignoresSafeArea(edges: .top)
-                }
+                LegacyTopFade()
                 
                 VStack { //Trip title above the details
-                    if #available(iOS 26, *) {
-                        GlassEffectContainer() {
-                            HStack {
-                                fullTripViewTitle(departureStopName: fullTrip.startName, arrivalStopName: fullTrip.endName)
-                                    .foregroundStyle(.text)
-                                    .frame(height: 70)
-                                    .padding(.horizontal, 20)
-                                    .glassEffect(.regular.interactive())
-                                    .glassEffectID("title", in: namespace)
-                                fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
-                                    .foregroundStyle(.text)
-                                    .frame(height: 70)
-                                    .padding(.horizontal, 20)
-                                    .glassEffect(.regular.interactive())
-                                    .glassEffectID("timeDate", in: namespace)
-                            }
-//                            .foregroundStyle(.primary)
-                            .padding(.horizontal)
-                        }
-//                        .offset(x: 35)
-
-                    } else {
+                    TPGGlassContainer {
                         HStack {
                             fullTripViewTitle(departureStopName: fullTrip.startName, arrivalStopName: fullTrip.endName)
+                                .glassForegroundStyle(.text)
                                 .frame(height: 70)
                                 .padding(.horizontal, 20)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                            Spacer()
+                                .tpgSurface(interactive: true, legacy: .thinMaterial, glassID: "title", namespace: namespace)
+                            if !TPGSurface.isGlass {
+                                Spacer()
+                            }
                             fullTripViewTimeDate(duration: fullTrip.duration, date: localDayString(fromUTC: fullTrip.startTime))
+                                .glassForegroundStyle(.text)
                                 .frame(height: 70)
                                 .padding(.horizontal, 20)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
+                                .tpgSurface(interactive: true, legacy: .thinMaterial, glassID: "timeDate", namespace: namespace)
                         }
                         .padding(.horizontal)
                     }
@@ -265,6 +221,8 @@ struct FullTripView: View {
 
             }
         .navigationTitle("Détail itinéraire") // Set back button text
+        // Barre transparente pour cet écran seulement : l'ancien réglage UIKit s'appliquait à toute l'app.
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -280,54 +238,9 @@ struct fullTripViewTitle: View {
     
     var body: some View {
                 HStack(alignment: .center) {
-                            VStack(alignment: .leading) {
-                                let splitStopName = splitString(departureStopName, separator: ",")
-                                if splitStopName.1.isEmpty {
-                                    HStack(alignment: .center) {
-                                        VStack {
-                                    Text(splitStopName.0)
-                                        .font(.title3)
-                                        .bold()
-                                        .minimumScaleFactor(0.5)
-                                        }
-                                    }
-                                    .frame(height: 60)
-                                } else {
-                                    Text(splitStopName.0)
-                                        .font(.callout)
-                                        .minimumScaleFactor(0.5)
-                                    Text(splitStopName.1)
-                                        .font(.title2)
-                                        .bold()
-                                }
-                            }
-                            .minimumScaleFactor(0.5)
-                            
-                        Image(systemName: "arrow.right")
-
-                            VStack(alignment: .leading) {
-                            let splitStopName = splitString(arrivalStopName, separator: ",")
-                            if splitStopName.1.isEmpty {
-                                HStack(alignment: .center) {
-                                    VStack {
-                                        Text(splitStopName.0)
-                                            .font(.title3)
-                                            .bold()
-                                            .minimumScaleFactor(0.5)
-                                    }
-                                }
-                                .frame(height: 60)
-                            } else {
-                                        Text(splitStopName.0)
-                                            .font(.callout)
-                                            .minimumScaleFactor(0.5)
-                                        Text(splitStopName.1)
-                                            .font(.title2)
-                                            .bold()
-                                            
-                            }
-                        }
-                        .minimumScaleFactor(0.5)
+                    StopNameView(departureStopName, style: .header)
+                    Image(systemName: "arrow.right")
+                    StopNameView(arrivalStopName, style: .header)
                 }
 //                .padding(.leading, 50)
 //                .padding(.trailing,10)
@@ -349,7 +262,7 @@ struct fullTripViewTimeDate: View {
             }
             HStack {
                 Image(systemName: "timer")
-                Text("\(duration.dropFirst(2).dropLast(1))'")
+                Text(durationText(duration))
             }
         }
         .fixedSize()
@@ -358,16 +271,16 @@ struct fullTripViewTimeDate: View {
 
 struct FullTripView_Previews: PreviewProvider {
     static var previews: some View {
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-//        @StateObject var favoritesViewModel = FavoritesViewModel()
-        @StateObject var fullTripTest = FullTripTest()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+//        @State var favoritesViewModel = FavoritesViewModel()
+        @State var fullTripTest = FullTripTest()
         @State var autoRefresh: Bool = false
         
         return NavigationStack() {
             FullTripView(fullTrip: fullTripTest.Trip)
-                .environmentObject(savedTripsModel)
-                .environmentObject(appRequirementsClass)
+                .environment(savedTripsModel)
+                .environment(appRequirementsClass)
 //                .background(Background())
                     .navigationTitle("Genève, Rive") // Set back button text
                     .navigationBarTitleDisplayMode(.inline)

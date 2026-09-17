@@ -5,196 +5,106 @@
 //  Created by Loris Thomas on 29.12.2024.
 //
 
+import Observation
 import Foundation
 import tpgNextFunc
 import MapKit
 
-public class StopManager: ObservableObject {
-    @Published public var stopEvents: [StopEvent] = []
-    @Published public var stopError: Bool = false
-    @Published public var stopErrorMessage: String = ""
+@Observable
+public class TripManager {
+    public var tripEvents: [TripEvent] = []
+    public var tripError: Bool = false
     
-    
-    @Published public var quays: [Quay] = []
-    public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
-        self.stopError = false
-        self.stopErrorMessage = ""
-        
-        
-        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { success, data in
-            if success, let data = data?.data(using: .utf8) {
-                parseStopEvents(from: data, stopCode: stopSloid) { stopEvents, quays, error in
-                    if let error = error {
-                            switch error {
-                            case .noEventFound(let msg):
-                                self.stopError = true
-                                self.stopErrorMessage = msg
-                                Log.network.info("Aucun départ : \(msg)")
-                            default:
-                                self.stopError = true
-                                Log.network.error("Départs : réponse illisible")
-                            }
-                            return
-                        }
-                    DispatchQueue.main.async {
-                        self.stopEvents = stopEvents
-                        self.quays = quays
-                        //                            saveStopEventsToFile(stopEvents: stopEvents)
-                        Log.network.debug("\(stopEvents.count) départs reçus")
-                        completion()
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.stopError = true
-                    Log.network.error("Départs : requête échouée")
-                    completion()
-                }
-            }
-        }
-    }
-}
+    /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
+    /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
+    private var latestRequest = 0
 
-class LineManager: ObservableObject {
-    @Published var LineEvents: [LineEvent] = []
-    @Published var operatorName: String = ""
-    /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
-    /// vide si l'API n'a pas fourni de tracé pour cette course.
-    var track: [CLLocationCoordinate2D]?
-    let dateFormatter = DateFormatter()
-
-    public func selectJourney(_ stopEvent: StopEvent, track: Bool = false, completion: @escaping () -> Void = {}) {
-        if track {
-            self.track = nil
-        }
-        fetchTransportJourney(with: stopEvent, track: track) { success, data in
-            if success, let data = data?.data(using: .utf8) {
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let coordinates = track ? parseJourneyTrack(from: data) : nil
-                    parseJourneyEvents(from: data) { lineEvents, operatorName in
-                        self.LineEvents = lineEvents
-                        // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
-                        self.operatorName = operatorName.isEmpty ? stopEvent.operatorName : operatorName
-                        if let coordinates {
-                            self.track = coordinates
-                        }
-                        //                        print("LineEvents updated: \(self.LineEvents), \(operatorName)")
-                        completion()
-                    }
-                }
-            } else {
-                completion()
-            }
-        }
-    }
-}
-
-public class TripManager: ObservableObject {
-    @Published public var tripEvents: [TripEvent] = []
-    @Published public var tripError: Bool = false
-    let dateFormatter = DateFormatter()
-    
-    public func selectTrip(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool) {
+    /// Sans départ ou sans arrivée, la requête échoue et `tripError` passe à vrai.
+    public func selectTrip(from departure: TripEndpoint?, to arrival: TripEndpoint?, at selectedTime: Date, isArrivalTime: Bool) {
         self.tripError = false
-        //        print((departureGeoPosition ?? departureStop) ?? "emptyDeparture")
-        //        print((arrivalGeoPosition ?? arrivalStop) ?? "emptyArrival")
-        fetchTrips(with: departureStop, with: departureGeoPosition, with: geoDeparture, with: arrivalStop, with: arrivalGeoPosition, with: geoArrival, with: selectedTime, with: isArrivalTime) { success, data in
-            if success {
-                // Parse XML response
-                if success, let data = data?.data(using: .utf8) {
-                    let startCoordinate = geoDeparture ? departureGeoPosition?.coordinate.toCoordinates : departureStop?.wgs84Coordinates
-                    //                        print(startCoordinate ?? "empty startCoordinates")
-                    let endCoordinate = geoArrival ? arrivalGeoPosition?.coordinate.toCoordinates : arrivalStop?.wgs84Coordinates
-                    let startName = geoDeparture ? departureGeoPosition?.name : departureStop?.name
-                    let endName = geoArrival ? arrivalGeoPosition?.name : arrivalStop?.name
-                    let emptyCoordinates: Coordinates = Coordinates(lon: 0.0, lat: 0.0)
-                    
-                    do {
-                        let tripEvents = try parseTripEvents(from: data, startCoordinate: startCoordinate ?? emptyCoordinates, endCoordinates: endCoordinate ?? emptyCoordinates, startName: startName ?? "", endName: endName ?? "", startCode: departureStop?.sloid, endCode: arrivalStop?.sloid, geoDeparture: geoDeparture, geoArrival: geoArrival)
-                        self.tripEvents = tripEvents
-                    } catch ParserError.noEventFound(let message) {
+        latestRequest += 1
+        let request = latestRequest
+        fetchTrips(with: departure?.stop, with: departure?.place, with: departure?.isPlace ?? false,
+                   with: arrival?.stop, with: arrival?.place, with: arrival?.isPlace ?? false,
+                   with: selectedTime, with: isArrivalTime) { data in
+            guard request == self.latestRequest else { return }
+            guard let data else {
+                self.tripError = true
+                return
+            }
+            let startCoordinate = departure?.coordinates ?? Coordinates(lon: 0, lat: 0)
+            let endCoordinate = arrival?.coordinates ?? Coordinates(lon: 0, lat: 0)
+
+            // Décodage hors du thread principal ; seul le résultat y revient.
+            DispatchQueue.global(qos: .userInitiated).async {
+                let result = Result {
+                    try parseTripEvents(from: data, startCoordinate: startCoordinate, endCoordinates: endCoordinate,
+                                        startName: departure?.name ?? "", endName: arrival?.name ?? "",
+                                        startCode: departure?.stop?.sloid, endCode: arrival?.stop?.sloid,
+                                        geoDeparture: departure?.isPlace ?? false, geoArrival: arrival?.isPlace ?? false)
+                }
+                DispatchQueue.main.async {
+                    guard request == self.latestRequest else { return }
+                    switch result {
+                    case .success(var trips):
+                        // Repris tel quel : l'itinéraire dont la première étape n'a ni transfert
+                        // ni ligne arrive en dernier, et passe en tête.
+                        if let firstLeg = trips.last?.legs.first, !firstLeg.transfer, firstLeg.publishedLineName.isEmpty {
+                            trips.insert(trips.removeLast(), at: 0)
+                        }
+                        self.tripEvents = trips
+                    case .failure(let error):
                         self.tripError = true
-                        Log.network.info("Aucun itinéraire : \(message)")
-                    } catch {
-                        self.tripError = true
-                        Log.network.error("Itinéraires : réponse illisible")
+                        if let parserError = error as? ParserError, case .noEventFound(let message) = parserError {
+                            Log.network.info("Aucun itinéraire : \(message)")
+                        } else {
+                            Log.network.error("Itinéraires : réponse illisible")
+                        }
                     }
                 }
-                if !(self.tripEvents.last?.legs.first?.transfer ?? true) && self.tripEvents.last?.legs.first?.publishedLineName == "" {
-                    let transferLast: TripEvent = self.tripEvents.last!
-                    var tripEventsTransfer: [TripEvent] = self.tripEvents.dropLast()
-                    tripEventsTransfer.insert(transferLast, at: 0)
-                    self.tripEvents = tripEventsTransfer
-                }
-            } else {
-                self.tripError = true
             }
         }
     }
 }
 
 
-public class SavedTripsModel: ObservableObject {
-    @Published public var savedTrips: [TripEvent] {
-        didSet {
-            saveTrips()
-        }
+@Observable
+public class SavedTripsModel {
+    private static let store = CodableStore<[TripEvent]>(key: "savedTrips")
+
+    public var savedTrips: [TripEvent] {
+        didSet { Self.store.save(savedTrips) }
     }
-    
-    private let userDefaultsKey = "savedTrips"
-    
+
     init() {
-        self.savedTrips = []
-        loadTrips()
+        savedTrips = Self.store.load() ?? []
     }
 
     public func addTrip(_ trip: TripEvent) {
         if !savedTrips.contains(trip) {
             savedTrips.append(trip)
-            saveTrips()
         }
     }
-    
+
     public func removeTrip(_ trip: TripEvent) {
-        savedTrips.removeAll(where: { $0.id == trip.id })
-        saveTrips()
+        savedTrips.removeAll { $0.id == trip.id }
     }
-    
+
     public func tripIsSaved(_ trip: TripEvent) -> Bool {
-        return savedTrips.contains(trip)
-    }
-    
-    private func saveTrips() {
-        do {
-            let data = try JSONEncoder().encode(savedTrips)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des itinéraires impossible : \(error.localizedDescription)")
-        }
-    }
-    
-    private func loadTrips() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let trips = try JSONDecoder().decode([TripEvent].self, from: data)
-                self.savedTrips = trips
-            } catch {
-                Log.data.error("Lecture des itinéraires impossible : \(error.localizedDescription)")
-            }
-        }
+        savedTrips.contains(trip)
     }
 }
 
-public class RegularTripsModel: ObservableObject {
-    @Published public var regularTrips: [RegularTrip] {
-        didSet { saveTrips() }
+@Observable
+public class RegularTripsModel {
+    private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
+
+    public var regularTrips: [RegularTrip] {
+        didSet { Self.store.save(regularTrips) }
     }
 
-    private let userDefaultsKey = "regularTrips"
-
     init() {
-        self.regularTrips = []
-        loadTrips()
+        regularTrips = Self.store.load() ?? []
     }
 
     public func addTrip(_ trip: RegularTrip) {
@@ -206,43 +116,21 @@ public class RegularTripsModel: ObservableObject {
     public func removeTrip(_ trip: RegularTrip) {
         regularTrips.removeAll { $0.id == trip.id }
     }
-
-    private func saveTrips() {
-        do {
-            let data = try JSONEncoder().encode(regularTrips)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des trajets réguliers impossible : \(error.localizedDescription)")
-        }
-    }
-
-    private func loadTrips() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let trips = try JSONDecoder().decode([RegularTrip].self, from: data)
-                self.regularTrips = trips
-            } catch {
-                Log.data.error("Lecture des trajets réguliers impossible : \(error.localizedDescription)")
-            }
-        }
-    }
 }
 
 
-class RecentSearch: ObservableObject {
-    @Published public var searchItems: [RecentSearchItem] {
-        didSet {
-            saveSearch()
-        }
+@Observable
+class RecentSearch {
+    private static let store = CodableStore<[RecentSearchItem]>(key: "savedSearch")
+
+    public var searchItems: [RecentSearchItem] {
+        didSet { Self.store.save(searchItems) }
     }
-    
-    private let userDefaultsKey = "savedSearch"
-    
+
     init() {
-        self.searchItems = []
-        loadSearch()
+        searchItems = Self.store.load() ?? []
     }
-    
+
     func add(name: String, isStop: Bool, stop: Stop?, geoCoordinates: Coordinates?) {
         let item = RecentSearchItem(name: name, isStop: isStop, stop: stop, geoCoordinates: geoCoordinates)
         searchItems.removeAll { $0.name == item.name }
@@ -251,27 +139,7 @@ class RecentSearch: ObservableObject {
             searchItems.removeLast()
         }
     }
-    
-    private func saveSearch() {
-        do {
-            let data = try JSONEncoder().encode(searchItems)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des recherches récentes impossible : \(error.localizedDescription)")
-        }
-    }
-    
-    private func loadSearch() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let items = try JSONDecoder().decode([RecentSearchItem].self, from: data)
-                self.searchItems = items
-            } catch {
-                Log.data.error("Lecture des recherches récentes impossible : \(error.localizedDescription)")
-            }
-        }
-    }
-    
+
     struct RecentSearchItem: Encodable, Decodable, Hashable {
         var name: String
         var isStop: Bool

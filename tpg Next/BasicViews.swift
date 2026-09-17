@@ -15,33 +15,7 @@ struct SmallStopTitleView: View {
 
     var body: some View {
         HStack {
-            let splitStopName = splitString(stopName, separator: ",")
-            if splitStopName.1.isEmpty {
-                HStack {
-                    Text(splitStopName.0)
-                        .font(.headline)
-                        .bold()
-                        .minimumScaleFactor(0.5)
-                    if let transportType {
-                        if transportType == "TRAIN" {
-                            Image(systemName: "lightrail").font(.subheadline)
-                        } else if transportType == "BOAT" {
-                            Image(systemName: "ferry").font(.subheadline)
-                        }
-                    }
-                }
-            } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0)
-                            .font(.caption)
-                            .minimumScaleFactor(0.4)
-                        Text(splitStopName.1)
-                            .font(.callout)
-                            .bold()
-                            .minimumScaleFactor(0.5)
-                            .lineLimit(1)
-                    }
-            }
+            StopNameView(stopName, style: .row, transportType: transportType)
             Spacer()
         }
     }
@@ -74,15 +48,189 @@ struct SmallStopTitleView: View {
 //    print("Remaining width for top text:", remainingWidth)
 //}
 
+// MARK: - Surfaces flottantes
+
+/// Titres et boutons flottants : Liquid Glass sur iOS 26, matériau et ombre avant.
+enum TPGSurface {
+    static var isGlass: Bool {
+        if #available(iOS 26, *) { return true } else { return false }
+    }
+}
+
+extension View {
+    /// Pose la vue sur une surface flottante.
+    /// - Parameters:
+    ///   - interactive: le verre réagit au toucher (iOS 26).
+    ///   - legacy: le matériau avant iOS 26, `nil` pour aucun fond.
+    ///   - glassID: identifiant de morphing entre surfaces d'un même `TPGGlassContainer` (iOS 26).
+    func tpgSurface<S: Shape>(in shape: S, interactive: Bool = false, legacy: Material? = .ultraThinMaterial,
+                              glassID: String? = nil, namespace: Namespace.ID? = nil) -> some View {
+        modifier(TPGSurfaceModifier(shape: shape, interactive: interactive, legacy: legacy, glassID: glassID, namespace: namespace))
+    }
+
+    func tpgSurface(interactive: Bool = false, legacy: Material? = .ultraThinMaterial,
+                    glassID: String? = nil, namespace: Namespace.ID? = nil) -> some View {
+        tpgSurface(in: Capsule(), interactive: interactive, legacy: legacy, glassID: glassID, namespace: namespace)
+    }
+
+    /// Le fond d'avant iOS 26 seulement : sur iOS 26 le système pose déjà le verre (barre d'outils).
+    @ViewBuilder func legacySurface(material: Material = .ultraThinMaterial) -> some View {
+        if TPGSurface.isGlass {
+            self
+        } else {
+            tpgSurface(legacy: material)
+        }
+    }
+
+    /// Couleur du contenu posé sur du verre ; avant iOS 26 le contenu garde la sienne.
+    @ViewBuilder func glassForegroundStyle(_ color: Color) -> some View {
+        if TPGSurface.isGlass {
+            foregroundStyle(color)
+        } else {
+            self
+        }
+    }
+}
+
+private struct TPGSurfaceModifier<S: Shape>: ViewModifier {
+    let shape: S
+    let interactive: Bool
+    let legacy: Material?
+    let glassID: String?
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            let glass = content.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+            if let glassID, let namespace {
+                glass.glassEffectID(glassID, in: namespace)
+            } else {
+                glass
+            }
+        } else if let legacy {
+            content.background {
+                shape
+                    .fill(legacy)
+                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+/// `GlassEffectContainer` sur iOS 26, pour que les surfaces voisines fusionnent ; le contenu tel quel avant.
+struct TPGGlassContainer<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        if #available(iOS 26, *) {
+            GlassEffectContainer { content }
+        } else {
+            content
+        }
+    }
+}
+
+/// Voile flou en haut de l'écran, sous le titre flottant. Rien sur iOS 26 : la barre de
+/// navigation estompe déjà le contenu qui défile dessous.
+struct LegacyTopFade: View {
+    var body: some View {
+        if !TPGSurface.isGlass {
+            VStack(spacing: 0) {
+                Rectangle()
+                    .foregroundStyle(.ultraThickMaterial)
+                    .frame(height: 50)
+                Rectangle()
+                    .foregroundStyle(.ultraThickMaterial)
+                    .frame(height: 100)
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .trailing) {
+                                ScrollMask(leading: true, vertical: true, gradientLength: 100)
+                            }
+                    }
+                Spacer()
+            }
+            .ignoresSafeArea(edges: .top)
+        }
+    }
+}
+
+extension View {
+    /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
+    /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
+    /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, button: Bool = false) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, button: button))
+    }
+}
+
+extension View {
+    /// La vue telle quelle si elle tient en hauteur, dans un `ScrollView` sinon (texte agrandi,
+    /// petit écran). Un `ScrollView` permanent écraserait ses `Spacer` et changerait sa mise en page.
+    func scrollingWhenTooTall() -> some View {
+        ViewThatFits(in: .vertical) {
+            self
+            ScrollView { self }
+        }
+    }
+
+    /// Hauteur fixe à la taille de texte normale, minimale au-delà : le contenu agrandi
+    /// étend alors le cadre au lieu de déborder.
+    func heightGrowingWithText(_ height: CGFloat) -> some View {
+        modifier(HeightGrowingWithText(height: height))
+    }
+}
+
+private struct HeightGrowingWithText: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let height: CGFloat
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if dynamicTypeSize > .large {
+            content.frame(minHeight: height)
+        } else {
+            content.frame(height: height)
+        }
+    }
+}
+
+private struct BasicElementBackground: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let minHeight: CGFloat
+    let transparent: Bool
+    let highlighted: Bool
+    let button: Bool
+
+    func body(content: Content) -> some View {
+        content
+            // De l'air au-dessus et au-dessous quand le texte agrandi remplit la capsule.
+            .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
+            .frame(minHeight: minHeight)
+            .background {
+                BasicElement(transparent: transparent, highlighted: highlighted, button: button,
+                             cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
+            }
+    }
+}
+
 struct BasicElement: View {
     var transparent = false
     var highlighted = false
     var button = false
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
     var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
-    
+    /// Rectangle arrondi plutôt que capsule : les extrémités en demi-cercle d'une ligne très
+    /// haute (texte agrandi) mordaient sur son contenu.
+    var cornerRadius: CGFloat? = nil
+
+    private var shape: AnyShape {
+        cornerRadius.map { AnyShape(RoundedRectangle(cornerRadius: $0)) } ?? AnyShape(Capsule())
+    }
+
     var body: some View {
-        Capsule()
+        shape
             .fill(button ? .accent : .color1.opacity(transparent ? 0.5 : 1))
             .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
             .shadow(color: .customShadows.opacity(0.2), radius: 7)
@@ -118,11 +266,6 @@ struct BasicLocationView: View {
 //        Capsule()
 //            .fill(.color1)
 //            .stroke(.border, lineWidth: 1)
-        BasicElement()
-            .frame(height: 45)
-//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-//            .shadow(color: .customShadows.opacity(0.2), radius: 10)
-            .overlay(
                 HStack {
                     if showFavorite, let favoriteAction = favoriteAction {
                         Button(action: favoriteAction) {
@@ -149,8 +292,7 @@ struct BasicLocationView: View {
                     }
                 }
                     .padding(.horizontal, 20)
-            )
-
+                    .basicElementBackground(minHeight: 45)
     }
 }
 
@@ -188,7 +330,7 @@ struct StopIcon: View {
 }
 
 struct ShowTimeButton: View {
-    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @Binding var showTime: Bool
     @State private var rotation: Double = 0
     @State private var imageName: String = "hourglass"

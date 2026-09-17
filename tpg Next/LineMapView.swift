@@ -11,11 +11,11 @@ import tpgNextFunc
 import Combine
 
 struct LineMapView: View {
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject private var lineManager = LineManager()
+    @Environment(\.displayTime) private var now
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @Environment(StopStore.self) var stopStore
+    @State private var lineManager = LineManager()
     @State var autoRefresh = true
-    @State private var timer: AnyCancellable?
     @State var lineEvents: [LineEvent]
     var lineName: String
     var operatorName: String
@@ -40,13 +40,13 @@ struct LineMapView: View {
                                 let splitStopName = splitString(event.stopPointName, separator: ",")
                                 Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(event.latitude) ?? 0.0, longitude: Double(event.longitude) ?? 0.0), anchor: .center) {
                                     StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true), currentStop: event.sloid == currentStopSloid && event.sloid != "")
-                                        .opacity(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) ? 0.4 : 1)
+                                        .opacity(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
                                 }
                             } else {
                                 let splitStopName = splitString(event.stopPointName, separator: ",")
                                 Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(event.latitude) ?? 0.0, longitude: Double(event.longitude) ?? 0.0), anchor: .center) {
                                     StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true), currentStop: event.sloid == currentStopSloid && event.sloid != "", size: 12)
-                                        .opacity(dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false) ? 0.4 : 1)
+                                        .opacity(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
                                 }
                             }
                         }
@@ -75,42 +75,8 @@ struct LineMapView: View {
                     }
                     VStack {
                         HStack {
-                            if #available(iOS 26, *) {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
-                                        .foregroundStyle(Color.text)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .glassEffect()
-                                .offset(x: -50, y: 0)
-                                
-                            } else {
-                                HStack {
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 50, height: 1)
-                                    LineViewTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
-                                    Rectangle()
-                                        .fill(.clear)
-                                    //                                        .frame(width: 50, height: 1)
-                                        .frame(maxWidth: 50, maxHeight: 1)
-                                }
-                                .padding(10)
-                                .background {
-                                    Capsule()
-                                    //                                        .frame(width: geometry.size.width-100, height: 90)
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                    //                                        .padding(.trailing, 200)
-                                }
-                                .offset(x: 0)
-                            }
+                            FloatingLineTitle(destination: destination, currentLine: lineName, operatorName: operatorName)
+                                .offset(x: TPGSurface.isGlass ? -50 : 0)
                             Spacer()
                         }
                         Spacer()
@@ -134,46 +100,11 @@ struct LineMapView: View {
                         Text("") // Visible title
                     }
                 }
-                .onAppear {
+                .periodicRefresh(repeats: autoRefresh) { _ in
                     getLineEvents(for: stopEvent)
-                    if autoRefresh {
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    if autoRefresh {
-                        getLineEvents(for: stopEvent)
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
-                }
-                .onDisappear {
-                    timer?.cancel()
                 }
                 .onChange(of: lineEvents) {
                     updateTrackSegments()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                    timer?.cancel()
-                }
-                .onChange(of: autoRefresh) {
-                    if !autoRefresh {
-                        timer?.cancel()
-                    } else {
-                        getLineEvents(for: stopEvent)
-                        timer = Timer.publish(every: 30, on: .main, in: .common)
-                            .autoconnect()
-                            .sink { _ in
-                                getLineEvents(for: stopEvent)
-                            }
-                    }
                 }
             }
     }
@@ -189,7 +120,7 @@ struct LineMapView: View {
         lineManager.selectJourney(stopEvent, track: requestTrack) {
 //            operatorName = self.lineManager.operatorName
 //            lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
-            lineEvents = self.lineManager.LineEvents
+            lineEvents = self.lineManager.lineEvents
             guard requestTrack, let coordinates = lineManager.track,
                   let newKey = LineTrackCache.key(for: lineEvents) else { return }
             if coordinates.count >= 2 {
@@ -217,7 +148,7 @@ struct LineMapView: View {
         return (0..<(lineEvents.count - 1)).compactMap { index in
             let coordinates = segments?[index] ?? [coordinate(of: lineEvents[index]), coordinate(of: lineEvents[index + 1])]
             guard coordinates.count >= 2 else { return nil }
-            return MapSegment(id: "\(source)-\(index)", coordinates: coordinates, passed: dateStringHasPassed(with: lineEvents[index].estimatedTime, equalReturnsTrue: false))
+            return MapSegment(id: "\(source)-\(index)", coordinates: coordinates, passed: hasPassed(lineEvents[index].departureDate, includingCurrentMinute: false, now: now))
         }
     }
 
@@ -282,19 +213,19 @@ struct lineMapPreview: PreviewProvider {
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
         let date = "2026-03-30"
-        @StateObject var fullTripTest = FullTripTest()
+        @State var fullTripTest = FullTripTest()
         
-        @StateObject var savedTripsModel = SavedTripsModel()
-        @StateObject var regularTripsModel = RegularTripsModel()
-        @StateObject var appRequirementsClass = AppRequirementsClass()
-            @StateObject var itineraryViewModel = ItineraryViewModel()
+        @State var savedTripsModel = SavedTripsModel()
+        @State var regularTripsModel = RegularTripsModel()
+        @State var appRequirementsClass = AppRequirementsClass()
+            @State var itineraryViewModel = ItineraryViewModel()
         return LineMapView(lineEvents: [], lineName: "A", operatorName: "tpg", destination: "Meinier, Eglise",stopEvent: StopEvent(stopPointName: "Genève, Rive", stopId: "ch:1:sloid:87061:0:450545", plannedQuay: "I", timetabledTime: "\(date)T11:13:00Z", estimatedTime: "\(date)T11:13:00Z", lineName: "A", origin: "Genève, Rive", destination: "Gy, temple", transportType: "bus", operatorName: "Transports Publics Genevois", journeyRef: "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791918", operatingDayRef: date))
-            .environmentObject(itineraryViewModel)
-            .environmentObject(stopStore)
-            .environmentObject(favoritesViewModel)
-            .environmentObject(savedTripsModel)
-            .environmentObject(regularTripsModel)
-            .environmentObject(appRequirementsClass)
+            .environment(itineraryViewModel)
+            .environment(stopStore)
+            .environment(favoritesViewModel)
+            .environment(savedTripsModel)
+            .environment(regularTripsModel)
+            .environment(appRequirementsClass)
         
 //        VStack {
 //            HStack {

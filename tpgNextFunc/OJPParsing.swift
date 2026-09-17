@@ -1,0 +1,342 @@
+//
+//  OJPParsing.swift
+//  tpgNextFunc
+//
+//  Lecture des réponses OJP 1.0 (départs, itinéraires). Même approche que
+//  `JourneyParser` : une pile des éléments ouverts plutôt qu'une série de drapeaux
+//  « à l'intérieur de… » à tenir à jour à la main.
+//
+
+import Foundation
+
+/// Le nom d'un élément sans son préfixe d'espace de noms : `ojp:Text` devient `Text`.
+/// OJP 1.0 et 2.0 ne préfixent pas les mêmes éléments ; les parseurs ne regardent que le nom.
+func ojpLocalName(_ name: String) -> String {
+    guard let colon = name.lastIndex(of: ":") else { return name }
+    return String(name[name.index(after: colon)...])
+}
+
+/// Base des parseurs : tient la pile des éléments ouverts et le texte de l'élément courant.
+class OJPParser: NSObject, XMLParserDelegate {
+    private(set) var path: [String] = []
+    private var text = ""
+
+    func parse(_ data: Data) {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+    }
+
+    /// À l'ouverture d'un élément, déjà sur la pile.
+    func didStart(_ name: String) {}
+
+    /// À la fermeture d'un élément, encore sur la pile. `value` est son texte propre,
+    /// sans les espaces autour ; il est vide pour un élément qui n'a que des enfants.
+    func didEnd(_ name: String, parent: String, value: String) {}
+
+    func isInside(_ name: String) -> Bool {
+        path.contains(name)
+    }
+
+    final func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+                      qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        let name = ojpLocalName(elementName)
+        path.append(name)
+        text = ""
+        didStart(name)
+    }
+
+    final func parser(_ parser: XMLParser, foundCharacters string: String) {
+        text += string
+    }
+
+    final func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        let name = ojpLocalName(elementName)
+        let parent = path.count >= 2 ? path[path.count - 2] : ""
+        didEnd(name, parent: parent, value: text.trimmingCharacters(in: .whitespacesAndNewlines))
+        path.removeLast()
+        text = ""
+    }
+}
+
+// MARK: - Départs
+
+/// Les départs d'une réponse `OJPStopEventRequest` et les quais de son contexte.
+final class StopEventParser: OJPParser {
+    private let stopCode: String
+    private(set) var events: [StopEvent] = []
+    private(set) var quays: [Quay] = []
+    private(set) var error: ParserError?
+
+    private var event: StopEvent?
+    private var quay: Quay?
+
+    init(stopCode: String) {
+        self.stopCode = stopCode
+    }
+
+    override func didStart(_ name: String) {
+        switch name {
+        case "StopEventResult":
+            event = StopEvent(stopPointName: "", stopId: stopCode, plannedQuay: "", timetabledTime: "", estimatedTime: "",
+                              lineName: "", origin: "", destination: "", transportType: "", operatorName: "",
+                              journeyRef: "", operatingDayRef: "")
+        case "Location" where isInside("StopEventResponseContext"):
+            quay = Quay(id: "", quayName: "", latitude: "", longitude: "")
+        default:
+            break
+        }
+    }
+
+    override func didEnd(_ name: String, parent: String, value: String) {
+        if name == "ErrorText" {
+            error = .noEventFound(message: value)
+        }
+        if var current = event {
+            readEvent(&current, name: name, parent: parent, value: value)
+            if name == "StopEventResult" {
+                if current.estimatedTime.isEmpty {
+                    current.estimatedTime = current.timetabledTime
+                }
+                events.append(current)
+                event = nil
+            } else {
+                event = current
+            }
+        }
+        if var current = quay {
+            switch name {
+            case "StopPointRef" where isInside("StopPoint"):
+                current.id = value
+            // Le code privé EFA se termine par le nom du quai : « 124816:0:D ».
+            case "Value" where isInside("StopPoint"):
+                current.quayName = value.split(separator: ":").last.map(String.init) ?? value
+            case "Longitude":
+                current.longitude = value
+            case "Latitude":
+                current.latitude = value
+            case "Location":
+                if !current.id.isEmpty {
+                    quays.append(current)
+                }
+                quay = nil
+                return
+            default:
+                break
+            }
+            quay = current
+        }
+    }
+
+    /// Les libellés sont dans un `<Text>` enfant ; les heures et les références, dans l'élément lui-même.
+    private func readEvent(_ event: inout StopEvent, name: String, parent: String, value: String) {
+        guard !value.isEmpty else { return }
+        switch name == "Text" ? parent : name {
+        case "StopPointName": event.stopPointName = value
+        case "PlannedQuay": event.plannedQuay = value
+        case "TimetabledTime": event.timetabledTime = value
+        case "EstimatedTime": event.estimatedTime = value
+        case "PublishedLineName": event.lineName = value
+        case "OriginText": event.origin = value
+        case "DestinationText": event.destination = value
+        case "TransportTypeName": event.transportType = value
+        case "OperatorName": event.operatorName = value
+        case "JourneyRef": event.journeyRef = value
+        case "OperatingDayRef": event.operatingDayRef = value
+        default: break
+        }
+    }
+}
+
+// MARK: - Itinéraires
+
+/// Les itinéraires d'une réponse `OJPTripRequest`.
+///
+/// Le contexte (coordonnées des quais et des arrêts) précède les résultats : il est lu
+/// d'abord, puis sert à placer la montée, la descente et les arrêts intermédiaires.
+final class TripEventParser: OJPParser {
+    private let template: TripEvent
+    private(set) var trips: [TripEvent] = []
+    private(set) var error: ParserError?
+
+    private var trip: TripEvent?
+    private var leg: TripLeg?
+    private var intermediate: LegIntermediate?
+    private var legs: [TripLeg] = []
+    private var intermediates: [LegIntermediate] = []
+    /// La première `Duration` après `ResultId` est celle de l'itinéraire entier.
+    private var nextDurationIsTrip = false
+
+    private var coordinates: [String: (longitude: String, latitude: String)] = [:]
+    private var placeRef = ""
+    private var placeLongitude = ""
+    private var placeLatitude = ""
+
+    /// `template` porte ce que la réponse ne contient pas : noms, codes et coordonnées
+    /// du départ et de l'arrivée tels que choisis par l'utilisateur.
+    init(template: TripEvent) {
+        self.template = template
+    }
+
+    override func didStart(_ name: String) {
+        switch name {
+        case "TripResult":
+            trip = template
+        case "TripLeg":
+            leg = TripLeg(id: "", legBoardStopName: "", legBoardStopId: "", legBoardQuay: "", legBoardTimetableTime: "",
+                          legBoardEstimatedTime: "", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "",
+                          legAlightStopId: "", legAlightQuay: "", legAlightTimetableTime: "", legAlightEstimatedTime: "",
+                          legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "",
+                          journeyRef: "", publishedLineName: "", legDuration: "", transferDuration: "",
+                          transferWalkDuration: "", transferBuffer: "", transportTypeName: "", legOperator: "")
+        case "LegIntermediates":
+            intermediate = LegIntermediate(id: "", stopId: "", stopName: "", longitude: "", latitude: "")
+        case "Location" where isInside("TripResponseContext"):
+            placeRef = ""
+            placeLongitude = ""
+            placeLatitude = ""
+        default:
+            break
+        }
+    }
+
+    override func didEnd(_ name: String, parent: String, value: String) {
+        if name == "ErrorText" {
+            error = .noEventFound(message: value)
+        }
+        if isInside("TripResponseContext") {
+            readContext(name, value: value)
+            return
+        }
+        if isInside("LegIntermediates") {
+            readIntermediate(name, parent: parent, value: value)
+        } else {
+            readStopOfLeg(name, parent: parent, value: value)
+        }
+        readTripAndLeg(name, value: value)
+        close(name)
+    }
+
+    private func readContext(_ name: String, value: String) {
+        switch name {
+        case "StopPointRef" where isInside("StopPoint"), "StopPlaceRef" where isInside("StopPlace"):
+            placeRef = value
+        case "Longitude":
+            placeLongitude = value
+        case "Latitude":
+            placeLatitude = value
+        case "Location":
+            if !placeRef.isEmpty, !placeLongitude.isEmpty, !placeLatitude.isEmpty {
+                coordinates[placeRef] = (placeLongitude, placeLatitude)
+            }
+        default:
+            break
+        }
+    }
+
+    private func readIntermediate(_ name: String, parent: String, value: String) {
+        switch name {
+        case "Order": intermediate?.id = value
+        case "StopPointRef": intermediate?.stopId = value
+        case "Text" where parent == "StopPointName": intermediate?.stopName = value
+        default: break
+        }
+    }
+
+    /// Montée, descente et libellés du service.
+    private func readStopOfLeg(_ name: String, parent: String, value: String) {
+        let boarding = isInside("LegBoard")
+        let alighting = isInside("LegAlight")
+        if name == "Text" {
+            switch parent {
+            case "StopPointName":
+                if boarding { leg?.legBoardStopName = value } else if alighting { leg?.legAlightStopName = value }
+            case "PlannedQuay":
+                if boarding { leg?.legBoardQuay = value } else if alighting { leg?.legAlightQuay = value }
+            case "PublishedLineName": leg?.publishedLineName = value
+            case "DestinationText": leg?.legDestination = value
+            case "TransportTypeName": leg?.transportTypeName = value
+            case "OperatorName": leg?.legOperator = value
+            default: break
+            }
+        } else {
+            switch name {
+            case "TimetabledTime":
+                if boarding { leg?.legBoardTimetableTime = value } else if alighting { leg?.legAlightTimetableTime = value }
+            case "EstimatedTime":
+                if boarding { leg?.legBoardEstimatedTime = value } else if alighting { leg?.legAlightEstimatedTime = value }
+            case "StopPointRef":
+                if boarding { leg?.legBoardStopId = value } else if alighting { leg?.legAlightStopId = value }
+            default: break
+            }
+        }
+    }
+
+    private func readTripAndLeg(_ name: String, value: String) {
+        switch name {
+        case "ResultId":
+            trip?.id = value
+            nextDurationIsTrip = true
+        case "Duration":
+            if nextDurationIsTrip {
+                nextDurationIsTrip = false
+                trip?.duration = value
+            }
+            // Une étape à pied porte sa durée de correspondance après son mode de transfert.
+            if leg?.transfer == true {
+                leg?.transferDuration = value
+            } else {
+                leg?.legDuration = value
+            }
+        case "StartTime": trip?.startTime = value
+        case "EndTime": trip?.endTime = value
+        case "Transfers": trip?.transfers = value
+        case "LegId": leg?.id = value
+        case "JourneyRef": leg?.journeyRef = value
+        case "OperatingDayRef": leg?.operatingDayRef = value
+        case "TransferMode", "IndividualMode":
+            if value == "walk" { leg?.transfer = true }
+        case "WalkDuration": leg?.transferWalkDuration = value
+        case "BufferTime": leg?.transferBuffer = value
+        default: break
+        }
+    }
+
+    private func close(_ name: String) {
+        switch name {
+        case "LegIntermediates":
+            if var stop = intermediate {
+                if let place = coordinates[stop.stopId] {
+                    stop.longitude = place.longitude
+                    stop.latitude = place.latitude
+                }
+                intermediates.append(stop)
+                intermediate = nil
+            }
+        case "TripLeg":
+            if var current = leg {
+                if let board = coordinates[current.legBoardStopId] {
+                    current.legBoardLongitude = board.longitude
+                    current.legBoardLatitude = board.latitude
+                }
+                if let alight = coordinates[current.legAlightStopId] {
+                    current.legAlightLongitude = alight.longitude
+                    current.legAlightLatitude = alight.latitude
+                }
+                current.legIntermediates = intermediates
+                legs.append(current)
+            }
+            leg = nil
+            intermediates = []
+        case "TripResult":
+            if var current = trip {
+                current.legs = legs
+                trips.append(current)
+            }
+            trip = nil
+            legs = []
+        default:
+            break
+        }
+    }
+}

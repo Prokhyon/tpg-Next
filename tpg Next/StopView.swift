@@ -10,6 +10,7 @@ import Combine
 import tpgNextFunc
 
 struct SortedStopEventsView: View {
+    @Environment(\.displayTime) private var now
     var key: String
     var filteredStopEvents: [String: [StopEvent]]
     var groupedStopEvents: [String: [StopEvent]]
@@ -32,11 +33,7 @@ struct SortedStopEventsView: View {
                             Image(systemName: "arrow.right")
                             SmallStopTitleView(stopName: splitLine.1)
                             Spacer()
-                            if quay == "" {
-                                Image(systemName: "questionmark.square.fill")
-                            } else {
-                                Image(systemName: "\(quay).square.fill".lowercased())
-                            }
+                            QuayIcon(quay: quay)
                         }
                         .frame(height: 30)
 //                        .background(Rectangle().fill(.red))
@@ -44,31 +41,14 @@ struct SortedStopEventsView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
-                                    let time = displayTimeOrMinutesRemaining(for: stopEvent.timetabledTime, estimatedInput: stopEvent.estimatedTime,  with: showTime)
+                                    let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
                                     NavigationLink {
                                         LineView(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: stopEvent.lineName)
                                     } label: {
                                     Group {
-                                            if time.text == "0" {
-                                                transportIcon(with: stopEvent.transportType)
-                                                    .frame(width: 15)
-                                            } else {
-                                                if time.text.count > 6 {
-                                                    HStack(spacing: 2) {
-                                                        let splitTime = time.text.split(separator: ";")
-                                                        Text(splitTime[0])
-                                                        Text(splitTime[1])
-                                                            .foregroundStyle(time.color)
-                                                            .minimumScaleFactor(0.5)
-                                                    }
-                                                } else {
-                                                    Text(time.text)
-                                                        .foregroundStyle(time.color)
-                                                }
-                                                
-                                            }
+                                            DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                         }
-                                        .foregroundStyle(determineColor(for: stopEvent.estimatedTime))
+                                        .foregroundStyle(determineColor(for: stopEvent.estimatedTime, now: now))
                                         .padding(.horizontal, 17)
                                         .padding(.vertical, 5)
                                         .background(
@@ -80,7 +60,7 @@ struct SortedStopEventsView: View {
                                     }
                                     .padding(2)
                                     .contentShape(.contextMenuPreview, Capsule())
-                                    .if(!dateStringHasPassed(with: stopEvent.estimatedTime, equalReturnsTrue: false)) { view in
+                                    .if(!hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
                                         view.contextMenu {
                                             NotificationContextMenu(event: stopEvent, stopID: stopSloid)
                                         } preview: {
@@ -133,15 +113,19 @@ struct SortedStopEventsView: View {
 }
 
 struct StopView: View {
-    @StateObject private var stopManager = StopManager()
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @EnvironmentObject var appRequirementsClass: AppRequirementsClass
-    @StateObject private var lineManager = LineManager()
+    @Environment(\.displayTime) private var now
+    @State private var stopManager = StopManager()
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
-    @EnvironmentObject var stopStore: StopStore
-    @State private var timer: AnyCancellable?
+    @Environment(StopStore.self) var stopStore
+    /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
+    @State private var refreshGeneration = 0
+    /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
+    @State private var titleHeight: CGFloat = 0
     let stopName: String
     let stopSloid: String
     @State var previousLineRef: String?
@@ -163,10 +147,8 @@ struct StopView: View {
 
     
     var groupedStopEvents: [String: [StopEvent]] {
-            Dictionary(grouping: stopManager.stopEvents) { stopEvent in
-                "\(stopEvent.lineName);\(stopEvent.destination)"
-            }
-        }
+        stopManager.stopEvents.groupedByLineAndDestination()
+    }
 
     var filteredStopEvents: [String: [StopEvent]] {
             if selectedFilters.isEmpty {
@@ -176,13 +158,13 @@ struct StopView: View {
             }
     }
     var allFilteredStopEvents: [StopEvent] {
-        filteredStopEvents.values.flatMap { $0 }.sorted(by: { $0.estimatedTime < $1.estimatedTime })
+        filteredStopEvents.values.flatMap { $0 }.sortedByDeparture()
     }
     
     @State private var selectedFilters: Set<String> = []
         
-    @AppStorage("GoupedDefault") var groupedDefault = false
-//    @AppStorage("TimeDefault") var timeDefault = false
+    @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
+//    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     
     @Namespace var topID
     @Namespace var bottomID
@@ -195,7 +177,7 @@ struct StopView: View {
                                 LazyVStack(spacing: 0) {
                                     
                                     if viewLineSorted {
-                                        ForEach(filteredStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                                        ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
                                             SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: $previousLineRef, stopName: stopName, stopSloid: stopSloid)
                                         }
                                     } else {
@@ -204,11 +186,11 @@ struct StopView: View {
                                                 LineView(stopEvent: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: event.lineName)
                                             }label: {
                                                 StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
-                                                    .foregroundStyle(determineColor(for: event.estimatedTime))
+                                                    .foregroundStyle(determineColor(for: event.estimatedTime, now: now))
                                             }
                                             .contentShape(.contextMenuPreview, Capsule())
                                             .padding(.horizontal, 15)
-                                            .if(!dateStringHasPassed(with: event.estimatedTime, equalReturnsTrue: false)) { view in
+                                            .if(!hasPassed(event.departureDate, includingCurrentMinute: false, now: now)) { view in
                                                 view.contextMenu {
                                                     NotificationContextMenu(event: event, stopID: stopSloid)
                                                 }
@@ -229,7 +211,7 @@ struct StopView: View {
                                 }
                             }
                         }
-                        .contentMargins(.top, 90.0, for: .automatic)
+                        .contentMargins(.top, max(90.0, titleHeight + 10), for: .automatic)
                         .contentMargins(.bottom, appRequirementsClass.version26 ? 75.0 : 125, for: .automatic)
                         
                         .refreshable {
@@ -244,179 +226,68 @@ struct StopView: View {
                         }
                     }
                 VStack {
-                    if #available(iOS 26, *) {
-                        VStack(alignment: .center) {
-                            HStack {
-                                Spacer()
-                                HStack {
-                                    StopTitleView(stopName: stopName)
-                                        .foregroundStyle(Color.text)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 100, height: 0)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 5)
-                                .glassEffect(.regular.interactive())
-                                .offset(x: 50)
-                            }
+                    VStack(alignment: .center) {
+                        //Stop title element
+                        HStack {
                             Spacer()
                             HStack {
-                                HStack(spacing: 0) {
-                                    Button(action: {
-                                        viewLineSorted.toggle()
-                                        requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
-                                    }) {
-                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
-                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                                            .padding()
-                                            .foregroundStyle(.foreground)
-                                    }
-                                    
-                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
-                                        .padding(.trailing, 7)
-//                                        .padding(.vertical)
-//                                    Button {
-//                                        filterLines.toggle()
-//                                    } label: {
-//                                        Image(systemName: "line.3.horizontal.decrease")
-//                                            .foregroundStyle(viewLineFiltered ? .white : Color.text)
-//                                            .padding()
-////                                            .glassEffect(.regular)
-//                                            .background {
-//                                                Capsule()
-//                                                    .fill(viewLineFiltered ? Color.accentColor : Color.clear)
-//                                                    .padding(5)
-//                                            }
-//                                    }
-                                    
-                                }
-                                .glassEffect(.regular.interactive())
-                                Spacer()
-//                                HStack(spacing: 0) {
-//                                    Button(action: {
-//                                        moveTime(previous: true)
-//                                    }) {
-//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                    }
-//                                    .padding()
-//                                    Button(action: {
-//                                        moveTime(previous: false)
-//                                    }) {
-//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                    }
-//                                    .padding()
-//                                }
-                                AdjustTimeButton(moveTime: moveTime)
-                                .glassEffect(.regular.interactive())
+                                StopTitleView(stopName: stopName)
+                                    .glassForegroundStyle(Color.text)
+                                Rectangle()
+                                    .fill(.clear)
+                                    .frame(width: 100, height: 0)
                             }
-                            .padding()
-                            .foregroundStyle(.primary)
+                            .padding(.horizontal)
+                            .padding(.vertical, TPGSurface.isGlass ? 5 : 0)
+                            .tpgSurface(interactive: true)
+                            .offset(x: 50)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
                         }
+                        Spacer()
 
-                    } else {
-                        VStack(alignment: .center) {
-                            
-                            //Stop title element
-                            HStack {
-                                Spacer()
-                                HStack {
-                                    StopTitleView(stopName: stopName)
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .frame(width: 100, height: 0)
-                                }
-                                .padding(.horizontal)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.ultraThinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                                .offset(x: 50)
-                            }
-                            Spacer()
-                            
-                            //Bottom buttons
-                            HStack {
-                                HStack {
-                                    Button(action: {
-                                        withAnimation {
-                                            viewLineSorted.toggle()
-                                        }
-                                    }) {
-                                        Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
-                                            .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                                            .padding()
-                                            .foregroundStyle(.foreground)
+                        //Bottom buttons
+                        HStack {
+                            HStack(spacing: TPGSurface.isGlass ? 0 : nil) {
+                                Button(action: {
+                                    withAnimation(TPGSurface.isGlass ? nil : .default) {
+                                        viewLineSorted.toggle()
                                     }
-                                    
-                                    Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
-                                        .padding(.trailing, 7)
+                                    requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
+                                }) {
+                                    Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
+                                        .contentTransition(.symbolEffect(.replace.upUp.byLayer))
+                                        .padding()
+                                        .foregroundStyle(.foreground)
                                 }
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
-                                Spacer()
-//                                HStack {
-//                                    Button(action: {
-//                                        moveTime(previous: true)
-//                                    }) {
-//                                        Image(systemName: "text.line.first.and.arrowtriangle.forward")
-//                                            .padding()
-//                                    }
-//                                    Button(action: {
-//                                        moveTime(previous: false)
-//                                    }) {
-//                                        Image(systemName: "text.line.last.and.arrowtriangle.forward")
-//                                            .padding()
-//                                    }
-//                                }
-                                AdjustTimeButton(moveTime: moveTime)
-                                .background {
-                                    Capsule()
-                                        .foregroundStyle(.thinMaterial)
-                                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                                }
+
+                                Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
+                                    .padding(.trailing, 7)
                             }
-                            .padding()
-                            .foregroundStyle(.primary)
+                            .tpgSurface(interactive: true, legacy: .thinMaterial)
+                            Spacer()
+                            AdjustTimeButton(moveTime: moveTime)
+                                .tpgSurface(interactive: true, legacy: .thinMaterial)
                         }
-                        .padding(.bottom, 50)
+                        .padding()
+                        .foregroundStyle(.primary)
+                        // Plafonnés, comme les barres d'outils du système : en taille d'accessibilité,
+                        // ces boutons flottants masquaient le bas de la liste.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
+                    .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
                 .onAppear {
                     viewLineSorted = groupedDefault
-//                    showTime = timeDefault
-                    timeRequest = timeRequest(for: previousLineTime)
+                }
+                .periodicRefresh(id: refreshGeneration, repeats: autoRefresh) { trigger in
+                    // Sans heure choisie par l'utilisateur, chaque rafraîchissement repart de
+                    // maintenant : les bus déjà partis quittent la liste. Ouvert depuis une course,
+                    // l'arrêt part de son heure de passage, gardée tant qu'elle est à venir.
+                    if refreshGeneration == 0 {
+                        let origin = timeRequest(for: previousLineTime)
+                        timeRequest = trigger == .start ? origin : max(Date(), origin)
+                    }
                     getStopEvents()
-                    if autoRefresh {
-                        startTimer()
-                    }
-                    requestNumber = viewLineSorted ? groupedStopEvents.keys.count * 5 : 30
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    if autoRefresh {
-                        timeRequest = timeRequest(for: previousLineTime)
-                        getStopEvents()
-                        startTimer()
-                    }
-                }
-                .onDisappear {
-                    timer?.cancel()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                    timer?.cancel()
-                }
-                .onChange(of: autoRefresh) {
-                    if !autoRefresh {
-                        timer?.cancel()
-                    } else {
-                        timeRequest = timeRequest(for: previousLineTime)
-                        getStopEvents()
-                        startTimer()
-                    }
                 }
             }
         .toolbar {
@@ -459,27 +330,13 @@ struct StopView: View {
                         }
                     }
                     
-                        Button(action: {
-                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
-                        }) {
-                            Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                        }
-                        Button(action: {
-                                                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), isQuickTrip: false)
-                        }) {
-                            Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                        }
+                        TripActionsMenu(stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), includesQuickTrip: false)
                 } label: {
                         Label("", systemImage: "ellipsis")
                             .padding(.horizontal, 5)
                 }
             }
-            .background {
-                Capsule()
-                    .opacity(appRequirementsClass.version26 ? 0 : 1)
-                    .foregroundStyle(.ultraThinMaterial)
-                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-            }
+            .legacySurface()
         }
         
         
@@ -506,7 +363,7 @@ struct StopView: View {
                         }
                         if #available(iOS 26, *) {
                             Button {
-                                getStopEvents()
+                                refreshGeneration += 1
                                 selectTime.toggle()
                             } label: {
                                 HStack {
@@ -519,7 +376,7 @@ struct StopView: View {
                             .buttonStyle(.borderedProminent)
                         } else {
                             Button(action: {
-                                getStopEvents()
+                                refreshGeneration += 1
                                 selectTime.toggle()
                             }) {
                                 RoundedRectangle(cornerRadius: 20)
@@ -551,7 +408,7 @@ struct StopView: View {
                     .padding()
                 
                     let scroll = VStack {
-                        ForEach(groupedStopEvents.keys.sorted(by: sortStopEventsKeys), id: \.self) { key in
+                        ForEach(groupedStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
 //                            let splitLineOperator = splitString(key, separator: "$")
                             let splitLine = splitString(key, separator: ";")
                             Button(action: {
@@ -662,39 +519,8 @@ struct StopView: View {
         guard let time, let date = stringToDate(with: time) else { return Date() }
         return date
     }
-    private func sortStopEventsKeys(lhs: String, rhs: String) -> Bool {
-        let lhsComponents = lhs.split(separator: ";")
-        let rhsComponents = rhs.split(separator: ";")
-        
-        let lhsLineName = lhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let lhsDestination = lhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        let rhsLineName = rhsComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let rhsDestination = rhsComponents.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        // Sort primarily by LineName
-        if lhsLineName != rhsLineName {
-            if let lhsLineNameInt = Int(lhsLineName), let rhsLineNameInt = Int(rhsLineName) {
-                return lhsLineNameInt < rhsLineNameInt
-            } else {
-                return lhsLineName < rhsLineName
-            }
-        }
-        
-        // If LineName is the same, sort by Destination
-        return lhsDestination < rhsDestination
-    }
-    private func startTimer() {
-        timer = Timer.publish(every: 30, on: .main, in: .common)
-            .autoconnect()
-            .sink { _ in
-                getStopEvents()
-            }
-    }
-    
     private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
-        let formatter = ISO8601DateFormatter()
-        let dates = events.compactMap { formatter.date(from: $0.estimatedTime) }.sorted()
+        let dates = events.compactMap(\.departureDate).sorted()
 
         guard dates.count > 2 else {
             return 10 // Valeur par défaut minimale
@@ -715,49 +541,18 @@ struct StopView: View {
         scrollNextEvents = !previous
         // Liste vide (arrêt sans départ, erreur) : on décale l'heure sans cible de défilement.
         scrollID = (previous ? allFilteredStopEvents.first?.id : allFilteredStopEvents.last?.id) ?? ""
-        getStopEvents()
-        startTimer()
+        // Recharge à la nouvelle heure et repousse le prochain rafraîchissement de 30 s.
+        refreshGeneration += 1
     }
 }
 
 struct StopTitleView : View {
     var stopName: String
-    
+
     var body: some View {
-        VStack {
-                let splitStopName = splitString(stopName, separator: ",")
-                if splitStopName.1.isEmpty {
-                    HStack {
-                        Text(splitStopName.0)
-                            .font(.largeTitle)
-                            .bold()
-                            .minimumScaleFactor(0.5)
-//                        Spacer()
-                    }
-                    .frame(height: 70)
-                    .padding(.horizontal, 25)
-//                    .padding(.bottom, 10)
-                    
-                } else {
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Text(splitStopName.0)
-                                .font(.title2)
-//                            Spacer()
-                        }
-                        HStack {
-                            Text(splitStopName.1)
-                                .font(.largeTitle)
-                                .bold()
-//                            Spacer()
-                        }
-                    }
-//                    .padding(.bottom, 15)
-                    .frame(height: 70)
-                    .padding(.horizontal, 25)
-                    .minimumScaleFactor(0.5)
-                }
-        }
+        StopNameView(stopName, style: .title)
+            .frame(height: 70)
+            .padding(.horizontal, 25)
     }
 }
 
@@ -795,9 +590,9 @@ extension View {
             showTime: false
         )
     }
-    .environmentObject(favoritesViewModel)
-    .environmentObject(appRequirementsClass)
-    .environmentObject(stopStore)
+    .environment(favoritesViewModel)
+    .environment(appRequirementsClass)
+    .environment(stopStore)
 }
 
 #Preview("StopView preview") {
@@ -805,13 +600,15 @@ extension View {
     let favoritesViewModel = FavoritesViewModel()
     let appRequirementsClass = AppRequirementsClass()
     let navigationModel = NavigationModel()
+    let tripViewModel = ItineraryViewModel()
 
     return NavigationStack {
         ZStack {
             StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
-                .environmentObject(favoritesViewModel)
-                .environmentObject(appRequirementsClass)
-                .environmentObject(stopStore)
+                .environment(favoritesViewModel)
+                .environment(appRequirementsClass)
+                .environment(stopStore)
+                .environment(tripViewModel)
                 .navigationTitle("Genève, Rive")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -826,8 +623,8 @@ extension View {
                     Spacer()
                     DockView()
                         .padding(.bottom)
-                        .environmentObject(navigationModel)
-                        .environmentObject(stopStore)
+                        .environment(navigationModel)
+                        .environment(stopStore)
                         .offset(y: 20)
                 }
             }

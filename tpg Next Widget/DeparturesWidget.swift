@@ -17,7 +17,7 @@ struct DeparturesWidget: Widget {
         }
         .configurationDisplayName("Prochains départs")
         .description("Les prochains départs d'un arrêt, ou de l'arrêt le plus proche de vous.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         // Rend la main sur les marges : voir `contentInsets` dans DeparturesWidgetView.
         .contentMarginsDisabled()
     }
