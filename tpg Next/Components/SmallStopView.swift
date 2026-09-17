@@ -185,11 +185,7 @@ struct SmallStopView: View {
             } else if stopManager.stopError {
                 HStack {
                     Spacer()
-                    if stopManager.stopErrorMessage == "STOPEVENT_LOCATIONUNSERVED" {
-                        Text("Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi")
-                    } else {
-                        Text("Pas de départs trouvés")
-                    }
+                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage)
                     Spacer()
                 }
             } else {

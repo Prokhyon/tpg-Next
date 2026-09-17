@@ -19,7 +19,6 @@ struct StopView: View {
     @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @Environment(StopStore.self) var stopStore
-    @Environment(\.openRoute) private var openRoute
     /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
     @State private var refreshGeneration = 0
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
@@ -35,7 +34,6 @@ struct StopView: View {
     @State private var viewLineFiltered = false //Filter is active
     @State private var selectedNumber = 5
     @State private var timeRequest = Date() //Time sent to the api for departures
-    @State private var timeAnimate = false //animate time selection symbol
     @State private var requestNumber = 30
     @State private var selectTime = false //display time selection sheet
     @State private var filterLines = false //display filter sheet
@@ -97,12 +95,8 @@ struct StopView: View {
                             } else {
                                 VStack {
                                     Spacer()
-                                    if stopManager.stopErrorMessage == "STOPEVENT_LOCATIONUNSERVED" {
-                                        Text("Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi")
-                                            .padding()
-                                    } else {
-                                        Text("Pas de départs trouvés")
-                                    }
+                                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage)
+                                        .padding()
                                     Spacer()
                                 }
                             }
@@ -142,34 +136,11 @@ struct StopView: View {
                         }
                         Spacer()
 
-                        //Bottom buttons
-                        HStack {
-                            HStack(spacing: TPGSurface.isGlass ? 0 : nil) {
-                                Button(action: {
-                                    withAnimation(TPGSurface.isGlass ? nil : .default) {
-                                        viewLineSorted.toggle()
-                                    }
-                                    requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
-                                }) {
-                                    Image(systemName: viewLineSorted ? "text.justify" : "rectangle.grid.1x2.fill")
-                                        .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                                        .padding()
-                                        .foregroundStyle(.foreground)
-                                }
-
-                                Filterbutton(filterLines: $filterLines, viewLineFiltered: $viewLineFiltered)
-                                    .padding(.trailing, 7)
-                            }
-                            .tpgSurface(interactive: true, legacy: .thinMaterial)
-                            Spacer()
-                            AdjustTimeButton(moveTime: moveTime)
-                                .tpgSurface(interactive: true, legacy: .thinMaterial)
-                        }
-                        .padding()
-                        .foregroundStyle(.primary)
-                        // Plafonnés, comme les barres d'outils du système : en taille d'accessibilité,
-                        // ces boutons flottants masquaient le bas de la liste.
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        StopFloatingControls(isGroupedByLine: viewLineSorted,
+                                             toggleGrouping: toggleGrouping,
+                                             showsFilters: $filterLines,
+                                             isFiltered: $viewLineFiltered,
+                                             moveTime: moveTime)
                     }
                     .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
@@ -189,196 +160,33 @@ struct StopView: View {
             }
         .toolbar {
             HStack {
-//                Button(action: {
-//                    showTime.toggle()
-//                }) {
-//                        Image(systemName: "hourglass")
-//                        .foregroundColor(showTime ? .text : .white)
-//                            .padding(.horizontal, 10)
-////                            .padding(.vertical, 15)
-//                        .background {
-//                            Capsule()
-//                                .foregroundStyle(showTime ? .clear : .accent)
-////                                .padding(.horizontal, 5)
-////                                .padding(.vertical, 5)
-//                        }
-//                }
                 ShowTimeButton(showTime: $showTime)
-                
+
                 Button {
                     selectTime.toggle()
                 } label: {
                     Label("Selectionner l'heure", systemImage: "clock")
                         .symbolEffect(.bounce.down.byLayer, value: selectTime)
                 }
-                
-                Menu {
-                    Button(action: {
-                        toggleFavorite()
-                    }) {
-                        favoritesViewModel.isFavoriteID(stopSloid) ? Label("Retirer des favoris", systemImage: "star.fill") : Label("Ajouter aux favoris", systemImage: "star")
-                    }
-                    Divider()
-                    if !stopManager.quays.isEmpty {
-                        Button {
-                            openRoute(.stopMap(quays: stopManager.quays, sloid: stopSloid, name: stopName))
-                        } label: {
-                            Label("Carte des quais", systemImage: "map")
-                        }
-                    }
-                    
-                        TripActionsMenu(stop: createStop(nomarret: stopName, sloid: sloidHarmonizer(code: stopSloid)), includesQuickTrip: false)
-                } label: {
-                        Label("", systemImage: "ellipsis")
-                            .padding(.horizontal, 5)
-                }
+
+                StopActionsMenu(stopName: stopName, stopSloid: stopSloid, quays: stopManager.quays)
             }
             .legacySurface()
         }
         
         
         .sheet(isPresented: $selectTime) {
-                let timeSelectSheet = VStack(spacing: 0) {
-                    Spacer()
-                    Text("Sélectionnez l'heure de départ")
-                        .font(.title2)
-                        .bold()
-//                        .padding()
-                        HStack {
-                            DatePicker(selection: $timeRequest) {
-                                
-                            }
-                            .datePickerStyle(.wheel)
-                            Button(action: {
-                                timeRequest = Date()
-                                timeAnimate.toggle()
-                            }) {
-                                Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                                    .font(.title2)
-                                    .symbolEffect(.rotate, value: timeAnimate)
-                            }
-                        }
-                        if #available(iOS 26, *) {
-                            Button {
-                                refreshGeneration += 1
-                                selectTime.toggle()
-                            } label: {
-                                HStack {
-                                    Spacer()
-                                    Text("Selectionner")
-                                    Spacer()
-                                }
-                                .frame(height: 40)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        } else {
-                            Button(action: {
-                                refreshGeneration += 1
-                                selectTime.toggle()
-                            }) {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(.accent)
-                                    .frame(height: 50)
-                                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                                    .overlay(Text("Selectionner").foregroundStyle(.white))
-                            }
-                            .padding(.bottom)
-                        }
-            }
-            .padding()
-            .presentationDetents([.fraction(0.4)])
-//            .presentationCornerRadius(35)
-//            .presentationBackground(#available(ios 26, *) ? .clear : .thinMaterial)
-            if #available(iOS 26, *) {
-                timeSelectSheet
-            } else {
-                timeSelectSheet
-                    .presentationBackground(.thinMaterial)
+            DepartureTimeSheet(time: $timeRequest) {
+                refreshGeneration += 1
+                selectTime.toggle()
             }
         }
-        
         .sheet(isPresented: $filterLines) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Filtrer par lignes")
-                    .font(.title2)
-                    .bold()
-                    .padding()
-                
-                    let scroll = VStack {
-                        ForEach(groupedStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
-//                            let splitLineOperator = splitString(key, separator: "$")
-                            let splitLine = splitString(key, separator: ";")
-                            Button(action: {
-//                                print(key)
-                                viewLineFiltered = true
-                                if selectedFilters.contains(key) {
-                                    selectedFilters.remove(key) // Unselect if already selected
-                                } else {
-                                    selectedFilters.insert(key) // Add to selected filters
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: selectedFilters.contains(key) ? "checkmark.circle.fill" : "circle")
-                                    BusLineIcon(lineName: splitLine.0, operatorName: groupedStopEvents[key]![0].operatorName)
-                                    Image(systemName: "arrow.right")
-                                    Text(splitLine.1)
-                                    Spacer()
-                                }
-                                .padding()
-                            }
-                            .foregroundStyle(.primary)
-                        }
-                    }
-                        ScrollView {
-                            scroll
-                        }
-                        .mask {
-                            Rectangle()
-                                .overlay(alignment: .top) {
-                                    ScrollMask(leading: false, vertical: true, gradientLength: 30)
-                                }
-                        }
-                        .mask {
-                            Rectangle()
-                                .overlay(alignment: .bottom) {
-                                    ScrollMask(leading: true, vertical: true, gradientLength: 30)
-                                }
-                        }
-                
-                if !selectedFilters.isEmpty {
-                    Button(role: .destructive, action: {
-                        viewLineFiltered = false
-                        selectedFilters = []
-                    }) {
-                        HStack {
-                            Label("Supprimer les filtres", systemImage: "xmark.circle")
-                            Spacer()
-                        }
-                        .frame(height: 40)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.horizontal)
-                }
-                
-                Button {
-                    filterLines = false
-                } label: {
-                    HStack {
-                        Label("Filtrer", systemImage: "line.3.horizontal.decrease")
-//                            .font(.title3)
-                        Spacer()
-                    }
-                    .padding()
-                    .frame(height: 40)
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.horizontal)
+            LineFilterSheet(groups: groupedStopEvents, selection: $selectedFilters, isFiltered: $viewLineFiltered) {
+                filterLines = false
             }
-//            .padding(.horizontal)
-            .padding(.top)
-            .presentationDetents([.fraction(0.7)])
         }
-        
+
         .navigationTitle("\(stopName)") // Set back button text
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -388,14 +196,11 @@ struct StopView: View {
         }
     }
     
-    private func toggleFavorite() {
-        if let stop = stopStore.findStop(id: stopSloid) {
-            if favoritesViewModel.isFavorite(stop) {
-                favoritesViewModel.removeFavoriteStop(stop)
-            } else {
-                favoritesViewModel.addFavorite(stop)
-            }
+    private func toggleGrouping() {
+        withAnimation(TPGSurface.isGlass ? nil : .default) {
+            viewLineSorted.toggle()
         }
+        requestNumber = max(viewLineSorted ? groupedStopEvents.keys.count * 5 : 30, 30)
     }
     
     private func getStopEvents() {
