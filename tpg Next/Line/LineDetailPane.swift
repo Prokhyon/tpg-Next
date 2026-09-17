@@ -192,7 +192,7 @@ struct VehicleInfoPanel: View {
     }
 }
 
-/// Un arrêt de la ligne sélectionné : les prochains passages de cette ligne à cet arrêt.
+/// Un arrêt de la ligne sélectionné : tous ses départs, filtrables par ligne.
 struct LineStopDeparturesPanel: View {
     @Environment(\.displayTime) private var now
     @Environment(\.openRoute) private var openRoute
@@ -200,6 +200,8 @@ struct LineStopDeparturesPanel: View {
     let stopEvent: StopEvent
     let close: () -> Void
     @State private var stopManager = StopManager()
+    /// Lignes affichées ; vide = toutes.
+    @State private var lineFilters: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -217,27 +219,23 @@ struct LineStopDeparturesPanel: View {
                 InfoChip(text: access.label, systemImage: access.systemImage)
             }
 
-            HStack {
-                PaneSectionTitle(text: "Prochains passages")
-                BusLineIcon(lineName: stopEvent.lineName, operatorName: stopEvent.operatorName)
+            PaneSectionTitle(text: "Départs")
+            if !lines.isEmpty {
+                LineFilterChips(lines: lines, selection: $lineFilters)
             }
+
             if departures.isEmpty {
-                Text(stopManager.stopError ? "Pas de passage trouvé" : "Recherche des passages…")
+                Text(stopManager.stopError ? "Pas de départ trouvé" : "Recherche des départs…")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(departures) { departure in
-                    HStack {
-                        Image(systemName: "arrow.right").font(.caption)
-                        StopNameView(departure.destination, style: .row)
-                            .strikethrough(departure.cancelled)
-                        Spacer()
-                        DepartureTimeView(departureDisplay(for: departure, showTime: false, at: now), transportType: departure.transportType)
-                        DepartureTimeView(departureDisplay(for: departure, showTime: true, at: now), transportType: departure.transportType, showsIcon: false)
-                            .foregroundStyle(.secondary)
-                        QuayIcon(quay: departure.plannedQuay)
+                VStack(spacing: 0) {
+                    ForEach(departures) { departure in
+                        NavigationLink(value: AppRoute.line(event: departure, currentStop: ShortStop(name: stop.stopPointName, sloid: stop.sloid))) {
+                            StopEventView(event: departure, showTime: false, previousLineRef: stopEvent.journeyRef)
+                                .foregroundStyle(determineColor(for: departure.estimatedTime, now: now))
+                        }
+                        .foregroundStyle(.primary)
                     }
-                    .padding(.vertical, 6)
-                    Divider()
                 }
             }
 
@@ -253,12 +251,21 @@ struct LineStopDeparturesPanel: View {
         .periodicRefresh(id: stop.id) { _ in
             stopManager.selectStop(stopName: stop.stopPointName, stopSloid: stop.sloid, stopEventNumber: 40, timeRequest: Date())
         }
+        // Autre arrêt : ses lignes ne sont plus les mêmes.
+        .onChange(of: stop.sloid) { lineFilters = [] }
     }
 
-    /// Les passages de la même ligne ; dans la même direction quand l'arrêt en a d'autres.
+    /// Les lignes de l'arrêt, dans l'ordre habituel.
+    private var lines: [LineFilterChips.Line] {
+        var seen = Set<String>()
+        return stopManager.stopEvents
+            .filter { seen.insert($0.lineName).inserted }
+            .map { LineFilterChips.Line(name: $0.lineName, operatorName: $0.operatorName) }
+            .sorted { lineGroupPrecedes($0.name, $1.name) }
+    }
+
     private var departures: [StopEvent] {
-        let sameLine = stopManager.stopEvents.filter { $0.lineName == stopEvent.lineName }.sortedByDeparture()
-        let sameDirection = sameLine.filter { $0.destination == stopEvent.destination }
-        return Array((sameDirection.isEmpty ? sameLine : sameDirection).prefix(8))
+        let events = stopManager.stopEvents.sortedByDeparture()
+        return lineFilters.isEmpty ? events : events.filter { lineFilters.contains($0.lineName) }
     }
 }

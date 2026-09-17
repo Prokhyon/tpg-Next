@@ -237,6 +237,8 @@ struct LineBackground: View {
     var lastEventId: String?
     var lineColor: Color
     @Binding var busIsHere: Bool
+    /// Abscisse du trait, alignée sur les points d'arrêt de la rangée.
+    var trailX: CGFloat = 45
     
     var body: some View {
         GeometryReader { geometry in
@@ -244,12 +246,12 @@ struct LineBackground: View {
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
                     .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: 45, y: geometry.size.height / 4 * 3)
+                    .position(x: trailX, y: geometry.size.height / 4 * 3)
             } else if event.id == lastEventId {
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
                     .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: 45, y: geometry.size.height / 4)
+                    .position(x: trailX, y: geometry.size.height / 4)
             } else {
                 var colorUp = hasPassed(event.departureDate, includingCurrentMinute: true, now: now)
                 let colorDown = hasPassed(event.departureDate, includingCurrentMinute: false, now: now)
@@ -257,11 +259,11 @@ struct LineBackground: View {
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
                     .foregroundColor(colorUp ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: 45, y: geometry.size.height / 4)
+                    .position(x: trailX, y: geometry.size.height / 4)
                 Rectangle()
                     .frame(width: 7, height: geometry.size.height / 2 + 8)
                     .foregroundColor(colorDown ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: 45, y: geometry.size.height / 4 * 3)
+                    .position(x: trailX, y: geometry.size.height / 4 * 3)
                     .onAppear {
                         if busIsHere {
                             colorUp = false

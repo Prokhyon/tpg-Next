@@ -49,17 +49,19 @@ struct StopView: View {
     }
 
     var filteredStopEvents: [String: [StopEvent]] {
-            if selectedFilters.isEmpty {
-                return groupedStopEvents
-            } else {
-                return groupedStopEvents.filter { selectedFilters.contains($0.key) }
-            }
+        let byLine = selectedFilters.isEmpty ? groupedStopEvents : groupedStopEvents.filter { selectedFilters.contains($0.key) }
+        guard !selectedQuays.isEmpty else { return byLine }
+        return byLine
+            .mapValues { $0.filter { selectedQuays.contains($0.plannedQuay) } }
+            .filter { !$0.value.isEmpty }
     }
     var allFilteredStopEvents: [StopEvent] {
         filteredStopEvents.values.flatMap { $0 }.sortedByDeparture()
     }
     
     @State private var selectedFilters: Set<String> = []
+    /// Quais filtrés, depuis la moitié droite sur grand écran.
+    @State private var selectedQuays: Set<String> = []
         
     @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
 //    @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
@@ -164,9 +166,21 @@ struct StopView: View {
             }
         } secondary: {
             StopDetailPane(stopName: stopName, stopSloid: stopSloid, quays: stopManager.quays,
-                           departures: stopManager.stopEvents, selected: selectedDeparture) {
+                           departures: stopManager.stopEvents, selected: selectedDeparture, showTime: showTime,
+                           lineFilters: $selectedFilters, quayFilters: $selectedQuays, select: select) {
                 withAnimation { selectedDeparture = nil }
             }
+        }
+        // Le bouton de filtre s'allume dès qu'un filtre est posé, depuis la feuille ou la moitié droite.
+        .onChange(of: selectedFilters) { updateFilterState() }
+        .onChange(of: selectedQuays) { updateFilterState() }
+        .onChange(of: viewLineFiltered) {
+            // « Supprimer les filtres » de la feuille retire aussi les quais.
+            if !viewLineFiltered { selectedQuays = [] }
+        }
+        .onChange(of: layout.showsSecondaryPane) {
+            // Sans la moitié droite, un filtre de quai ne pourrait plus être retiré.
+            if !layout.showsSecondaryPane { selectedQuays = [] }
         }
         .onChange(of: stopManager.stopEvents) {
             // La sélection suit les rafraîchissements ; ouverte depuis une course, la page la présélectionne.
@@ -217,6 +231,10 @@ struct StopView: View {
     /// Course mise en avant : celle d'où l'on vient, ou le départ détaillé sur grand écran.
     private var highlightedJourneyRef: String? {
         layout.showsSecondaryPane ? (selectedDeparture?.journeyRef ?? previousLineRef) : previousLineRef
+    }
+
+    private func updateFilterState() {
+        viewLineFiltered = !selectedFilters.isEmpty || !selectedQuays.isEmpty
     }
 
     private func select(_ event: StopEvent) {

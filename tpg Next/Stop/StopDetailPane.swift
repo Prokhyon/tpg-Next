@@ -17,6 +17,11 @@ struct StopDetailPane: View {
     let quays: [Quay]
     let departures: [StopEvent]
     let selected: StopEvent?
+    let showTime: Bool
+    /// Filtres de la liste de gauche : groupes « ligne;destination » et quais.
+    @Binding var lineFilters: Set<String>
+    @Binding var quayFilters: Set<String>
+    let select: (StopEvent) -> Void
     let deselect: () -> Void
 
     /// Parcours du départ sélectionné, chargé à la sélection (pas avec la liste : 8 fois plus lourd).
@@ -24,7 +29,8 @@ struct StopDetailPane: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            StopMapPanel(stopSloid: stopSloid, quays: quays, selected: selected, journey: journey)
+            StopMapPanel(stopSloid: stopSloid, quays: quays, selected: selected, journey: journey,
+                         highlightedQuays: highlightedQuays, toggleQuay: toggleQuay)
                 .clipShape(RoundedRectangle(cornerRadius: 30))
                 .frame(maxHeight: .infinity)
 
@@ -32,9 +38,11 @@ struct StopDetailPane: View {
                 Group {
                     if let selected {
                         DepartureDetailPanel(event: selected, stopName: stopName, stopSloid: stopSloid,
-                                             journey: journey, close: deselect)
+                                             departures: departures, showTime: showTime, journey: journey,
+                                             select: select, close: deselect)
                     } else {
-                        StopInfoPanel(departures: departures)
+                        StopInfoPanel(departures: departures, lineFilters: $lineFilters, quayFilters: $quayFilters,
+                                      toggleQuay: toggleQuay)
                     }
                 }
                 .padding(20)
@@ -50,6 +58,23 @@ struct StopDetailPane: View {
             }
         }
     }
+
+    /// Quais mis en avant sur la carte : ceux filtrés, sinon ceux des lignes filtrées.
+    private var highlightedQuays: Set<String> {
+        if !quayFilters.isEmpty { return quayFilters }
+        guard !lineFilters.isEmpty else { return [] }
+        return Set(departures.filter { lineFilters.contains("\($0.lineName);\($0.destination)") }.map(\.plannedQuay))
+    }
+
+    private func toggleQuay(_ quay: String) {
+        withAnimation {
+            if quayFilters.contains(quay) {
+                quayFilters.remove(quay)
+            } else {
+                quayFilters.insert(quay)
+            }
+        }
+    }
 }
 
 /// Carte de l'arrêt : ses quais, et le parcours du départ sélectionné.
@@ -59,6 +84,9 @@ struct StopMapPanel: View {
     let quays: [Quay]
     let selected: StopEvent?
     let journey: JourneyTrackModel
+    /// Sans départ sélectionné, les quais filtrés.
+    var highlightedQuays: Set<String> = []
+    var toggleQuay: ((String) -> Void)?
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
@@ -68,12 +96,18 @@ struct StopMapPanel: View {
                                   operatorName: selected.operatorName, currentStopSloid: sloidHarmonizer(code: stopSloid), now: now)
             }
             ForEach(stopQuays) { quay in
-                let isSelected = quay.quayName == selected?.plannedQuay
+                let isSelected = selected.map { quay.quayName == $0.plannedQuay } ?? highlightedQuays.contains(quay.quayName)
                 Annotation(String(localized: "quai \(quay.quayName)"), coordinate: quay.coordinate, anchor: .center) {
                     Circle()
                         .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2)
                         .background(Circle().fill(isSelected ? .accent : .color1))
                         .frame(width: isSelected ? 22 : 15, height: isSelected ? 22 : 15)
+                        // Zone de toucher plus large que le point.
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
+                        .onTapGesture {
+                            if selected == nil { toggleQuay?(quay.quayName) }
+                        }
                 }
             }
             UserAnnotation()
@@ -100,15 +134,23 @@ extension Quay {
     }
 }
 
-/// Le départ sélectionné : son heure, son quai, son véhicule, et ses prochains arrêts.
+/// Le départ sélectionné : son heure, son quai, son véhicule, les départs suivants de la ligne
+/// et son parcours, présenté comme sur la page ligne.
 struct DepartureDetailPanel: View {
     @Environment(\.displayTime) private var now
     @Environment(\.openRoute) private var openRoute
     let event: StopEvent
     let stopName: String
     let stopSloid: String
+    /// Les départs de l'arrêt, pour les horaires suivants de la même ligne.
+    let departures: [StopEvent]
+    let showTime: Bool
     let journey: JourneyTrackModel
+    let select: (StopEvent) -> Void
     let close: () -> Void
+
+    @State private var showsPreviousStops = false
+    @State private var busIsHere = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -147,49 +189,103 @@ struct DepartureDetailPanel: View {
 
             FlowChips(event: event)
 
-            VStack(spacing: 0) {
-                PaneSectionTitle(text: "Prochains arrêts")
-                    .padding(.bottom, 8)
-                if onwardStops.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                PaneSectionTitle(text: "Départs suivants")
+                    .padding(.bottom, 4)
+                if nextDepartures.isEmpty {
+                    Text("Pas d'autre départ de cette ligne dans la liste.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(nextDepartures) { departure in
+                        Button { select(departure) } label: {
+                            StopEventView(event: departure, showTime: showTime)
+                                .foregroundStyle(determineColor(for: departure.estimatedTime, now: now))
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                PaneSectionTitle(text: "Parcours")
+                    .padding(.bottom, 4)
+                if currentIndex == nil {
                     Text("Chargement du parcours…")
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    ForEach(onwardStops) { stop in
+                    if previousCount > 0 {
+                        Button {
+                            withAnimation { showsPreviousStops.toggle() }
+                        } label: {
+                            Label(showsPreviousStops ? "Masquer les arrêts précédents" : "Afficher les \(previousCount) arrêts précédents",
+                                  systemImage: showsPreviousStops ? "chevron.down" : "chevron.up")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .padding(.bottom, 8)
+                    }
+                    ForEach(visibleStops) { stop in
                         Button {
                             openRoute(.stop(name: stop.stopPointName, sloid: stop.sloid,
                                             highlight: DepartureHighlight(journeyRef: event.journeyRef, lineName: event.lineName, time: stop.timetabledTime)))
                         } label: {
-                            HStack {
-                                StopNameView(stop.stopPointName, style: .row)
-                                Spacer()
-                                DepartureTimeView(departureDisplay(timetabled: stop.timetabledTime, estimated: stop.estimatedTime, showTime: true, at: now),
-                                                  transportType: event.transportType, showsIcon: false)
-                            }
-                            .padding(.vertical, 8)
-                            .contentShape(Rectangle())
+                            LineEventElementView(currentLine: event.lineName, operatorName: operatorName, transportType: event.transportType,
+                                                 currentStop: stop.sloid == currentSloid, eventName: stop.stopPointName,
+                                                 estimatedTime: stop.estimatedTime, timetabledTime: stop.timetabledTime,
+                                                 plannedQuay: stop.plannedQuay, showTime: .constant(showTime))
                         }
                         .foregroundStyle(.primary)
-                        Divider()
+                        .padding(.vertical, 5)
+                        .background(
+                            LineBackground(event: stop, firstEventId: journey.events.first?.id, lastEventId: journey.events.last?.id,
+                                           lineColor: LineColors.lineColor(for: event.lineName, operatorName: operatorName), busIsHere: $busIsHere,
+                                           trailX: 30)
+                        )
                     }
                 }
             }
 
             Button {
-                openRoute(.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid))))
+                openRoute(.line(event: event, currentStop: ShortStop(name: stopName, sloid: currentSloid)))
             } label: {
                 Label("Voir toute la course", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
         }
+        // Autre départ : le parcours repart replié.
+        .onChange(of: event.journeyRef) {
+            showsPreviousStops = false
+            busIsHere = false
+        }
     }
 
-    /// Les arrêts après celui-ci sur la course.
-    private var onwardStops: [LineEvent] {
-        let parent = sloidHarmonizer(code: stopSloid)
-        guard let index = journey.events.firstIndex(where: { $0.sloid == parent }) else { return [] }
-        return Array(journey.events.dropFirst(index + 1))
+    private var currentSloid: String { sloidHarmonizer(code: stopSloid) }
+
+    private var operatorName: String {
+        journey.operatorName.isEmpty ? event.operatorName : journey.operatorName
+    }
+
+    private var currentIndex: Int? {
+        journey.events.firstIndex { $0.sloid == currentSloid }
+    }
+
+    private var previousCount: Int { currentIndex ?? 0 }
+
+    /// Depuis cet arrêt jusqu'au terminus ; depuis le départ de la course une fois déplié.
+    private var visibleStops: [LineEvent] {
+        guard let currentIndex else { return [] }
+        return Array(journey.events.dropFirst(showsPreviousStops ? 0 : currentIndex))
+    }
+
+    /// Les départs suivants de la même ligne vers la même destination, dans la liste de l'arrêt.
+    private var nextDepartures: [StopEvent] {
+        let after = event.departureDate ?? .distantPast
+        return Array(departures
+            .filter { $0.lineName == event.lineName && $0.destination == event.destination && $0.id != event.id }
+            .filter { ($0.departureDate ?? .distantFuture) >= after }
+            .sortedByDeparture()
+            .prefix(4))
     }
 }
 
@@ -216,50 +312,96 @@ private struct FlowChips: View {
     }
 }
 
-/// Sans départ sélectionné : les lignes qui desservent l'arrêt et ses quais.
+/// Sans départ sélectionné : les lignes qui desservent l'arrêt et ses quais. Les toucher
+/// filtre la liste des départs.
 struct StopInfoPanel: View {
     let departures: [StopEvent]
+    @Binding var lineFilters: Set<String>
+    @Binding var quayFilters: Set<String>
+    let toggleQuay: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Touchez un départ pour voir son parcours.")
+            Text("Touchez une ligne ou un quai pour filtrer les départs, un départ pour voir son parcours.")
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 10) {
-                PaneSectionTitle(text: "Lignes")
+                HStack {
+                    PaneSectionTitle(text: "Lignes")
+                    if !lineFilters.isEmpty {
+                        Button("Toutes") { withAnimation { lineFilters = [] } }
+                    }
+                }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 10, alignment: .leading)], alignment: .leading, spacing: 10) {
                     ForEach(lineGroups, id: \.key) { group in
-                        HStack {
-                            BusLineIcon(lineName: group.event.lineName, operatorName: group.event.operatorName)
-                            Image(systemName: "arrow.right").font(.caption)
-                            StopNameView(group.event.destination, style: .row)
+                        let isOn = lineFilters.contains(group.key)
+                        Button {
+                            withAnimation {
+                                if isOn { lineFilters.remove(group.key) } else { lineFilters.insert(group.key) }
+                            }
+                        } label: {
+                            HStack {
+                                BusLineIcon(lineName: group.event.lineName, operatorName: group.event.operatorName)
+                                Image(systemName: "arrow.right").font(.caption)
+                                StopNameView(group.event.destination, style: .row)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(filterBackground(isOn: isOn))
+                            .opacity(lineFilters.isEmpty || isOn ? 1 : 0.5)
+                            .contentShape(RoundedRectangle(cornerRadius: 14))
                         }
+                        .foregroundStyle(.primary)
+                        .accessibilityAddTraits(isOn ? .isSelected : [])
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                PaneSectionTitle(text: "Quais")
+                HStack {
+                    PaneSectionTitle(text: "Quais")
+                    if !quayFilters.isEmpty {
+                        Button("Tous") { withAnimation { quayFilters = [] } }
+                    }
+                }
                 ForEach(quayGroups, id: \.quay) { group in
-                    HStack(alignment: .top, spacing: 12) {
-                        QuayIcon(quay: group.quay).font(.title2)
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                ForEach(group.lines, id: \.self) { line in
-                                    BusLineIcon(lineName: line.lineName, operatorName: line.operatorName)
+                    let isOn = quayFilters.contains(group.quay)
+                    Button {
+                        toggleQuay(group.quay)
+                    } label: {
+                        HStack(alignment: .top, spacing: 12) {
+                            QuayIcon(quay: group.quay).font(.title2)
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    ForEach(group.lines, id: \.self) { line in
+                                        BusLineIcon(lineName: line.lineName, operatorName: line.operatorName)
+                                    }
+                                }
+                                if let access = group.access {
+                                    Label(access.label, systemImage: access.systemImage)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
-                            if let access = group.access {
-                                Label(access.label, systemImage: access.systemImage)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
+                            Spacer(minLength: 0)
                         }
+                        .padding(10)
+                        .background(filterBackground(isOn: isOn))
+                        .opacity(quayFilters.isEmpty || isOn ? 1 : 0.5)
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    Divider()
+                    .foregroundStyle(.primary)
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }
         }
+    }
+
+    private func filterBackground(isOn: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 14)
+            .fill(isOn ? Color.accent.opacity(0.15) : Color.primary.opacity(0.04))
+            .strokeBorder(isOn ? Color.accent : .clear, lineWidth: 1.5)
     }
 
     private var lineGroups: [(key: String, event: StopEvent)] {
