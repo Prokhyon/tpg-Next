@@ -20,6 +20,14 @@ import tpgNextFunc
 
 enum Weekday: Int, Codable, CaseIterable {
     case monday = 1, tuesday, wednesday, thursday, friday, saturday, sunday
+
+    /// `Calendar` numérote à partir du dimanche (1), cette énumération à partir du lundi :
+    /// les valeurs brutes ne sont pas interchangeables.
+    init?(calendarWeekday: Int) {
+        self.init(rawValue: (calendarWeekday + 5) % 7 + 1)
+    }
+
+    var calendarWeekday: Int { rawValue % 7 + 1 }
 }
 
 public struct RegularTrip: Identifiable, Codable {
@@ -69,11 +77,11 @@ struct WeeklyRegularTripsView: View {
     private func weekdayDisplayName(for weekday: Weekday) -> String {
         let formatter = DateFormatter()
         formatter.locale = .current
-        return formatter.weekdaySymbols[weekday.rawValue - 1].capitalized
+        return formatter.weekdaySymbols[weekday.calendarWeekday - 1].capitalized
     }
 
     private func date(for weekday: Weekday) -> Date {
-        calendar.nextDate(after: today, matching: DateComponents(weekday: weekday.rawValue), matchingPolicy: .nextTimePreservingSmallerComponents) ?? today
+        calendar.nextDate(after: today, matching: DateComponents(weekday: weekday.calendarWeekday), matchingPolicy: .nextTimePreservingSmallerComponents) ?? today
     }
 }
 
@@ -139,7 +147,7 @@ struct AddRegularTripView: View {
 func weekdayDisplayName(for weekday: Weekday) -> String {
     let formatter = DateFormatter()
     formatter.locale = .current
-    return formatter.weekdaySymbols[weekday.rawValue - 1].capitalized
+    return formatter.weekdaySymbols[weekday.calendarWeekday - 1].capitalized
 }
 
 #Preview {
