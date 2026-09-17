@@ -106,7 +106,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
             guard let events = await fetchDepartures(for: target.stop) else {
                 return [DeparturesEntry(date: now, stop: target.stop, events: [], status: .networkError, distance: target.distance)]
             }
-            let sorted = events.sorted { $0.estimatedTime < $1.estimatedTime }
+            let sorted = events.sortedByDeparture()
             guard !sorted.isEmpty else {
                 return [DeparturesEntry(date: now, stop: target.stop, events: [], status: .noDepartures, distance: target.distance)]
             }
@@ -127,7 +127,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     /// Un départ reste affiché une demi-minute après son heure, comme dans l'app.
     private func hasDeparted(_ event: StopEvent, at date: Date) -> Bool {
-        guard let departure = DateParsing.date(from: event.estimatedTime.isEmpty ? event.timetabledTime : event.estimatedTime) else {
+        guard let departure = event.departureDate else {
             return false
         }
         return departure.addingTimeInterval(30) < date
@@ -164,23 +164,15 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     // MARK: - Réseau
 
+    /// `nil` en cas d'échec réseau, vide si l'arrêt n'a pas de départ. La requête a son
+    /// propre délai d'attente et se termine toujours : plus besoin de la borner ici.
     private func fetchDepartures(for stop: Stop) async -> [StopEvent]? {
-        let empty: [StopEvent]? = nil
-        return await withTimeout(seconds: 20, fallback: empty) {
-            await withCheckedContinuation { (continuation: CheckedContinuation<[StopEvent]?, Never>) in
-                fetchTransportDepartures(with: stop.name,
-                                         stopSloid: stop.sloid,
-                                         stopEventNumber: requestedDepartures,
-                                         timeRequest: Date()) { success, response in
-                    guard success, let data = response?.data(using: .utf8) else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    parseStopEvents(from: data, stopCode: stop.sloid) { events, _, error in
-                        continuation.resume(returning: error == nil ? events : [])
-                    }
-                }
-            }
+        do {
+            return try await fetchStopEvents(stopName: stop.name, stopSloid: stop.sloid, count: requestedDepartures).events
+        } catch is ParserError {
+            return []
+        } catch {
+            return nil
         }
     }
 }
@@ -253,30 +245,6 @@ private final class LocationFetcher: NSObject, CLLocationManagerDelegate, @unche
 
 // MARK: - Utilitaires
 
-/// Le rendu d'un widget ne doit pas rester suspendu : toute attente est bornée.
-/// Borne l'attente **sans dépendre de la coopération de l'opération**.
-///
-/// `withTaskGroup` ne convient pas ici : il attend toutes ses tâches filles avant
-/// de rendre la main, et `cancelAll()` ne peut rien contre une
-/// `withCheckedContinuation` jamais reprise — l'annulation est coopérative et une
-/// continuation n'est pas un point d'annulation. Une réponse réseau ou un délégué
-/// de localisation muet suspendait donc la construction de la timeline pour
-/// toujours, et WidgetKit restait sur son placeholder.
-///
-/// Ici l'opération tourne dans une tâche non structurée : si elle ne répond pas,
-/// elle est simplement abandonnée (l'extension est éphémère) et l'appelant reçoit
-/// `fallback` à l'échéance.
-func withTimeout<T>(seconds: Double,
-                    fallback: T,
-                    operation: @escaping () async -> T) async -> T {
-    let box = SingleResume<T>()
-    return await withCheckedContinuation { continuation in
-        box.attach(continuation)
-        Task { box.resolve(await operation()) }
-        DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { box.resolve(fallback) }
-    }
-}
-
 /// Garantit qu'une continuation est reprise exactement une fois, quel que soit
 /// le nombre de candidats en course.
 private final class SingleResume<T>: @unchecked Sendable {
@@ -294,19 +262,5 @@ private final class SingleResume<T>: @unchecked Sendable {
         continuation = nil
         lock.unlock()
         pending?.resume(returning: value)
-    }
-}
-
-enum DateParsing {
-    /// Le format des heures renvoyées par OJP, en UTC.
-    private static let formatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter
-    }()
-
-    static func date(from string: String) -> Date? {
-        formatter.date(from: string)
     }
 }

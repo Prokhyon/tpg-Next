@@ -14,136 +14,91 @@ public func keySelect() -> String {
     Secrets.ojpAPIKeys.randomElement() ?? ""
 }
 
-/// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
-///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
-public func displayTimeOrMinutesRemaining(for timetableInput: String, estimatedInput: String, with showTime: Bool, at now: Date = Date()) -> (text: String, color: Color) {
-    // Lu dans le groupe d'app : @AppStorage écrit dans .standard, invisible depuis le widget.
-    let delayTimeIntegrated = SharedStorage.bool(forSetting: "DelayTimeIntegrated")
-    var estimatedInput = estimatedInput
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    formatter.timeZone = TimeZone(identifier: "UTC")
-
-    let currentDate = now
-    
-    // Parse the timetabledTime and estimatedTime
-    if estimatedInput.isEmpty {
-        estimatedInput = timetableInput
-    }
-    guard let timetableTime = formatter.date(from: timetableInput),
-          let estimatedTime = formatter.date(from: estimatedInput) else {
-        Log.data.error("Dates illisibles : \(timetableInput) / \(estimatedInput)")
-        return ("", .yellow)//to change, yellow just for testing
-    }
-    
-    // Format the date to HH:mm in the desired time zone (UTC+2)
-    let targetTimeZone = TimeZone.current
-    let timeFormatter = DateFormatter()
-    timeFormatter.dateFormat = "HH:mm"
-    timeFormatter.timeZone = targetTimeZone
-    let EstimatedFormatted = timeFormatter.string(from: estimatedTime)
-    let TimetableFormatted = timeFormatter.string(from: timetableTime)
-    
-    // Calculate the time difference
-    let timeDifference = estimatedTime.timeIntervalSince(currentDate)
-    let minutesRemaining = /*Int(*/timeDifference / 60//)
-//    print("EstimatedTime: \(estimatedTime), timeDifference: \(timeDifference), minutesRemaining: \(minutesRemaining),  Int: \(Int(minutesRemaining))")
-    
-    // Calculate the delay
-    let delay = Int(estimatedTime.timeIntervalSince(timetableTime) / 60)
-    let delayString = delay > 0 ? "(+\(delay)')" : "(\(delay)')"
-    
-    if showTime && minutesRemaining > 0 {
-        if delay == 0 {
-            return (TimetableFormatted, .primary)
-        } else {
-            if !delayTimeIntegrated {
-                return ("\(TimetableFormatted);\(delayString)", .accent)
-            } else {
-                return ("\(EstimatedFormatted)", delay > 0 ? .accent : .primary)
+/// Minutes d'une durée ISO 8601 telle que renvoyée par OJP (`PT20M`, `PT1H5M`, `P1DT2H`).
+///
+/// Découper la chaîne à la main (`dropFirst(2).dropLast(1)`) affichait « 2' » pour `PT2H`
+/// et « 1H5' » pour `PT1H5M`. `nil` si la chaîne n'est pas une durée.
+public func durationMinutes(_ iso: String) -> Int? {
+    guard iso.hasPrefix("P") else { return nil }
+    var total = 0.0
+    var number = ""
+    var inTime = false
+    var found = false
+    for character in iso.dropFirst() {
+        switch character {
+        case "T":
+            inTime = true
+        case "0"..."9", ".":
+            number.append(character)
+        default:
+            guard let value = Double(number) else { return nil }
+            number = ""
+            switch (character, inTime) {
+            case ("D", false): total += value * 1440
+            case ("H", true): total += value * 60
+            case ("M", true): total += value
+            case ("S", true): total += value / 60
+            default: return nil
             }
+            found = true
         }
-    } else if minutesRemaining < 60 && minutesRemaining > 1 {
-        return ("\(Int(minutesRemaining))'", delay > 0 ? .accent : .primary)
-    } else if minutesRemaining <= 1 && minutesRemaining > 0.5 {
-        return ("< 1'", delay > 0 ? .accent : .primary)
-    } else if Int(minutesRemaining) == 0 {
-        return ("0", .primary)
-    } else {
-        return ("\(EstimatedFormatted)", .primary)
+    }
+    return found && number.isEmpty ? Int(total.rounded()) : nil
+}
+
+/// Une durée ISO 8601 lisible : « 20' » sous l'heure, « 1h05 » au-delà.
+public func durationText(_ iso: String) -> String {
+    guard let minutes = durationMinutes(iso) else { return "" }
+    return minutes < 60 ? "\(minutes)'" : String(format: "%dh%02d", minutes / 60, minutes % 60)
+}
+
+extension String {
+    /// Le texte prêt à être inséré dans une requête XML : un `&` ou un `<` dans un nom
+    /// de lieu rendait sinon toute la requête invalide.
+    public var xmlEscaped: String {
+        replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
     }
 }
 
-public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool) -> Bool {
-    let formatter = ISO8601DateFormatter()
-    
-    // Parse the date string into a Date object
-    guard let date = formatter.date(from: dateString) else {
+/// `hasPassed` pour une heure OJP en texte, quand on n'a pas le modèle sous la main.
+/// - Parameter equalReturnsTrue: la minute en cours compte déjà comme passée.
+public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = Date()) -> Bool {
+    let date = OJPDate.date(from: dateString)
+    if date == nil && !dateString.isEmpty {
         Log.data.error("Date illisible : \(dateString)")
-        return false
     }
-    
-    // Get the current date and time
-    let currentDate = Date()
-    
-    // Adjust the parsed date to UTC+2
-    let targetTimeZone = TimeZone.current
-    let adjustedParsedDate = date.addingTimeInterval(TimeInterval(targetTimeZone.secondsFromGMT(for: date)))
-    
-    // Adjust the current date to UTC+2
-    let adjustedCurrentDate = currentDate.addingTimeInterval(TimeInterval(targetTimeZone.secondsFromGMT(for: currentDate)))
-    
-    // Round both dates to the nearest minute
-    let calendar = Calendar.current
-    let componentsParsedDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: adjustedParsedDate)
-    let componentsCurrentDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: adjustedCurrentDate)
-    
-    // Recreate dates without seconds for comparison
-    guard let roundedParsedDate = calendar.date(from: componentsParsedDate),
-          let roundedCurrentDate = calendar.date(from: componentsCurrentDate) else {
-        Log.data.error("Arrondi des dates impossible")
-        return false
-    }
-    
-    // Compare the adjusted parsed date with the adjusted current date ignoring seconds
-    if equalReturnsTrue {
-        return roundedParsedDate <= roundedCurrentDate
-    } else {
-        return roundedParsedDate < roundedCurrentDate
-    }
-} //A check: hh:mm:30, arrondi vers le haut ou le bas ?
+    return hasPassed(date, includingCurrentMinute: equalReturnsTrue, now: now)
+}
 
 public func stringToDate(with dateString: String) -> Date? {
-    let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ" // Adjust this format to match your date string format
-        return dateFormatter.date(from: dateString)
+    OJPDate.date(from: dateString)
 }
 
+/// L'heure locale, « 14:05 ».
 public func dateToString(with date: Date) -> String {
-    let targetTimeZone = TimeZone.current
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "HH:mm"
-        dateFormatter.timeZone = targetTimeZone
-        let formattedDate = dateFormatter.string(from: date)
-        return formattedDate
+    OJPDate.clockTime(from: date)
 }
 
+private let isoDayFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter
+}()
+
+private let shortDayFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "d/M/yy"
+    return formatter
+}()
+
+/// « 2026-09-13 » devient « 13/9/26 ».
 public func convertDateString(_ dateString: String) -> String? {
-    // Step 1: Create a DateFormatter to parse the input string
-    let inputFormatter = DateFormatter()
-    inputFormatter.dateFormat = "yyyy-MM-dd" // The format of the input string
-    
-    // Step 2: Create a DateFormatter to output the desired format
-    let outputFormatter = DateFormatter()
-    outputFormatter.dateFormat = "d/M/yy" // The desired output format
-    
-    // Step 3: Convert the input string to a Date object
-    if let date = inputFormatter.date(from: dateString) {
-        // Step 4: Convert the Date object back to a string in the desired format
-        return outputFormatter.string(from: date)
-    }
-    
-    return nil // Return nil if the input string is not in the correct format
+    isoDayFormatter.date(from: dateString).map(shortDayFormatter.string(from:))
 }
 
 public func transportIcon(with transportType: String) -> Image {
@@ -231,8 +186,9 @@ public func startsWithVowel(_ word: String) -> Bool {
     return vowels.contains(firstChar)
 }
 
-public func determineColor(for time: String) -> Color {
-    if dateStringHasPassed(with: time, equalReturnsTrue: false) {
+/// - Parameter now: l'heure d'affichage (`\.displayTime`), pour que la couleur suive l'horloge.
+public func determineColor(for time: String, now: Date = Date()) -> Color {
+    if dateStringHasPassed(with: time, equalReturnsTrue: false, now: now) {
         return Color.gray
     } else {
         return Color.primary

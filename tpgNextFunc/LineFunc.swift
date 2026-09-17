@@ -28,8 +28,8 @@ public struct LineEvent: Codable, Identifiable, Hashable {
 }
 
 
-//Send XMLrequest
-public func fetchTransportJourney(with stopEvent: StopEvent, calls: Bool = true, track: Bool = false, completion: @escaping (Bool, String?) -> Void) {
+/// Course complète d'un départ. Voir `fetchTransportJourney(journeyRef:operatingDayRef:...)`.
+public func fetchTransportJourney(with stopEvent: StopEvent, calls: Bool = true, track: Bool = false, completion: @escaping (Data?) -> Void) {
     fetchTransportJourney(journeyRef: stopEvent.journeyRef, operatingDayRef: stopEvent.operatingDayRef, calls: calls, track: track, expectedStopRef: stopEvent.stopId, expectedTime: stopEvent.timetabledTime, completion: completion)
 }
 
@@ -41,15 +41,13 @@ public func fetchTransportJourney(with stopEvent: StopEvent, calls: Bool = true,
 /// - Parameter track: ajoute le tracé géographique de la course (≈ +35 Ko), lu par `parseJourneyTrack`.
 /// - Parameter expectedStopRef: un arrêt de la course (quai ou arrêt parent).
 /// - Parameter expectedTime: l'heure théorique de la course à cet arrêt.
-/// `completion` est appelé sur le thread principal.
-public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, calls: Bool = true, track: Bool = false, expectedStopRef: String? = nil, expectedTime: String? = nil, completion: @escaping (Bool, String?) -> Void) {
+/// `completion` reçoit la réponse brute, `nil` en cas d'échec, sur le thread principal.
+public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, calls: Bool = true, track: Bool = false, expectedStopRef: String? = nil, expectedTime: String? = nil, completion: @escaping (Data?) -> Void) {
     let days = operatingDayCandidates(for: operatingDayRef)
-    var fallback: String?
+    var fallback: Data?
 
-    func finish(_ response: String?) {
-        DispatchQueue.main.async {
-            completion(response != nil, response)
-        }
+    func finish(_ response: Data?) {
+        DispatchQueue.main.async { completion(response) }
     }
 
     func attempt(_ index: Int) {
@@ -69,7 +67,7 @@ public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, c
                 finish(response)
                 return
             }
-            let events = parseJourneyEventsSync(from: Data(response.utf8)).events
+            let events = parseJourneyEventsSync(from: response).events
             if journeyMatches(events, stopRef: expectedStopRef, timetabledTime: expectedTime) {
                 finish(response)
                 return
@@ -85,30 +83,20 @@ public func fetchTransportJourney(journeyRef: String, operatingDayRef: String, c
     attempt(0)
 }
 
-/// Une OJPTripInfoRequest en OJP 2.0. `completion` reçoit `nil` en cas d'erreur réseau,
-/// sur une file d'arrière-plan.
-private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls: Bool, track: Bool, completion: @escaping (String?) -> Void) {
-    guard let url = URL(string: "https://api.opentransportdata.swiss/ojp20") else {
-        completion(nil)
-        return
-    }
-
-    let outputFormatter1 = DateFormatter()
-    outputFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    outputFormatter1.timeZone = TimeZone(secondsFromGMT: 0)
-    let outputString1 = outputFormatter1.string(from: Date())
-
+/// Une OJPTripInfoRequest en OJP 2.0. `completion` reçoit `nil` en cas d'échec, sur une file de fond.
+private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls: Bool, track: Bool, completion: @escaping (Data?) -> Void) {
+    let requestTimestamp = OJPDate.string(from: Date())
     let xmlString = """
     <?xml version="1.0" encoding="utf-8"?>
     <OJP xmlns="http://www.vdv.de/ojp" xmlns:siri="http://www.siri.org.uk/siri" version="2.0">
         <OJPRequest>
             <siri:ServiceRequest>
-                <siri:RequestTimestamp>\(outputString1)</siri:RequestTimestamp>
+                <siri:RequestTimestamp>\(requestTimestamp)</siri:RequestTimestamp>
                 <siri:RequestorRef>tpgNext</siri:RequestorRef>
                 <OJPTripInfoRequest>
-                    <siri:RequestTimestamp>\(outputString1)</siri:RequestTimestamp>
-                    <JourneyRef>\(journeyRef)</JourneyRef>
-                    <OperatingDayRef>\(operatingDayRef)</OperatingDayRef>
+                    <siri:RequestTimestamp>\(requestTimestamp)</siri:RequestTimestamp>
+                    <JourneyRef>\(journeyRef.xmlEscaped)</JourneyRef>
+                    <OperatingDayRef>\(operatingDayRef.xmlEscaped)</OperatingDayRef>
                     <Params>
                         <IncludeCalls>\(calls ? "true" : "false")</IncludeCalls>
                         <IncludeService>\(calls ? "true" : "false")</IncludeService>
@@ -119,27 +107,7 @@ private func requestTripInfo(journeyRef: String, operatingDayRef: String, calls:
         </OJPRequest>
     </OJP>
     """
-
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/xml", forHTTPHeaderField: "Accept")
-    request.setValue("text/XML", forHTTPHeaderField: "Content-Type")
-    request.setValue(keySelect(), forHTTPHeaderField: "Authorization")
-    request.httpBody = Data(xmlString.utf8)
-
-    URLSession.shared.dataTask(with: request) { data, _, error in
-        if let error {
-            Log.network.error("Course : \(error.localizedDescription)")
-            completion(nil)
-            return
-        }
-        guard let data, let responseString = String(data: data, encoding: .utf8) else {
-            Log.network.error("Course : réponse vide")
-            completion(nil)
-            return
-        }
-        completion(responseString)
-    }.resume()
+    OJPClient.post(xmlString, to: .v2, completionQueue: .global(qos: .userInitiated)) { completion(try? $0.get()) }
 }
 
 public func parseJourneyEvents(from data: Data, completion: @escaping ([LineEvent], String) -> Void) {
@@ -155,9 +123,19 @@ public struct BusLineIcon: View {
     let lineName: String
     let operatorName: String
     
-    public init(lineName: String, operatorName: String) {
+    var width: CGFloat = 35
+    var height: CGFloat = 25
+    /// Plafond de hauteur et largeur minimale du badge : identiques à la taille de texte
+    /// normale, ils grandissent avec elle (le numéro était écrasé à grande taille).
+    @ScaledMetric private var maxHeight: CGFloat = 25
+    @ScaledMetric private var minWidth: CGFloat = 35
+    
+    public init(lineName: String, operatorName: String, width: CGFloat = 35, height: CGFloat = 25) {
         self.lineName = lineName
         self.operatorName = operatorName
+        self.height = height
+        self.width = width
+        
     }
 
     public var body: some View {
@@ -166,7 +144,7 @@ public struct BusLineIcon: View {
                    
                    .padding(.horizontal, 8)
                    .padding(.vertical, 4)
-                   .frame(minWidth: 35, maxHeight: 25)
+                   .frame(minWidth: width < minWidth ? width : minWidth, maxHeight: height < maxHeight ? height : maxHeight)
                    .background(
 //                       RoundedRectangle(cornerRadius: 10)
                     Capsule()

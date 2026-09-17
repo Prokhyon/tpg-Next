@@ -11,8 +11,8 @@ import Combine
 import tpgNextFunc
 
 struct FavoriteStopView: View {
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
     var stop: Stop
     var body: some View {
         NavigationLink {
@@ -26,29 +26,15 @@ struct FavoriteStopView: View {
         .foregroundStyle(.primary)
         .contentShape(.contextMenuPreview, Capsule())
         .contextMenu {
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-            }) {
-                Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-            }
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-            }) {
-                Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-            }
-            Button(action: {
-                tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-            }) {
-                Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-            }
+            TripActionsMenu(stop: stop)
         }
     }
 }
 
 struct FavoriteView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(NavigationModel.self) var navigationModel
     @Binding var isExpanded: Bool
 
     private let columns: [GridItem] = [
@@ -80,7 +66,7 @@ struct FavoriteView: View {
                 }
                 LazyVGrid(columns: columns, spacing: 8) {
                     if favoritesViewModel.favoriteStops.count > maxRows*2 {
-                        let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(maxRows * columns.count - (isExpanded ? 0 : 1)))
+                        let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(max(0, maxRows * columns.count - (isExpanded ? 0 : 1))))
                         ForEach(favorites, id: \.self) { stop in
                             FavoriteStopView(stop: stop)
                         }
@@ -150,131 +136,55 @@ struct FavoriteView: View {
 }
 
 struct HomeDepartures: View {
-//    @ObservedObject var path: ViewStateStack
-    @EnvironmentObject var stopStore: StopStore
-    @StateObject var locationManager = LocationManager()
-//    @StateObject private var stopManager = StopManager()
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
-    @State private var timer: AnyCancellable?
+//    var path: ViewStateStack
+    @Environment(StopStore.self) var stopStore
+    @State var locationManager = LocationManager()
+//    @State private var stopManager = StopManager()
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
     @State private var closestStops: [Stop] = []
     @State private var testStop: [Stop] = [Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), Stop(name: "Genève, Place des Eaux-Vives", sloid: "ch:1:sloid:87062", codedidoc: "8587062", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0))]
     @State private var calculationSuccess = false
     /// Position refusée ou introuvable : sans ça l'accueil restait sur « Chargement... ».
     @State private var locationFailed = false
     @State private var currentIndex = 0
-    @AppStorage("homeFavorites") var homeFavorites = false
+    /// Hauteur de la plus grande carte d'arrêt affichée : les pages grandissent avec le texte.
+    @State private var pageContentHeight: CGFloat = 0
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     var testing: Bool = false
 //    @State var autoRefresh = true
     
     var body: some View {
                         VStack(spacing:0) {
                             if testing {
-                                ZStack {
-                                TabView(selection: $currentIndex.animation()) {
-                                    ForEach(0..<testStop.count, id: \.self) { index in
-                                        VStack(spacing:0) {
-                                            Spacer()
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                            SmallStopView(stop: testStop[index], isHome: true, testing: true)
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                .padding(.bottom, 20)
-//                                                        .padding(.top, 20)
-                                        }
-//                                                .background(Rectangle().fill(.red))
-                                        
-                                        .tag(index)
-                                    }
-                                }
-                                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-//                                        .background(Rectangle().fill(.red))
-                                    VStack {
-                                        HStack {
-                                            Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                .font(.title)
-                                                .bold()
-                                                .padding(.leading, 15)
-                                            Spacer()
-                                        }
-                                        Spacer()
-                                        Fancy3DotsIndexView(numberOfPages: testStop.count, currentIndex: currentIndex)
-                                    }
-                                }
-                                .frame(height: 320)
+                                departuresPager(count: testStop.count, isHome: true, testing: true) { testStop[$0] }
                             } else if !homeFavorites {
                                 if calculationSuccess {
                                     if !closestStops.isEmpty {
-                                        ZStack {
-                                        TabView(selection: $currentIndex.animation()) {
-                                            ForEach(0..<closestStops.count, id: \.self) { index in
-                                                VStack(spacing:0) {
-                                                    Spacer()
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                    SmallStopView(stop: closestStops[index], isHome: true)
-//                                                    Rectangle().fill(.blue).frame(height: 10)
-                                                        .padding(.bottom, 20)
-//                                                        .padding(.top, 20)
-                                                }
-//                                                .background(Rectangle().fill(.red))
-                                                
-                                                .tag(index)
-                                            }
-                                        }
-                                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-//                                        .background(Rectangle().fill(.red))
-                                            VStack {
-                                                HStack {
-                                                    Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                        .font(.title)
-                                                        .bold()
-                                                        .padding(.leading, 15)
-                                                    Spacer()
-                                                }
-                                                Spacer()
-                                                Fancy3DotsIndexView(numberOfPages: closestStops.count, currentIndex: currentIndex)
-                                            }
-                                        }
-                                        .frame(height: 320)
-                                        
+                                        departuresPager(count: closestStops.count, isHome: true, testing: false) { closestStops[$0] }
                                     } else {
-                                            Text("Pas d'arrêt à proximité trouvé.")
+                                        Text("Pas d'arrêt à proximité trouvé.")
                                             .padding(.top, 70)
                                     }
                                 } else if locationFailed {
-                                        Text("Position indisponible. Autorisez la localisation pour voir les départs à proximité.")
-                                        .multilineTextAlignment(.center)
-                                        .padding(.top, 70)
-                                        .padding(.horizontal)
+                                    Group {
+                                        if locationManager.lastFailure == .denied {
+                                            Text("Autorisez la localisation pour voir les départs à proximité.")
+                                        } else {
+                                            Text("Position introuvable pour l'instant.")
+                                        }
+                                    }
+                                    .multilineTextAlignment(.center)
+                                    .padding(.top, 70)
+                                    .padding(.horizontal)
                                 } else {
-                                        Text("Chargement...")
+                                    Text("Chargement...")
                                         .padding(.top, 70)
                                 }
                             } else {
                                 if favoritesViewModel.favoriteStops.count > 0 {
-                                    ZStack {
-                                        TabView(selection: $currentIndex.animation()) {
-                                            ForEach(0..<min(3, favoritesViewModel.favoriteStops.count), id: \.self) { index in
-                                                let shortStop = favoritesViewModel.favoriteStops[index]
-                                                VStack(spacing:0) {
-                                                    Spacer()
-                                                    SmallStopView(stop: createStop(nomarret: shortStop.name, sloid: shortStop.sloid) , isHome: false, testing: testing)
-                                                        .padding(.bottom, 20)
-                                                }
-                                                .tag(index)
-                                            }
-                                        }
-                                        .frame(height: 320)
-                                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                                        VStack {
-                                            HStack {
-                                                Text(homeFavorites ? "Départs" : "Départs à proximité")
-                                                    .font(.title)
-                                                    .bold()
-                                                    .padding(.leading, 15)
-                                                Spacer()
-                                            }
-                                            Spacer()
-                                            Fancy3DotsIndexView(numberOfPages: min(3, favoritesViewModel.favoriteStops.count), currentIndex: currentIndex)
-                                        }
+                                    departuresPager(count: min(3, favoritesViewModel.favoriteStops.count), isHome: false, testing: testing) { index in
+                                        let shortStop = favoritesViewModel.favoriteStops[index]
+                                        return createStop(nomarret: shortStop.name, sloid: shortStop.sloid)
                                     }
                                 } else {
                                     Text("Pas d'arrets en favoris")
@@ -282,39 +192,57 @@ struct HomeDepartures: View {
                                 }
                             }
                         }
-        .onAppear {
-                setupLocationAndTimer()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                setupLocationAndTimer()
-        }
-        .onDisappear {
-            timer?.cancel()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            timer?.cancel()
-        }
-//        .onChange(of: autoRefresh) {
-//            if !autoRefresh {
-//                timer?.cancel()
-//            } else {
-//                setupLocationAndTimer()
-//            }
-//        }
-    }
-    
-    private func setupLocationAndTimer() {
-        if !testing {
+        // `testing` passe à false à la fermeture de la bienvenue : la recherche démarre alors.
+        .periodicRefresh(repeats: !testing) { _ in
             getLocation()
-            timer = Timer.publish(every: 30, on: .main, in: .common)
-                .autoconnect()
-                .sink { _ in
-                    getLocation()
-                }
+        }
+        .onChange(of: stopStore.isLoaded) {
+            getLocation()
         }
     }
-    
+
+    /// Les départs de quelques arrêts, un par page, sous le titre de la section.
+    ///
+    /// Le titre était superposé en haut de pages de hauteur fixe (320), les cartes collées en
+    /// bas : avec un texte agrandi, la carte montait sous le titre. Il est désormais au-dessus,
+    /// et les pages prennent la hauteur de la plus grande carte (au moins l'ancienne place).
+    private func departuresPager(count: Int, isHome: Bool, testing: Bool, stop: @escaping (Int) -> Stop) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(homeFavorites ? "Départs" : "Départs à proximité")
+                    .font(.title)
+                    .bold()
+                    .padding(.leading, 15)
+                Spacer()
+            }
+            ZStack(alignment: .bottom) {
+                TabView(selection: $currentIndex.animation()) {
+                    ForEach(0..<count, id: \.self) { index in
+                        VStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            SmallStopView(stop: stop(index), isHome: isHome, testing: testing)
+                                // Hauteur naturelle, pas celle de la page : mesurée dans une page trop
+                                // basse, la carte se comprimait et la page ne grandissait jamais.
+                                .fixedSize(horizontal: false, vertical: true)
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                                    pageContentHeight = max(pageContentHeight, height)
+                                }
+                                .padding(.bottom, 20)
+                        }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                // 320 moins la ligne du titre, désormais au-dessus : même place qu'avant.
+                .frame(height: max(286, pageContentHeight + 20))
+                Fancy3DotsIndexView(numberOfPages: count, currentIndex: currentIndex)
+            }
+        }
+    }
+
     private func getLocation() {
+        // La base se charge en arrière-plan : `onChange(of: stopStore.isLoaded)` relance la recherche.
+        guard !testing, stopStore.isLoaded else { return }
         locationManager.requestLocation { location in
             if let userLocation = location ?? locationManager.userLocation {
                 locationFailed = false
@@ -343,11 +271,10 @@ struct HomeDepartures: View {
 }
 
 struct SmallStopView: View {
-    @EnvironmentObject var tripViewModel: ItineraryViewModel
-    @EnvironmentObject var navigationModel: NavigationModel
-    @StateObject var stopManager = StopManager()
-    @StateObject private var lineManager = LineManager()
-    @State private var timer: AnyCancellable?
+    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(NavigationModel.self) var navigationModel
+    @State var stopManager = StopManager()
+    @State private var lineManager = LineManager()
     @State private var isShowingPopover = false
     
     var stop: Stop
@@ -409,28 +336,9 @@ struct SmallStopView: View {
                 //                    }
             }
         }
-        .onAppear {
-            setupStopManager()
+        .periodicRefresh(id: stop, repeats: !testing) { _ in
+            refreshDepartures()
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            setupStopManager()
-        }
-        .onDisappear {
-            timer?.cancel()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            timer?.cancel()
-        }
-        .onChange(of: stop) {
-            setupStopManager()
-        }
-//        .onChange(of: autoRefresh) {
-//            if !autoRefresh {
-//                timer?.cancel()
-//            } else {
-//                setupStopManager()
-//            }
-//        }
     }
     
     private func HeaderView() -> some View {
@@ -494,24 +402,9 @@ struct SmallStopView: View {
         } label: {
             HStack {
                 //                StopIcon(color: .color1)
-                let splitStopName = splitString(stop.name, separator: ",")
-                if splitStopName.1.isEmpty {
-                    Text(splitStopName.0)
-                        .font(.title3)
-                        .bold()
-                        .minimumScaleFactor(0.5)
-                    if stop.meansOfTransport == "TRAIN" {
-                        Image(systemName: "lightrail").font(.headline)
-                    } else if stop.meansOfTransport == "BOAT" {
-                        Image(systemName: "ferry").font(.headline)
-                    }
-                    Spacer()
-                } else {
-                    VStack(alignment: .leading) {
-                        Text(splitStopName.0).font(.subheadline)
-                        Text(splitStopName.1).font(.title3).bold()
-                    }
-                    .minimumScaleFactor(0.5)
+                StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
+                if splitString(stop.name, separator: ",").1.isEmpty {
+                    Spacer() // Un nom sur une ligne occupe toute la largeur de la carte.
                 }
             }
         }
@@ -520,21 +413,7 @@ struct SmallStopView: View {
     private func TripButton() -> some View {
         HStack {
             let menu = Group {
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
-                }) {
-                    Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
-                }
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: false)
-                }) {
-                    Label("Aller ici", systemImage: "point.bottomleft.filled.forward.to.point.topright.scurvepath")
-                }
-                Button(action: {
-                    tripViewModel.outerTrip(tab: navigationModel, isDeparture: false, stop: stop, isQuickTrip: true)
-                }) {
-                    Label("Trajet rapide", systemImage: "point.bottomleft.forward.to.arrow.triangle.scurvepath")
-                }
+                TripActionsMenu(stop: stop)
             }
             if isHome {
                 Button(action: {
@@ -560,7 +439,7 @@ struct SmallStopView: View {
     private func DeparturesList() -> some View {
         VStack(spacing: 0) {
             if !stopManager.stopEvents.isEmpty {
-                ForEach(isQuay ? filteredEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }).prefix(3) : stopManager.stopEvents.sorted(by: { $0.estimatedTime < $1.estimatedTime }).prefix(3), id: \.id) { event in
+                ForEach(isQuay ? filteredEvents.sortedByDeparture().prefix(3) : stopManager.stopEvents.sortedByDeparture().prefix(3), id: \.id) { event in
                     NavigationLink {
                         LineView(stopEvent: event, currentStop: ShortStop(name: stop.name, sloid: sloidHarmonizer(code: stop.sloid)), currentLine: event.lineName)
                     } label: {
@@ -590,7 +469,7 @@ struct SmallStopView: View {
                 }
             }
         }
-        .frame(height: 170)
+        .heightGrowingWithText(170)
     }
     
     private func DeparturesTestList() -> some View {
@@ -599,20 +478,12 @@ struct SmallStopView: View {
             StopEventView(event: StopEvent(stopPointName: "", stopId: "2", plannedQuay: "b", timetabledTime: "2025/09/24T17:49:00Z", estimatedTime: "", lineName: "12", origin: "", destination: "Thônex, Moillesulaz", transportType: "", operatorName: "Transports Publics Genevois", journeyRef: "1", operatingDayRef: ""), showTime: false, mapVersion: !isHome)
             StopEventView(event: StopEvent(stopPointName: "", stopId: "3", plannedQuay: "c", timetabledTime: "2025/09/24T17:50:00Z", estimatedTime: "", lineName: "17", origin: "", destination: "Lancy-Bachet, gare", transportType: "", operatorName: "Transports Publics Genevois", journeyRef: "1", operatingDayRef: ""), showTime: false, mapVersion: !isHome)
         }
-        .frame(height: 170)
+        .heightGrowingWithText(170)
     }
     
-    private func setupStopManager() {
-        if !testing {
-            stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
-        }
-        if !testing {
-            timer = Timer.publish(every: 30, on: .main, in: .common)
-                .autoconnect()
-                .sink { _ in
-                    stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
-                }
-        }
+    private func refreshDepartures() {
+        guard !testing else { return }
+        stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
     }
     private var filteredEvents: [StopEvent] {
         stopManager.stopEvents.filter { $0.plannedQuay == quay }
@@ -620,14 +491,13 @@ struct SmallStopView: View {
 }
 
 struct HomeView: View {
-    @EnvironmentObject var stopStore: StopStore
-    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @Environment(StopStore.self) var stopStore
+    @Environment(FavoritesViewModel.self) var favoritesViewModel
     
     @State private var isExpanded: Bool = false
     @State private var maxRows: Int = 5
     var testing: Bool
-    @AppStorage("homeFavorites") var homeFavorites = false
-    @AppStorage("UseCircleButton") var useCircleButton = false
+    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
         
     var body: some View {
             GeometryReader { geometry in
@@ -639,34 +509,26 @@ struct HomeView: View {
                                     .font(.title)
                                     .bold()
                                     .padding(.leading, 15)
-                                    .frame(height: 20.0)
+                                    .heightGrowingWithText(20)
                                 Spacer()
 //                                Button(action: {
 //                                    self.showSettings.toggle()
-                                if #available(iOS 26, *) {
-                                    NavigationLink {
-                                        SettingsView()
-                                    } label: {
-                                        Image(systemName: "gear")
-                                            .font(.title)
-                                            .padding(5)
-                                    }
-                                    .glassEffect(.regular.interactive())
-                                    .padding(.leading, 5)
-                                    .padding(.trailing, 15)
-                                } else {
-                                    NavigationLink {
-                                        SettingsView()
-                                    } label: {
-                                        Image(systemName: "gear")
-                                            .font(.title)
-                                    }
-                                    .padding(.leading, 5)
-                                    .padding(.trailing, 15)
+                                NavigationLink {
+                                    SettingsView()
+                                } label: {
+                                    Image(systemName: "gear")
+                                        .font(.title)
+                                        .padding(TPGSurface.isGlass ? 5 : 0)
                                 }
+                                .tpgSurface(interactive: true, legacy: nil)
+                                .padding(.leading, 5)
+                                .padding(.trailing, 15)
                             }
                             
-                            FavoriteView(isExpanded: $isExpanded, maxRows: Int((UIScreen.main.bounds.height/168).rounded()))//168 used to obtain the right amount of rows based on the screen size. 3 for the SE, 4 for the mini and 5 for regular size.
+                            // Une rangée de favoris pour 168 points de hauteur de fenêtre : 3 à 5 selon l'iPhone, au moins 1
+                            // (au premier passage, la fenêtre mesure 0 et `prefix(-1)` plantait). La fenêtre
+                            // et non l'écran (`UIScreen.main`) : sur iPad ou en multifenêtre, elle est plus petite.
+                            FavoriteView(isExpanded: $isExpanded, maxRows: max(1, Int(((geometry.size.height + geometry.safeAreaInsets.top + geometry.safeAreaInsets.bottom) / 168).rounded())))
                             VStack(spacing: 0) {
 
                                 
@@ -676,7 +538,8 @@ struct HomeView: View {
                             Spacer()
                         }
                     }
-                    .scrollDisabled(isExpanded ? false : true)
+                    // Toujours défilable : bloqué tant que la grille des favoris n'était pas dépliée,
+                    // l'accueil cachait ses départs avec beaucoup de favoris ou un texte agrandi.
                     VStack {
                         BackdropBlurView(radius: 5)
                             .frame(height: geometry.safeAreaInsets.top)
@@ -785,30 +648,30 @@ struct HomeView_Previews: PreviewProvider {
         return
             NavigationStack {
                 HomeView(testing: false)
-                    .environmentObject(stopStore)
-                    .environmentObject(favoritesViewModel)
-                    .environmentObject(navigationModel)
+                    .environment(stopStore)
+                    .environment(favoritesViewModel)
+                    .environment(navigationModel)
             }
 //            HomeDepartures(testing: true)
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //            ContentView()
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //            VStack {
 //                Spacer()
 //                SmallStopView(stop: Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), autoRefresh: $autoRefresh)
 //            }
 //            .background(Image("tpgMap"))
-//            .environmentObject(stopStore)
-//            .environmentObject(favoritesViewModel)
+//            .environment(stopStore)
+//            .environment(favoritesViewModel)
         
 //        VStack {
 //            ClosestStopsView(autoRefresh: $autoRefresh)
-//                .environmentObject(stopStore)
-//                .environmentObject(favoritesViewModel)
+//                .environment(stopStore)
+//                .environment(favoritesViewModel)
 //        }
     }
 }

@@ -287,22 +287,23 @@ public struct LineColors {
     
     
     
-    public static func lineColor(for lineID: String, operatorName: String, inverted: Bool = false) -> Color {
-        let colorMaps: [String: [String: Color]] = [
-            "Transports Publics Genevois": tpgColors,
-            "Schweizerische Bundesbahnen SBB": sbbColors,
-            "Transports Publics de l'agglomération d'Annemasse": tacColors,
-            "Transports Publics de la Région Lausannoise sa": tlColors,
-            "Lausanne-Echallens-Bercher": tlColors,
-            "Automobiles MBC": mbcColors,
-            "Bus Nyon-Prangins": tpnColors,
-            "Transports Vallée de Joux-Yverdon-Ste-Croix": travysColors,
-            "Transports publics Vevey-Montreux-Chillon-Villeneuve": vmcvColors,
-            "Transports Publics du Chablais": tpcColors,
-            "Transports Publics du Chablais (Bus)": tpcColors,
-            "CGN SA" : cgnColors
-        ]
+    /// Construit une seule fois : il l'était à chaque appel, soit pour chaque ligne affichée.
+    private static let colorMaps: [String: [String: Color]] = [
+        "Transports Publics Genevois": tpgColors,
+        "Schweizerische Bundesbahnen SBB": sbbColors,
+        "Transports Publics de l'agglomération d'Annemasse": tacColors,
+        "Transports Publics de la Région Lausannoise sa": tlColors,
+        "Lausanne-Echallens-Bercher": tlColors,
+        "Automobiles MBC": mbcColors,
+        "Bus Nyon-Prangins": tpnColors,
+        "Transports Vallée de Joux-Yverdon-Ste-Croix": travysColors,
+        "Transports publics Vevey-Montreux-Chillon-Villeneuve": vmcvColors,
+        "Transports Publics du Chablais": tpcColors,
+        "Transports Publics du Chablais (Bus)": tpcColors,
+        "CGN SA": cgnColors
+    ]
 
+    public static func lineColor(for lineID: String, operatorName: String, inverted: Bool = false) -> Color {
         if let colorMap = colorMaps[operatorName], let color = colorMap[lineID] {
             return color
         } else {

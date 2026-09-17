@@ -15,11 +15,11 @@ import WidgetKit
 
 @main
 struct TPG4App: App {
-    @StateObject private var stopStore = StopStore()
+    @State private var stopStore = StopStore()
     // Doit être l'instance partagée : l'AppDelegate passe par FavoritesViewModel.shared
     // pour la synchronisation avec la montre.
-    @StateObject private var favoritesViewModel = FavoritesViewModel.shared
-    @StateObject private var appRequirementsClass = AppRequirementsClass()
+    @State private var favoritesViewModel = FavoritesViewModel.shared
+    @State private var appRequirementsClass = AppRequirementsClass()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
@@ -46,10 +46,13 @@ struct TPG4App: App {
         WindowGroup {
 //            StoryboardView()
             ContentView()
-                .environmentObject(stopStore)
-                .environmentObject(favoritesViewModel)
-                .environmentObject(appRequirementsClass)
+                .tickingClock()
+                .environment(stopStore)
+                .environment(favoritesViewModel)
+                .environment(appRequirementsClass)
                 .task {
+                    // La base se charge en arrière-plan : on l'attend avant de s'en servir.
+                    await stopStore.waitUntilLoaded()
                     // Relie les favoris à la base : les noms suivent alors la base
                     // au lieu de rester figés sur l'instantané enregistré.
                     favoritesViewModel.attach(stopStore: stopStore)
@@ -171,8 +174,9 @@ extension UINavigationBar {
     }
 }
 
-class AppRequirementsClass: ObservableObject {
-    @Published var version26: Bool
+@Observable
+class AppRequirementsClass {
+    var version26: Bool
 
     init() {
         // Par exemple, active la fonctionnalité pour iOS 17 et plus (iOS 26 quand disponible)

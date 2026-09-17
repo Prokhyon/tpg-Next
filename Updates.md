@@ -3,8 +3,10 @@
 ## 1.1.4
 Widget
 Tracés de ligne suivent les routes
+Nouvel aperçu d'itinéraire dans les résultats et enregistrements avec timeline proportionnel du trajet
 écran de nouveautés
 Correctif pour certains départs érronés pendant la nuit
+
 
 ## 1.1.3
 Mise à jour des arrêts

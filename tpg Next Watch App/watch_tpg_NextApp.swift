@@ -12,30 +12,32 @@ import Combine
 
 @main
 struct watch_tpg_Next_Watch_AppApp: App {
-    @StateObject private var stopStore = StopStore()
-    @StateObject private var watchFavorites = WatchFavoritesViewModel()
+    @State private var stopStore = StopStore()
+    @State private var watchFavorites = WatchFavoritesViewModel()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tickingClock()
                 .accentColor(Color.primary)
-                .environmentObject(stopStore)
-                .environmentObject(watchFavorites)
+                .environment(stopStore)
+                .environment(watchFavorites)
         }
     }
 }
 
 
-class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
+@Observable
+class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     static let shared = WatchFavoritesViewModel()
     
-    @Published var favoriteStops: [Stop] = [] {
+    var favoriteStops: [Stop] = [] {
         didSet {
             saveFavorites()
         }
     }
     
-    private let userDefaultsKey = "favoriteStops"
+    private static let store = CodableStore<[Stop]>(key: "favoriteStops")
     
     override init() {
         super.init()
@@ -76,25 +78,15 @@ class WatchFavoritesViewModel: NSObject, ObservableObject, WCSessionDelegate {
     }
     
     private func saveFavorites() {
-        do {
-            let data = try JSONEncoder().encode(favoriteStops)
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        } catch {
-            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
-        }
+        Self.store.save(favoriteStops)
     }
-    
+
     private func loadFavorites() {
-        if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            do {
-                let stops = try JSONDecoder().decode([Stop].self, from: data)
-                self.favoriteStops = stops
-            } catch {
-                Log.data.error("Lecture des favoris impossible : \(error.localizedDescription)")
-            }
+        if let stops = Self.store.load() {
+            favoriteStops = stops
         }
     }
-    
+
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         guard activationState == .activated else { return }
         // Un contexte poussé pendant que l'app montre était éteinte attend déjà ici.
