@@ -65,8 +65,7 @@ struct TripView: View {
     
     @State private var showTime = true
     @State private var showSavedTrips = false
-    @State private var selectedSavedTrip: TripEvent?
-    @State private var showTripDetail = false
+    @Environment(\.openRoute) private var openRoute
     
     @Namespace private var animation
     @State private var switchAnimate: Bool = false
@@ -454,17 +453,10 @@ struct TripView: View {
                 }
             }
         }
-        .navigationDestination(isPresented: $showTripDetail) {
-            if let trip = selectedSavedTrip {
-                FullTripView(fullTrip: trip)
-                    .environment(savedTripsModel)
-            }
-        }
         .sheet(isPresented: $showSavedTrips) {
             SavedTripsView(isPresented: $showSavedTrips, onTripSelected: { trip in
-                selectedSavedTrip = trip
-                showTripDetail = true
                 showSavedTrips = false
+                openRoute(.trip(trip))
             })
                 .environment(savedTripsModel)
                 .environment(regularTripsModel)

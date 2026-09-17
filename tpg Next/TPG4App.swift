@@ -150,9 +150,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                let journeyRef = userInfo["journeyRef"] as? String,
                let estimatedTime = userInfo["estimatedTime"] as? String {
                 // Déposée plutôt que postée : ContentView la consomme dès qu'il existe.
-                let data = StopViewData(stopID: stopID, stopName: stopName, journeyRef: journeyRef, estimatedTime: estimatedTime)
+                let highlight = DepartureHighlight(journeyRef: journeyRef.isEmpty ? nil : journeyRef,
+                                                   time: estimatedTime.isEmpty ? nil : estimatedTime)
                 DispatchQueue.main.async {
-                    PendingNotificationOpen.shared.stop = data
+                    PendingNotificationOpen.shared.route = .stop(name: stopName, sloid: stopID, highlight: highlight)
                 }
             }
             completionHandler()
