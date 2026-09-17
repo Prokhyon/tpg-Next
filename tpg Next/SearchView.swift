@@ -147,6 +147,7 @@ struct SearchView: View {
                             }
                     }
                 }
+                .readableScrollContent()
             } else {
                 if stopResults.isEmpty {
                     Text("Aucun résultat pour « \(navigationModel.searchQuery) »")
@@ -173,6 +174,7 @@ struct SearchView: View {
                         .padding(.horizontal)
                     }
                     .contentMargins(.bottom, 40, for: .automatic)
+                    .readableScrollContent()
                 }
             }
             }

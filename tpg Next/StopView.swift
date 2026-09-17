@@ -11,6 +11,7 @@ import tpgNextFunc
 
 struct SortedStopEventsView: View {
     @Environment(\.displayTime) private var now
+    @Environment(\.layout) private var layout
     var key: String
     var filteredStopEvents: [String: [StopEvent]]
     var groupedStopEvents: [String: [StopEvent]]
@@ -64,7 +65,7 @@ struct SortedStopEventsView: View {
                                         } preview: {
                                             StopEventView(event: stopEvent, showTime: showTime, previousLineRef: previousLineRef)
                                                 .foregroundStyle(.primary)
-                                                .frame(width: UIScreen.main.bounds.width)
+                                                .frame(width: layout.previewWidth)
                                         }
                                     }
                                     .foregroundStyle(.primary)
@@ -210,6 +211,7 @@ struct StopView: View {
                         }
                         .contentMargins(.top, max(90.0, titleHeight + 10), for: .automatic)
                         .contentMargins(.bottom, appRequirementsClass.version26 ? 75.0 : 125, for: .automatic)
+                        .readableScrollContent()
                         
                         .refreshable {
                             timeRequest = Date()

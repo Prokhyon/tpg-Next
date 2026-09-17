@@ -147,6 +147,7 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, 10)
                 }
+                .readableScrollContent()
 //                .scrollDisabled(UIScreen.main.bounds.height > 820)
 
 //            }

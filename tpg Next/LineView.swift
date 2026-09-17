@@ -129,6 +129,7 @@ struct LineView: View {
                             }
                             .contentMargins(.top, max(95.0, titleHeight + 10), for: .automatic)
                             .contentMargins(.bottom, appRequirementsClass.version26 ? 0.0 : 60, for: .automatic)
+                            .readableScrollContent()
                             .refreshable {
                                 getLineEvents(for: stopEvent)
                             }

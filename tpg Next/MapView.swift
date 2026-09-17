@@ -141,6 +141,7 @@ struct MapView: View {
                                     SmallStopView(stop: createStop(nomarret: selectedStop?.name, sloid: selectedResult), quay: returnQuayFromId(id: selectedResult)?.quayName ?? "?", isQuay: true, stopEventNumber: filteredQuays.count*10, testing: !autoRefresh)
                                         .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
+                                        .readableWidth()
                                         .transition(.opacity)
                                         .onAppear {
                                             QuayIsSelected = true
@@ -152,6 +153,7 @@ struct MapView: View {
                                     SmallStopView(stopManager: stopManager, stop: stop, stopEventNumber: 20, testing: !autoRefresh)
                                         .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
+                                        .readableWidth()
                                         .transition(.opacity)
                                 }
                             }

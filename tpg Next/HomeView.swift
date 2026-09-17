@@ -30,12 +30,13 @@ struct FavoriteView: View {
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(NavigationModel.self) var navigationModel
+    @Environment(\.layout) private var layout
     @Binding var isExpanded: Bool
 
-    private let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
-    ]
+    /// 2 colonnes sur iPhone, davantage quand la fenêtre s'élargit.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: layout.favoriteColumns)
+    }
 
     var maxRows: Int // Set the maximum number of rows you want to display
 
@@ -60,7 +61,7 @@ struct FavoriteView: View {
                     }
                 }
                 LazyVGrid(columns: columns, spacing: 8) {
-                    if favoritesViewModel.favoriteStops.count > maxRows*2 {
+                    if favoritesViewModel.favoriteStops.count > maxRows * columns.count {
                         let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(max(0, maxRows * columns.count - (isExpanded ? 0 : 1))))
                         ForEach(favorites, id: \.self) { stop in
                             FavoriteStopView(stop: stop)
@@ -72,7 +73,7 @@ struct FavoriteView: View {
                         }
                     }
                     
-                    if !isExpanded && favoritesViewModel.favoriteStops.count > maxRows*2 {
+                    if !isExpanded && favoritesViewModel.favoriteStops.count > maxRows * columns.count {
                         Button(action: {
                             withAnimation(.spring(duration: 0.3)) {
                                 isExpanded.toggle()
@@ -87,7 +88,8 @@ struct FavoriteView: View {
                         }
                     }
                     
-                    if isExpanded && favoritesViewModel.favoriteStops.count % 2 != 0 {
+                    // Rangée incomplète : le bouton la termine ; sinon il passe sous la grille.
+                    if isExpanded && favoritesViewModel.favoriteStops.count % columns.count != 0 {
                         Button(action: {
                             withAnimation(.spring(duration: 0.3)) {
                                 isExpanded.toggle()
@@ -103,7 +105,7 @@ struct FavoriteView: View {
                     }
                 }
                 
-                if isExpanded && favoritesViewModel.favoriteStops.count % 2 == 0 {
+                if isExpanded && favoritesViewModel.favoriteStops.count % columns.count == 0 {
                     Button(action: {
                         withAnimation(.spring(duration: 0.3)) {
                             isExpanded.toggle()
@@ -524,6 +526,7 @@ struct HomeView: View {
                             Spacer()
                         }
                     }
+                    .readableScrollContent()
                     // Toujours défilable : bloqué tant que la grille des favoris n'était pas dépliée,
                     // l'accueil cachait ses départs avec beaucoup de favoris ou un texte agrandi.
                     VStack {

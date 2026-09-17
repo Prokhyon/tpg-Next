@@ -65,6 +65,7 @@ struct SavedTripsView: View {
                         .foregroundStyle(.clear)
                 }
                 .contentMargins(.top, 60.0, for: .automatic)
+                .readableScrollContent()
             }
             VStack {
 //                RoundedRectangle(cornerRadius: 25)
