@@ -11,6 +11,7 @@ import tpgNextFunc
 
 extension TripView {
     struct ResultsFavoritesView: View {
+        @Environment(\.layout) private var layout
         @Environment(StopStore.self) var stopStore
         @Environment(FavoritesViewModel.self) var favoritesViewModel
         @Bindable var viewModel: ItineraryViewModel
@@ -26,10 +27,7 @@ extension TripView {
                         Spacer()
                     }
                 }
-                LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10)
-                ], spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: layout.favoriteColumns), spacing: 10) {
                     ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
                         Button(action: {
                             withAnimation {
@@ -290,6 +288,7 @@ extension TripView {
         
         var tripManager: TripManager
         @Environment(SavedTripsModel.self) var savedTripsModel
+        @Environment(\.layout) private var layout
         @Binding var showTime: Bool
         
         let adjustTime: (Int) -> Void
@@ -337,7 +336,7 @@ extension TripView {
                         }
                     } preview: {
                         TripMapView(tripEvent: event, isPreview: true)
-                            .frame(width: UIScreen.main.bounds.width, height: 300)
+                            .frame(width: layout.previewWidth, height: 300)
                     }
                 }
             }

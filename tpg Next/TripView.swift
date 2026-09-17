@@ -120,6 +120,7 @@ struct TripView: View {
 //                    .contentMargins(.top, 320.0, for: .automatic)
                     // Au moins la hauteur des champs et de la carte de recherche, qui grandit avec le texte.
                     .contentMargins(.bottom, (results == .tripResults) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
+                    .readableScrollContent()
                 } else {
                     ScrollView {
                         resultsView
@@ -127,6 +128,7 @@ struct TripView: View {
                     .scrollDismissesKeyboard(.immediately)
                     .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
                     .contentMargins(.bottom, appRequirementsClass.version26 ? 0: 75, for: .automatic)
+                    .readableScrollContent()
                 }
             }
             .onChange(of: viewModel.selectedField) {
@@ -438,6 +440,7 @@ struct TripView: View {
                                 .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
                         }
                     }
+                    .readableWidth()
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { searchOverlayHeight = $0 }
 //                    .shadow(color: .black.opacity(0.08), radius: 15)
                     .background {

@@ -140,6 +140,7 @@ struct FullTripView: View {
                     }
                     .contentMargins(.top, 80.0, for: .automatic)
                     .contentMargins(.bottom, 40, for: .automatic)
+                    .readableScrollContent()
                     .onAppear {
                         showTime = timeDefault
                     }
