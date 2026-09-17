@@ -305,7 +305,9 @@ struct ContentView: View {
 
         switch url.host {
         case "stop":
-            navigationModel.open(.stop(name: stopName, sloid: sloid), in: .home)
+            // `journeyRef` (facultatif) met une course en avant, comme à l'ouverture depuis un rappel.
+            let highlight = query("journeyRef").map { DepartureHighlight(journeyRef: $0) }
+            navigationModel.open(.stop(name: stopName, sloid: sloid, highlight: highlight), in: .home)
         case "line":
             guard let journeyRef = query("journeyRef"), !journeyRef.isEmpty else { return }
             let event = createEssentialStopEvent(
