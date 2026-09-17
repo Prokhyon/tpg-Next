@@ -91,7 +91,7 @@ struct SavedTripsView: View {
 
         return regularTripsModel.regularTrips.flatMap { regularTrip in
             weekdays.compactMap { day -> TripEvent? in
-                guard let weekday = Weekday(rawValue: calendar.component(.weekday, from: day)) else { return nil }
+                guard let weekday = Weekday(calendarWeekday: calendar.component(.weekday, from: day)) else { return nil }
                 guard regularTrip.repeatingDays.contains(weekday) else { return nil }
                 if let start = regularTrip.startDate, day < start { return nil }
                 if let end = regularTrip.endDate, day > end { return nil }
