@@ -77,6 +77,10 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
                     current.stopPointName = value
                 case "Text" where parent == "PlannedQuay":
                     current.plannedQuay = value
+                case "Text" where parent == "NameSuffix":
+                    current.quayAccess = QuayAccess(rawValue: value) ?? current.quayAccess
+                case "NotServicedStop" where value == "true":
+                    current.isCancelled = true
                 // L'arrivée précède le départ : le départ l'emporte, comme avec OJP 1.0.
                 case "TimetabledTime" where !value.isEmpty:
                     current.timetabledTime = value
@@ -164,4 +168,42 @@ public func operatingDayCandidates(for day: String) -> [String] {
     formatter.dateFormat = "yyyy-MM-dd"
     guard let date = formatter.date(from: day) else { return [day] }
     return [0, 1, -1].map { formatter.string(from: date.addingTimeInterval(Double($0) * 86_400)) }
+}
+
+
+/// Le véhicule d'une course : ce que l'élément `Service` d'une réponse TripInfo en dit.
+public struct JourneyService: Hashable {
+    /// Mode OJP : `bus`, `tram`, `rail`, `water`…
+    public var ptMode = ""
+    /// Nom du mode tel que l'API l'écrit (« Bus », « Tram »), en allemand.
+    public var modeName = ""
+    public var trainNumber = ""
+    public var attributeCodes: [String] = []
+    /// Course entière supprimée (incident « Ausfall »).
+    public var isCancelled = false
+
+    public var hasLowFloor: Bool { attributeCodes.contains("A__NF") }
+}
+
+/// Lit l'élément `Service` d'une réponse OJPTripInfoRequest (OJP 2.0).
+public func parseJourneyServiceSync(from data: Data) -> JourneyService {
+    let parser = JourneyServiceParser()
+    parser.parse(data)
+    return parser.service
+}
+
+final class JourneyServiceParser: OJPParser {
+    private(set) var service = JourneyService()
+
+    override func didEnd(_ name: String, parent: String, value: String) {
+        guard isInside("Service"), !value.isEmpty else { return }
+        switch name {
+        case "PtMode": service.ptMode = value
+        case "Text" where parent == "Name" && isInside("Mode"): service.modeName = value
+        case "TrainNumber": service.trainNumber = value
+        case "Code" where parent == "Attribute": service.attributeCodes.append(value)
+        case "Text" where parent == "UserText" && isInside("Attribute") && value == "Ausfall": service.isCancelled = true
+        default: break
+        }
+    }
 }

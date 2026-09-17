@@ -22,6 +22,10 @@ public struct LineEvent: Codable, Identifiable, Hashable {
     public var previousCall: Bool
     public var longitude: String
     public var latitude: String
+    /// Le véhicule ne s'arrête pas ici (OJP 2.0 `NotServicedStop`).
+    public var isCancelled: Bool? = nil
+    /// Accès au quai pour les personnes à mobilité réduite.
+    public var quayAccess: QuayAccess? = nil
 
     public var id: String { sloid + timetabledTime }
     

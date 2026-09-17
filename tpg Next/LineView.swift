@@ -60,7 +60,11 @@ struct FloatingLineTitle: View {
 
 struct LineView: View {
     @Environment(\.displayTime) private var now
-    @State private var lineManager = LineManager()
+    /// Arrêts de la course ; avec le tracé quand la carte est à l'écran (grand écran).
+    @State private var journey = JourneyTrackModel()
+    @Environment(\.layout) private var layout
+    /// Sur grand écran, l'arrêt dont la moitié droite montre les prochains passages.
+    @State private var selectedStop: LineEvent?
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(\.openRoute) private var openRoute
@@ -70,17 +74,20 @@ struct LineView: View {
     var currentStop: ShortStop?
     var currentLine: String
     
-    @State private var operatorName: String = ""
-    @State private var lineColor: Color = .primary
+    private var operatorName: String { journey.operatorName }
+    private var lineColor: Color {
+        journey.events.isEmpty ? .primary : LineColors.lineColor(for: currentLine, operatorName: operatorName)
+    }
     
     @State private var scrollDone = false
     @State private var showTime = false
-    @State private var lineEvents: [LineEvent] = []
+    private var lineEvents: [LineEvent] { journey.events }
     @State private var busIsHere: Bool = false
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
     @State private var titleHeight: CGFloat = 0
 
     var body: some View {
+        AdaptiveSplit {
             GeometryReader { geometry in
                 ZStack {
                     
@@ -93,9 +100,8 @@ struct LineView: View {
                             ScrollView {
                                 LazyVStack {
                                     ForEach(lineEvents, id: \.id) { event in
-                                        NavigationLink(value: AppRoute.stop(name: event.stopPointName, sloid: event.sloid,
-                                                                            highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: event.timetabledTime))) {
-                                            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
+                                        stopLink(event) {
+                                            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid || event.id == selectedStop?.id, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
                                         }
                                         .foregroundStyle(.primary)
                                         .onAppear {
@@ -121,7 +127,7 @@ struct LineView: View {
                                             }
                                         }
                                         .background(
-                                            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineManager.lineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere)
+                                            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere)
                                         )
                                     }
                                 }
@@ -152,6 +158,15 @@ struct LineView: View {
                     
                 }
             }
+        } secondary: {
+            LineDetailPane(stopEvent: stopEvent, currentStopSloid: currentStop?.sloid, journey: journey, selectedStop: selectedStop) {
+                withAnimation { selectedStop = nil }
+            }
+        }
+        // Le tracé n'est demandé qu'une fois la carte affichée (fenêtre élargie en cours de route).
+        .onChange(of: layout.showsSecondaryPane) {
+            getLineEvents(for: stopEvent)
+        }
         .toolbar {
 //            Button(action: {
 //                showTime.toggle()
@@ -200,12 +215,17 @@ struct LineView: View {
 
     
     func getLineEvents(for stopEvent: StopEvent) {
-        lineManager.selectJourney(stopEvent) {
-            operatorName = self.lineManager.operatorName
-//            print(operatorName)
-            lineColor = LineColors.lineColor(for: currentLine, operatorName: operatorName)
-//            print(lineColor)
-            lineEvents = self.lineManager.lineEvents
+        journey.load(stopEvent, includeTrack: layout.showsSecondaryPane)
+    }
+
+    /// Sur iPhone, un arrêt ouvre sa page ; sur grand écran, ses passages s'affichent à droite.
+    @ViewBuilder private func stopLink<Label: View>(_ event: LineEvent, @ViewBuilder label: () -> Label) -> some View {
+        if layout.showsSecondaryPane {
+            Button(action: { withAnimation { selectedStop = event } }, label: label)
+        } else {
+            NavigationLink(value: AppRoute.stop(name: event.stopPointName, sloid: event.sloid,
+                                                highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: event.timetabledTime)),
+                           label: label)
         }
     }
 }

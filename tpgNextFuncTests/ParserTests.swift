@@ -213,3 +213,48 @@ struct JourneyParserTests {
         try Fixture.assertSnapshot(JourneySnapshot(events: result.events, operatorName: result.operatorName), named: "tripInfo")
     }
 }
+
+@Suite("Véhicule et position d'une course")
+struct JourneyServiceTests {
+    @Test func serviceIsRead() throws {
+        let service = parseJourneyServiceSync(from: try Fixture.data("tripInfo-rive"))
+        #expect(service.ptMode == "bus")
+        #expect(service.hasLowFloor)
+        #expect(!service.trainNumber.isEmpty)
+        #expect(!service.isCancelled)
+    }
+
+    @Test func callsCarryQuayAccess() throws {
+        let events = parseJourneyEventsSync(from: try Fixture.data("tripInfo-rive")).events
+        #expect(events.contains { $0.quayAccess != nil })
+    }
+
+    private func stop(_ time: String, lat: Double, lon: Double) -> LineEvent {
+        LineEvent(stopPointName: "", plannedQuay: "", timetabledTime: time, estimatedTime: "", stopPlaceRef: "", sloid: "",
+                  previousCall: false, longitude: String(lon), latitude: String(lat))
+    }
+
+    @Test func vehicleIsInterpolatedBetweenStops() throws {
+        let events = [stop("2026-09-17T10:00:00Z", lat: 46.0, lon: 6.0),
+                      stop("2026-09-17T10:04:00Z", lat: 46.2, lon: 6.0)]
+        let now = try #require(iso8601.date(from: "2026-09-17T10:01:00Z"))
+        let position = try #require(estimatedVehiclePosition(events: events, segments: nil, at: now))
+        #expect(abs(position.latitude - 46.05) < 0.001)
+        #expect(estimatedVehiclePosition(events: events, segments: nil, at: iso8601.date(from: "2026-09-17T09:59:00Z")!) == nil)
+        #expect(estimatedVehiclePosition(events: events, segments: nil, at: iso8601.date(from: "2026-09-17T10:05:00Z")!) == nil)
+    }
+
+    @Test func vehicleFollowsTheRoutedTrack() throws {
+        let events = [stop("2026-09-17T10:00:00Z", lat: 46.0, lon: 6.0),
+                      stop("2026-09-17T10:02:00Z", lat: 46.1, lon: 6.1)]
+        // Détour : 11,1 km vers le nord, puis 7,7 km vers l'est. À mi-temps (9,4 km), le véhicule est
+        // encore sur la branche nord ; en ligne droite, il serait à mi-chemin en longitude.
+        let track = [[CLLocationCoordinate2D(latitude: 46.0, longitude: 6.0),
+                      CLLocationCoordinate2D(latitude: 46.1, longitude: 6.0),
+                      CLLocationCoordinate2D(latitude: 46.1, longitude: 6.1)]]
+        let now = try #require(iso8601.date(from: "2026-09-17T10:01:00Z"))
+        let position = try #require(estimatedVehiclePosition(events: events, segments: track, at: now))
+        #expect(abs(position.longitude - 6.0) < 0.0001)
+        #expect(position.latitude > 46.08 && position.latitude < 46.09)
+    }
+}
