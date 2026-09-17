@@ -15,12 +15,7 @@ struct FavoriteStopView: View {
     @Environment(NavigationModel.self) var navigationModel
     var stop: Stop
     var body: some View {
-        NavigationLink {
-            StopView(
-                stopName: stop.name,
-                stopSloid: stop.sloid
-            )
-        } label: {
+        NavigationLink(value: AppRoute.stop(stop)) {
             BasicLocationView(name: stop.name, transportType: stop.meansOfTransport)
         }
         .foregroundStyle(.primary)
@@ -394,12 +389,7 @@ struct SmallStopView: View {
     }
     
     private func StopTitleView() -> some View {
-        NavigationLink {
-            StopView(
-                stopName: stop.name,
-                stopSloid: stop.sloid
-            )
-        } label: {
+        NavigationLink(value: AppRoute.stop(stop)) {
             HStack {
                 //                StopIcon(color: .color1)
                 StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
@@ -440,9 +430,7 @@ struct SmallStopView: View {
         VStack(spacing: 0) {
             if !stopManager.stopEvents.isEmpty {
                 ForEach(isQuay ? filteredEvents.sortedByDeparture().prefix(3) : stopManager.stopEvents.sortedByDeparture().prefix(3), id: \.id) { event in
-                    NavigationLink {
-                        LineView(stopEvent: event, currentStop: ShortStop(name: stop.name, sloid: sloidHarmonizer(code: stop.sloid)), currentLine: event.lineName)
-                    } label: {
+                    NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stop.name, sloid: sloidHarmonizer(code: stop.sloid)))) {
                         StopEventView(event: event, showTime: false, mapVersion: !isHome)
                     }
                     .contentShape(.contextMenuPreview, Capsule())
@@ -513,9 +501,7 @@ struct HomeView: View {
                                 Spacer()
 //                                Button(action: {
 //                                    self.showSettings.toggle()
-                                NavigationLink {
-                                    SettingsView()
-                                } label: {
+                                NavigationLink(value: AppRoute.settings) {
                                     Image(systemName: "gear")
                                         .font(.title)
                                         .padding(TPGSurface.isGlass ? 5 : 0)

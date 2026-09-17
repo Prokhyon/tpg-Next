@@ -13,6 +13,7 @@ struct FullTripView: View {
     @Environment(\.displayTime) private var now
     @Environment(SavedTripsModel.self) var savedTripsModel
     @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @Environment(\.openRoute) private var openRoute
     var fullTrip: TripEvent
     @State private var lineManager = LineManager()
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
@@ -29,9 +30,7 @@ struct FullTripView: View {
                     ScrollView { //trip details scroll area
                         // Sans code d'arrêt, le lien plantait : la destination est construite dès l'affichage.
                         if !fullTrip.geoDeparture && (fullTrip.legs.first?.transfer ?? false || fullTrip.legs.first?.publishedLineName == ""), let startCode = fullTrip.startCode { //Display departure stop input by user, if the first transport is from another stop
-                            NavigationLink {
-                                StopView(stopName: fullTrip.startName, stopSloid: startCode, previousLineRef: "", previousLineName: "", previousLineTime: nil)
-                            } label: {
+                            NavigationLink(value: AppRoute.stop(name: fullTrip.startName, sloid: startCode)) {
                                 LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.startName, estimatedTime: fullTrip.startTime, timetabledTime: fullTrip.startTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false)
                             }
                             .padding(.horizontal, 15)
@@ -53,9 +52,8 @@ struct FullTripView: View {
                                         }
                                         .padding(.horizontal, 26)
                                     VStack {
-                                            NavigationLink {//Departure stop for the leg
-                                                StopView(stopName: leg.legBoardStopName, stopSloid: leg.legBoardStopId, previousLineRef: leg.journeyRef, previousLineName: leg.publishedLineName, previousLineTime: leg.legBoardTimetableTime)
-                                            } label : {
+                                            NavigationLink(value: AppRoute.stop(name: leg.legBoardStopName, sloid: leg.legBoardStopId, //Departure stop for the leg
+                                                                                highlight: DepartureHighlight(journeyRef: leg.journeyRef, lineName: leg.publishedLineName, time: leg.legBoardTimetableTime))) {
                                                 LineEventElementView(currentLine: leg.publishedLineName, operatorName: leg.legOperator, transportType: leg.transportTypeName, currentStop: false, eventName: leg.legBoardStopName, estimatedTime: leg.legBoardEstimatedTime, timetabledTime: leg.legBoardTimetableTime, plannedQuay: leg.legBoardQuay, showTime: $showTime, pastEventPossible: false)
 
                                         }
@@ -71,9 +69,7 @@ struct FullTripView: View {
                                             Rectangle()
                                                 .fill(.clear)
                                                 .frame(width: 50)
-                                            NavigationLink {
-                                                LineView(stopEvent: createStopEventFromTripLeg(tripLeg: leg), currentStop: nil, currentLine: leg.publishedLineName)
-                                            } label: {
+                                            NavigationLink(value: AppRoute.line(event: createStopEventFromTripLeg(tripLeg: leg), currentStop: nil)) {
                                                 HStack {
                                                     BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
                                                     Image(systemName: "arrow.right")
@@ -85,9 +81,8 @@ struct FullTripView: View {
                                         .frame(height: 30)
                                         .foregroundStyle(.primary)
                                         
-                                            NavigationLink {//Arrival stop for the leg
-                                                StopView(stopName: leg.legAlightStopName, stopSloid: leg.legAlightStopId, previousLineRef: leg.journeyRef, previousLineName: leg.publishedLineName, previousLineTime: leg.legAlightTimetableTime)
-                                            } label: {
+                                            NavigationLink(value: AppRoute.stop(name: leg.legAlightStopName, sloid: leg.legAlightStopId, //Arrival stop for the leg
+                                                                                highlight: DepartureHighlight(journeyRef: leg.journeyRef, lineName: leg.publishedLineName, time: leg.legAlightTimetableTime))) {
                                                 LineEventElementView(currentLine: leg.publishedLineName, operatorName: leg.legOperator, transportType: leg.transportTypeName, currentStop: false, eventName: leg.legAlightStopName, estimatedTime: leg.legAlightEstimatedTime, timetabledTime: leg.legAlightTimetableTime, plannedQuay: leg.legAlightQuay, showTime: $showTime, pastEventPossible: false)
 //
                                         }
@@ -132,9 +127,7 @@ struct FullTripView: View {
                         }
                         
                         if !fullTrip.geoArrival && (fullTrip.legs.last?.transfer ?? false || fullTrip.legs.last?.publishedLineName == ""), let endCode = fullTrip.endCode { //Trip arrival stop if different from last transport leg arrival
-                            NavigationLink {
-                                StopView(stopName: fullTrip.endName, stopSloid: endCode, previousLineRef: "", previousLineName: "", previousLineTime: nil)
-                            } label: {
+                            NavigationLink(value: AppRoute.stop(name: fullTrip.endName, sloid: endCode)) {
                                LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.endName, estimatedTime: fullTrip.endTime, timetabledTime: fullTrip.endTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false, displayIcon: false)
                             }
                            .padding(.horizontal, 15)
@@ -198,8 +191,8 @@ struct FullTripView: View {
                         //                    }) {
                         //                        Label("Enregistrer comme trajet régulier", systemImage: "calendar.badge.plus")
                         //                    }
-                        NavigationLink {
-                            TripMapView(tripEvent: fullTrip)
+                        Button {
+                            openRoute(.tripMap(fullTrip))
                         } label: {
                             Label("Afficher la carte", systemImage: "map")
                         }

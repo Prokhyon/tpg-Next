@@ -372,10 +372,10 @@ class NotificationConfirmationViewModel {
     }
 }
 
-/// L'arrêt à ouvrir après un toucher sur un rappel. Au lancement à froid, l'AppDelegate reçoit
+/// L'écran à ouvrir après un toucher sur un rappel. Au lancement à froid, l'AppDelegate reçoit
 /// la réponse avant que `ContentView` n'écoute : une `Notification` postée était perdue.
 @Observable
 final class PendingNotificationOpen {
     static let shared = PendingNotificationOpen()
-    var stop: StopViewData?
+    var route: AppRoute?
 }

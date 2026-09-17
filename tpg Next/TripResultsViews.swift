@@ -300,10 +300,7 @@ extension TripView {
             LazyVStack(spacing: 5) {
 
                 ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
-                        NavigationLink {
-                            FullTripView(fullTrip: event)
-//                                .environment(savedTripsModel)
-                        } label: {
+                        NavigationLink(value: AppRoute.trip(event)) {
                             TripElementView(event: event, showTime: showTime)
                                 .padding(.horizontal, 20)
                                 // La capsule prend la largeur disponible, pas celle du contenu : plus

@@ -64,6 +64,7 @@ struct LineView: View {
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @Environment(\.openRoute) private var openRoute
     var autoRefresh: Bool = true
     
     var stopEvent: StopEvent
@@ -93,9 +94,8 @@ struct LineView: View {
                             ScrollView {
                                 LazyVStack {
                                     ForEach(lineEvents, id: \.id) { event in
-                                        NavigationLink {
-                                            StopView(stopName: event.stopPointName, stopSloid: event.sloid, previousLineRef: stopEvent.journeyRef, previousLineName: currentLine, previousLineTime: event.timetabledTime)
-                                        } label: {
+                                        NavigationLink(value: AppRoute.stop(name: event.stopPointName, sloid: event.sloid,
+                                                                            highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: event.timetabledTime))) {
                                             LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime)
                                         }
                                         .foregroundStyle(.primary)
@@ -170,8 +170,8 @@ struct LineView: View {
             HStack {
                 ShowTimeButton(showTime: $showTime)
                 
-                NavigationLink {
-                    LineMapView(lineEvents: lineEvents, lineName: currentLine, operatorName: operatorName, destination: stopEvent.destination, stopEvent: stopEvent, currentStopSloid: currentStop?.sloid)
+                Button {
+                    openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
                 } label: {
                     Image(systemName: "map")
                         .padding(.trailing, appRequirementsClass.version26 ? 5 : 10)

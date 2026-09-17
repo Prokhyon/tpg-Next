@@ -45,12 +45,10 @@ class NavigationModel {
     var selectedTab: Tabs = .home
     /// Texte de l'onglet Recherche, partagé par son champ et celui du dock (avant iOS 26).
     var searchQuery = ""
-    /// Ouvertures depuis une notification ou le widget, poussées sur la pile des départs.
-    var selectedStopViewData: StopViewData?
-    var selectedLineViewData: LineViewData?
-    /// Identité de la pile de chaque onglet. Les écrans sont poussés par des
-    /// `NavigationLink(destination:)`, sans chemin à vider : changer l'identité recrée
-    /// la pile, donc revient à sa racine.
+    /// Les écrans ouverts par-dessus chaque onglet.
+    private var paths: [Tabs: [AppRoute]] = [:]
+    /// Identité de la pile de chaque onglet : la changer recrée aussi la racine (l'itinéraire
+    /// repart ainsi de son état initial quand on y envoie un arrêt).
     private var stackResets: [Tabs: Int] = [:]
 
     init(selectedTab: Tabs = .home) {
@@ -61,32 +59,38 @@ class NavigationModel {
         stackResets[tab, default: 0]
     }
 
+    func path(for tab: Tabs) -> Binding<[AppRoute]> {
+        Binding(get: { self.paths[tab, default: []] },
+                set: { self.paths[tab] = $0 })
+    }
+
+    func open(_ route: AppRoute, in tab: Tabs) {
+        // Toucher deux fois le même widget ou rappel n'empile pas deux fois le même écran.
+        guard paths[tab]?.last != route else { return }
+        paths[tab, default: []].append(route)
+    }
+
     func popToRoot(_ tab: Tabs) {
-        if tab == .home {
-            selectedStopViewData = nil
-            selectedLineViewData = nil
-        }
+        paths[tab] = []
         stackResets[tab, default: 0] += 1
     }
 }
 
-/// `navigationDestination(item:)` exige `Hashable` : la donnée *est* la présentation,
-/// il n'y a plus de booléen à garder synchronisé avec elle.
-struct StopViewData: Identifiable, Hashable {
-    let id = UUID()
-    let stopID: String
-    let stopName: String
-    let journeyRef: String
-    let estimatedTime: String
-}
+/// La pile d'un onglet : elle sait afficher toutes les routes et les ouvre chez elle.
+private struct TabStack<Root: View>: View {
+    @Environment(NavigationModel.self) private var navigationModel
+    @Environment(AppRequirementsClass.self) private var appRequirementsClass
+    let tab: Tabs
+    @ViewBuilder var root: Root
 
-/// Une ligne ouverte depuis le widget. `LineView` ne consomme du `StopEvent` que
-/// `journeyRef` et `operatingDayRef` pour interroger l'API : le reste sert à
-/// afficher l'en-tête en attendant la réponse.
-struct LineViewData: Identifiable, Hashable {
-    let id = UUID()
-    let event: StopEvent
-    let stop: ShortStop
+    var body: some View {
+        NavigationStack(path: navigationModel.path(for: tab)) {
+            root.appRouteDestinations()
+        }
+        .environment(\.openRoute, OpenRouteAction { navigationModel.open($0, in: tab) })
+        .id(navigationModel.stackID(tab))
+        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
+    }
 }
 
 struct ContentView: View {
@@ -122,56 +126,29 @@ struct ContentView: View {
         ZStack {
                 TabView(selection: Bindable(navigationModel).selectedTab) {
                     Tab("Départs", systemImage: "house", value: .home) {
-                        NavigationStack() {
+                        TabStack(tab: .home) {
                             HomeView(testing: !autoRefresh)
-//                                .background(Background())
-                                // Doivent rester à l'intérieur du NavigationStack : appliquées
-                                // sur la pile elle-même, les destinations ne sont jamais poussées.
-                                .navigationDestination(item: Bindable(navigationModel).selectedStopViewData) { data in
-                                    StopView(
-                                        stopName: data.stopName,
-                                        stopSloid: data.stopID,
-                                        previousLineRef: data.journeyRef.isEmpty ? nil : data.journeyRef,
-                                        previousLineName: nil,
-                                        // Vide quand l'ouverture vient du widget : aucun départ à mettre en avant.
-                                        previousLineTime: data.estimatedTime.isEmpty ? nil : data.estimatedTime
-                                    )
-                                }
-                                .navigationDestination(item: Bindable(navigationModel).selectedLineViewData) { data in
-                                    LineView(stopEvent: data.event,
-                                             currentStop: data.stop,
-                                             currentLine: data.event.lineName)
-                                }
                         }
-                        .id(navigationModel.stackID(.home))
-                        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                     Tab("Itinéraire", systemImage: "point.bottomleft.forward.to.point.topright.scurvepath", value: .trip) {
-                        NavigationStack() {
+                        TabStack(tab: .trip) {
                             TripView(tripManager: tripManager)
-//                                .background(Background())
                         }
-                        .id(navigationModel.stackID(.trip))
-                        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
-                        .environment(savedTripsModel)
-                        .environment(regularTripsModel)
                     }
                     Tab("Carte", systemImage: "map", value: .map) {
-                        NavigationStack() {
+                        TabStack(tab: .map) {
                             MapView()
                         }
-                        .id(navigationModel.stackID(.map))
-                        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                     Tab(value: .search, role: .search) {
-                        NavigationStack() {
+                        TabStack(tab: .search) {
                             SearchView()
                         }
-                        .environment(savedTripsModel)
-                        .id(navigationModel.stackID(.search))
-                        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
                     }
                 }
+                // Au niveau des onglets : une route (un itinéraire, par exemple) peut s'ouvrir dans n'importe lequel.
+                .environment(savedTripsModel)
+                .environment(regularTripsModel)
                 .environment(itineraryViewModel)
                 .environment(recentSearchModel)
                 .environment(navigationModel)
@@ -287,58 +264,16 @@ struct ContentView: View {
                 }
         //open StopView directly from a notification, with the time of arrival and event ref to have it at the top.
         // `initial` : au lancement à froid, l'ouverture est déposée avant que cette vue n'existe.
-        .onChange(of: PendingNotificationOpen.shared.stop, initial: true) {
-            guard let data = PendingNotificationOpen.shared.stop else { return }
-            PendingNotificationOpen.shared.stop = nil
-            navigationModel.selectedStopViewData = data
-            navigationModel.selectedLineViewData = nil
+        .onChange(of: PendingNotificationOpen.shared.route, initial: true) {
+            guard let route = PendingNotificationOpen.shared.route else { return }
+            PendingNotificationOpen.shared.route = nil
+            navigationModel.open(route, in: .home)
             navigationModel.selectedTab = .home
         }
-        // Ouverture depuis le widget :
-        //   tpgnext://stop?sloid=…&name=…
-        //   tpgnext://line?journeyRef=…&operatingDayRef=…&line=…&sloid=…
-        .onOpenURL { url in
-            guard url.scheme == "tpgnext",
-                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
-            func query(_ name: String) -> String? {
-                components.queryItems?.first { $0.name == name }?.value
-            }
-            guard let sloid = query("sloid"), !sloid.isEmpty else { return }
-            // Le nom transporté par l'URL peut être périmé : la base gagne quand elle résout.
-            let stopName = stopStore.findStop(id: sloid)?.name ?? query("name") ?? ""
-
-            switch url.host {
-            case "stop":
-                navigationModel.selectedLineViewData = nil
-                navigationModel.selectedStopViewData = StopViewData(
-                    stopID: sloid,
-                    stopName: stopName,
-                    journeyRef: "",
-                    estimatedTime: ""
-                )
-            case "line":
-                guard let journeyRef = query("journeyRef"), !journeyRef.isEmpty else { return }
-                let event = createEssentialStopEvent(
-                    journeyRef: journeyRef,
-                    operatingDayRef: query("operatingDayRef") ?? "",
-                    stopPointName: stopName,
-                    stopId: sloid,
-                    lineName: query("line"),
-                    origin: nil,
-                    destination: query("destination"),
-                    transportType: query("transportType"),
-                    operatorName: query("operator")
-                )
-                navigationModel.selectedStopViewData = nil
-                navigationModel.selectedLineViewData = LineViewData(
-                    event: event,
-                    stop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: sloid))
-                )
-            default:
-                return
-            }
-            navigationModel.selectedTab = .home
-        }
+        .onOpenURL { handleOpenURL($0) }
+        #if DEBUG
+        .task { openDebugURLs() }
+        #endif
             .onChange(of: scenePhase) {
                             if scenePhase == .inactive {
                                 if lastUsedTime == nil {
@@ -361,6 +296,61 @@ struct ContentView: View {
                             }
                         }
     }
+    // Ouverture depuis le widget :
+    //   tpgnext://stop?sloid=…&name=…
+    //   tpgnext://line?journeyRef=…&operatingDayRef=…&line=…&sloid=…
+    private func handleOpenURL(_ url: URL) {
+        guard url.scheme == "tpgnext",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        func query(_ name: String) -> String? {
+            components.queryItems?.first { $0.name == name }?.value
+        }
+        guard let sloid = query("sloid"), !sloid.isEmpty else { return }
+        // Le nom transporté par l'URL peut être périmé : la base gagne quand elle résout.
+        let stopName = stopStore.findStop(id: sloid)?.name ?? query("name") ?? ""
+
+        switch url.host {
+        case "stop":
+            navigationModel.open(.stop(name: stopName, sloid: sloid), in: .home)
+        case "line":
+            guard let journeyRef = query("journeyRef"), !journeyRef.isEmpty else { return }
+            let event = createEssentialStopEvent(
+                journeyRef: journeyRef,
+                operatingDayRef: query("operatingDayRef") ?? "",
+                stopPointName: stopName,
+                stopId: sloid,
+                lineName: query("line"),
+                origin: nil,
+                destination: query("destination"),
+                transportType: query("transportType"),
+                operatorName: query("operator")
+            )
+            navigationModel.open(.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: sloid))), in: .home)
+        default:
+            return
+        }
+        navigationModel.selectedTab = .home
+    }
+
+    #if DEBUG
+    /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
+    /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
+    ///   tpgnext://tab?name=home|trip|map|search   tpgnext://settings
+    private func openDebugURLs() {
+        guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
+        for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
+            switch url.host {
+            case "tab":
+                let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value
+                navigationModel.selectedTab = [Tabs.home, .trip, .map, .search].first { "\($0)" == name } ?? .home
+            case "settings":
+                navigationModel.open(.settings, in: navigationModel.selectedTab)
+            default:
+                handleOpenURL(url)
+            }
+        }
+    }
+    #endif
 }
 
 

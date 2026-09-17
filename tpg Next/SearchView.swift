@@ -24,7 +24,7 @@ struct SearchView: View {
     @State private var resultDetail: searchResultItem?
     @State private var activeFutureTrip: TripEvent?
     //    @State private var recentSearchDestination: RecentSearchItem?
-    @State var searchResult: Stop?
+    @Environment(\.openRoute) private var openRoute
     @State private var stopResults: [Stop] = []
     @State private var showTripDetail = false
     
@@ -59,7 +59,7 @@ struct SearchView: View {
                                     if let stop = item.stop {
                                         Button(action: {
                                             recentSearchModel.add(name: item.name, isStop: true, stop: stop, geoCoordinates: item.geoCoordinates)
-                                            searchResult = stop
+                                            openRoute(.stop(stop))
                                         }) {
                                                 BasicLocationView(name: item.name, transportType: stop.meansOfTransport, isFavorite: favoritesViewModel.isFavorite(stop), showButton: true, showFavorite: true, buttonAction: {
                                                     resultDetail = searchResultItem(title: item.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
@@ -96,9 +96,7 @@ struct SearchView: View {
                                 HStack {
                                     ForEach(futureTrips, id: \.self) { trip in
                                         //                            if !hasPassed(trip.startDate, includingCurrentMinute: false, now: now) {
-                                        NavigationLink {
-                                            FullTripView(fullTrip: trip)
-                                        } label: {
+                                        NavigationLink(value: AppRoute.trip(trip)) {
                                             VStack {
                                                 SavedTripView(event: trip)
                                                 //                                                    .frame(width: geometry.size.width)
@@ -158,7 +156,7 @@ struct SearchView: View {
                             ForEach(stopResults) { stop in
                                 Button(action: {
                                     recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
-                                    searchResult = stop
+                                    openRoute(.stop(stop))
                                 }) {
                                     BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, isFavorite: favoritesViewModel.isFavorite(stop), showButton: true, showFavorite: true, buttonAction: {
                                         resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
@@ -198,9 +196,6 @@ struct SearchView: View {
         //                    Text("") // Visible title
         //                }
         //            }
-            .navigationDestination(item: $searchResult) { stop in
-                StopView(stopName: stop.name, stopSloid: stop.sloid)
-            }
             .scrollDismissesKeyboard(.immediately)
             .searchingStops(navigationModel.searchQuery, results: $stopResults)
         

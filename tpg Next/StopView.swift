@@ -42,9 +42,7 @@ struct SortedStopEventsView: View {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
                                     let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
-                                    NavigationLink {
-                                        LineView(stopEvent: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: stopEvent.lineName)
-                                    } label: {
+                                    NavigationLink(value: AppRoute.line(event: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)))) {
                                     Group {
                                             DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                         }
@@ -122,6 +120,7 @@ struct StopView: View {
     @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @Environment(StopStore.self) var stopStore
+    @Environment(\.openRoute) private var openRoute
     /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
     @State private var refreshGeneration = 0
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
@@ -182,9 +181,7 @@ struct StopView: View {
                                         }
                                     } else {
                                         ForEach(allFilteredStopEvents, id: \.id) { event in
-                                            NavigationLink {
-                                                LineView(stopEvent: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)), currentLine: event.lineName)
-                                            }label: {
+                                            NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)))) {
                                                 StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
                                                     .foregroundStyle(determineColor(for: event.estimatedTime, now: now))
                                             }
@@ -323,8 +320,8 @@ struct StopView: View {
                     }
                     Divider()
                     if !stopManager.quays.isEmpty {
-                        NavigationLink {
-                                                    StopMapView(quays: stopManager.quays, stopSloid: stopSloid, stopName: stopName)
+                        Button {
+                            openRoute(.stopMap(quays: stopManager.quays, sloid: stopSloid, name: stopName))
                         } label: {
                             Label("Carte des quais", systemImage: "map")
                         }

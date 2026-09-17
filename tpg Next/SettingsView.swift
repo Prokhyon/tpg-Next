@@ -27,10 +27,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         HStack(spacing: 10) {
-                                    NavigationLink {
-                                        FavoritesOrderView()
-                                            .navigationTitle("Ordre des favoris")
-                                    } label: {
+                                    NavigationLink(value: AppRoute.favoritesOrder) {
                                         HStack {
                                             Text("Ordre des favoris").minimumScaleFactor(0.5)
                                             Spacer()
@@ -40,10 +37,7 @@ struct SettingsView: View {
                                         .basicElementBackground(minHeight: 50)
                                         .padding(.vertical, 5)
                                     }
-                            NavigationLink {
-                                ScheduledNotifications()
-                                    .navigationTitle("Rappels prévus")
-                            } label: {
+                            NavigationLink(value: AppRoute.scheduledNotifications) {
                                 HStack {
                                     Spacer()
                                     Text("Rappels prévus").minimumScaleFactor(0.5).padding(.vertical, 5)
