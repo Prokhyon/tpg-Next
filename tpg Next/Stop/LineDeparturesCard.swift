@@ -18,7 +18,17 @@ struct SortedStopEventsView: View {
     @Binding var previousLineRef: String?
     var stopName: String
     var stopSloid: String
-    
+    /// Sur grand écran : un départ se sélectionne au lieu d'ouvrir sa course.
+    var onSelect: ((StopEvent) -> Void)? = nil
+
+    @ViewBuilder private func chipLink<Label: View>(_ event: StopEvent, @ViewBuilder label: () -> Label) -> some View {
+        if let onSelect {
+            Button(action: { onSelect(event) }, label: label)
+        } else {
+            NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid))), label: label)
+        }
+    }
+
     var body: some View {
             let splitLine = splitString(key, separator: ";")
         BasicCard(cornerRadius: 30)
@@ -42,7 +52,7 @@ struct SortedStopEventsView: View {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
                                     let time = departureDisplay(for: stopEvent, showTime: showTime, at: now)
-                                    NavigationLink(value: AppRoute.line(event: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)))) {
+                                    chipLink(stopEvent) {
                                     Group {
                                             DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
                                         }

@@ -18,6 +18,9 @@ struct StopView: View {
     @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @Environment(StopStore.self) var stopStore
+    @Environment(\.layout) private var layout
+    /// Sur grand écran, le départ détaillé dans la moitié droite.
+    @State private var selectedDeparture: StopEvent?
     /// Incrémenté quand l'utilisateur décale l'heure : relance le rafraîchissement sans revenir à l'heure d'origine.
     @State private var refreshGeneration = 0
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
@@ -65,6 +68,7 @@ struct StopView: View {
     @Namespace var bottomID
 
     var body: some View {
+        AdaptiveSplit {
             ZStack {
                     ScrollViewReader { scroll in
                         ScrollView {
@@ -73,12 +77,13 @@ struct StopView: View {
                                     
                                     if viewLineSorted {
                                         ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
-                                            SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: $previousLineRef, stopName: stopName, stopSloid: stopSloid)
+                                            SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: .constant(highlightedJourneyRef), stopName: stopName, stopSloid: stopSloid,
+                                                                 onSelect: layout.showsSecondaryPane ? select : nil)
                                         }
                                     } else {
                                         ForEach(allFilteredStopEvents, id: \.id) { event in
-                                            NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)))) {
-                                                StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
+                                            departureLink(event) {
+                                                StopEventView(event: event, showTime: showTime, previousLineRef: highlightedJourneyRef)
                                                     .foregroundStyle(determineColor(for: event.estimatedTime, now: now))
                                             }
                                             .contentShape(.contextMenuPreview, Capsule())
@@ -157,6 +162,20 @@ struct StopView: View {
                     getStopEvents()
                 }
             }
+        } secondary: {
+            StopDetailPane(stopName: stopName, stopSloid: stopSloid, quays: stopManager.quays,
+                           departures: stopManager.stopEvents, selected: selectedDeparture) {
+                withAnimation { selectedDeparture = nil }
+            }
+        }
+        .onChange(of: stopManager.stopEvents) {
+            // La sélection suit les rafraîchissements ; ouverte depuis une course, la page la présélectionne.
+            if let selectedDeparture {
+                self.selectedDeparture = stopManager.stopEvents.first { $0.id == selectedDeparture.id } ?? selectedDeparture
+            } else if let previousLineRef, !previousLineRef.isEmpty {
+                selectedDeparture = stopManager.stopEvents.first { $0.journeyRef == previousLineRef }
+            }
+        }
         .toolbar {
             HStack {
                 ShowTimeButton(showTime: $showTime)
@@ -195,6 +214,24 @@ struct StopView: View {
         }
     }
     
+    /// Course mise en avant : celle d'où l'on vient, ou le départ détaillé sur grand écran.
+    private var highlightedJourneyRef: String? {
+        layout.showsSecondaryPane ? (selectedDeparture?.journeyRef ?? previousLineRef) : previousLineRef
+    }
+
+    private func select(_ event: StopEvent) {
+        withAnimation { selectedDeparture = event }
+    }
+
+    /// Sur iPhone, un départ ouvre sa course ; sur grand écran, il se détaille dans la moitié droite.
+    @ViewBuilder private func departureLink<Label: View>(_ event: StopEvent, @ViewBuilder label: () -> Label) -> some View {
+        if layout.showsSecondaryPane {
+            Button(action: { select(event) }, label: label)
+        } else {
+            NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid))), label: label)
+        }
+    }
+
     private func toggleGrouping() {
         withAnimation(TPGSurface.isGlass ? nil : .default) {
             viewLineSorted.toggle()
