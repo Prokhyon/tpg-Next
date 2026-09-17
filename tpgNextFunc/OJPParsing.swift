@@ -61,7 +61,11 @@ class OJPParser: NSObject, XMLParserDelegate {
 
 // MARK: - Départs
 
-/// Les départs d'une réponse `OJPStopEventRequest` et les quais de son contexte.
+/// Départs d'un arrêt, depuis une réponse OJPStopEventRequest en OJP 2.0.
+///
+/// Les champs de l'arrêt (heure, quai, accès, suppression) sont lus dans `ThisCall` seulement :
+/// si la requête demandait les arrêts précédents ou suivants, leurs champs homonymes
+/// n'écrasent rien. Les quais viennent du contexte (`Places`).
 final class StopEventParser: OJPParser {
     private let stopCode: String
     private(set) var events: [StopEvent] = []
@@ -69,7 +73,9 @@ final class StopEventParser: OJPParser {
     private(set) var error: ParserError?
 
     private var event: StopEvent?
+    private var operatorRef = ""
     private var quay: Quay?
+    private var quayParent = ""
 
     init(stopCode: String) {
         self.stopCode = stopCode
@@ -81,15 +87,18 @@ final class StopEventParser: OJPParser {
             event = StopEvent(stopPointName: "", stopId: stopCode, plannedQuay: "", timetabledTime: "", estimatedTime: "",
                               lineName: "", origin: "", destination: "", transportType: "", operatorName: "",
                               journeyRef: "", operatingDayRef: "")
-        case "Location" where isInside("StopEventResponseContext"):
+            operatorRef = ""
+        case "Place" where isInside("StopEventResponseContext"):
             quay = Quay(id: "", quayName: "", latitude: "", longitude: "")
+            quayParent = ""
         default:
             break
         }
     }
 
     override func didEnd(_ name: String, parent: String, value: String) {
-        if name == "ErrorText" {
+        // OJP 2.0 : `ErrorCondition/StopEventProblemType` (STOPEVENT_NOEVENTFOUND, STOPEVENT_LOCATIONUNSERVED…).
+        if name == "StopEventProblemType" || name == "ErrorText" {
             error = .noEventFound(message: value)
         }
         if var current = event {
@@ -97,6 +106,9 @@ final class StopEventParser: OJPParser {
             if name == "StopEventResult" {
                 if current.estimatedTime.isEmpty {
                     current.estimatedTime = current.timetabledTime
+                }
+                if current.operatorName.isEmpty {
+                    current.operatorName = OJPOperators.name(forRef: operatorRef) ?? ""
                 }
                 events.append(current)
                 event = nil
@@ -106,17 +118,22 @@ final class StopEventParser: OJPParser {
         }
         if var current = quay {
             switch name {
-            case "StopPointRef" where isInside("StopPoint"):
+            case "StopPointRef" where parent == "StopPoint":
                 current.id = value
             // Le code privé EFA se termine par le nom du quai : « 124816:0:D ».
             case "Value" where isInside("StopPoint"):
                 current.quayName = value.split(separator: ":").last.map(String.init) ?? value
+            case "ParentRef" where parent == "StopPoint":
+                quayParent = value
             case "Longitude":
                 current.longitude = value
             case "Latitude":
                 current.latitude = value
-            case "Location":
-                if !current.id.isEmpty {
+            case "Place":
+                // Le contexte peut aussi décrire d'autres arrêts (origine, destination) :
+                // seuls les quais de l'arrêt demandé sont gardés.
+                let parentStop = sloidHarmonizer(code: stopCode)
+                if !current.id.isEmpty && (quayParent.isEmpty || quayParent == parentStop || current.id == stopCode) {
                     quays.append(current)
                 }
                 quay = nil
@@ -128,25 +145,51 @@ final class StopEventParser: OJPParser {
         }
     }
 
-    /// Les libellés sont dans un `<Text>` enfant ; les heures et les références, dans l'élément lui-même.
     private func readEvent(_ event: inout StopEvent, name: String, parent: String, value: String) {
+        // Les libellés sont dans un `<Text>` enfant : à la fermeture du parent, sa valeur vide
+        // écraserait celle qui vient d'être lue.
         guard !value.isEmpty else { return }
-        switch name == "Text" ? parent : name {
-        case "StopPointName": event.stopPointName = value
-        case "PlannedQuay": event.plannedQuay = value
-        case "TimetabledTime": event.timetabledTime = value
-        case "EstimatedTime": event.estimatedTime = value
-        case "PublishedLineName": event.lineName = value
-        case "OriginText": event.origin = value
-        case "DestinationText": event.destination = value
-        case "TransportTypeName": event.transportType = value
-        case "OperatorName": event.operatorName = value
-        case "JourneyRef": event.journeyRef = value
-        case "OperatingDayRef": event.operatingDayRef = value
-        default: break
+        if isInside("ThisCall") {
+            switch name == "Text" ? parent : name {
+            case "StopPointName": event.stopPointName = value
+            case "PlannedQuay": event.plannedQuay = value
+            case "TimetabledTime" where isInside("ServiceDeparture"): event.timetabledTime = value
+            case "EstimatedTime" where isInside("ServiceDeparture"): event.estimatedTime = value
+            case "NameSuffix": event.quayAccess = QuayAccess(rawValue: value) ?? event.quayAccess
+            case "NotServicedStop" where value == "true": event.isCancelled = true
+            default: break
+            }
+            return
+        }
+        guard isInside("Service") else { return }
+        switch name {
+        case "PtMode":
+            event.ptMode = value
+        case "Text" where parent == "Name" && isInside("Mode"):
+            event.transportType = value
+        case "Text" where parent == "PublishedServiceName":
+            event.lineName = value
+        case "Text" where parent == "OriginText":
+            event.origin = value
+        case "Text" where parent == "DestinationText":
+            event.destination = value
+        case "OperatorRef":
+            operatorRef = value
+        case "JourneyRef":
+            event.journeyRef = value
+        case "OperatingDayRef":
+            event.operatingDayRef = value
+        case "Code" where parent == "Attribute":
+            event.attributeCodes = (event.attributeCodes ?? []) + [value]
+        // Course entière supprimée : l'attribut d'incident « Ausfall » (allemand, quelle que soit la langue).
+        case "Text" where parent == "UserText" && isInside("Attribute") && value == "Ausfall":
+            event.isCancelled = true
+        default:
+            break
         }
     }
 }
+
 
 // MARK: - Itinéraires
 

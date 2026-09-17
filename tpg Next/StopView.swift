@@ -83,7 +83,7 @@ struct StopView: View {
                                             }
                                             .contentShape(.contextMenuPreview, Capsule())
                                             .padding(.horizontal, 15)
-                                            .if(!hasPassed(event.departureDate, includingCurrentMinute: false, now: now)) { view in
+                                            .if(!event.cancelled && !hasPassed(event.departureDate, includingCurrentMinute: false, now: now)) { view in
                                                 view.contextMenu {
                                                     NotificationContextMenu(event: event, stopID: stopSloid)
                                                 }

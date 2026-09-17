@@ -29,7 +29,7 @@ struct StopEventView: View  {
     var body: some View {
 //                .stroke(event.journeyRef == (previousLineRef ?? "") ? .accent : .clear, lineWidth: 3)
         VStack {
-            let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
+            let transportTime = departureDisplay(for: event, showTime: showTime, at: now)
             HStack {
                 BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 Image(systemName: "arrow.right").font(.caption)
@@ -250,7 +250,7 @@ struct StopSortedView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
                         ForEach(stopEventsList, id: \.id) { stopEvent in
-                            let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
+                            let time = departureDisplay(for: stopEvent, showTime: showTime, at: now)
                             Button(action: {
                                 //define navigation
                             }) {

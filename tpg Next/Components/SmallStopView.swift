@@ -178,8 +178,10 @@ struct SmallStopView: View {
                     }
                     .contentShape(.contextMenuPreview, Capsule())
                     .foregroundStyle(.primary)
-                    .contextMenu {
-                        NotificationContextMenu(event: event, stopID: stop.sloid)
+                    .if(!event.cancelled) { view in
+                        view.contextMenu {
+                            NotificationContextMenu(event: event, stopID: stop.sloid)
+                        }
                     }
                 }
             } else if stopManager.stopError {

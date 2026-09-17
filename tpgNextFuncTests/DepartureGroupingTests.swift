@@ -29,9 +29,10 @@ struct RequestTests {
     @Test func departuresRequestIsEscapedAndComplete() {
         let date = iso8601.date(from: "2026-09-13T15:56:00Z")!
         let xml = stopEventRequestXML(stopName: "Migros & Co", stopSloid: "ch:1:sloid:87061", count: 7, at: date)
-        #expect(xml.contains("<ojp:Text>Migros &amp; Co</ojp:Text>"))
-        #expect(xml.contains("<StopPlaceRef>ch:1:sloid:87061</StopPlaceRef>"))
-        #expect(xml.contains("<ojp:NumberOfResults>7</ojp:NumberOfResults>"))
-        #expect(xml.contains("<ojp:DepArrTime>2026-09-13T15:56:00Z</ojp:DepArrTime>"))
+        #expect(xml.contains("<Text>Migros &amp; Co</Text>"))
+        #expect(xml.contains("<siri:StopPointRef>ch:1:sloid:87061</siri:StopPointRef>"))
+        #expect(xml.contains("<NumberOfResults>7</NumberOfResults>"))
+        #expect(xml.contains("<DepArrTime>2026-09-13T15:56:00Z</DepArrTime>"))
+        #expect(xml.contains("<IncludeOnwardCalls>false</IncludeOnwardCalls>"))
     }
 }

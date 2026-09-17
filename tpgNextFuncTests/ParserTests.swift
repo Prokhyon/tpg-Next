@@ -20,7 +20,7 @@ private struct JourneySnapshot: Encodable {
     let operatorName: String
 }
 
-@Suite("Départs (OJP 1.0)")
+@Suite("Départs (OJP 2.0)")
 struct StopEventParserTests {
     @Test func departuresAreComplete() async throws {
         let result = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
@@ -28,6 +28,8 @@ struct StopEventParserTests {
         #expect(!result.events.isEmpty)
         #expect(!result.quays.isEmpty)
         for event in result.events {
+            #expect(!event.stopPointName.isEmpty)
+            #expect(!event.plannedQuay.isEmpty)
             #expect(!event.journeyRef.isEmpty)
             #expect(!event.operatingDayRef.isEmpty)
             #expect(!event.lineName.isEmpty)
@@ -50,6 +52,39 @@ struct StopEventParserTests {
     @Test func outputIsUnchanged() async throws {
         let result = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
         try Fixture.assertSnapshot(StopEventsSnapshot(events: result.events, quays: result.quays), named: "stopEvents-rive")
+    }
+
+    /// La réponse enregistrée (Rive, 17.09.2026) contient un 8 → Palexpo supprimé.
+    @Test func cancelledDepartureIsFlagged() async throws {
+        let result = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
+        let cancelled = result.events.filter(\.cancelled)
+        #expect(cancelled.count == 1)
+        #expect(cancelled.first?.lineName == "8")
+        #expect(cancelled.first?.destination == "Palexpo")
+        #expect(result.events.count - cancelled.count > 20)
+    }
+
+    @Test func serviceDetailsAreRead() async throws {
+        let result = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
+        #expect(result.events.allSatisfy { $0.operatorName == "Transports Publics Genevois" })
+        #expect(Set(result.events.map(\.transportType)).isSubset(of: ["Bus", "Tram"]))
+        #expect(result.events.allSatisfy { $0.ptMode == "bus" || $0.ptMode == "tram" })
+        #expect(result.events.allSatisfy { $0.quayAccess != nil })
+        #expect(result.events.contains { $0.hasLowFloor })
+    }
+
+    @Test func onlyQuaysOfTheStopAreKept() async throws {
+        let result = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
+        #expect(result.quays.allSatisfy { $0.id.hasPrefix("ch:1:sloid:87061:") })
+        #expect(result.quays.allSatisfy { !$0.quayName.isEmpty && Double($0.latitude) != nil })
+    }
+
+    /// Un départ enregistré avant OJP 2.0 (dans un rappel) se décode toujours.
+    @Test func departureSavedBeforeOJP2StillDecodes() throws {
+        let json = #"{"stopPointName":"Genève, Rive","stopId":"ch:1:sloid:87061","plannedQuay":"A","timetabledTime":"2026-09-17T09:18:00Z","estimatedTime":"","lineName":"8","origin":"","destination":"Palexpo","transportType":"Bus","operatorName":"Transports Publics Genevois","journeyRef":"x","operatingDayRef":"2026-09-17"}"#
+        let event = try JSONDecoder().decode(StopEvent.self, from: Data(json.utf8))
+        #expect(!event.cancelled)
+        #expect(event.quayAccess == nil)
     }
 }
 
@@ -152,11 +187,11 @@ struct JourneyParserTests {
         #expect(ids.filter { $0 == "ch:1:sloid:927252026-09-13T15:37:00Z" }.count == 1)
     }
 
-    /// La course enregistrée est celle du premier départ de Rive : elle doit y passer à la même heure.
+    /// `tripInfo-rive` est la course du premier départ de `stopEvents-rive` : elle doit y passer à la même heure.
     @Test func journeyMatchesTheDepartureItCameFrom() async throws {
         let departures = await parseStopEventsResult(try Fixture.data("stopEvents-rive"), stopCode: "ch:1:sloid:87061")
         let departure = try #require(departures.events.first)
-        let journey = parseJourneyEventsSync(from: try Fixture.data("tripInfo")).events
+        let journey = parseJourneyEventsSync(from: try Fixture.data("tripInfo-rive")).events
         #expect(journeyMatches(journey, stopRef: departure.stopId, timetabledTime: departure.timetabledTime))
         #expect(journeyMatches(journey, stopRef: "ch:1:sloid:87061", timetabledTime: departure.timetabledTime))
         #expect(!journeyMatches(journey, stopRef: "ch:1:sloid:1", timetabledTime: departure.timetabledTime))

@@ -10,13 +10,6 @@
 
 import Foundation
 
-/// OJP 2.0 ne donne que la référence de l'opérateur, alors que `LineColors` est indexé
-/// par son nom complet. Pour les autres, l'appelant garde le nom qu'il connaît déjà.
-private let operatorNames: [String: String] = [
-    "ojp:881": "Transports Publics Genevois",
-    "ojp:11": "Schweizerische Bundesbahnen SBB",
-]
-
 /// Arrêts d'une course, depuis une réponse OJP 2.0. Mêmes `LineEvent` que l'ancien parser
 /// OJP 1.0 : l'heure retenue est celle de départ (d'arrivée au terminus), `sloid` est l'arrêt
 /// parent (StopPlace) et les coordonnées sont celles du quai.
@@ -138,7 +131,7 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
     // même identifiant laissaient un vide dans la liste de la course (LazyVStack).
     var seen = Set<String>()
     events = events.filter { seen.insert($0.id).inserted }
-    let operatorName = delegate.operatorName.isEmpty ? (operatorNames[delegate.operatorRef] ?? "") : delegate.operatorName
+    let operatorName = delegate.operatorName.isEmpty ? (OJPOperators.name(forRef: delegate.operatorRef) ?? "") : delegate.operatorName
     return (events, operatorName)
 }
 

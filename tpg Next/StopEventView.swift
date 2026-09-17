@@ -18,7 +18,7 @@ struct StopEventView: View  {
     var mapVersion = false
 
     var body: some View {
-        let transportTime = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
+        let transportTime = departureDisplay(for: event, showTime: showTime, at: now)
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 // Tailles d'accessibilité : sur une seule rangée, la destination n'avait plus
@@ -33,6 +33,7 @@ struct StopEventView: View  {
                     HStack(alignment: .firstTextBaseline) {
                         Image(systemName: "arrow.right").font(.caption)
                         SmallStopTitleView(stopName: event.destination)
+                        .strikethrough(event.cancelled)
                     }
                 }
             } else {
@@ -40,6 +41,7 @@ struct StopEventView: View  {
                     BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                     Image(systemName: "arrow.right").font(.caption)
                     SmallStopTitleView(stopName: event.destination)
+                    .strikethrough(event.cancelled)
                     Spacer()
                     DepartureTimeView(transportTime, transportType: event.transportType, iconWidth: 10)
                         .padding(.vertical, 4)
