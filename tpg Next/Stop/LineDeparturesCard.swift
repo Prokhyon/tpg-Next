@@ -41,7 +41,7 @@ struct SortedStopEventsView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 4) {
                                 ForEach(filteredStopEvents[key]!, id: \.id) { stopEvent in
-                                    let time = departureDisplay(timetabled: stopEvent.timetabledTime, estimated: stopEvent.estimatedTime, showTime: showTime, at: now)
+                                    let time = departureDisplay(for: stopEvent, showTime: showTime, at: now)
                                     NavigationLink(value: AppRoute.line(event: stopEvent, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid)))) {
                                     Group {
                                             DepartureTimeView(time, transportType: stopEvent.transportType, layout: .inline(spacing: 2), iconWidth: 15)
@@ -58,7 +58,7 @@ struct SortedStopEventsView: View {
                                     }
                                     .padding(2)
                                     .contentShape(.contextMenuPreview, Capsule())
-                                    .if(!hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
+                                    .if(!stopEvent.cancelled && !hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
                                         view.contextMenu {
                                             NotificationContextMenu(event: stopEvent, stopID: stopSloid)
                                         } preview: {

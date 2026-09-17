@@ -20,6 +20,8 @@ public enum DepartureDisplay: Equatable {
     case clock(String, delayed: Bool)
     /// L'heure prévue et le retard, affichés séparément : « 14:05 » et « (+3') ».
     case plannedWithDelay(planned: String, delay: String)
+    /// Course supprimée à cet arrêt.
+    case cancelled
     /// Heure illisible.
     case unknown
 
@@ -31,6 +33,7 @@ public enum DepartureDisplay: Equatable {
         case .minutes(let minutes, _): return "\(minutes)'"
         case .clock(let time, _): return time
         case .plannedWithDelay(let planned, let delay): return "\(planned);\(delay)"
+        case .cancelled: return String(localized: "Supprimé")
         case .unknown: return ""
         }
     }
@@ -40,7 +43,7 @@ public enum DepartureDisplay: Equatable {
         switch self {
         case .lessThanAMinute(let delayed), .minutes(_, let delayed), .clock(_, let delayed): return delayed
         case .plannedWithDelay: return true
-        case .atStop, .unknown: return false
+        case .atStop, .cancelled, .unknown: return false
         }
     }
 }
@@ -48,6 +51,14 @@ public enum DepartureDisplay: Equatable {
 /// Minutes restantes, heure de passage ou heure prévue avec son retard.
 /// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
 ///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
+/// L'affichage d'un départ : « Supprimé » pour une course supprimée, son heure sinon.
+public func departureDisplay(for event: StopEvent, showTime: Bool, at now: Date = Date()) -> DepartureDisplay {
+    if event.cancelled {
+        return .cancelled
+    }
+    return departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
+}
+
 public func departureDisplay(timetabled: String, estimated: String, showTime: Bool, at now: Date = Date()) -> DepartureDisplay {
     let estimated = estimated.isEmpty ? timetabled : estimated
     guard let timetableTime = OJPDate.date(from: timetabled),
@@ -122,6 +133,11 @@ public struct DepartureTimeView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
+        case .cancelled:
+            Text(display.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(.red)
         default:
             // Une seule ligne : avec un texte agrandi, « 16:17 » passait sinon à la ligne.
             Text(display.text)
