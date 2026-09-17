@@ -19,7 +19,6 @@ struct TPG4App: App {
     // Doit être l'instance partagée : l'AppDelegate passe par FavoritesViewModel.shared
     // pour la synchronisation avec la montre.
     @State private var favoritesViewModel = FavoritesViewModel.shared
-    @State private var appRequirementsClass = AppRequirementsClass()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
@@ -50,7 +49,6 @@ struct TPG4App: App {
                 .tickingClock()
                 .environment(stopStore)
                 .environment(favoritesViewModel)
-                .environment(appRequirementsClass)
                 .task {
                     // La base se charge en arrière-plan : on l'attend avant de s'en servir.
                     await stopStore.waitUntilLoaded()
@@ -175,19 +173,5 @@ extension UINavigationBar {
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().compactScrollEdgeAppearance = appearance
         
-    }
-}
-
-@Observable
-class AppRequirementsClass {
-    var version26: Bool
-
-    init() {
-        // Par exemple, active la fonctionnalité pour iOS 17 et plus (iOS 26 quand disponible)
-        if #available(iOS 26, *) {
-            self.version26 = true
-        } else {
-            self.version26 = false
-        }
     }
 }

@@ -79,7 +79,6 @@ class NavigationModel {
 /// La pile d'un onglet : elle sait afficher toutes les routes et les ouvre chez elle.
 private struct TabStack<Root: View>: View {
     @Environment(NavigationModel.self) private var navigationModel
-    @Environment(AppRequirementsClass.self) private var appRequirementsClass
     let tab: Tabs
     @ViewBuilder var root: Root
 
@@ -89,14 +88,13 @@ private struct TabStack<Root: View>: View {
         }
         .environment(\.openRoute, OpenRouteAction { navigationModel.open($0, in: tab) })
         .id(navigationModel.stackID(tab))
-        .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .tabBar)
+        .toolbar(TPGSurface.isGlass ? .automatic : .hidden, for: .tabBar)
     }
 }
 
 struct ContentView: View {
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @State var savedTripsModel = SavedTripsModel()
     @State var regularTripsModel = RegularTripsModel()
     /// Une seule instance, partagée par la recherche et l'itinéraire : chacun avait la sienne.
@@ -105,12 +103,9 @@ struct ContentView: View {
     @State private var keyboardResponder = KeyboardResponder()
     @State private var tripManager = TripManager()
     @State var notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
-    @State var locationManager = LocationManager()
     @State var navigationModel = NavigationModel()
     
     
-    @State private var viewingTrip = false
-    @State private var showMenu = false
     @AppStorage(SettingKey.showWelcome) var showWelcome = true
     @AppStorage(WhatsNew.lastSeenKey) var lastSeenWhatsNew = ""
     @State private var showWhatsNew = false
@@ -152,7 +147,6 @@ struct ContentView: View {
                 .environment(itineraryViewModel)
                 .environment(recentSearchModel)
                 .environment(navigationModel)
-                .environment(appRequirementsClass)
                 .searchTabActivatesField()
             if #available(iOS 26, *), !testingNewDock {
             } else {
@@ -534,13 +528,11 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let stopStore = StopStore()
         @State var favoritesViewModel = FavoritesViewModel()
-        @State var appRequirementsClass = AppRequirementsClass()
         
         return ContentView(testingNewDock: false)
 //        return DockTestView()
             .environment(stopStore)
             .environment(favoritesViewModel)
-            .environment(appRequirementsClass)
         
         
 //            .mask {

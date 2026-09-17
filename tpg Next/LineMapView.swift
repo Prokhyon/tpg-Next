@@ -12,7 +12,6 @@ import Combine
 
 struct LineMapView: View {
     @Environment(\.displayTime) private var now
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @Environment(StopStore.self) var stopStore
     @State private var lineManager = LineManager()
     @State var autoRefresh = true
@@ -92,7 +91,7 @@ struct LineMapView: View {
                             .frame(height: 75)
                     }
                 }
-                .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .navigationBar)
+                .toolbar(TPGSurface.isGlass ? .automatic : .hidden, for: .navigationBar)
 //                .navigationTitle() // Set back button text
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -217,7 +216,6 @@ struct lineMapPreview: PreviewProvider {
         
         @State var savedTripsModel = SavedTripsModel()
         @State var regularTripsModel = RegularTripsModel()
-        @State var appRequirementsClass = AppRequirementsClass()
             @State var itineraryViewModel = ItineraryViewModel()
         return LineMapView(lineEvents: [], lineName: "A", operatorName: "tpg", destination: "Meinier, Eglise",stopEvent: StopEvent(stopPointName: "Genève, Rive", stopId: "ch:1:sloid:87061:0:450545", plannedQuay: "I", timetabledTime: "\(date)T11:13:00Z", estimatedTime: "\(date)T11:13:00Z", lineName: "A", origin: "Genève, Rive", destination: "Gy, temple", transportType: "bus", operatorName: "Transports Publics Genevois", journeyRef: "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791918", operatingDayRef: date))
             .environment(itineraryViewModel)
@@ -225,7 +223,6 @@ struct lineMapPreview: PreviewProvider {
             .environment(favoritesViewModel)
             .environment(savedTripsModel)
             .environment(regularTripsModel)
-            .environment(appRequirementsClass)
         
 //        VStack {
 //            HStack {
