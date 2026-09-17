@@ -26,6 +26,7 @@ tpg Next/
 │   └── AdaptiveSplit.swift                           deux moitiés sur grand écran
 ├── Components/                                       morceaux partagés par plusieurs écrans
 │   ├── JourneyMap.swift                              parcours d'une course sur une carte
+│   ├── LineFilterChips.swift                         lignes à toucher pour filtrer des départs
 │   └── ServiceInfoLabels.swift                       libellés accès PMR, capsules d'info
 ├── Stop/   Line/   Trip/   Home/                     morceaux propres à un écran
 ```
