@@ -78,7 +78,8 @@ struct TripTimeSearchPanel: View {
             } else {
                 HStack {
                     CustomPicker(secondSelected: $viewModel.isArrivalTime, height: 45, firstOption: String(localized: "Départ"), firstIcon: nil, secondOption: String(localized: "Arrivée"), secondIcon: nil, animation: animation)
-                        .frame(width: 220)
+                        // Au plus 220 pt : sur un écran étroit, le sélecteur cède la place au bouton.
+                        .frame(maxWidth: 220)
 
                     Button {
                         if viewModel.canSearch {
@@ -88,6 +89,8 @@ struct TripTimeSearchPanel: View {
                     } label: {
                         // Au moins 110 × 45 : le bouton s'élargit avec un texte agrandi.
                         Text("Rechercher")
+                            .lineLimit(1)
+                            .fixedSize()
                             .foregroundStyle(.white)
                             .padding(.horizontal, 12)
                             .frame(minWidth: 110, minHeight: 45)

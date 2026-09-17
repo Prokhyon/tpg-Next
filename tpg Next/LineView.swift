@@ -63,7 +63,6 @@ struct LineView: View {
     @State private var lineManager = LineManager()
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @Environment(\.openRoute) private var openRoute
     var autoRefresh: Bool = true
     
@@ -128,7 +127,7 @@ struct LineView: View {
                                 }
                             }
                             .contentMargins(.top, max(95.0, titleHeight + 10), for: .automatic)
-                            .contentMargins(.bottom, appRequirementsClass.version26 ? 0.0 : 60, for: .automatic)
+                            .contentMargins(.bottom, TPGSurface.isGlass ? 0.0 : 60, for: .automatic)
                             .readableScrollContent()
                             .refreshable {
                                 getLineEvents(for: stopEvent)
@@ -175,13 +174,13 @@ struct LineView: View {
                     openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
                 } label: {
                     Image(systemName: "map")
-                        .padding(.trailing, appRequirementsClass.version26 ? 5 : 10)
+                        .padding(.trailing, TPGSurface.isGlass ? 5 : 10)
                     //                        .font(.title3)
                 }
             }
             .background {
                 Capsule()
-                    .opacity(appRequirementsClass.version26 ? 0 : 1)
+                    .opacity(TPGSurface.isGlass ? 0 : 1)
                     .foregroundStyle(.ultraThinMaterial)
                     .shadow(color: Color.customShadows, radius: 2, y: 1.5)
             }
@@ -305,7 +304,6 @@ struct LineEventElementView: View {
 
 struct LineView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var appRequirementsClass = AppRequirementsClass()
         let stopStore = StopStore()
         let favoritesViewModel = FavoritesViewModel()
         let date = "2025-09-12"
@@ -320,7 +318,6 @@ struct LineView_Previews: PreviewProvider {
             }
             .environment(stopStore)
             .environment(favoritesViewModel)
-            .environment(appRequirementsClass)
 //        return LineEventElementView(currentLine: "A", operatorName: "tpg", transportType: "Bus", currentStopCodedidoc: "1", eventCodedidoc: "1", eventName: "Meinier, église", estimatedTime: "2025-06-27T18:18:18Z", timetabledTime: "2025-06-27T18:18:18Z", plannedQuay: "H", showTime: $showTime)
     }
 }

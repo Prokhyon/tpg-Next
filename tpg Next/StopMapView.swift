@@ -11,7 +11,6 @@ import Combine
 import tpgNextFunc
 
 struct StopMapView: View {
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @State var autoRefresh = true
     var quays: [Quay]
     var stopSloid: String
@@ -118,11 +117,11 @@ struct StopMapView: View {
                         .animation(.easeInOut(duration: 0.2), value: selectedResult)
                         Rectangle()
                             .foregroundStyle(.clear)
-                            .frame(height: appRequirementsClass.version26 ? 50 : 60)
+                            .frame(height: TPGSurface.isGlass ? 50 : 60)
                     }
                 }
                 .mapScope(mapScope)
-                .toolbar(appRequirementsClass.version26 ? .automatic : .hidden, for: .navigationBar)
+                .toolbar(TPGSurface.isGlass ? .automatic : .hidden, for: .navigationBar)
                 .navigationTitle("Carte \(stopName)") // Set back button text
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -154,7 +153,6 @@ struct stopMapPreview: PreviewProvider {
         
         @State var savedTripsModel = SavedTripsModel()
         @State var regularTripsModel = RegularTripsModel()
-        @State var appRequirementsClass = AppRequirementsClass()
             @State var itineraryViewModel = ItineraryViewModel()
         return StopMapView(quays: [], stopSloid: "", stopName: "Meinier, Eglise")
             .environment(itineraryViewModel)
@@ -162,7 +160,6 @@ struct stopMapPreview: PreviewProvider {
             .environment(favoritesViewModel)
             .environment(savedTripsModel)
             .environment(regularTripsModel)
-            .environment(appRequirementsClass)
         
     }
 }

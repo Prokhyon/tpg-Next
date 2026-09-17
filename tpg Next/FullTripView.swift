@@ -12,7 +12,6 @@ import tpgNextFunc
 struct FullTripView: View {
     @Environment(\.displayTime) private var now
     @Environment(SavedTripsModel.self) var savedTripsModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @Environment(\.openRoute) private var openRoute
     var fullTrip: TripEvent
     @State private var lineManager = LineManager()
@@ -209,7 +208,7 @@ struct FullTripView: View {
                 }
                 .background {
                     Capsule()
-                        .opacity(appRequirementsClass.version26 ? 0 : 1)
+                        .opacity(TPGSurface.isGlass ? 0 : 1)
                         .foregroundStyle(.ultraThinMaterial)
                         .shadow(color: Color.customShadows, radius: 2, y: 1.5)
                 }
@@ -267,7 +266,6 @@ struct fullTripViewTimeDate: View {
 struct FullTripView_Previews: PreviewProvider {
     static var previews: some View {
         @State var savedTripsModel = SavedTripsModel()
-        @State var appRequirementsClass = AppRequirementsClass()
 //        @State var favoritesViewModel = FavoritesViewModel()
         @State var fullTripTest = FullTripTest()
         @State var autoRefresh: Bool = false
@@ -275,7 +273,6 @@ struct FullTripView_Previews: PreviewProvider {
         return NavigationStack() {
             FullTripView(fullTrip: fullTripTest.Trip)
                 .environment(savedTripsModel)
-                .environment(appRequirementsClass)
 //                .background(Background())
                     .navigationTitle("Genève, Rive") // Set back button text
                     .navigationBarTitleDisplayMode(.inline)

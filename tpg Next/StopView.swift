@@ -15,7 +15,6 @@ struct StopView: View {
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(ItineraryViewModel.self) var tripViewModel
     @Environment(NavigationModel.self) var navigationModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @State private var lineManager = LineManager()
     @State private var stopEvents: [StopEvent] = []
     @Environment(StopStore.self) var stopStore
@@ -102,7 +101,7 @@ struct StopView: View {
                             }
                         }
                         .contentMargins(.top, max(90.0, titleHeight + 10), for: .automatic)
-                        .contentMargins(.bottom, appRequirementsClass.version26 ? 75.0 : 125, for: .automatic)
+                        .contentMargins(.bottom, TPGSurface.isGlass ? 75.0 : 125, for: .automatic)
                         .readableScrollContent()
                         
                         .refreshable {
@@ -251,7 +250,6 @@ struct StopView: View {
 #Preview("StopEventView preview") {
     let stopStore = StopStore()
     let favoritesViewModel = FavoritesViewModel()
-    let appRequirementsClass = AppRequirementsClass()
 
     return VStack {
         StopEventView(
@@ -273,14 +271,12 @@ struct StopView: View {
         )
     }
     .environment(favoritesViewModel)
-    .environment(appRequirementsClass)
     .environment(stopStore)
 }
 
 #Preview("StopView preview") {
     let stopStore = StopStore()
     let favoritesViewModel = FavoritesViewModel()
-    let appRequirementsClass = AppRequirementsClass()
     let navigationModel = NavigationModel()
     let tripViewModel = ItineraryViewModel()
 
@@ -288,7 +284,6 @@ struct StopView: View {
         ZStack {
             StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
                 .environment(favoritesViewModel)
-                .environment(appRequirementsClass)
                 .environment(stopStore)
                 .environment(tripViewModel)
                 .navigationTitle("Genève, Rive")

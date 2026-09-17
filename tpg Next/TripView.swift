@@ -16,7 +16,6 @@ struct TripView: View {
     @Environment(ItineraryViewModel.self) var viewModel
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
     @State private var locationViewModel = LocationSearchViewModel()
     @State var locationManager = LocationManager()
     @Environment(RecentSearch.self) var recentSearchModel
@@ -96,7 +95,7 @@ struct TripView: View {
                     }
                     .scrollDismissesKeyboard(.immediately)
                     .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
-                    .contentMargins(.bottom, appRequirementsClass.version26 ? 0: 75, for: .automatic)
+                    .contentMargins(.bottom, TPGSurface.isGlass ? 0: 75, for: .automatic)
                     .readableScrollContent()
                 }
             }
@@ -369,19 +368,19 @@ struct TripView: View {
                     self.showSavedTrips.toggle()
                 } label: {
                     Image("scurvepath.stack.fill")
-                        .foregroundColor(appRequirementsClass.version26 ? Color.text : .accent)
+                        .foregroundColor(TPGSurface.isGlass ? Color.text : .accent)
                         .symbolEffect(.bounce, value: showSavedTrips)
                         .scaleEffect(0.9)
-                        .padding(.trailing, appRequirementsClass.version26 && results == .tripResults ? 10 : 0)
+                        .padding(.trailing, TPGSurface.isGlass && results == .tripResults ? 10 : 0)
                 }
-                .frame(width: appRequirementsClass.version26 ? 30 : 40, height: 30)
+                .frame(width: TPGSurface.isGlass ? 30 : 40, height: 30)
             }
             .background {
                 Capsule()
                     .frame(height: 40)
                     .foregroundStyle(.ultraThinMaterial)
                     .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                    .opacity(appRequirementsClass.version26 ? 0 : 1)
+                    .opacity(TPGSurface.isGlass ? 0 : 1)
                     .offset(x: 4)
             }
         }
@@ -430,7 +429,6 @@ struct TripView_Previews: PreviewProvider {
         
         @State var savedTripsModel = SavedTripsModel()
         @State var regularTripsModel = RegularTripsModel()
-        @State var appRequirementsClass = AppRequirementsClass()
             @State var itineraryViewModel = ItineraryViewModel()
         @State var boolTest: Bool = true
         @State var showTime: Bool = true
@@ -443,7 +441,6 @@ struct TripView_Previews: PreviewProvider {
                     .environment(favoritesViewModel)
                     .environment(savedTripsModel)
                     .environment(regularTripsModel)
-                    .environment(appRequirementsClass)
                     .environment(RecentSearch())
                     .background(Image("tpgMap"))
             }
