@@ -145,5 +145,12 @@ class RecentSearch {
         var isStop: Bool
         var stop: Stop?
         var geoCoordinates: Coordinates?
+
+        /// Un lieu est enregistré sous la forme « titre;sous-titre ». Le sous-titre peut être
+        /// vide : `split` l'omettait alors, et lire `[1]` plantait.
+        var placeTitle: (name: String, subtitle: String) {
+            let parts = name.split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false)
+            return (String(parts.first ?? ""), parts.count > 1 ? String(parts[1]) : "")
+        }
     }
 }

@@ -19,7 +19,8 @@ struct SettingsView: View {
     @Namespace private var animation
     @State private var circleButtonMessage = false
     @State var showMail: Bool = false
-        
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
 //        NavigationView {
 //            VStack(spacing: 0) {
@@ -127,7 +128,13 @@ struct SettingsView: View {
                         }
                         
                         Button {
-                            showMail.toggle()
+                            // Sans compte configuré dans Mail (fréquent sur iPad), le
+                            // compositeur plante : on passe alors par l'app de messagerie par défaut.
+                            if MFMailComposeViewController.canSendMail() {
+                                showMail.toggle()
+                            } else if let url = URL(string: "mailto:tpgnext@protonmail.ch?subject=Feedback") {
+                                openURL(url)
+                            }
                         } label: {
                                     HStack {
                                         Text("Un problème, une question, une envie ?")

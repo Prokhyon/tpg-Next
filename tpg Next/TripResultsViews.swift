@@ -113,7 +113,7 @@ extension TripView {
                                     viewModel.stopQuery = ""
                                 }
                             }) {
-                                BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
+                                BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, buttonAction: {
                                     resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
                                     resultTitle = stop.name
                                 })
@@ -150,7 +150,7 @@ extension TripView {
                                     }
                                 }
                             }) {
-                                BasicLocationView(name: result.title, subtitle: result.subtitle, isGeoPosition: true, showButton: true, favoriteAction:  {
+                                BasicLocationView(name: result.title, subtitle: result.subtitle, isGeoPosition: true, showButton: true, buttonAction: {
                                     self.locationViewModel.getCoordinate(for: result) { coordinate in
                                         resultDetail = searchResultItem(title: result.title, coordinates: coordinate ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                                     }
@@ -260,7 +260,7 @@ extension TripView {
                                         }
                                     }
                                 }) {
-                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
+                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, buttonAction: {
                                         resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
                                         resultTitle = stop.name
                                     })
@@ -552,13 +552,13 @@ extension TripView {
                             results = Results.favorites
                             recentSearchModel.add(name: item.name, isStop: true, stop: item.stop, geoCoordinates: nil)
                         } else {
-                            let title = item.name.split(separator: ";")
+                            let title = item.placeTitle
                             let coordinates = item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
                             if viewModel.selectedField == .departure {
-                                viewModel.departure.select(.place(GeoPosition(name: String(title[0]), coordinate: coordinates)))
+                                viewModel.departure.select(.place(GeoPosition(name: title.name, coordinate: coordinates)))
                                 viewModel.selectedField = .arrival
                             } else if viewModel.selectedField == .arrival {
-                                viewModel.arrival.select(.place(GeoPosition(name: String(title[0]), coordinate: coordinates)))
+                                viewModel.arrival.select(.place(GeoPosition(name: title.name, coordinate: coordinates)))
                                 viewModel.selectedField = .departure
                             }
                             results = Results.favorites
@@ -568,14 +568,14 @@ extension TripView {
                         
                     }) {
                         if item.isStop {
-                            BasicLocationView(name: item.name, showButton: true, favoriteAction:  {
+                            BasicLocationView(name: item.name, showButton: true, buttonAction: {
                                 resultDetail = searchResultItem(title: item.name, coordinates: item.stop?.wgs84Coordinates.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                                 resultTitle = item.name
                             })
                         } else {
-                            let title = item.name.split(separator: ";")
-                            BasicLocationView(name: String(title[0]), subtitle: String(title[1]), isGeoPosition: true, showButton: true, favoriteAction:  {
-                                resultDetail = searchResultItem(title: String(title[0]), coordinates:item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
+                            let title = item.placeTitle
+                            BasicLocationView(name: title.name, subtitle: title.subtitle, isGeoPosition: true, showButton: true, buttonAction: {
+                                resultDetail = searchResultItem(title: title.name, coordinates:item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                             })
                         }
                     }

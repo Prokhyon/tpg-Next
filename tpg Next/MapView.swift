@@ -99,8 +99,9 @@ struct MapView: View {
                         dataSource.currentRegion = context.region
                     }
                     .onMapCameraChange(frequency: .onEnd) { context in
-                        Task.detached { await
-                            dataSource.reloadAnnotations() }
+                        // Pas de `Task.detached` : la taille et la région de la carte, écrites sur
+                        // le fil principal, étaient lues en parallèle depuis un autre fil.
+                        Task { await dataSource.reloadAnnotations() }
                     }
                     .onChange(of: selectedResult) {
                         if let selectedId = selectedResult,

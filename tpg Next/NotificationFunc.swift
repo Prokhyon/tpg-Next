@@ -350,15 +350,20 @@ class NotificationConfirmationViewModel {
     var confirmationMessage: String = ""
     var errorMessage: Bool = false
     
+    @ObservationIgnored private var generation = 0
+
     func show(message: String, error: Bool) {
         confirmationMessage = message
         errorMessage = error
         withAnimation(.bouncy(duration: 0.5)) {
             showConfirmation = true
         }
-        
-        // Automatically hide after 2 seconds
+        generation += 1
+        let shown = generation
+
+        // Masqué après 3 s, sauf si un autre message l'a remplacé entre-temps.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            guard shown == self.generation else { return }
             withAnimation(.bouncy(duration: 0.5)) {
                 self.showConfirmation = false
                 self.errorMessage = false
@@ -367,6 +372,10 @@ class NotificationConfirmationViewModel {
     }
 }
 
-extension Notification.Name {
-    static let didReceiveNotification = Notification.Name("didReceiveNotification")
+/// L'arrêt à ouvrir après un toucher sur un rappel. Au lancement à froid, l'AppDelegate reçoit
+/// la réponse avant que `ContentView` n'écoute : une `Notification` postée était perdue.
+@Observable
+final class PendingNotificationOpen {
+    static let shared = PendingNotificationOpen()
+    var stop: StopViewData?
 }

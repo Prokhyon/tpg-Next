@@ -27,9 +27,10 @@ struct FullTripView: View {
                 VStack(alignment: .leading) {
 //                    Spacer(minLength: 70) //Space for trip title to be placed on top
                     ScrollView { //trip details scroll area
-                        if !fullTrip.geoDeparture && (fullTrip.legs.first?.transfer ?? false || fullTrip.legs.first?.publishedLineName == "") { //Display departure stop input by user, if the first transport is from another stop
+                        // Sans code d'arrêt, le lien plantait : la destination est construite dès l'affichage.
+                        if !fullTrip.geoDeparture && (fullTrip.legs.first?.transfer ?? false || fullTrip.legs.first?.publishedLineName == ""), let startCode = fullTrip.startCode { //Display departure stop input by user, if the first transport is from another stop
                             NavigationLink {
-                                StopView(stopName: fullTrip.startName, stopSloid: fullTrip.startCode!, previousLineRef: "", previousLineName: "", previousLineTime: nil)
+                                StopView(stopName: fullTrip.startName, stopSloid: startCode, previousLineRef: "", previousLineName: "", previousLineTime: nil)
                             } label: {
                                 LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.startName, estimatedTime: fullTrip.startTime, timetabledTime: fullTrip.startTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false)
                             }
@@ -130,9 +131,9 @@ struct FullTripView: View {
                             }
                         }
                         
-                        if !fullTrip.geoArrival && (fullTrip.legs.last?.transfer ?? false || fullTrip.legs.last?.publishedLineName == "") { //Trip arrival stop if different from last transport leg arrival
+                        if !fullTrip.geoArrival && (fullTrip.legs.last?.transfer ?? false || fullTrip.legs.last?.publishedLineName == ""), let endCode = fullTrip.endCode { //Trip arrival stop if different from last transport leg arrival
                             NavigationLink {
-                                StopView(stopName: fullTrip.endName, stopSloid: fullTrip.endCode!, previousLineRef: "", previousLineName: "", previousLineTime: nil)
+                                StopView(stopName: fullTrip.endName, stopSloid: endCode, previousLineRef: "", previousLineName: "", previousLineTime: nil)
                             } label: {
                                LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.endName, estimatedTime: fullTrip.endTime, timetabledTime: fullTrip.endTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false, displayIcon: false)
                             }
