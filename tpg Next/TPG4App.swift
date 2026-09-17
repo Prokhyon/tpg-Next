@@ -111,9 +111,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         // Handle incoming messages from the watch
+        // Les messages arrivent sur la file de WCSession : les favoris ne se lisent que sur le fil principal.
         if message["requestSync"] as? Bool == true {
-                    FavoritesViewModel.shared.syncFavoritesToWatch()
-                }
+            DispatchQueue.main.async {
+                FavoritesViewModel.shared.syncFavoritesToWatch()
+            }
+        }
         if let data = message["favoriteStops"] as? Data {
             do {
                 let favorites = try JSONDecoder().decode([Stop].self, from: data)
@@ -146,12 +149,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                let stopName = userInfo["stopName"] as? String,
                let journeyRef = userInfo["journeyRef"] as? String,
                let estimatedTime = userInfo["estimatedTime"] as? String {
-                // Post a notification to SwiftUI to handle navigation
-                NotificationCenter.default.post(
-                    name: .didReceiveNotification,
-                    object: nil,
-                    userInfo: ["stopID": stopID, "stopName": stopName, "journeyRef": journeyRef, "estimatedTime": estimatedTime]
-                )
+                // Déposée plutôt que postée : ContentView la consomme dès qu'il existe.
+                let data = StopViewData(stopID: stopID, stopName: stopName, journeyRef: journeyRef, estimatedTime: estimatedTime)
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.stop = data
+                }
             }
             completionHandler()
         }

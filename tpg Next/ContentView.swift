@@ -286,21 +286,13 @@ struct ContentView: View {
                     }
                 }
         //open StopView directly from a notification, with the time of arrival and event ref to have it at the top.
-        .onReceive(NotificationCenter.default.publisher(for: .didReceiveNotification)) { notification in
-            if let userInfo = notification.userInfo,
-               let stopID = userInfo["stopID"] as? String,
-               let stopName = userInfo["stopName"] as? String,
-               let journeyRef = userInfo["journeyRef"] as? String,
-               let estimatedTime = userInfo["estimatedTime"] as? String {
-                navigationModel.selectedStopViewData = StopViewData(
-                    stopID: stopID,
-                    stopName: stopName,
-                    journeyRef: journeyRef,
-                    estimatedTime: estimatedTime
-                )
-                navigationModel.selectedLineViewData = nil
-                navigationModel.selectedTab = .home
-            }
+        // `initial` : au lancement à froid, l'ouverture est déposée avant que cette vue n'existe.
+        .onChange(of: PendingNotificationOpen.shared.stop, initial: true) {
+            guard let data = PendingNotificationOpen.shared.stop else { return }
+            PendingNotificationOpen.shared.stop = nil
+            navigationModel.selectedStopViewData = data
+            navigationModel.selectedLineViewData = nil
+            navigationModel.selectedTab = .home
         }
         // Ouverture depuis le widget :
         //   tpgnext://stop?sloid=…&name=…
