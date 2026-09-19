@@ -27,6 +27,7 @@ struct RegularTripsView: View {
 struct RegularTripsContent: View {
     @Environment(RegularTripsModel.self) private var model
     @Environment(\.displayTime) private var now
+    private var liveActivities = TripLiveActivities.shared
     /// Nombre de prochains trajets affichés.
     var upcomingLimit = 10
     let onSelect: (TripEvent) -> Void
@@ -51,11 +52,27 @@ struct RegularTripsContent: View {
                     if let trip = model.trip(for: occurrence), let displayed = model.displayedTrip(for: occurrence) {
                         Button { open(occurrence, displayed: displayed) } label: {
                             UpcomingRegularTripCard(occurrence: occurrence, trip: trip, displayed: displayed,
-                                                    state: model.state(of: occurrence), isOpening: opening == occurrence.id)
+                                                    state: model.state(of: occurrence), isOpening: opening == occurrence.id,
+                                                    isLive: liveActivities.isTracking(occurrence.id))
                         }
                         .buttonStyle(.plain)
                         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 30))
                         .contextMenu {
+                            if liveActivities.isTracking(occurrence.id) {
+                                Button {
+                                    liveActivities.stop(occurrence.id)
+                                } label: {
+                                    Label("Arrêter le suivi en direct", systemImage: "stop.circle")
+                                }
+                            } else if liveActivities.areEnabled, occurrence.plannedDeparture.timeIntervalSince(now) < 6 * 3600 {
+                                Button {
+                                    var match: RegularTripMatch?
+                                    if case .found(let found, _) = model.state(of: occurrence) { match = found }
+                                    liveActivities.start(occurrence: occurrence, of: trip, trip: displayed, match: match)
+                                } label: {
+                                    Label("Suivre en direct", systemImage: "livephoto")
+                                }
+                            }
                             Button {
                                 withAnimation { model.skip(occurrence) }
                             } label: {
@@ -97,10 +114,6 @@ struct RegularTripsContent: View {
             RegularTripEditor(trip: trip)
                 .environment(model)
         }
-        // Le temps réel des trajets proches, tant que la liste est affichée.
-        .periodicRefresh(every: .seconds(60)) { _ in
-            Task { await model.refresh() }
-        }
     }
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {
@@ -134,6 +147,8 @@ struct UpcomingRegularTripCard: View {
     let displayed: TripEvent
     let state: RegularTripsModel.LiveState?
     var isOpening = false
+    /// Suivi en direct sur l'écran verrouillé.
+    var isLive = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -141,10 +156,17 @@ struct UpcomingRegularTripCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(dayLabel)
                         .font(.headline)
-                    Text(trip.displayName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        if isLive {
+                            Image(systemName: "livephoto")
+                                .foregroundStyle(.tint)
+                                .accessibilityLabel("Suivi en direct")
+                        }
+                        Text(trip.displayName)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .font(.subheadline)
                 }
                 Spacer()
                 if isOpening {

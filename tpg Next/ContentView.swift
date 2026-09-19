@@ -266,8 +266,11 @@ struct ContentView: View {
             navigationModel.selectedTab = .home
         }
         .onOpenURL { handleOpenURL($0) }
-        // Au lancement : temps réel des trajets réguliers proches, et rappels des sept prochains jours.
-        .task { await regularTripsModel.refresh() }
+        // Au premier plan, chaque minute : temps réel des trajets réguliers proches, rappels,
+        // alertes et activités en direct (qui ne sont mises à jour que par l'app).
+        .periodicRefresh(every: .seconds(60)) { _ in
+            Task { await regularTripsModel.refresh() }
+        }
         #if DEBUG
         .task { openDebugURLs() }
         #endif
@@ -288,8 +291,6 @@ struct ContentView: View {
                                     tripManager.tripEvents.removeAll()
                                 }
                                 lastUsedTime = nil
-                                // Temps réel des trajets réguliers proches, et alertes s'ils ont changé.
-                                Task { await regularTripsModel.refresh() }
                             } else if scenePhase == .background {
                                 regularTripsModel.scheduleBackgroundRefresh()
                             }
@@ -298,12 +299,18 @@ struct ContentView: View {
     // Ouverture depuis le widget :
     //   tpgnext://stop?sloid=…&name=…
     //   tpgnext://line?journeyRef=…&operatingDayRef=…&line=…&sloid=…
-    //   tpgnext://regulartrips
+    //   tpgnext://regulartrips   tpgnext://livetrip?key=…   (activité en direct)
     private func handleOpenURL(_ url: URL) {
         guard url.scheme == "tpgnext",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
-        if url.host == "regulartrips" {
-            navigationModel.open(.regularTrips, in: .home)
+        if url.host == "regulartrips" || url.host == "livetrip" {
+            // Activité en direct : le dernier itinéraire connu du trajet suivi.
+            let key = components.queryItems?.first { $0.name == "key" }?.value
+            if let key, let trip = TripLiveActivities.shared.trip(for: key) {
+                navigationModel.open(.trip(trip), in: .home)
+            } else {
+                navigationModel.open(.regularTrips, in: .home)
+            }
             navigationModel.selectedTab = .home
             return
         }

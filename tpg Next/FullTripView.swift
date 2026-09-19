@@ -19,6 +19,7 @@ struct FullTripView: View {
     @State private var showTime = true
     /// L'itinéraire à répéter chaque semaine.
     @State private var repeating: TripEvent?
+    private var liveActivities = TripLiveActivities.shared
     
     @Namespace private var namespace
 
@@ -78,6 +79,19 @@ struct FullTripView: View {
                                 savedTripsModel.addTrip(fullTrip)
                             }) {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
+                            }
+                        }
+                        if liveActivities.isTracking(TripLiveActivities.key(for: fullTrip)) {
+                            Button {
+                                liveActivities.stop(TripLiveActivities.key(for: fullTrip))
+                            } label: {
+                                Label("Arrêter le suivi en direct", systemImage: "stop.circle")
+                            }
+                        } else if liveActivities.areEnabled, !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now) {
+                            Button {
+                                liveActivities.start(trip: fullTrip)
+                            } label: {
+                                Label("Suivre en direct", systemImage: "livephoto")
                             }
                         }
                         Button {

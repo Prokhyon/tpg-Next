@@ -19,8 +19,11 @@ final class RegularTripsModel {
 
     /// Un trajet est redemandé à OJP quand son départ approche : avant, le temps réel est vide.
     static let liveWindow: TimeInterval = 3 * 3600
-    /// Au plus une requête par trajet et par minute.
-    private static let minimumInterval: TimeInterval = 60
+    /// Au plus une requête par trajet et par minute dans la demi-heure avant le départ,
+    /// toutes les cinq minutes avant.
+    private static func minimumInterval(before departure: Date) -> TimeInterval {
+        departure.timeIntervalSinceNow < 30 * 60 ? 60 : 5 * 60
+    }
 
     /// Le trajet du jour, retrouvé auprès d'OJP.
     enum LiveState: Equatable {
@@ -114,13 +117,15 @@ final class RegularTripsModel {
             }
         }
         RegularTripAlerts.scheduleReminders(for: self)
+        TripLiveActivities.shared.startSoonDepartingTrips(of: self, now: now)
+        await TripLiveActivities.shared.refresh(model: self, now: now)
     }
 
     /// Retrouve le trajet du jour auprès d'OJP. Rend le trajet trouvé, `nil` sinon.
     @MainActor @discardableResult
     func resolve(_ occurrence: RegularTripOccurrence, force: Bool = false) async -> RegularTripMatch? {
         guard let trip = trip(for: occurrence) else { return nil }
-        if !force, let last = lastRequest[occurrence.id], Date().timeIntervalSince(last) < Self.minimumInterval {
+        if !force, let last = lastRequest[occurrence.id], Date().timeIntervalSince(last) < Self.minimumInterval(before: occurrence.plannedDeparture) {
             if case .found(let match, _) = live[occurrence.id] { return match }
             return nil
         }
@@ -132,6 +137,7 @@ final class RegularTripsModel {
             let match = try await RegularTripResolver.resolve(trip, on: occurrence)
             live[occurrence.id] = .found(match, updated: Date())
             RegularTripAlerts.notifyChanges(of: trip, occurrence: occurrence, match: match)
+            await TripLiveActivities.shared.didResolve(occurrence.id, match: match)
             return match
         } catch RegularTripResolver.Failure.noTrip {
             live[occurrence.id] = .notFound
@@ -147,18 +153,27 @@ final class RegularTripsModel {
     /// Demande à iOS un réveil avant le prochain trajet suivi, pour relire le temps réel et
     /// prévenir d'un retard. iOS choisit l'heure exacte, et peut ne pas réveiller l'app
     /// (mode économie d'énergie, app rarement ouverte) : les rappels, eux, partent toujours.
+    @MainActor
     func scheduleBackgroundRefresh(now: Date = Date()) {
         let watched = upcoming(after: now, days: 2).filter { occurrence in
             guard let trip = trip(for: occurrence) else { return false }
             return trip.alertsEnabled || trip.reminderMinutes != nil
         }
-        guard let next = watched.first else {
+        let request = BGAppRefreshTaskRequest(identifier: Self.backgroundTaskID)
+        if let arrival = TripLiveActivities.shared.nextActivityArrival {
+            // Un trajet suivi en direct : au plus tôt pour suivre les retards, puis juste après
+            // l'arrivée, pour terminer l'activité. iOS décide du rythme réel.
+            let afterArrival = arrival.addingTimeInterval(3 * 60)
+            request.earliestBeginDate = afterArrival.timeIntervalSince(now) < 15 * 60
+                ? max(afterArrival, now.addingTimeInterval(60))
+                : now.addingTimeInterval(5 * 60)
+        } else if let next = watched.first {
+            // Une heure avant le départ, et pas plus d'une fois par quart d'heure.
+            request.earliestBeginDate = max(next.plannedDeparture.addingTimeInterval(-3600), now.addingTimeInterval(15 * 60))
+        } else {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.backgroundTaskID)
             return
         }
-        let request = BGAppRefreshTaskRequest(identifier: Self.backgroundTaskID)
-        // Une heure avant le départ, et pas plus d'une fois par quart d'heure.
-        request.earliestBeginDate = max(next.plannedDeparture.addingTimeInterval(-3600), now.addingTimeInterval(15 * 60))
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {

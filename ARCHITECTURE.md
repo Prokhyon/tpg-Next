@@ -195,6 +195,24 @@ mode, numéro de course, tracé routier. Non fournies pour les tpg : position GP
 taux d'occupation. La position affichée sur la carte de ligne est **estimée** à partir des
 horaires (`estimatedVehiclePosition`).
 
+## Trajets réguliers et activité en direct
+
+- Un trajet régulier garde une **recette** (`tpgNextFunc/RegularTrip.swift`) : départ, arrivée,
+  heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` 1.0 est redemandée et le
+  trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
+  notifications : `tpg Next/RegularTrips/`.
+- L'activité en direct (`tpg Next/LiveActivity/`) : données dans `tpgNextFunc/TripActivity.swift`,
+  vues dans `TripLiveActivity.swift`, compilé aussi pour le widget (exception de membre, comme
+  `BasicViews.swift`), gestion dans `TripLiveActivities.swift`.
+- **Pas de serveur push** : seule l'app met l'activité à jour (chaque minute au premier plan,
+  réveils en arrière-plan décidés par iOS). L'affichage tient seul entre deux mises à jour :
+  minutes restantes en format système (`Text(.currentDate, format: .offset(…))`, « 4 minutes » ;
+  un format maison ne serait pas évalué par l'écran verrouillé), étape et position du véhicule
+  déduites de l'heure (`phase(at:)`, `vehicleStop(at:)` sur les passages embarqués),
+  `staleDate` au prochain changement d'étape. L'état doit tenir en 4 Ko (passages limités).
+- Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
+  utiliser les aperçus de `TripLiveActivity.swift`.
+
 ## Tests
 
 Les parseurs sont testés sur des réponses réelles enregistrées dans
