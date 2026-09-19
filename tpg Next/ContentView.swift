@@ -96,7 +96,8 @@ struct ContentView: View {
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @State var savedTripsModel = SavedTripsModel()
-    @State var regularTripsModel = RegularTripsModel()
+    /// Partagée avec la tâche de fond et les notifications des trajets réguliers.
+    @State var regularTripsModel = RegularTripsModel.shared
     /// Une seule instance, partagée par la recherche et l'itinéraire : chacun avait la sienne.
     @State var recentSearchModel = RecentSearch()
     @State var itineraryViewModel = ItineraryViewModel()
@@ -265,6 +266,8 @@ struct ContentView: View {
             navigationModel.selectedTab = .home
         }
         .onOpenURL { handleOpenURL($0) }
+        // Au lancement : temps réel des trajets réguliers proches, et rappels des sept prochains jours.
+        .task { await regularTripsModel.refresh() }
         #if DEBUG
         .task { openDebugURLs() }
         #endif
@@ -285,17 +288,25 @@ struct ContentView: View {
                                     tripManager.tripEvents.removeAll()
                                 }
                                 lastUsedTime = nil
+                                // Temps réel des trajets réguliers proches, et alertes s'ils ont changé.
+                                Task { await regularTripsModel.refresh() }
                             } else if scenePhase == .background {
-                                
+                                regularTripsModel.scheduleBackgroundRefresh()
                             }
                         }
     }
     // Ouverture depuis le widget :
     //   tpgnext://stop?sloid=…&name=…
     //   tpgnext://line?journeyRef=…&operatingDayRef=…&line=…&sloid=…
+    //   tpgnext://regulartrips
     private func handleOpenURL(_ url: URL) {
         guard url.scheme == "tpgnext",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        if url.host == "regulartrips" {
+            navigationModel.open(.regularTrips, in: .home)
+            navigationModel.selectedTab = .home
+            return
+        }
         func query(_ name: String) -> String? {
             components.queryItems?.first { $0.name == name }?.value
         }

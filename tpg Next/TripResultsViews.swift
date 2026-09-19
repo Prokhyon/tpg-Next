@@ -297,7 +297,9 @@ extension TripView {
         /// Sur grand écran : le trajet détaillé à droite, et l'action qui en choisit un autre.
         var selectedID: String? = nil
         var onSelect: ((TripEvent) -> Void)? = nil
-        
+        /// L'itinéraire à répéter chaque semaine.
+        @State private var repeating: TripEvent?
+
         var body: some View {
             LazyVStack(spacing: 5) {
 
@@ -337,11 +339,19 @@ extension TripView {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
                             }
                         }
+                        Button {
+                            repeating = event
+                        } label: {
+                            Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
+                        }
                     } preview: {
                         TripMapView(tripEvent: event, isPreview: true)
                             .frame(width: layout.previewWidth, height: 300)
                     }
                 }
+            }
+            .sheet(item: $repeating) { trip in
+                RegularTripEditor(creatingFrom: trip)
             }
         }
 

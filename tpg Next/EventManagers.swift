@@ -96,30 +96,6 @@ public class SavedTripsModel {
 }
 
 @Observable
-public class RegularTripsModel {
-    private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
-
-    public var regularTrips: [RegularTrip] {
-        didSet { Self.store.save(regularTrips) }
-    }
-
-    init() {
-        regularTrips = Self.store.load() ?? []
-    }
-
-    public func addTrip(_ trip: RegularTrip) {
-        if !regularTrips.contains(where: { $0.id == trip.id }) {
-            regularTrips.append(trip)
-        }
-    }
-
-    public func removeTrip(_ trip: RegularTrip) {
-        regularTrips.removeAll { $0.id == trip.id }
-    }
-}
-
-
-@Observable
 class RecentSearch {
     private static let store = CodableStore<[RecentSearchItem]>(key: "savedSearch")
 

@@ -24,6 +24,7 @@ enum AppRoute: Hashable {
     case settings
     case favoritesOrder
     case scheduledNotifications
+    case regularTrips
 }
 
 /// La course à mettre en avant sur la page d'un arrêt.
@@ -71,6 +72,8 @@ struct AppRouteDestination: View {
         case .scheduledNotifications:
             ScheduledNotifications()
                 .navigationTitle("Rappels prévus")
+        case .regularTrips:
+            RegularTripsView()
         }
     }
 }

@@ -217,6 +217,7 @@ tpgnext://stop?sloid=ch:1:sloid:87061&name=Rive
 tpgnext://stop?sloid=ch:1:sloid:87061&name=Rive&journeyRef=…   (course présélectionnée)
 tpgnext://line?journeyRef=…&operatingDayRef=…&line=12&sloid=…
 tpgnext://tab?name=trip
+tpgnext://regulartrips
 tpgnext://settings
 ```
 
