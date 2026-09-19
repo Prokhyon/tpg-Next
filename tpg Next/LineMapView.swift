@@ -88,30 +88,12 @@ struct LineMapView: View {
     }
 }
 
-struct lineMapPreview: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        let date = "2026-03-30"
-        @State var fullTripTest = FullTripTest()
-        
-        @State var savedTripsModel = SavedTripsModel()
-        @State var regularTripsModel = RegularTripsModel()
-            @State var itineraryViewModel = ItineraryViewModel()
-        return LineMapView(lineEvents: [], lineName: "A", operatorName: "tpg", destination: "Meinier, Eglise",stopEvent: StopEvent(stopPointName: "Genève, Rive", stopId: "ch:1:sloid:87061:0:450545", plannedQuay: "I", timetabledTime: "\(date)T11:13:00Z", estimatedTime: "\(date)T11:13:00Z", lineName: "A", origin: "Genève, Rive", destination: "Gy, temple", transportType: "bus", operatorName: "Transports Publics Genevois", journeyRef: "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791918", operatingDayRef: date))
-            .environment(itineraryViewModel)
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-            .environment(savedTripsModel)
-            .environment(regularTripsModel)
-        
-//        VStack {
-//            HStack {
-//                StopIcon(color: .blue, currentStop: true)
-//                Spacer()
-//            }
-//            Spacer()
-//        }
-//        .padding()
+#Preview("Carte de ligne") {
+    // La carte recharge la course : elle part d'un vrai départ du jour.
+    LiveDeparturePreview { departures in
+        LineMapView(lineEvents: [], lineName: departures.event.lineName, operatorName: departures.event.operatorName,
+                    destination: departures.event.destination, stopEvent: departures.event,
+                    currentStopSloid: PreviewData.rive.sloid)
     }
+    .previewEnvironment()
 }

@@ -24,7 +24,7 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
                 primary
                     .frame(maxWidth: .infinity)
                     // Les titres flottants débordent volontairement du bord : coupés à la moitié.
-                    .clipped()
+//                    .clipped()
                 secondary
                     .frame(maxWidth: .infinity)
             }
@@ -39,4 +39,23 @@ extension LayoutContext {
     var showsSecondaryPane: Bool {
         widthClass != .compact
     }
+}
+
+#Preview("Deux moitiés — iPad", traits: .iPadLandscape) {
+    AdaptiveSplit {
+        Color.blue.opacity(0.2).overlay { Text(verbatim: "primary") }
+    } secondary: {
+        Color.orange.opacity(0.2).overlay { Text(verbatim: "secondary") }
+    }
+    .providingLayoutContext()
+}
+
+#Preview("Deux moitiés — iPhone") {
+    // Une seule colonne : `secondary` n'est pas affiché.
+    AdaptiveSplit {
+        Color.blue.opacity(0.2).overlay { Text(verbatim: "primary") }
+    } secondary: {
+        Color.orange.opacity(0.2).overlay { Text(verbatim: "secondary") }
+    }
+    .providingLayoutContext()
 }

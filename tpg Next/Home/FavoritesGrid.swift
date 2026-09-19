@@ -129,3 +129,36 @@ struct FavoriteView: View {
         }
     }
 }
+
+#Preview("Grille des favoris") {
+    @Previewable @State var isExpanded = false
+    ScrollView {
+        FavoriteView(isExpanded: $isExpanded, maxRows: 3)
+    }
+    .previewEnvironment()
+}
+
+#Preview("Grille des favoris — vide") {
+    @Previewable @State var isExpanded = false
+    FavoriteView(isExpanded: $isExpanded, maxRows: 3)
+        .previewEnvironment(favorites: [])
+}
+
+#Preview("Grille des favoris — iPad", traits: .iPadLandscape) {
+    @Previewable @State var isExpanded = false
+    ScrollView {
+        FavoriteView(isExpanded: $isExpanded, maxRows: 2)
+    }
+    .previewEnvironment()
+}
+
+#Preview("Favori", traits: .sizeThatFitsLayout) {
+    VStack {
+        FavoriteStopView(stop: PreviewData.rive)
+        FavoriteStopView(stop: PreviewData.meinier)
+        FavoriteStopView(stop: PreviewData.airport)
+    }
+    .frame(width: 190)
+    .padding()
+    .previewEnvironment()
+}

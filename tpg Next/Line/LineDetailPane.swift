@@ -29,7 +29,7 @@ struct LineDetailPane: View {
                     if let selectedStop {
                         LineStopDeparturesPanel(stop: selectedStop, stopEvent: stopEvent, close: deselect)
                     } else {
-                        VehicleInfoPanel(stopEvent: stopEvent, journey: journey)
+                        VehicleInfoPanel(stopEvent: stopEvent, journey: journey, currentStopSloid: currentStopSloid)
                     }
                 }
                 .padding(20)
@@ -94,8 +94,11 @@ struct LineMapPanel: View {
 /// Sans arrêt sélectionné : le véhicule, sa position estimée et l'accessibilité des arrêts restants.
 struct VehicleInfoPanel: View {
     @Environment(\.displayTime) private var now
+    @Environment(\.openRoute) private var openRoute
     let stopEvent: StopEvent
     let journey: JourneyTrackModel
+    /// L'arrêt d'où la course a été ouverte.
+    var currentStopSloid: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -111,6 +114,13 @@ struct VehicleInfoPanel: View {
                     Text(journey.operatorName).foregroundStyle(.secondary)
                 }
                 chips
+                if stopEvent.cancelled, let currentStopSloid,
+                   let alternative = nearestServedStop(skipping: currentStopSloid, in: journey.events, now: now) {
+                    ServedAlternativeCard(alternative: alternative, transportType: stopEvent.transportType) {
+                        openRoute(.stop(name: alternative.stop.stopPointName, sloid: alternative.stop.sloid,
+                                        highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: stopEvent.lineName, time: alternative.stop.timetabledTime)))
+                    }
+                }
             }
 
             if let nextStop {
@@ -159,11 +169,28 @@ struct VehicleInfoPanel: View {
         }
     }
 
+    /// Sur une rangée ; défilante quand elle ne tient pas (sinon chaque capsule se replie sur plusieurs lignes).
     private var chips: some View {
+        ViewThatFits(in: .horizontal) {
+            chipRow
+            ScrollView(.horizontal, showsIndicators: false) { chipRow }
+        }
+    }
+
+    private var chipRow: some View {
         let service = journey.service
         return HStack(spacing: 8) {
-            if service?.isCancelled == true || stopEvent.cancelled {
+            // Un incident ne supprime souvent qu'une partie de la course : le bus peut sauter
+            // l'arrêt de départ et rouler ailleurs, ou le desservir et sauter d'autres arrêts.
+            if journeyIsCancelled {
                 InfoChip(text: "Course supprimée", systemImage: "exclamationmark.triangle.fill", tint: .red)
+            } else if stopEvent.cancelled {
+                InfoChip(text: "Ne passe pas à cet arrêt", systemImage: "exclamationmark.triangle.fill", tint: .red)
+            } else if service?.hasIncident == true || stopEvent.routeChanged {
+                InfoChip(text: "Parcours modifié", systemImage: "exclamationmark.triangle.fill", tint: .orange)
+            }
+            if stopEvent.exceptional {
+                InfoChip(text: "Horaire exceptionnel", systemImage: "calendar.badge.exclamationmark", tint: .orange)
             }
             if service?.hasLowFloor == true || stopEvent.hasLowFloor {
                 InfoChip(text: "Plancher bas", systemImage: "arrow.down.to.line")
@@ -177,14 +204,19 @@ struct VehicleInfoPanel: View {
         }
     }
 
-    /// Les arrêts pas encore quittés.
+    /// Les arrêts desservis pas encore quittés.
     private var upcomingStops: [LineEvent] {
-        journey.events.filter { !hasPassed($0.departureDate, includingCurrentMinute: false, now: now) }
+        journey.events.filter { $0.isCancelled != true && !hasPassed($0.departureDate, includingCurrentMinute: false, now: now) }
     }
 
     private var nextStop: LineEvent? {
         guard estimatedVehiclePosition(events: journey.events, segments: journey.segments, at: now) != nil else { return nil }
         return upcomingStops.first
+    }
+
+    /// Aucun arrêt de la course n'est desservi.
+    private var journeyIsCancelled: Bool {
+        !journey.events.isEmpty && journey.events.allSatisfy { $0.isCancelled == true }
     }
 
     private var skippedStopsCount: Int? {
@@ -268,4 +300,55 @@ struct LineStopDeparturesPanel: View {
         let events = stopManager.stopEvents.sortedByDeparture()
         return lineFilters.isEmpty ? events : events.filter { lineFilters.contains($0.lineName) }
     }
+}
+
+#Preview("Panneau ligne — véhicule", traits: .fixedLayout(width: 560, height: 820)) {
+    LineDetailPane(stopEvent: PreviewData.lineDeparture, currentStopSloid: PreviewData.rive.sloid,
+                   journey: PreviewData.journeyModel(), selectedStop: nil, deselect: {})
+        .previewEnvironment()
+}
+
+#Preview("Panneau ligne — arrêt sélectionné (API)", traits: .fixedLayout(width: 560, height: 820)) {
+    // Les prochains passages de l'arrêt sont demandés à l'API.
+    let journey = PreviewData.journeyModel()
+    LineDetailPane(stopEvent: PreviewData.lineDeparture, currentStopSloid: PreviewData.rive.sloid,
+                   journey: journey, selectedStop: journey.events.first { $0.sloid == PreviewData.cornavin.sloid }
+                        ?? journey.events.first { $0.sloid == PreviewData.rive.sloid },
+                   deselect: {})
+        .previewEnvironment()
+}
+
+#Preview("Carte de la course", traits: .fixedLayout(width: 520, height: 520)) {
+    LineMapPanel(stopEvent: PreviewData.lineDeparture, currentStopSloid: PreviewData.rive.sloid,
+                 journey: PreviewData.journeyModel(), selectedStop: nil)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .padding()
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Carte de la course — sans tracé", traits: .fixedLayout(width: 520, height: 520)) {
+    // Avant l'arrivée du tracé routier : arrêts reliés en ligne droite.
+    let journey = PreviewData.journeyModel(withTrack: false)
+    LineMapPanel(stopEvent: PreviewData.lineDeparture, currentStopSloid: PreviewData.rive.sloid,
+                 journey: journey, selectedStop: journey.events.last)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .padding()
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Véhicule et accessibilité", traits: .fixedLayout(width: 520, height: 700)) {
+    ScrollView {
+        VehicleInfoPanel(stopEvent: PreviewData.lineDeparture, journey: PreviewData.journeyModel(withTrack: false))
+            .padding(20)
+    }
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Passages à un arrêt (API)", traits: .fixedLayout(width: 520, height: 600)) {
+    let stop = PreviewData.journeyStops.first { $0.sloid == PreviewData.rive.sloid } ?? PreviewData.journeyStops[0]
+    ScrollView {
+        LineStopDeparturesPanel(stop: stop, stopEvent: PreviewData.lineDeparture, close: {})
+            .padding(20)
+    }
+    .previewEnvironment()
 }

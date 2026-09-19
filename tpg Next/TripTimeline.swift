@@ -303,3 +303,31 @@ private struct TimelineScale {
         return x((range.lowerBound + range.upperBound) / 2)
     }
 }
+
+#Preview("Frise des itinéraires") {
+    @Previewable @State var width = 340.0
+    VStack(spacing: 18) {
+        ForEach(PreviewData.trips) { trip in
+            TripTimeline(event: trip)
+                .frame(width: width)
+        }
+        Slider(value: $width, in: 120...600) {
+            Text(verbatim: "Largeur")
+        }
+        Text(verbatim: "Largeur : \(Int(width)) pt")
+            .font(.caption)
+    }
+    .padding()
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Frise — texte très grand") {
+    VStack(spacing: 18) {
+        ForEach(PreviewData.trips) { trip in
+            TripTimeline(event: trip)
+        }
+    }
+    .padding()
+    .dynamicTypeSize(.accessibility3)
+    .previewEnvironment(navigation: false)
+}

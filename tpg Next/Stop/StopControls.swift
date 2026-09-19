@@ -238,3 +238,57 @@ struct DeparturesUnavailableText: View {
         }
     }
 }
+
+#Preview("Contrôles flottants") {
+    @Previewable @State var grouped = false
+    @Previewable @State var showsFilters = false
+    @Previewable @State var filtered = false
+    @Previewable @State var shift = 0
+    VStack {
+        Text(verbatim: "Tri par ligne : \(grouped) · filtre : \(filtered) · décalage : \(shift)")
+            .font(.caption)
+        Toggle("Filtre actif" as String, isOn: $filtered)
+            .padding(.horizontal, 40)
+        Spacer()
+        StopFloatingControls(isGroupedByLine: grouped, toggleGrouping: { grouped.toggle() },
+                             showsFilters: $showsFilters, isFiltered: $filtered,
+                             moveTime: { earlier in shift += earlier ? -1 : 1 })
+    }
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Choix de l'heure") {
+    @Previewable @State var time = Date()
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            DepartureTimeSheet(time: $time) {}
+        }
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Filtre des lignes") {
+    @Previewable @State var selection: Set<String> = []
+    @Previewable @State var filtered = false
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            LineFilterSheet(groups: PreviewData.departures.groupedByLineAndDestination(),
+                            selection: $selection, isFiltered: $filtered) {}
+        }
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Menu de l'arrêt") {
+    Color.clear
+        .toolbar {
+            StopActionsMenu(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, quays: PreviewData.quays)
+        }
+        .previewEnvironment()
+}
+
+#Preview("Aucun départ", traits: .sizeThatFitsLayout) {
+    VStack(spacing: 30) {
+        DeparturesUnavailableText(errorMessage: "STOPEVENT_LOCATIONUNSERVED")
+        DeparturesUnavailableText(errorMessage: "")
+    }
+    .padding()
+}

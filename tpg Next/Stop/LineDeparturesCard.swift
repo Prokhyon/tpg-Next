@@ -119,3 +119,27 @@ struct SortedStopEventsView: View {
                 .padding(.horizontal, 20)
         }
 }
+
+#Preview("Cartes par ligne") {
+    @Previewable @State var showTime = false
+    let groups = PreviewData.departures.groupedByLineAndDestination()
+    ScrollView {
+        Toggle("Heure affichée" as String, isOn: $showTime)
+            .padding(.horizontal, 30)
+        ForEach(groups.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
+            SortedStopEventsView(key: key, filteredStopEvents: groups, groupedStopEvents: groups,
+                                 showTime: $showTime, previousLineRef: .constant(nil),
+                                 stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid)
+        }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Carte par ligne — course mise en avant") {
+    let groups = PreviewData.departures.groupedByLineAndDestination()
+    let key = groups.keys.sorted(by: lineGroupPrecedes).first { $0.hasPrefix("12;") } ?? groups.keys.first!
+    SortedStopEventsView(key: key, filteredStopEvents: groups, groupedStopEvents: groups,
+                         showTime: .constant(false), previousLineRef: .constant(groups[key]?.dropFirst().first?.journeyRef),
+                         stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid)
+        .previewEnvironment()
+}

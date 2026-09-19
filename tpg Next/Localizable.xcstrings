@@ -24,11 +24,24 @@
         }
       }
     },
+    " · %lld" : {
+
+    },
     ": %@" : {
       "shouldTranslate" : false
     },
     "%@" : {
       "shouldTranslate" : false
+    },
+    "%@ · ≈ %lld min à pied" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · ≈ %2$lld min à pied"
+          }
+        }
+      }
     },
     "%@ aurait du arriver mais arrivera %@" : {
       "localizations" : {
@@ -235,6 +248,12 @@
     "%lld" : {
       "shouldTranslate" : false
     },
+    "%lld arrêt(s) non desservi(s)" : {
+
+    },
+    "%lld arrêts non desservis" : {
+
+    },
     "%lld' avant" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -273,6 +292,9 @@
         }
       }
     },
+    "Accès au quai" : {
+
+    },
     "Accès autorisé" : {
       "localizations" : {
         "en" : {
@@ -283,6 +305,12 @@
         }
       }
     },
+    "Accès en fauteuil avec aide" : {
+
+    },
+    "Accès en fauteuil sans aide" : {
+
+    },
     "Accès refusé" : {
       "localizations" : {
         "en" : {
@@ -292,6 +320,9 @@
           }
         }
       }
+    },
+    "Accessibilité des prochains arrêts" : {
+
     },
     "Add Regular Trip" : {
 
@@ -306,6 +337,9 @@
         }
       }
     },
+    "Afficher ces arrêts" : {
+
+    },
     "Afficher la carte" : {
       "localizations" : {
         "en" : {
@@ -315,6 +349,9 @@
           }
         }
       }
+    },
+    "Afficher les %lld arrêts précédents" : {
+
     },
     "Affichez les départs précédents ou suivants" : {
       "localizations" : {
@@ -558,6 +595,9 @@
         }
       }
     },
+    "Calculée à partir des horaires en temps réel, sans suivi GPS." : {
+
+    },
     "Carte" : {
       "localizations" : {
         "en" : {
@@ -598,6 +638,9 @@
         }
       }
     },
+    "Chargement du parcours…" : {
+
+    },
     "Chargement..." : {
       "localizations" : {
         "en" : {
@@ -618,6 +661,9 @@
         }
       }
     },
+    "Choisissez un itinéraire pour voir son trajet et sa carte." : {
+
+    },
     "Continuer" : {
       "localizations" : {
         "en" : {
@@ -627,6 +673,12 @@
           }
         }
       }
+    },
+    "Course %@" : {
+
+    },
+    "Course supprimée" : {
+
     },
     "Dans un premier temps, quelques autorisations afin d'améliorer votre expérience:" : {
       "localizations" : {
@@ -687,6 +739,9 @@
           }
         }
       }
+    },
+    "Départs suivants" : {
+
     },
     "Départs sur la page d'accueil:" : {
       "localizations" : {
@@ -768,6 +823,9 @@
         }
       }
     },
+    "Fermer" : {
+
+    },
     "Filtrer" : {
       "localizations" : {
         "en" : {
@@ -817,6 +875,9 @@
           }
         }
       }
+    },
+    "Heure" : {
+
     },
     "Heure d'arrivée par défaut:" : {
       "localizations" : {
@@ -938,6 +999,9 @@
         }
       }
     },
+    "Lignes" : {
+
+    },
     "Lors d'une recherche d'un arrêt ou d'un lieu, appuyez sur l'icône à la droite d'un résultat afin d'obtenir un aperçu de sa position sur une carte.\n\nAjoutez aussi facilement des arrêts à vos favoris avec l'étoile." : {
       "localizations" : {
         "en" : {
@@ -958,6 +1022,12 @@
         }
       }
     },
+    "Masquer ces arrêts" : {
+
+    },
+    "Masquer les arrêts précédents" : {
+
+    },
     "Merci d'avoir téléchargé tpg Next" : {
       "localizations" : {
         "en" : {
@@ -968,6 +1038,9 @@
         }
       }
     },
+    "Ne passe pas à cet arrêt" : {
+
+    },
     "Ne plus enregistrer l'itinéraire" : {
       "localizations" : {
         "en" : {
@@ -977,6 +1050,9 @@
           }
         }
       }
+    },
+    "Non desservi" : {
+
     },
     "Notifications" : {
       "localizations" : {
@@ -1046,6 +1122,12 @@
         }
       }
     },
+    "Ouvre l'arrêt" : {
+
+    },
+    "Ouvrir l'arrêt" : {
+
+    },
     "Paramètres" : {
       "localizations" : {
         "en" : {
@@ -1055,6 +1137,12 @@
           }
         }
       }
+    },
+    "Parcours" : {
+
+    },
+    "Parcours modifié" : {
+
     },
     "Partir d'ici" : {
       "localizations" : {
@@ -1096,6 +1184,12 @@
         }
       }
     },
+    "Pas d'autre départ de cette ligne dans la liste." : {
+
+    },
+    "Pas de départ trouvé" : {
+
+    },
     "Pas de départs trouvés" : {
       "localizations" : {
         "en" : {
@@ -1105,6 +1199,9 @@
           }
         }
       }
+    },
+    "Passe à %@" : {
+
     },
     "Permet d'afficher les arrêts à proximité ainsi que votre position sur la carte." : {
       "localizations" : {
@@ -1125,6 +1222,12 @@
           }
         }
       }
+    },
+    "Plancher bas" : {
+
+    },
+    "Position estimée" : {
+
     },
     "Position introuvable pour l'instant." : {
       "localizations" : {
@@ -1186,6 +1289,9 @@
         }
       }
     },
+    "Prochain arrêt" : {
+
+    },
     "Prochains itinéraires" : {
       "localizations" : {
         "en" : {
@@ -1206,6 +1312,9 @@
         }
       }
     },
+    "Quai" : {
+
+    },
     "quai %@" : {
       "localizations" : {
         "en" : {
@@ -1225,6 +1334,12 @@
           }
         }
       }
+    },
+    "Quai non accessible en fauteuil" : {
+
+    },
+    "Quais" : {
+
     },
     "Quelques boutons utiles:" : {
       "localizations" : {
@@ -1300,6 +1415,9 @@
           }
         }
       }
+    },
+    "Recherche des départs…" : {
+
     },
     "Rechercher" : {
       "localizations" : {
@@ -1440,6 +1558,21 @@
     "This Week’s Trips" : {
       "shouldTranslate" : false
     },
+    "Touchez une ligne ou un quai pour filtrer les départs, un départ pour voir son parcours." : {
+
+    },
+    "Tous" : {
+
+    },
+    "Tout le trajet" : {
+
+    },
+    "Toutes" : {
+
+    },
+    "Toutes les lignes" : {
+
+    },
     "Tracé de ligne" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1470,6 +1603,9 @@
           }
         }
       }
+    },
+    "Transport de substitution pour fauteuil" : {
+
     },
     "Tri par défaut:" : {
       "localizations" : {
@@ -1511,6 +1647,9 @@
         }
       }
     },
+    "Véhicule" : {
+
+    },
     "Voici quelques astuces pour vous aider à démarrer.\nRevoyez les à tout moment depuis les paramètres." : {
       "localizations" : {
         "en" : {
@@ -1520,6 +1659,9 @@
           }
         }
       }
+    },
+    "Voir la ligne" : {
+
     },
     "Voir tous les trajets enregristrés" : {
       "extractionState" : "stale",
@@ -1531,6 +1673,9 @@
           }
         }
       }
+    },
+    "Voir toute la course" : {
+
     },
     "Widgets" : {
       "localizations" : {

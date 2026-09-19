@@ -107,3 +107,21 @@ struct TripTimeSearchPanel: View {
         .padding()
     }
 }
+
+#Preview("Heure de l'itinéraire") {
+    VStack {
+        Spacer()
+        TripTimeSearchPanel {}
+            .padding()
+    }
+    .previewEnvironment(itinerary: (PreviewData.rive, PreviewData.cornavin))
+}
+
+#Preview("Heure de l'itinéraire — sans arrivée") {
+    VStack {
+        Spacer()
+        TripTimeSearchPanel {}
+            .padding()
+    }
+    .previewEnvironment()
+}

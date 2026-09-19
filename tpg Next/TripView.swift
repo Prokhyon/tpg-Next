@@ -35,6 +35,9 @@ struct TripView: View {
     @State private var showTime = true
     @State private var showSavedTrips = false
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.layout) private var layout
+    /// Sur grand écran, le trajet détaillé dans la moitié droite.
+    @State private var selectedTrip: TripEvent?
     
     @Namespace private var animation
     @State private var switchAnimate: Bool = false
@@ -49,300 +52,317 @@ struct TripView: View {
     @State var results = Results.favorites
     
     var body: some View {
-        ZStack {
-            VStack {
-                    let resultsView = VStack {switch results {
-                    case .empty:
-                        ResultsEmptyView()
-                    case .favorites:
-//                        ListView()
-                        ResultsFavoritesView(viewModel: viewModel, results: $results)
-                            .environment(recentSearchModel)
-                    case.search:
-                        ResultsSearchView(viewModel: viewModel, locationViewModel: locationViewModel, results: $results, focusField: $focusField)
-                            .environment(recentSearchModel)
-                    case.closeStops:
-                        ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
-                    case.tripResults:
-                        ResultsTripView(viewModel: viewModel, tripManager: tripManager, showTime: $showTime, adjustTime: adjustTime, timeChange: timeChange, searchTrips: searchTrips)
-                    case.loading:
-                        Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
-                            .opacity(0)
-                            .frame(height: 50)
+        AdaptiveSplit {
+            ZStack {
+                VStack {
+                        let resultsView = VStack {switch results {
+                        case .empty:
+                            ResultsEmptyView()
+                        case .favorites:
+    //                        ListView()
+                            ResultsFavoritesView(viewModel: viewModel, results: $results)
+                                .environment(recentSearchModel)
+                        case.search:
+                            ResultsSearchView(viewModel: viewModel, locationViewModel: locationViewModel, results: $results, focusField: $focusField)
+                                .environment(recentSearchModel)
+                        case.closeStops:
+                            ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
+                        case.tripResults:
+                            ResultsTripView(viewModel: viewModel, tripManager: tripManager, showTime: $showTime, adjustTime: adjustTime, timeChange: timeChange, searchTrips: searchTrips,
+                                            selectedID: selectedTrip?.id, onSelect: layout.showsSecondaryPane ? { trip in withAnimation { selectedTrip = trip } } : nil)
+                        case.loading:
+                            Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
+                                .opacity(0)
+                                .frame(height: 50)
                         
-                            Text("Chargement...")
-                    case.error:
-                        Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
-                            .opacity(0)
-                            .frame(height: 50)
+                                Text("Chargement...")
+                        case.error:
+                            Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
+                                .opacity(0)
+                                .frame(height: 50)
                         
-                            Text("Erreur, pas d'itinéraires trouvés")
-                    }
-                }
-                if #available(iOS 26, *) {
-                    ScrollView {
-                        resultsView
-                    }
-                    .scrollEdgeEffectStyle(.soft, for: .top)
-//                    .scrollDismissesKeyboard(.immediately)
-//                    .contentMargins(.top, 320.0, for: .automatic)
-                    // Au moins la hauteur des champs et de la carte de recherche, qui grandit avec le texte.
-                    .contentMargins(.bottom, (results == .tripResults) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
-                    .readableScrollContent()
-                } else {
-                    ScrollView {
-                        resultsView
-                    }
-                    .scrollDismissesKeyboard(.immediately)
-                    .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
-                    .contentMargins(.bottom, TPGSurface.isGlass ? 0: 75, for: .automatic)
-                    .readableScrollContent()
-                }
-            }
-            .onChange(of: viewModel.selectedField) {
-                withAnimation {
-//                    focusField = nil
-                    if (viewModel.departure.text == viewModel.departure.endpoint?.stop?.name && viewModel.selectedField == .departure) || (viewModel.arrival.text == viewModel.arrival.endpoint?.stop?.name && viewModel.selectedField == .arrival) {
-                        results = Results.empty
-                        if viewModel.selectedField != nil {
-                            viewModel.selectedField = nil
+                                Text("Erreur, pas d'itinéraires trouvés")
                         }
+                    }
+                    if #available(iOS 26, *) {
+                        ScrollView {
+                            resultsView
+                        }
+                        .scrollEdgeEffectStyle(.soft, for: .top)
+    //                    .scrollDismissesKeyboard(.immediately)
+    //                    .contentMargins(.top, 320.0, for: .automatic)
+                        // Au moins la hauteur des champs et de la carte de recherche, qui grandit avec le texte.
+                        .contentMargins(.bottom, (results == .tripResults) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
+                        .readableScrollContent()
                     } else {
-                        results = Results.favorites
+                        ScrollView {
+                            resultsView
+                        }
+                        .scrollDismissesKeyboard(.immediately)
+                        .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
+                        .contentMargins(.bottom, TPGSurface.isGlass ? 0: 75, for: .automatic)
+                        .readableScrollContent()
                     }
                 }
-            }
-//            .onChange(of: showSearchField) {
-//                if showSearchField {
-//                    focusField = nil
-//                }
-//            }
-            .onChange(of: focusField) {
-                withAnimation {
-                    if focusField == .arrival {
-                        viewModel.selectedField = .arrival
-                    } else if focusField == .departure {
-                        viewModel.selectedField = .departure
-                    } else if focusField == nil {
-                        if viewModel.departure.endpoint == nil {
-                            viewModel.departure.text = ""
-                        }
-                        if viewModel.arrival.endpoint == nil {
-                            viewModel.arrival.text = ""
+                .onChange(of: viewModel.selectedField) {
+                    withAnimation {
+    //                    focusField = nil
+                        if (viewModel.departure.text == viewModel.departure.endpoint?.stop?.name && viewModel.selectedField == .departure) || (viewModel.arrival.text == viewModel.arrival.endpoint?.stop?.name && viewModel.selectedField == .arrival) {
+                            results = Results.empty
+                            if viewModel.selectedField != nil {
+                                viewModel.selectedField = nil
+                            }
+                        } else {
+                            results = Results.favorites
                         }
                     }
                 }
-            }
-            .onChange(of: viewModel.departure.text) {
-                locationViewModel.searchQuery = viewModel.departure.text
-                viewModel.stopQuery = viewModel.departure.text
-            }
-            .onChange(of: viewModel.arrival.text) {
-                locationViewModel.searchQuery = viewModel.arrival.text
-                viewModel.stopQuery = viewModel.arrival.text
-            }
-            .onChange(of: tripManager.tripEvents) {
-                withAnimation {
-                    if !tripManager.tripEvents.isEmpty {
-                        results = Results.tripResults
-                    }
-                }
-            }
-            .onChange(of: tripManager.tripError) {
-                withAnimation {
-                    if tripManager.tripError {
-                        results = Results.error
-                    }
-                }
-            }
-            .onChange(of: viewModel.tripDone) {
-                withAnimation {
-                    if viewModel.tripDone {
-                        results = Results.loading
-                    } else {
-                        results = Results.favorites
-                        tripManager.tripEvents.removeAll()
-                    }
-                }
-            }
-            .onAppear(perform: {
-                showTime = timeDefault
-                if !viewModel.tripDone {
-                    viewModel.selectedTime = Date()
-                    viewModel.isArrivalTime = false
-                    results = Results.favorites
-                }
-                if viewModel.quickTrip && !viewModel.tripDone {
-                    
-                    locationManager.requestLocation { location in
-                        guard let userLocation = locationManager.userLocation else {
-                            Log.location.error("Position indisponible")
-                            return
+    //            .onChange(of: showSearchField) {
+    //                if showSearchField {
+    //                    focusField = nil
+    //                }
+    //            }
+                .onChange(of: focusField) {
+                    withAnimation {
+                        if focusField == .arrival {
+                            viewModel.selectedField = .arrival
+                        } else if focusField == .departure {
+                            viewModel.selectedField = .departure
+                        } else if focusField == nil {
+                            if viewModel.departure.endpoint == nil {
+                                viewModel.departure.text = ""
+                            }
+                            if viewModel.arrival.endpoint == nil {
+                                viewModel.arrival.text = ""
+                            }
                         }
-                        
-                        let coordinate = CLLocationCoordinate2D(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
-//                                           print(coordinate)
-                        
-                        viewModel.departure.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
-                        
-                        locationManager.locationUpdateHandler = nil
-                        
+                    }
+                }
+                .onChange(of: viewModel.departure.text) {
+                    locationViewModel.searchQuery = viewModel.departure.text
+                    viewModel.stopQuery = viewModel.departure.text
+                }
+                .onChange(of: viewModel.arrival.text) {
+                    locationViewModel.searchQuery = viewModel.arrival.text
+                    viewModel.stopQuery = viewModel.arrival.text
+                }
+                .onChange(of: tripManager.tripEvents) {
+                    withAnimation {
+                        if !tripManager.tripEvents.isEmpty {
+                            results = Results.tripResults
+                        }
+                    }
+                }
+                .onChange(of: tripManager.tripError) {
+                    withAnimation {
+                        if tripManager.tripError {
+                            results = Results.error
+                        }
+                    }
+                }
+                .onChange(of: viewModel.tripDone) {
+                    withAnimation {
+                        if viewModel.tripDone {
+                            results = Results.loading
+                        } else {
+                            results = Results.favorites
+                            tripManager.tripEvents.removeAll()
+                        }
+                    }
+                }
+                .onAppear(perform: {
+                    showTime = timeDefault
+                    if !viewModel.tripDone {
                         viewModel.selectedTime = Date()
                         viewModel.isArrivalTime = false
+                        results = Results.favorites
+                    }
+                    if viewModel.quickTrip && !viewModel.tripDone {
+                    
+                        locationManager.requestLocation { location in
+                            guard let userLocation = locationManager.userLocation else {
+                                Log.location.error("Position indisponible")
+                                return
+                            }
                         
-                        tripManager.tripEvents.removeAll()
-                        tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
-                        viewModel.tripDone = true
-//                        results = Results.tripResults
-                        viewModel.quickTrip = false
-                    }
-                }
-                if viewModel.quickTrip && viewModel.tripDone {
-                    withAnimation {
-                        results = Results.loading
-                    }
-                }
-            })
-            
-            VStack(spacing: 0) {
-                Spacer()
-                //Previous and next buttons
-                if results == .tripResults {
-                    HStack {
-                        Spacer()
-                        AdjustTimeButton(moveTime: moveTime)
-                            .glassForegroundStyle(.primary)
-                            .tpgSurface(interactive: true)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 10)
-//                    .opacity(results == .tripResults ? 1 : 0)
-                    .background {
-                        VStack {
-                            Spacer()
-                            BackdropBlurView(radius: 1)
-                                .frame(height: 20)
-                                .mask {
-                                    Rectangle()
-                                        .overlay(alignment: .top) {
-                                            ScrollMask(leading: false, vertical: true, gradientLength: 20)
-                                        }
-                                }
+                            let coordinate = CLLocationCoordinate2D(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
+    //                                           print(coordinate)
+                        
+                            viewModel.departure.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                        
+                            locationManager.locationUpdateHandler = nil
+                        
+                            viewModel.selectedTime = Date()
+                            viewModel.isArrivalTime = false
+                        
+                            tripManager.tripEvents.removeAll()
+                            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
+                            viewModel.tripDone = true
+    //                        results = Results.tripResults
+                            viewModel.quickTrip = false
                         }
                     }
-                }
-                Group {
-                    let switchButton = Button {
+                    if viewModel.quickTrip && viewModel.tripDone {
                         withAnimation {
-                            switchAnimate.toggle()
-                            switchRotation.toggle()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            results = Results.loading
+                        }
+                    }
+                })
+            
+                VStack(spacing: 0) {
+                    Spacer()
+                    //Previous and next buttons
+                    if results == .tripResults {
+                        HStack {
+                            Spacer()
+                            AdjustTimeButton(moveTime: moveTime)
+                                .glassForegroundStyle(.primary)
+                                .tpgSurface(interactive: true)
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 10)
+    //                    .opacity(results == .tripResults ? 1 : 0)
+                        .background {
+                            VStack {
+                                Spacer()
+                                BackdropBlurView(radius: 1)
+                                    .frame(height: 20)
+                                    .mask {
+                                        Rectangle()
+                                            .overlay(alignment: .top) {
+                                                ScrollMask(leading: false, vertical: true, gradientLength: 20)
+                                            }
+                                    }
+                            }
+                        }
+                    }
+                    Group {
+                        let switchButton = Button {
+                            withAnimation {
+                                switchAnimate.toggle()
                                 switchRotation.toggle()
-                                withAnimation {
-                                    switchAnimate.toggle()
-                                    viewModel.invertStops()
-                                    if viewModel.selectedField == .departure {
-                                        viewModel.stopQuery = viewModel.departure.text
-                                        viewModel.selectedField = .arrival
-                                    } else if viewModel.selectedField == .arrival {
-                                        viewModel.stopQuery = viewModel.arrival.text
-                                        viewModel.selectedField = .departure
-                                    }
-                                    viewModel.tripDone = false
-                                    results = Results.favorites
-                                }
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "arrow.triangle.swap")
-                            .font(.title)
-                            .padding(10)
-                            .rotationEffect(.degrees(switchRotation ? 180 : 0))
-//                            .symbolEffect(.rotate, value: switchRotation)
-                    }
-                    VStack(spacing: 10) {
-                        TPGGlassContainer {
-                            HStack {
-                                VStack(spacing: 10) {
-                                    if focusField != .arrival {
-                                        HStack {
-                                    TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
-                                        .heightGrowingWithText(40)
-                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
-
-                                    TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
-                                        .frame(width: 40, height: 40)
-                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
-                                        }
-                                        .padding(.vertical, focusField == .departure ? 10 : 0)
-                                        .offset(y: switchAnimate ? 25 : 0)
-                                    }
-                                    if focusField != .departure {
-                                        HStack {
-                                    TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
-                                        .heightGrowingWithText(40)
-                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
-
-                                    TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
-                                        .frame(width: 40, height: 40)
-                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
-                                        }
-                                        .padding(.vertical, focusField == .arrival ? 10 : 0)
-                                        .offset(y: switchAnimate ? -25 : 0)
-                                    }
-                                }
-                                if focusField == nil {
-                                    switchButton
-                                        .frame(width: 60, height: 60)
-                                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                        .tpgSurface(interactive: true)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                        
-                        let bottomTripSearch = TripTimeSearchPanel(search: searchTrips)
-                            .onAppear(perform: {
-                                if !tripManager.tripEvents.isEmpty {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    switchRotation.toggle()
                                     withAnimation {
-                                        results = Results.tripResults
+                                        switchAnimate.toggle()
+                                        viewModel.invertStops()
+                                        if viewModel.selectedField == .departure {
+                                            viewModel.stopQuery = viewModel.departure.text
+                                            viewModel.selectedField = .arrival
+                                        } else if viewModel.selectedField == .arrival {
+                                            viewModel.stopQuery = viewModel.arrival.text
+                                            viewModel.selectedField = .departure
+                                        }
+                                        viewModel.tripDone = false
+                                        results = Results.favorites
                                     }
                                 }
-                            })
-                        if focusField == nil {
-                            bottomTripSearch
-                                // Plafonnée comme les barres d'outils : en taille d'accessibilité, elle
-                                // couvrait l'écran.
-                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                                .tpgSurface(in: .rect(cornerRadius: 35))
-                                .padding(.horizontal)
-                                .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
+                            }
+                        } label: {
+                            Image(systemName: "arrow.triangle.swap")
+                                .font(.title)
+                                .padding(10)
+                                .rotationEffect(.degrees(switchRotation ? 180 : 0))
+    //                            .symbolEffect(.rotate, value: switchRotation)
                         }
-                    }
-                    .readableWidth()
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { searchOverlayHeight = $0 }
-//                    .shadow(color: .black.opacity(0.08), radius: 15)
-                    .background {
-                        ZStack {
-                            Rectangle()
-                                .foregroundStyle(.customBackground)
-                                .opacity(0.5)
-                                .blur(radius: 10)
-                            BackdropBlurView(radius: 1)
+                        VStack(spacing: 10) {
+                            TPGGlassContainer {
+                                HStack {
+                                    VStack(spacing: 10) {
+                                        if focusField != .arrival {
+                                            HStack {
+                                        TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .departure)
+                                            .heightGrowingWithText(40)
+                                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                            .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
+
+                                        TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
+                                            .frame(width: 40, height: 40)
+                                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                            .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
+                                            }
+                                            .padding(.vertical, focusField == .departure ? 10 : 0)
+                                            .offset(y: switchAnimate ? 25 : 0)
+                                        }
+                                        if focusField != .departure {
+                                            HStack {
+                                        TripPointField(viewModel: viewModel, results: $results, focusField: $focusField, field: .arrival)
+                                            .heightGrowingWithText(40)
+                                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                            .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
+
+                                        TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
+                                            .frame(width: 40, height: 40)
+                                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                            .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
+                                            }
+                                            .padding(.vertical, focusField == .arrival ? 10 : 0)
+                                            .offset(y: switchAnimate ? -25 : 0)
+                                        }
+                                    }
+                                    if focusField == nil {
+                                        switchButton
+                                            .frame(width: 60, height: 60)
+                                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                            .tpgSurface(interactive: true)
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        
+                            let bottomTripSearch = TripTimeSearchPanel(search: searchTrips)
+                                .onAppear(perform: {
+                                    if !tripManager.tripEvents.isEmpty {
+                                        withAnimation {
+                                            results = Results.tripResults
+                                        }
+                                    }
+                                })
+                            if focusField == nil {
+                                bottomTripSearch
+                                    // Plafonnée comme les barres d'outils : en taille d'accessibilité, elle
+                                    // couvrait l'écran.
+                                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                                    .tpgSurface(in: .rect(cornerRadius: 35))
+                                    .padding(.horizontal)
+                                    .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
+                            }
+                        }
+                        .readableWidth()
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { searchOverlayHeight = $0 }
+    //                    .shadow(color: .black.opacity(0.08), radius: 15)
+                        .background {
+                            ZStack {
+                                Rectangle()
+                                    .foregroundStyle(.customBackground)
+                                    .opacity(0.5)
+                                    .blur(radius: 10)
+                                BackdropBlurView(radius: 1)
                             
+                            }
                         }
                     }
                 }
+            }
+        } secondary: {
+            TripDetailPane(trip: selectedTrip, showTime: $showTime) {
+                withAnimation { selectedTrip = nil }
+            }
+        }
+        // Nouvelle recherche : le trajet détaillé n'en fait plus partie.
+        .onChange(of: tripManager.tripEvents) {
+            if let selectedTrip, !tripManager.tripEvents.contains(selectedTrip) {
+                self.selectedTrip = nil
             }
         }
         .sheet(isPresented: $showSavedTrips) {
             SavedTripsView(isPresented: $showSavedTrips, onTripSelected: { trip in
                 showSavedTrips = false
-                openRoute(.trip(trip))
+                if layout.showsSecondaryPane {
+                    selectedTrip = trip
+                } else {
+                    openRoute(.trip(trip))
+                }
             })
                 .environment(savedTripsModel)
                 .environment(regularTripsModel)
@@ -421,41 +441,36 @@ struct TripView: View {
     }
 }
 
-struct TripView_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        @State var fullTripTest = FullTripTest()
-        
-        @State var savedTripsModel = SavedTripsModel()
-        @State var regularTripsModel = RegularTripsModel()
-            @State var itineraryViewModel = ItineraryViewModel()
-        @State var boolTest: Bool = true
-        @State var showTime: Bool = true
-        
-        return
-            NavigationStack {
-                TripView(tripManager: TripManager())
-                    .environment(itineraryViewModel)
-                    .environment(stopStore)
-                    .environment(favoritesViewModel)
-                    .environment(savedTripsModel)
-                    .environment(regularTripsModel)
-                    .environment(RecentSearch())
-                    .background(Image("tpgMap"))
-            }
-        
-//        VStack {
-//            Capsule()
-//            .fill(.thinMaterial)
-//            .padding(4)
-//            .frame(height: 80)
-//            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-//            .overlay(
-//                TripElementView(event: fullTripTest.Trip, showTime: showTime)
-////                    .padding(.horizontal, 20)
-//            )
-//            .padding()
-//        }
-    }
+#Preview("Itinéraire") {
+    TripView()
+        .previewEnvironment()
+}
+
+#Preview("Itinéraire — résultats") {
+    // Rive → Cornavin, résultats enregistrés (hors ligne).
+    let manager = TripManager()
+    manager.tripEvents = PreviewData.trips
+    return TripView(tripManager: manager, results: .tripResults)
+        .previewEnvironment(itinerary: (PreviewData.rive, PreviewData.cornavin))
+}
+
+#Preview("Itinéraire — recherche réelle (API)") {
+    @Previewable @State var manager = TripManager()
+    TripView(tripManager: manager, results: .loading)
+        .task {
+            manager.selectTrip(from: .stop(PreviewData.meinier), to: .stop(PreviewData.rondeau), at: Date(), isArrivalTime: false)
+        }
+        .previewEnvironment(itinerary: (PreviewData.meinier, PreviewData.rondeau))
+}
+
+#Preview("Itinéraire — aucun résultat") {
+    TripView(results: .error)
+        .previewEnvironment(itinerary: (PreviewData.rive, PreviewData.cornavin))
+}
+
+#Preview("Itinéraire — iPad", traits: .iPadLandscape) {
+    let manager = TripManager()
+    manager.tripEvents = PreviewData.trips
+    return TripView(tripManager: manager, results: .tripResults)
+        .previewEnvironment(itinerary: (PreviewData.rive, PreviewData.cornavin))
 }

@@ -254,23 +254,31 @@ public func fetchLegTrack(for leg: TripLeg, completion: @escaping ([CLLocationCo
 /// `now`, au prorata du temps écoulé entre leurs heures de départ (estimées si connues).
 ///
 /// Suit le tracé routier quand `segments` en fournit un par intervalle, une ligne droite sinon.
+/// Les arrêts sautés (`isCancelled`) sont ignorés : leur heure prévue n'a plus de sens, et le
+/// véhicule prend une autre route, inconnue, d'où la ligne droite entre les arrêts desservis.
 /// `nil` avant le départ du premier arrêt ou après le terminus.
 public func estimatedVehiclePosition(events: [LineEvent], segments: [[CLLocationCoordinate2D]]?, at now: Date) -> CLLocationCoordinate2D? {
-    guard events.count >= 2 else { return nil }
-    for index in 0..<(events.count - 1) {
-        guard let start = events[index].departureDate, let end = events[index + 1].departureDate,
+    let served = events.indices.filter { events[$0].isCancelled != true }
+    guard served.count >= 2 else { return nil }
+    for (index, next) in zip(served, served.dropFirst()) {
+        guard let start = events[index].departureDate, let end = events[next].departureDate,
               start <= now, now < end else { continue }
         let duration = end.timeIntervalSince(start)
         let fraction = duration > 0 ? now.timeIntervalSince(start) / duration : 0
-        let from = CLLocationCoordinate2D(latitude: Double(events[index].latitude) ?? 0, longitude: Double(events[index].longitude) ?? 0)
-        let to = CLLocationCoordinate2D(latitude: Double(events[index + 1].latitude) ?? 0, longitude: Double(events[index + 1].longitude) ?? 0)
-        var path = [from, to]
-        if let segments, segments.count == events.count - 1, segments[index].count >= 2 {
+        var path = [events[index].coordinate, events[next].coordinate]
+        if next == index + 1, let segments, segments.count == events.count - 1, segments[index].count >= 2 {
             path = segments[index]
         }
         return point(along: path, fraction: fraction)
     }
     return nil
+}
+
+extension LineEvent {
+    /// Coordonnées du quai ; (0, 0) quand elles manquent.
+    public var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: Double(latitude) ?? 0, longitude: Double(longitude) ?? 0)
+    }
 }
 
 /// Le point situé à `fraction` (0…1) de la longueur d'un chemin.

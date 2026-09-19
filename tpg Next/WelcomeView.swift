@@ -461,9 +461,29 @@ struct notificationTestView: View {
         }
 }
 
-#Preview {
-    @Previewable @State var welcome: Bool = true
-    @Previewable  @State var favoritesViewModel = FavoritesViewModel()
+#Preview("Bienvenue") {
+    @Previewable @State var welcome = true
     WelcomeView(viewingWelcome: $welcome)
-        .environment(favoritesViewModel)
+        .previewEnvironment(navigation: false, favorites: [])
+}
+
+#Preview("Bienvenue — page 1") {
+    @Previewable @State var page = welcomePage.page1
+    WelcomeView.WelcomePage1(page: $page, viewingWelcome: .constant(true))
+        .padding()
+        .previewEnvironment(navigation: false, favorites: [])
+}
+
+#Preview("Bienvenue — page 2") {
+    @Previewable @State var page = welcomePage.page2
+    WelcomeView.WelcomePage2(page: $page, viewingWelcome: .constant(true))
+        .padding()
+        .previewEnvironment(navigation: false, favorites: [])
+}
+
+#Preview("Bienvenue — page 3") {
+    @Previewable @State var page = welcomePage.page3
+    WelcomeView.WelcomePage3(page: $page, viewingWelcome: .constant(true))
+        .padding()
+        .previewEnvironment(navigation: false, favorites: [])
 }

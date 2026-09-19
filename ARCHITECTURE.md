@@ -29,6 +29,8 @@ tpg Next/
 │   ├── LineFilterChips.swift                         lignes à toucher pour filtrer des départs
 │   └── ServiceInfoLabels.swift                       libellés accès PMR, capsules d'info
 ├── Stop/   Line/   Trip/   Home/                     morceaux propres à un écran
+├── Previews/                                         données et environnement des aperçus Xcode
+└── Preview Content/                                  réponses API des aperçus (hors archive)
 ```
 
 Règle simple : un morceau utilisé par un seul écran va dans le dossier de cet écran ; dès
@@ -115,15 +117,39 @@ if layout.showsSecondaryPane {
 
 ## Voir le rendu sans lancer l'app
 
-Dans un `#Preview`, forcer la largeur :
+Chaque écran et chaque morceau complexe a ses aperçus, en bas de son fichier. Ils reposent sur
+deux outils de `Previews/` :
+
+- **`.previewEnvironment()`** pose tout ce que l'app fournit : modèles d'environnement,
+  largeur mesurée (`\.layout`), horloge, dégradé de fond, et une pile qui ouvre les routes.
+  Options : `navigation: false` (composant, ou `ContentView` qui a ses piles), `favorites:`,
+  `savedTrips:`, `itinerary: (départ, arrivée)`, `background: false`.
+- **`PreviewData`** : de vraies réponses de l'API (`Preview Content/*.xml`), lues par les
+  parseurs de l'app, heures recalées sur maintenant. Départs de Genève, Rive (`departures`,
+  `quays`), course de la ligne 29 avec son tracé (`journeyStops`, `lineDeparture`,
+  `journeyModel()`), itinéraires Rive → Cornavin (`trips`, `tripWithTransfer`, `directTrip`).
+  Pour un cas précis : `PreviewData.departure(line:destination:inMinutes:delay:cancelled:…)`.
 
 ```swift
-#Preview("iPad") {
-    StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
-        .environment(\.layout, LayoutContext(width: 1100))
-        // + les .environment(…) habituels de l'aperçu
+#Preview("Arrêt — iPad", traits: .iPadLandscape) {
+    StopView(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, autoRefresh: false)
+        .previewEnvironment()
 }
 ```
+
+- Grand écran : `traits: .iPadLandscape` (`.wide`) ou `.iPadPortrait` (`.regular`) ; la
+  largeur est mesurée comme dans l'app, sans rien forcer.
+- Réglages `@AppStorage` : `.previewSettings([SettingKey.homeShowsFavorites: true])`.
+- Écrans qui chargent eux-mêmes une course (`LineView`, carte de ligne) : une course enregistrée
+  n'existe plus côté API. `LiveDeparturePreview { departures in … }` demande d'abord de vrais
+  départs du jour. Les aperçus marqués « (API) » ont besoin du réseau.
+- Les aperçus « bac à sable » (départ, arrêt de ligne) ont des réglages pour modifier un
+  élément en direct : passer le canevas en mode interactif.
+- Libellés propres aux aperçus : `Text(verbatim:)` ou `"…" as String`, sinon Xcode les ajoute
+  à `Localizable.xcstrings`.
+- `BasicViews.swift` est aussi compilé pour le widget : ses aperçus n'utilisent pas `PreviewData`.
+  Le widget a ses propres aperçus (`WidgetPreviews.swift`), la montre les siens
+  (`WatchPreviewData.swift`).
 
 Dans le simulateur, choisir un iPad, puis tester aussi le Split View (fenêtre étroite) et la
 rotation.
@@ -150,6 +176,17 @@ Bon à savoir :
   défaut : relever sa référence et l'ajouter.
 - **Arrêts précédents et suivants** : ne pas les demander avec la liste des départs (8 fois
   plus lourd). Charger la course du départ choisi avec `JourneyTrackModel`.
+- **« Ausfall » ne veut pas dire « supprimé ».** L'attribut d'incident (`…_IncidentTrip…`)
+  marque toute course perturbée, même celles qui ne sautent que quelques arrêts. Seul
+  `NotServicedStop` dit qu'un arrêt n'est pas desservi (`StopEvent.cancelled`,
+  `LineEvent.isCancelled`) ; l'incident seul donne « Parcours modifié » (`routeChanged`).
+  Aucun texte de perturbation n'est fourni (`Situations` vide, SIRI-SX non ouvert à notre clé).
+  Cas réel : `Fixtures/stopEvents-meinier-incident.xml`.
+- **Une déviation prévue n'a aucun marqueur.** Elle est intégrée à l'horaire du jour : les
+  arrêts évités sont simplement absents. Seul indice, la course ne circule qu'un jour
+  (`OperatingDays/Pattern` avec un seul « 1 ») : `StopEvent.exceptional`, « Horaire
+  exceptionnel ». Ce calendrier n'arrive qu'avec les départs, pas avec la course ni les
+  itinéraires. Cas réel : `Fixtures/stopEvents-capite-exceptional.xml` (ligne G).
 - **Nouveau champ sur un modèle enregistré** (`StopEvent` est encodé dans les rappels) : le
   déclarer optionnel, pour que les anciennes données se décodent toujours.
 

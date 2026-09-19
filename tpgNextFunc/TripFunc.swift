@@ -61,7 +61,14 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
     public var transferBuffer: String
     public var transportTypeName: String
     public var legOperator: String
+    /// Codes des services du véhicule. Optionnel : les itinéraires enregistrés avant n'en ont pas.
+    public var attributeCodes: [String]? = nil
 //    var legTrack: [CLLocationCoordinate2D]
+
+    /// Course touchée par un incident : des arrêts sont sautés (voir `LegIntermediate.notServiced`).
+    public var hasIncident: Bool { attributeCodes?.contains(where: isIncidentAttribute) == true }
+    /// Les arrêts intermédiaires où le véhicule ne s'arrête pas.
+    public var skippedIntermediates: [LegIntermediate] { legIntermediates.filter(\.skipped) }
 }
 
 public struct LegIntermediate: Codable, Identifiable, Hashable {
@@ -70,6 +77,11 @@ public struct LegIntermediate: Codable, Identifiable, Hashable {
     public var stopName: String
     public var longitude: String
     public var latitude: String
+    /// Le véhicule ne s'arrête pas ici (`NotServicedStop`). Optionnel : les itinéraires
+    /// enregistrés avant qu'il soit lu se décodent toujours.
+    public var notServiced: Bool? = nil
+
+    public var skipped: Bool { notServiced == true }
 }
 
 extension TripLeg {

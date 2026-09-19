@@ -218,3 +218,28 @@ struct SmallStopView: View {
         stopManager.stopEvents.filter { $0.plannedQuay == quay }
        }
 }
+
+#Preview("Carte d'arrêt — accueil") {
+    SmallStopView(stop: PreviewData.rive, isHome: true)
+        .previewEnvironment()
+}
+
+#Preview("Carte d'arrêt — sur la carte") {
+    // Version de la carte (onglet Carte) : verre sur iOS 26.
+    VStack {
+        Spacer()
+        SmallStopView(stop: PreviewData.cornavin)
+    }
+    .background { Image("tpgMap").resizable().scaledToFill().ignoresSafeArea() }
+    .previewEnvironment(background: false)
+}
+
+#Preview("Carte d'arrêt — un quai") {
+    SmallStopView(stop: PreviewData.rive, quay: "B", isQuay: true, isHome: true, stopEventNumber: 10)
+        .previewEnvironment()
+}
+
+#Preview("Carte d'arrêt — hors ligne") {
+    SmallStopView(stop: PreviewData.rive, isHome: true, testing: true)
+        .previewEnvironment()
+}

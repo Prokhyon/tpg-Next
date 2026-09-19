@@ -36,3 +36,14 @@ struct TripActionsMenu: View {
         }
     }
 }
+
+#Preview("Actions d'itinéraire") {
+    // Toucher longuement l'arrêt pour ouvrir le menu.
+    Text(verbatim: PreviewData.rive.name)
+        .padding()
+        .basicElementBackground(minHeight: 50)
+        .contextMenu {
+            TripActionsMenu(stop: PreviewData.rive)
+        }
+        .previewEnvironment()
+}

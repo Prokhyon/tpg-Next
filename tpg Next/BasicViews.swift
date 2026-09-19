@@ -488,13 +488,60 @@ struct BackdropBlurView: View {
 }
 
 
-#Preview {
-    @Previewable @State var bool: Bool = false
-//    ShowTimeButton(showTime: $bool)
-    Filterbutton(filterLines: $bool, viewLineFiltered: $bool)
+// Ce fichier est aussi compilé pour le widget : ses aperçus n'utilisent que ses propres vues
+// et tpgNextFunc (pas de `PreviewData`, propre à l'app).
+
+#Preview("Boutons de la barre", traits: .sizeThatFitsLayout) {
+    @Previewable @State var showTime = false
+    @Previewable @State var filterLines = false
+    @Previewable @State var filtered = false
+    @Previewable @State var shift = 0
+    VStack(spacing: 20) {
+        HStack {
+            ShowTimeButton(showTime: $showTime)
+            Filterbutton(filterLines: $filterLines, viewLineFiltered: $filtered)
+            AdjustTimeButton { earlier in shift += earlier ? -1 : 1 }
+        }
+        Toggle("Filtre actif" as String, isOn: $filtered)
+        Text(verbatim: "Heure : \(showTime) · feuille des filtres : \(filterLines) · décalage : \(shift)")
+            .font(.caption)
+    }
+    .padding()
 }
 
-#Preview {
-    BasicElement()
-        .frame(height: 50)
+#Preview("Fonds", traits: .sizeThatFitsLayout) {
+    VStack(spacing: 12) {
+        BasicElement()
+            .frame(height: 50)
+        BasicElement(highlighted: true)
+            .frame(height: 50)
+        Text(verbatim: "basicElementBackground")
+            .padding(.horizontal)
+            .basicElementBackground(minHeight: 50)
+        Text(verbatim: "basicElementBackground mis en avant")
+            .padding(.horizontal)
+            .basicElementBackground(minHeight: 50, highlighted: true)
+        BasicCard(cornerRadius: 30)
+            .frame(height: 110)
+    }
+    .padding()
+    .background(Color.color1)
+}
+
+#Preview("Arrêts", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 12) {
+        BasicLocationView(name: "Genève, Rive", transportType: "BUS|TRAM")
+        BasicLocationView(name: "Genève, gare Cornavin", subtitle: "Genève", transportType: "TRAIN",
+                          isFavorite: true, showButton: true, showFavorite: true, buttonAction: {}, favoriteAction: {})
+        BasicLocationView(name: "Plan-les-Ouates, ZIPLO-Pré-Fleuri Nord", transportType: "BUS")
+        SmallStopTitleView(stopName: "Genève, Place des Eaux-Vives")
+        SmallStopTitleView(stopName: "Genève-Aéroport", transportType: "TRAIN")
+        HStack(spacing: 20) {
+            StopIcon(color: .orange)
+            StopIcon(color: .orange, currentStop: true)
+            StopIcon(color: .blue, size: 28)
+        }
+    }
+    .padding()
+    .background(Color.color1)
 }

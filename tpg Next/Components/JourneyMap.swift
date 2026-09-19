@@ -86,9 +86,16 @@ final class JourneyTrackModel {
     }
 }
 
-extension LineEvent {
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: Double(latitude) ?? 0, longitude: Double(longitude) ?? 0)
+extension JourneyTrackModel {
+    /// Une course déjà lue, sans requête à l'API : pour les aperçus (voir `PreviewData`).
+    convenience init(previewEvents events: [LineEvent], operatorName: String, service: JourneyService?,
+                     track: [CLLocationCoordinate2D]?) {
+        self.init(events: events)
+        self.operatorName = operatorName
+        self.service = service
+        if let track, let key = LineTrackCache.key(for: events) {
+            applyTrack(track, key: key)
+        }
     }
 }
 
@@ -109,14 +116,15 @@ struct JourneyMapContent: MapContent {
                 StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true),
                          currentStop: event.sloid == currentStopSloid && event.sloid != "",
                          size: isEnd ? 18 : 12)
-                    .opacity(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
+                    .opacity(event.isCancelled == true || hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
             }
         }
 
         ForEach(mapSegments) { segment in
+            // Tronçon qui touche un arrêt sauté : le véhicule n'y passe pas, en pointillé.
             MapPolyline(coordinates: segment.coordinates)
-                .stroke(LineColors.lineColor(for: lineName, operatorName: operatorName).opacity(segment.passed ? 0.4 : 1),
-                        style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                .stroke(LineColors.lineColor(for: lineName, operatorName: operatorName).opacity(segment.passed || segment.skipped ? 0.4 : 1),
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round, dash: segment.skipped ? [1, 10] : []))
         }
     }
 
@@ -124,6 +132,7 @@ struct JourneyMapContent: MapContent {
         let id: String
         let coordinates: [CLLocationCoordinate2D]
         let passed: Bool
+        let skipped: Bool
     }
 
     /// Le tracé routier quand il correspond aux arrêts, des lignes droites sinon.
@@ -135,7 +144,8 @@ struct JourneyMapContent: MapContent {
             let coordinates = routed?[index] ?? [events[index].coordinate, events[index + 1].coordinate]
             guard coordinates.count >= 2 else { return nil }
             return MapSegment(id: "\(source)-\(index)", coordinates: coordinates,
-                              passed: hasPassed(events[index].departureDate, includingCurrentMinute: false, now: now))
+                              passed: hasPassed(events[index].departureDate, includingCurrentMinute: false, now: now),
+                              skipped: events[index].isCancelled == true || events[index + 1].isCancelled == true)
         }
     }
 }
