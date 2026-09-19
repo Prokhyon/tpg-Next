@@ -71,6 +71,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         let center = UNUserNotificationCenter.current()
         center.delegate = self  // Set the delegate
+        // Avant la fin du lancement, sinon iOS refuse l'enregistrement.
+        RegularTripsModel.registerBackgroundTask()
         
         // Initialize WCSession
         if WCSession.isSupported() {
@@ -144,7 +146,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         ) {
             // Extract information from the notification
             let userInfo = response.notification.request.content.userInfo
-            if let stopID = userInfo["stopID"] as? String,
+            if userInfo[RegularTripAlerts.occurrenceKey] != nil {
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .regularTrips
+                }
+            } else if let stopID = userInfo["stopID"] as? String,
                let stopName = userInfo["stopName"] as? String,
                let journeyRef = userInfo["journeyRef"] as? String,
                let estimatedTime = userInfo["estimatedTime"] as? String {

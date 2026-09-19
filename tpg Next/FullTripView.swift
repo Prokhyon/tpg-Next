@@ -17,6 +17,8 @@ struct FullTripView: View {
     @State private var lineManager = LineManager()
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
+    /// L'itinéraire à répéter chaque semaine.
+    @State private var repeating: TripEvent?
     
     @Namespace private var namespace
 
@@ -78,11 +80,11 @@ struct FullTripView: View {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
                             }
                         }
-                        //                    Button(action: {
-                        //
-                        //                    }) {
-                        //                        Label("Enregistrer comme trajet régulier", systemImage: "calendar.badge.plus")
-                        //                    }
+                        Button {
+                            repeating = fullTrip
+                        } label: {
+                            Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
+                        }
                         Button {
                             openRoute(.tripMap(fullTrip))
                         } label: {
@@ -106,6 +108,9 @@ struct FullTripView: View {
                 }
 
             }
+        .sheet(item: $repeating) { trip in
+            RegularTripEditor(creatingFrom: trip)
+        }
         .navigationTitle("Détail itinéraire") // Set back button text
         // Barre transparente pour cet écran seulement : l'ancien réglage UIKit s'appliquait à toute l'app.
         .toolbarBackground(.hidden, for: .navigationBar)

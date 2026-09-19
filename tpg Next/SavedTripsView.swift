@@ -15,7 +15,9 @@ struct SavedTripsView: View {
     @Binding var isPresented: Bool
     
     let onTripSelected: (TripEvent) -> Void
-    
+    /// L'itinéraire à répéter chaque semaine.
+    @State private var repeating: TripEvent?
+
     var body: some View {
         ZStack {
             VStack {
@@ -23,6 +25,10 @@ struct SavedTripsView: View {
                     .frame(height: 10)
                     .foregroundStyle(.clear)
                 ScrollView {
+                    if !regularTripsModel.regularTrips.isEmpty {
+                        RegularTripsContent(upcomingLimit: 3, onSelect: onTripSelected)
+                            .padding(.horizontal, 15)
+                    }
                     ForEach(groupedEvents.keys.sorted(by: { $0 > $1 }), id: \.self) { date in
                         VStack(spacing: 0) {
                             // Display date as header in the desired format
@@ -54,6 +60,11 @@ struct SavedTripsView: View {
                                     }) {
                                         Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
                                     }
+                                    Button {
+                                        repeating = trip
+                                    } label: {
+                                        Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
+                                    }
                                 }
                                 .padding(.horizontal, 15)
                                 .foregroundStyle(.primary)
@@ -84,38 +95,13 @@ struct SavedTripsView: View {
             }
             .contentMargins(.horizontal, 20, for: .automatic)
         }
-    }
-    var weeklyGeneratedTrips: [TripEvent] {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekdays = (0...6).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
-
-        return regularTripsModel.regularTrips.flatMap { regularTrip in
-            weekdays.compactMap { day -> TripEvent? in
-                guard let weekday = Weekday(calendarWeekday: calendar.component(.weekday, from: day)) else { return nil }
-                guard regularTrip.repeatingDays.contains(weekday) else { return nil }
-                if let start = regularTrip.startDate, day < start { return nil }
-                if let end = regularTrip.endDate, day > end { return nil }
-                if regularTrip.exceptions.contains(where: { calendar.isDate($0, inSameDayAs: day) }) { return nil }
-
-                var trip = regularTrip.trip
-                trip.id = trip.id + UUID().uuidString // Differentiate each instance
-                return trip
-            }
-        }
-        
-        func updateRegularTrip(_ trip: inout RegularTrip) {
-            for leg in trip.trip.legs {
-                if leg.transfer == false && leg.journeyRef != "" {
-                    
-                }
-            }
+        .sheet(item: $repeating) { trip in
+            RegularTripEditor(creatingFrom: trip)
+                .environment(regularTripsModel)
         }
     }
-
     var groupedEvents: [Date: [TripEvent]] {
-        let combined = savedTripsModel.savedTrips + weeklyGeneratedTrips
-        return Dictionary(grouping: combined) { event in
+        Dictionary(grouping: savedTripsModel.savedTrips) { event in
             if let date = event.startDate {
                 return Calendar.current.startOfDay(for: date)
             } else {
