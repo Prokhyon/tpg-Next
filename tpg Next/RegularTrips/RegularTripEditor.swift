@@ -96,10 +96,11 @@ struct RegularTripEditor: View {
                         }
                     }
                     Toggle("Retards et changements", isOn: $trip.alertsEnabled)
+                    Toggle("Activité en direct", isOn: $trip.showsLiveActivity)
                 } header: {
                     Text("Notifications")
                 } footer: {
-                    Text("Le rappel suit l'heure réelle du départ. Les alertes arrivent dans l'heure et demie qui précède, quand l'iPhone laisse l'app vérifier les horaires.")
+                    Text("Le rappel suit l'heure réelle du départ. Les alertes arrivent dans l'heure et demie qui précède, quand l'iPhone laisse l'app vérifier les horaires. L'activité en direct s'affiche sur l'écran verrouillé 20 minutes avant le départ, si l'app est ouverte à ce moment-là.")
                 }
 
                 Section {

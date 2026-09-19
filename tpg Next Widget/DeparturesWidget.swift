@@ -27,5 +27,6 @@ struct DeparturesWidget: Widget {
 struct tpgNextWidgetBundle: WidgetBundle {
     var body: some Widget {
         DeparturesWidget()
+        TripLiveActivity()
     }
 }

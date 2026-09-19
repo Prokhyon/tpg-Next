@@ -130,6 +130,9 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
     public var reminderMinutes: Int?
     /// Prévenir des retards, suppressions et changements avant le départ.
     public var alertsEnabled: Bool
+    /// Activité en direct lancée avant le départ. Optionnel : les trajets enregistrés avant
+    /// n'en ont pas (voir `showsLiveActivity`).
+    public var liveActivity: Bool?
     /// L'itinéraire choisi à la création : affichage hors ligne et écarts entre le départ du
     /// trajet et la montée (marche jusqu'à l'arrêt), puis entre la descente et l'arrivée.
     public var snapshot: TripEvent
@@ -154,6 +157,12 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         let anchorDate = trip.anchorDate(anchor, timetabled: true) ?? Date()
         let components = calendar.dateComponents([.hour, .minute], from: anchorDate)
         minuteOfDay = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+    }
+
+    /// L'activité en direct, activée par défaut.
+    public var showsLiveActivity: Bool {
+        get { liveActivity ?? true }
+        set { liveActivity = newValue }
     }
 
     /// Le trajet habituel est-il fait ce jour-là ?
