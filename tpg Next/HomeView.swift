@@ -112,40 +112,31 @@ struct HomeView: View {
     }
 }
 
-struct HomeView_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        let navigationModel = NavigationModel()
-        @State var autoRefresh: Bool = false
+#Preview("Accueil — arrêts proches") {
+    // Départs autour de la position du simulateur (Features → Location dans le simulateur).
+    HomeView(testing: false)
+        .previewEnvironment()
+}
 
-        return
-            NavigationStack {
-                HomeView(testing: false)
-                    .environment(stopStore)
-                    .environment(favoritesViewModel)
-                    .environment(navigationModel)
-            }
-//            HomeDepartures(testing: true)
-//            .environment(stopStore)
-//            .environment(favoritesViewModel)
-        
-//            ContentView()
-//            .environment(stopStore)
-//            .environment(favoritesViewModel)
-        
-//            VStack {
-//                Spacer()
-//                SmallStopView(stop: Stop(name: "Genève, Rive", sloid: "ch:1:sloid:87061", codedidoc: "8587061", country: "CH", canton: "GE", meansOfTransport: "Bus", wgs84Coordinates: Coordinates(lon: 0.0, lat: 0.0)), autoRefresh: $autoRefresh)
-//            }
-//            .background(Image("tpgMap"))
-//            .environment(stopStore)
-//            .environment(favoritesViewModel)
-        
-//        VStack {
-//            ClosestStopsView(autoRefresh: $autoRefresh)
-//                .environment(stopStore)
-//                .environment(favoritesViewModel)
-//        }
-    }
+#Preview("Accueil — départs des favoris") {
+    HomeView(testing: false)
+        .previewSettings([SettingKey.homeShowsFavorites: true])
+        .previewEnvironment()
+}
+
+#Preview("Accueil — sans favori") {
+    HomeView(testing: true)
+        .previewEnvironment(favorites: [])
+}
+
+#Preview("Accueil — hors ligne") {
+    // Départs figés de SmallStopView, sans position ni API.
+    HomeView(testing: true)
+        .previewEnvironment()
+}
+
+#Preview("Accueil — iPad", traits: .iPadLandscape) {
+    HomeView(testing: false)
+        .previewSettings([SettingKey.homeShowsFavorites: true])
+        .previewEnvironment()
 }

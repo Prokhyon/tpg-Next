@@ -58,3 +58,18 @@ struct PaneSectionTitle: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#Preview("Informations de service", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 10) {
+        PaneSectionTitle(text: "Accessibilité des prochains arrêts")
+        ForEach(QuayAccess.allCases, id: \.self) { access in
+            InfoChip(text: access.label, systemImage: access.systemImage)
+        }
+        PaneSectionTitle(text: "Véhicule")
+        // Mêmes icônes que les panneaux de détails.
+        InfoChip(text: "Plancher bas", systemImage: "arrow.down.to.line")
+        InfoChip(text: "Course supprimée", systemImage: "exclamationmark.triangle.fill", tint: .red)
+    }
+    .padding()
+    .frame(width: 360)
+}

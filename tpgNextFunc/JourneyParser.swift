@@ -179,10 +179,10 @@ public struct JourneyService: Hashable {
     public var modeName = ""
     public var trainNumber = ""
     public var attributeCodes: [String] = []
-    /// Course entière supprimée (incident « Ausfall »).
-    public var isCancelled = false
-
     public var hasLowFloor: Bool { attributeCodes.contains("A__NF") }
+    /// Course touchée par un incident : une partie ou la totalité de ses arrêts est sautée.
+    /// Les arrêts concernés portent `LineEvent.isCancelled`.
+    public var hasIncident: Bool { attributeCodes.contains(where: isIncidentAttribute) }
 }
 
 /// Lit l'élément `Service` d'une réponse OJPTripInfoRequest (OJP 2.0).
@@ -202,7 +202,6 @@ final class JourneyServiceParser: OJPParser {
         case "Text" where parent == "Name" && isInside("Mode"): service.modeName = value
         case "TrainNumber": service.trainNumber = value
         case "Code" where parent == "Attribute": service.attributeCodes.append(value)
-        case "Text" where parent == "UserText" && isInside("Attribute") && value == "Ausfall": service.isCancelled = true
         default: break
         }
     }

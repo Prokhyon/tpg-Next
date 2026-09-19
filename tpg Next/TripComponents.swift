@@ -27,6 +27,12 @@ struct TripElementView: View {
                         .padding(.trailing)
                     Image(systemName: "timer")
                     Text(": \(durationText(event.duration))")
+                    if event.legs.contains(where: \.hasIncident) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .padding(.leading, 4)
+                            .accessibilityLabel("Parcours modifié")
+                    }
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -128,10 +134,50 @@ struct CustomPicker: View {
     }
 }
 
-#Preview("Itinéraire") {
-    TripElementView(event: FullTripTest().Trip)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity)
-        .basicElementBackground(minHeight: 72)
-        .padding(4)
+#Preview("Résultat d'itinéraire") {
+    @Previewable @State var showTime = true
+    ScrollView {
+        Toggle("Heure affichée" as String, isOn: $showTime)
+            .padding(.horizontal, 30)
+        ForEach(PreviewData.trips) { trip in
+            TripElementView(event: trip, showTime: showTime)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity)
+                .basicElementBackground(minHeight: 72)
+                .padding(4)
+                .padding(.horizontal, 10)
+        }
+    }
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Résultat d'itinéraire — texte très grand") {
+    VStack {
+        ForEach(PreviewData.trips.prefix(3)) { trip in
+            TripElementView(event: trip)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity)
+                .basicElementBackground(minHeight: 72)
+                .padding(4)
+        }
+    }
+    .dynamicTypeSize(.accessibility2)
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Sélecteur à deux options", traits: .sizeThatFitsLayout) {
+    @Previewable @State var second = false
+    @Previewable @Namespace var animation
+    VStack(spacing: 20) {
+        CustomPicker(secondSelected: $second, height: 40, firstOption: "Départ", firstIcon: "arrow.up.right",
+                     secondOption: "Arrivée", secondIcon: "arrow.down.right", animation: animation)
+        CustomPicker(secondSelected: $second, height: 40, firstOption: "Minutes", secondOption: "Heure",
+                     name: "second", animation: animation)
+    }
+    .padding()
+}
+
+#Preview("Aperçu d'un lieu", traits: .fixedLayout(width: 390, height: 300)) {
+    let place = searchResultItem(title: "Parc des Bastions", coordinates: CLLocationCoordinate2D(latitude: 46.2003, longitude: 6.1455))
+    MapPreview(resultDetail: place, position: .region(MKCoordinateRegion(center: place.coordinates, latitudinalMeters: 800, longitudinalMeters: 800)))
 }

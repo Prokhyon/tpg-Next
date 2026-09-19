@@ -161,6 +161,15 @@ final class StopEventParser: OJPParser {
             }
             return
         }
+        // Un « 1 » par jour de circulation dans l'année d'horaire. Une course habituelle en
+        // compte au moins une dizaine ; celle qui n'en a qu'un remplace l'horaire ce jour-là
+        // (la ligne G déviée le 19.09.2026, par exemple). Aucun autre marqueur ne le signale.
+        if name == "Pattern" && parent == "OperatingDays" {
+            if value.filter({ $0 == "1" }).count == 1 {
+                event.isExceptional = true
+            }
+            return
+        }
         guard isInside("Service") else { return }
         switch name {
         case "PtMode":
@@ -180,10 +189,10 @@ final class StopEventParser: OJPParser {
         case "OperatingDayRef":
             event.operatingDayRef = value
         case "Code" where parent == "Attribute":
+            // Un incident (`…_IncidentTrip…`, libellé « Ausfall ») ne supprime pas forcément ce
+            // départ : la course peut ne sauter qu'une partie de ses arrêts. Seul `NotServicedStop`
+            // sur l'arrêt affiché dit s'il est desservi. Voir `StopEvent.routeChanged`.
             event.attributeCodes = (event.attributeCodes ?? []) + [value]
-        // Course entière supprimée : l'attribut d'incident « Ausfall » (allemand, quelle que soit la langue).
-        case "Text" where parent == "UserText" && isInside("Attribute") && value == "Ausfall":
-            event.isCancelled = true
         default:
             break
         }
@@ -282,6 +291,7 @@ final class TripEventParser: OJPParser {
         case "Order": intermediate?.id = value
         case "StopPointRef": intermediate?.stopId = value
         case "Text" where parent == "StopPointName": intermediate?.stopName = value
+        case "NotServicedStop" where value == "true": intermediate?.notServiced = true
         default: break
         }
     }
@@ -339,6 +349,9 @@ final class TripEventParser: OJPParser {
         case "OperatingDayRef": leg?.operatingDayRef = value
         case "TransferMode", "IndividualMode":
             if value == "walk" { leg?.transfer = true }
+        case "Code" where isInside("Attribute") && isInside("Service"):
+            let codes = leg?.attributeCodes ?? []
+            leg?.attributeCodes = codes + [value]
         case "WalkDuration": leg?.transferWalkDuration = value
         case "BufferTime": leg?.transferBuffer = value
         default: break

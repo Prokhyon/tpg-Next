@@ -28,7 +28,7 @@ public struct StopEvent: Codable, Identifiable, Hashable {
     // Informations d'OJP 2.0. Optionnelles : un départ enregistré avant elles (dans un rappel,
     // par exemple) se décode toujours, et les départs construits à la main s'en passent.
 
-    /// Le véhicule ne s'arrête pas ici, ou la course est supprimée.
+    /// Le véhicule ne s'arrête pas ici (`NotServicedStop`) : course supprimée, ou arrêt sauté.
     public var isCancelled: Bool?
     /// Accès au quai pour les personnes à mobilité réduite.
     public var quayAccess: QuayAccess?
@@ -36,11 +36,17 @@ public struct StopEvent: Codable, Identifiable, Hashable {
     public var attributeCodes: [String]?
     /// Mode OJP : `bus`, `tram`, `rail`, `water`…
     public var ptMode: String?
+    /// La course ne circule qu'un seul jour de l'horaire (`OperatingDays`) : déviation intégrée
+    /// à l'horaire du jour, course spéciale… L'API ne dit pas laquelle. `nil` sinon.
+    public var isExceptional: Bool?
 
     public var id: String { journeyRef + timetabledTime }
 
     public var cancelled: Bool { isCancelled == true }
     public var hasLowFloor: Bool { attributeCodes?.contains("A__NF") == true }
+    /// La course est touchée par un incident mais dessert cet arrêt : d'autres arrêts sont sautés.
+    public var exceptional: Bool { isExceptional == true }
+    public var routeChanged: Bool { !cancelled && attributeCodes?.contains(where: isIncidentAttribute) == true }
 
     public init(stopPointName: String, stopId: String, plannedQuay: String, timetabledTime: String, estimatedTime: String, lineName: String, origin: String, destination: String, transportType: String, operatorName: String, journeyRef: String, operatingDayRef: String,
                 isCancelled: Bool? = nil, quayAccess: QuayAccess? = nil, attributeCodes: [String]? = nil, ptMode: String? = nil) {
@@ -61,6 +67,15 @@ public struct StopEvent: Codable, Identifiable, Hashable {
         self.attributeCodes = attributeCodes
         self.ptMode = ptMode
     }
+}
+
+/// Attribut d'incident d'une course (`ojp9200A_H_IncidentTrip142_1`, libellé « Ausfall »).
+///
+/// Il marque toute course perturbée, même celles qui ne sautent que quelques arrêts : il ne
+/// dit pas, à lui seul, que la course est supprimée. Le code est lu plutôt que le libellé,
+/// toujours en allemand.
+public func isIncidentAttribute(_ code: String) -> Bool {
+    code.contains("_IncidentTrip")
 }
 
 /// Accès au quai pour les personnes à mobilité réduite (`NameSuffix` d'un arrêt en OJP 2.0).

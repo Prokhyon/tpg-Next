@@ -188,3 +188,28 @@ struct Fancy3DotsIndexView: View {
     ((currentIndex - 1)...(currentIndex + 1)).contains(index)
   }
 }
+
+#Preview("Départs de l'accueil — hors ligne") {
+    ScrollView {
+        HomeDepartures(testing: true)
+    }
+    .previewEnvironment()
+}
+
+#Preview("Départs de l'accueil — favoris") {
+    ScrollView {
+        HomeDepartures()
+    }
+    .previewSettings([SettingKey.homeShowsFavorites: true])
+    .previewEnvironment()
+}
+
+#Preview("Indicateur de page", traits: .sizeThatFitsLayout) {
+    @Previewable @State var index = 2
+    VStack(spacing: 20) {
+        Fancy3DotsIndexView(numberOfPages: 6, currentIndex: index)
+            .animation(.default, value: index)
+        Stepper("Page \(index + 1)" as String, value: $index, in: 0...5)
+    }
+    .padding()
+}

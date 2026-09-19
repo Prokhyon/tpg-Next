@@ -61,3 +61,16 @@ struct LineFilterChips: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
+
+#Preview("Filtre par ligne", traits: .sizeThatFitsLayout) {
+    @Previewable @State var selection: Set<String> = ["12"]
+    let lines = Dictionary(grouping: PreviewData.departures, by: \.lineName).keys
+        .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        .map { LineFilterChips.Line(name: $0, operatorName: "Transports Publics Genevois") }
+    VStack(alignment: .leading) {
+        LineFilterChips(lines: lines, selection: $selection)
+        Text(verbatim: selection.isEmpty ? "Toutes les lignes" : selection.sorted().joined(separator: ", "))
+            .font(.caption)
+    }
+    .padding()
+}

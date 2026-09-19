@@ -150,7 +150,15 @@ func weekdayDisplayName(for weekday: Weekday) -> String {
     return formatter.weekdaySymbols[weekday.calendarWeekday - 1].capitalized
 }
 
-#Preview {
-    var fullTripTest = FullTripTest()
-    AddRegularTripView(trip: fullTripTest.Trip)
+#Preview("Ajouter un trajet régulier") {
+    AddRegularTripView(trip: PreviewData.tripWithTransfer)
+        .previewEnvironment()
+}
+
+#Preview("Trajets réguliers de la semaine") {
+    WeeklyRegularTripsView(regularTrips: [
+        RegularTrip(trip: PreviewData.tripWithTransfer, repeatingDays: [.monday, .tuesday, .thursday]),
+        RegularTrip(trip: PreviewData.directTrip, repeatingDays: [.wednesday, .friday]),
+    ])
+    .previewEnvironment()
 }

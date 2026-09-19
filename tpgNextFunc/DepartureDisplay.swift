@@ -106,7 +106,7 @@ public struct DepartureTimeView: View {
     let iconWidth: CGFloat?
     let showsIcon: Bool
 
-    /// - Parameter showsIcon: `false` affiche « 0 » au lieu de l'icône du véhicule à l'arrêt.
+    /// - Parameter showsIcon: `false` affiche « Maintenant » au lieu de l'icône du véhicule à l'arrêt.
     public init(_ display: DepartureDisplay, transportType: String, layout: Layout = .stacked,
                 iconWidth: CGFloat? = nil, showsIcon: Bool = true) {
         self.display = display
@@ -124,6 +124,11 @@ public struct DepartureTimeView: View {
             transportIcon(with: transportType)
                 .fixedSize()
                 .frame(minWidth: iconWidth)
+        case .atStop:
+            // « 0 », seul à côté d'un nom d'arrêt ou sous « Heure », ne se lisait pas.
+            Text(String(localized: "Maintenant"))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
         case .plannedWithDelay(let planned, let delay):
             stack {
                 Text(planned)

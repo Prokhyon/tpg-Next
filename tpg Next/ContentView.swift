@@ -526,29 +526,30 @@ struct DockView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        @State var favoritesViewModel = FavoritesViewModel()
-        
-        return ContentView(testingNewDock: false)
-//        return DockTestView()
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-        
-        
-//            .mask {
-//                Rectangle()
-//                    .overlay(alignment: .bottom) {
-//                        LinearGradient(colors: [.black, .clear], startPoint: UnitPoint(x: 0, y: 1), endPoint: UnitPoint(x: 0, y: 0))
-//                            .frame(height: 100)
-////                            .frame(width: width)
-//                            .blendMode(.destinationOut)
-//
-//                    }
-//            }
-    
-//            .background(Image("tpgMap"))
-            
+#Preview("App") {
+    ContentView()
+        .previewSettings([SettingKey.showWelcome: false, WhatsNew.lastSeenKey: WhatsNew.current?.id ?? ""])
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("App — iPad", traits: .iPadLandscape) {
+    ContentView()
+        .previewSettings([SettingKey.showWelcome: false, WhatsNew.lastSeenKey: WhatsNew.current?.id ?? ""])
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("App — premier lancement") {
+    // Bienvenue, puis nouveautés.
+    ContentView()
+        .previewSettings([SettingKey.showWelcome: true])
+        .previewEnvironment(navigation: false, favorites: [])
+}
+
+#Preview("Dock (avant iOS 26)") {
+    VStack {
+        Spacer()
+        DockView()
+            .padding(.bottom)
     }
+    .previewEnvironment(navigation: false)
 }

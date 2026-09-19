@@ -302,64 +302,29 @@ struct StopView: View {
     }
 }
 
-#Preview("StopEventView preview") {
-    let stopStore = StopStore()
-    let favoritesViewModel = FavoritesViewModel()
-
-    return VStack {
-        StopEventView(
-            event: StopEvent(
-                stopPointName: "Meinier, Eglise",
-                stopId: "8587061",
-                plannedQuay: "A",
-                timetabledTime: "2025-08-13T14:55:18Z",
-                estimatedTime: "2025-08-13T14:55:18Z",
-                lineName: "A",
-                origin: "Gy, Temple",
-                destination: "Genève, Rive",
-                transportType: "Bus",
-                operatorName: "Transports Publics Genevois",
-                journeyRef: "ch:1:sjyid:100680:HAS-25-A-31-Lun-Ven-32504874",
-                operatingDayRef: "2025-08-13"
-            ),
-            showTime: false
-        )
-    }
-    .environment(favoritesViewModel)
-    .environment(stopStore)
+#Preview("Arrêt") {
+    StopView(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, autoRefresh: false)
+        .previewEnvironment()
 }
 
-#Preview("StopView preview") {
-    let stopStore = StopStore()
-    let favoritesViewModel = FavoritesViewModel()
-    let navigationModel = NavigationModel()
-    let tripViewModel = ItineraryViewModel()
+#Preview("Arrêt — iPad", traits: .iPadLandscape) {
+    StopView(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, autoRefresh: false)
+        .previewEnvironment()
+}
 
-    return NavigationStack {
-        ZStack {
-            StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:87061", autoRefresh: false)
-                .environment(favoritesViewModel)
-                .environment(stopStore)
-                .environment(tripViewModel)
-                .navigationTitle("Genève, Rive")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text("")
-                    }
-                }
-            if #available(iOS 26, *) {
-                // No dock in iOS 26 preview
-            } else {
-                VStack {
-                    Spacer()
-                    DockView()
-                        .padding(.bottom)
-                        .environment(navigationModel)
-                        .environment(stopStore)
-                        .offset(y: 20)
-                }
-            }
-        }
+#Preview("Arrêt — iPad portrait", traits: .iPadPortrait) {
+    StopView(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, autoRefresh: false)
+        .previewEnvironment()
+}
+
+#Preview("Arrêt — ouvert depuis une course") {
+    // Course mise en avant et liste qui part de son heure de passage.
+    LiveDeparturePreview { departures in
+        StopView(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid,
+                 previousLineRef: departures.event.journeyRef,
+                 previousLineName: departures.event.lineName,
+                 previousLineTime: departures.event.timetabledTime,
+                 autoRefresh: false)
     }
+    .previewEnvironment()
 }

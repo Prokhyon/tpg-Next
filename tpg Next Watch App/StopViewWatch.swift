@@ -305,16 +305,67 @@ struct StopMenuView: View {
     }
 }
 
-struct StopView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var stopStore = StopStore()
-        @State var watchFavorites = WatchFavoritesViewModel()
-        @State var autoRefresh: Bool = false
-        @State var viewLineSorted: Bool = false
-        @State var showTime: Bool = false
-        
-        return StopView(stopName: "Genève, Rive", stopSloid: "ch:1:sloid:93006", isCloseStop: false, showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
-            .environment(stopStore)
-            .environment(watchFavorites)
+#Preview("Arrêt (API)") {
+    @Previewable @State var showTime = false
+    @Previewable @State var viewLineSorted = false
+    @Previewable @State var autoRefresh = false
+    NavigationStack {
+        StopView(stopName: WatchPreviewData.rive.name, stopSloid: WatchPreviewData.rive.sloid, isCloseStop: false,
+                 showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
     }
+    .watchPreviewEnvironment()
+}
+
+#Preview("Arrêt par ligne (API)") {
+    @Previewable @State var showTime = false
+    @Previewable @State var viewLineSorted = true
+    @Previewable @State var autoRefresh = false
+    NavigationStack {
+        StopView(stopName: WatchPreviewData.rive.name, stopSloid: WatchPreviewData.rive.sloid, isCloseStop: true,
+                 showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
+    }
+    .watchPreviewEnvironment()
+}
+
+#Preview("Départs") {
+    List {
+        StopEventView(event: WatchPreviewData.departure(inMinutes: 0), showTime: false)
+        StopEventView(event: WatchPreviewData.departure(inMinutes: 4), showTime: false)
+        StopEventView(event: WatchPreviewData.departure(line: "7", destination: "Vessy, Grands-Esserts", quay: "A",
+                                                        inMinutes: 7, delay: 3, transportType: "Bus"), showTime: false)
+        StopEventView(event: WatchPreviewData.departure(line: "8", destination: "Palexpo", quay: "E", inMinutes: 9,
+                                                        cancelled: true, transportType: "Bus"), showTime: false)
+        StopEventView(event: WatchPreviewData.departure(inMinutes: 12), showTime: true)
+        StopEventView(event: WatchPreviewData.departure(line: "E", destination: "Hermance-Village", quay: "J",
+                                                        inMinutes: 15, transportType: "Bus"),
+                      showTime: false, previousLineRef: "preview-E-Hermance-Village-15.0")
+    }
+    .watchPreviewEnvironment()
+}
+
+#Preview("Départs par ligne") {
+    // Comme dans StopView : une page par ligne, fond à la couleur de la ligne.
+    @Previewable @State var showTime = false
+    let groups = [
+        ("12", "Genève, Moillesulaz", WatchPreviewData.departures()),
+        ("7", "Vessy, Grands-Esserts", WatchPreviewData.departures(line: "7", destination: "Vessy, Grands-Esserts", quay: "A", every: 10)),
+        ("E", "Hermance-Village", WatchPreviewData.departures(line: "E", destination: "Hermance-Village", quay: "J", every: 20, count: 3)),
+    ]
+    TabView {
+        ForEach(groups, id: \.0) { line, destination, events in
+            StopSortedView(lineName: line, destination: destination, currentStopName: WatchPreviewData.rive.name,
+                           stopEventsList: events, showTime: $showTime)
+                .containerBackground(LineColors.lineColor(for: line, operatorName: "Transports Publics Genevois").gradient,
+                                     for: .tabView)
+        }
+    }
+    .tabViewStyle(.verticalPage)
+    .watchPreviewEnvironment()
+}
+
+#Preview("Menu de l'arrêt") {
+    @Previewable @State var showMenu = true
+    @Previewable @State var showTime = false
+    @Previewable @State var viewLineSorted = false
+    StopMenuView(showMenu: $showMenu, showTime: $showTime, viewLineSorted: $viewLineSorted)
 }

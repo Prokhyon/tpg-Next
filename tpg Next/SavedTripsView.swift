@@ -167,3 +167,28 @@ struct SavedTripView: View {
         }
     }
 }
+
+#Preview("Trajets enregistrés") {
+    @Previewable @State var isPresented = true
+    SavedTripsView(isPresented: $isPresented) { _ in }
+        .previewEnvironment(savedTrips: PreviewData.trips)
+}
+
+#Preview("Trajets enregistrés — vide") {
+    @Previewable @State var isPresented = true
+    SavedTripsView(isPresented: $isPresented) { _ in }
+        .previewEnvironment(savedTrips: [])
+}
+
+#Preview("Trajet enregistré") {
+    VStack {
+        ForEach(PreviewData.trips.prefix(3)) { trip in
+            SavedTripView(event: trip)
+                .padding(15)
+                .background(BasicCard(cornerRadius: 30))
+                .padding(5)
+        }
+    }
+    .padding()
+    .previewEnvironment(navigation: false)
+}

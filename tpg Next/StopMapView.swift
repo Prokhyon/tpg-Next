@@ -145,21 +145,12 @@ struct StopMapView: View {
     }
 }
 
-struct stopMapPreview: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        @State var fullTripTest = FullTripTest()
-        
-        @State var savedTripsModel = SavedTripsModel()
-        @State var regularTripsModel = RegularTripsModel()
-            @State var itineraryViewModel = ItineraryViewModel()
-        return StopMapView(quays: [], stopSloid: "", stopName: "Meinier, Eglise")
-            .environment(itineraryViewModel)
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-            .environment(savedTripsModel)
-            .environment(regularTripsModel)
-        
-    }
+#Preview("Carte des quais") {
+    StopMapView(quays: PreviewData.quays, stopSloid: PreviewData.rive.sloid, stopName: PreviewData.rive.name)
+        .previewEnvironment()
+}
+
+#Preview("Carte des quais — iPad", traits: .iPadLandscape) {
+    StopMapView(quays: PreviewData.quays, stopSloid: PreviewData.rive.sloid, stopName: PreviewData.rive.name)
+        .previewEnvironment()
 }

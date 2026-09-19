@@ -140,17 +140,12 @@ struct ContentView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var stopStore = StopStore()
-        @State var watchFavorites = WatchFavoritesViewModel()
-        @State var autoRefresh: Bool = false
-        @State var viewLineSorted: Bool = true
-        @State var showTime: Bool = false
-        let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:93006", codedidoc: "8593006", country: "CH", canton: "GE", meansOfTransport: "bus", wgs84Coordinates: Coordinates(lon: 46.2167, lat: 6.1667))
-        
-        return ContentView(closeStop: stop, autoRefresh: false)
-            .environment(stopStore)
-            .environment(watchFavorites)
-    }
+#Preview("Montre") {
+    ContentView(closeStop: WatchPreviewData.rive, autoRefresh: false)
+        .watchPreviewEnvironment()
+}
+
+#Preview("Montre — sans favori") {
+    ContentView(closeStop: WatchPreviewData.rive, autoRefresh: false)
+        .watchPreviewEnvironment(favorites: [])
 }

@@ -94,6 +94,14 @@ struct WhatsNewView: View {
     }
 }
 
-#Preview {
+#Preview("Nouveautés") {
     WhatsNewView(whatsNew: WhatsNew.current!)
+}
+
+#Preview("Nouveautés — en feuille") {
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            WhatsNewView(whatsNew: WhatsNew.current!)
+        }
+        .previewEnvironment(navigation: false)
 }

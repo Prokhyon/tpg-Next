@@ -313,13 +313,26 @@ struct MailComposerViewController: UIViewControllerRepresentable {
 }
 
 
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        
-        return SettingsView()
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-    }
+#Preview("Réglages") {
+    SettingsView()
+        .previewEnvironment()
+}
+
+#Preview("Réglages — tout activé") {
+    SettingsView()
+        .previewSettings([SettingKey.homeShowsFavorites: true, SettingKey.groupByLineByDefault: true,
+                          SettingKey.clockTimeByDefault: true, SettingKey.delayIncludedInTime: true])
+        .previewEnvironment()
+}
+
+#Preview("Ordre des favoris") {
+    FavoritesOrderView()
+        .navigationTitle("Ordre des favoris" as String)
+        .previewEnvironment()
+}
+
+#Preview("Rappels prévus") {
+    ScheduledNotifications()
+        .navigationTitle("Rappels prévus" as String)
+        .previewEnvironment()
 }

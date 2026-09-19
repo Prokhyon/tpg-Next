@@ -176,8 +176,16 @@ struct DepartureDetailPanel: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Heure").font(.caption).foregroundStyle(.secondary)
-                    DepartureTimeView(departureDisplay(for: event, showTime: true, at: now), transportType: event.transportType, layout: .inline(spacing: 4), showsIcon: false)
-                        .font(.title2.bold())
+                    // Supprimé : l'heure prévue, barrée. « Départ » dit déjà « Supprimé ».
+                    if event.cancelled, let planned = OJPDate.date(from: event.timetabledTime) {
+                        Text(OJPDate.clockTime(from: planned))
+                            .strikethrough()
+                            .foregroundStyle(.secondary)
+                            .font(.title2.bold())
+                    } else {
+                        DepartureTimeView(departureDisplay(for: event, showTime: true, at: now), transportType: event.transportType, layout: .inline(spacing: 4), showsIcon: false)
+                            .font(.title2.bold())
+                    }
                 }
                 if !event.plannedQuay.isEmpty {
                     VStack(alignment: .leading, spacing: 2) {
@@ -188,6 +196,13 @@ struct DepartureDetailPanel: View {
             }
 
             FlowChips(event: event)
+
+            if event.cancelled, let alternative = nearestServedStop(skipping: currentSloid, in: journey.events, now: now) {
+                ServedAlternativeCard(alternative: alternative, transportType: event.transportType) {
+                    openRoute(.stop(name: alternative.stop.stopPointName, sloid: alternative.stop.sloid,
+                                    highlight: DepartureHighlight(journeyRef: event.journeyRef, lineName: event.lineName, time: alternative.stop.timetabledTime)))
+                }
+            }
 
             VStack(alignment: .leading, spacing: 0) {
                 PaneSectionTitle(text: "Départs suivants")
@@ -232,14 +247,15 @@ struct DepartureDetailPanel: View {
                             LineEventElementView(currentLine: event.lineName, operatorName: operatorName, transportType: event.transportType,
                                                  currentStop: stop.sloid == currentSloid, eventName: stop.stopPointName,
                                                  estimatedTime: stop.estimatedTime, timetabledTime: stop.timetabledTime,
-                                                 plannedQuay: stop.plannedQuay, showTime: .constant(showTime))
+                                                 plannedQuay: stop.plannedQuay, showTime: .constant(showTime),
+                                                 skipped: stop.isCancelled == true)
                         }
                         .foregroundStyle(.primary)
                         .padding(.vertical, 5)
                         .background(
                             LineBackground(event: stop, firstEventId: journey.events.first?.id, lastEventId: journey.events.last?.id,
                                            lineColor: LineColors.lineColor(for: event.lineName, operatorName: operatorName), busIsHere: $busIsHere,
-                                           trailX: 30)
+                                           trailX: 30, skipped: stop.isCancelled == true)
                         )
                     }
                 }
@@ -295,8 +311,14 @@ private struct FlowChips: View {
 
     var body: some View {
         let chips = HStack(spacing: 8) {
+            // `cancelled` ne dit que l'arrêt affiché : la course peut rouler ailleurs.
             if event.cancelled {
-                InfoChip(text: "Course supprimée", systemImage: "exclamationmark.triangle.fill", tint: .red)
+                InfoChip(text: "Ne passe pas à cet arrêt", systemImage: "exclamationmark.triangle.fill", tint: .red)
+            } else if event.routeChanged {
+                InfoChip(text: "Parcours modifié", systemImage: "exclamationmark.triangle.fill", tint: .orange)
+            }
+            if event.exceptional {
+                InfoChip(text: "Horaire exceptionnel", systemImage: "calendar.badge.exclamationmark", tint: .orange)
             }
             if let access = event.quayAccess {
                 InfoChip(text: access.label, systemImage: access.systemImage)
@@ -427,4 +449,70 @@ struct StopInfoPanel: View {
             }
             .sorted { $0.quay.localizedStandardCompare($1.quay) == .orderedAscending }
     }
+}
+
+#Preview("Panneau arrêt — lignes et quais", traits: .fixedLayout(width: 560, height: 820)) {
+    @Previewable @State var lineFilters: Set<String> = []
+    @Previewable @State var quayFilters: Set<String> = []
+    StopDetailPane(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, quays: PreviewData.quays,
+                   departures: PreviewData.departures, selected: nil, showTime: false,
+                   lineFilters: $lineFilters, quayFilters: $quayFilters, select: { _ in }, deselect: {})
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Panneau arrêt — départ sélectionné (API)", traits: .fixedLayout(width: 560, height: 820)) {
+    @Previewable @State var lineFilters: Set<String> = []
+    @Previewable @State var quayFilters: Set<String> = []
+    // Le panneau charge lui-même la course : il lui faut un départ du jour.
+    LiveDeparturePreview { departures in
+        StopDetailPane(stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid, quays: departures.quays,
+                       departures: departures.all, selected: departures.event, showTime: false,
+                       lineFilters: $lineFilters, quayFilters: $quayFilters, select: { _ in }, deselect: {})
+    }
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Détail d'un départ", traits: .fixedLayout(width: 520, height: 700)) {
+    @Previewable @State var event = PreviewData.lineDeparture
+    @Previewable @State var journey = PreviewData.journeyModel()
+    ScrollView {
+        DepartureDetailPanel(event: event, stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid,
+                             departures: PreviewData.departures, showTime: false, journey: journey,
+                             select: { event = $0 }, close: {})
+            .padding(20)
+    }
+    .background { BasicCard(cornerRadius: 30) }
+    .padding()
+    .previewEnvironment()
+}
+
+#Preview("Carte de l'arrêt", traits: .fixedLayout(width: 520, height: 420)) {
+    @Previewable @State var highlighted: Set<String> = ["B", "C"]
+    StopMapPanel(stopSloid: PreviewData.rive.sloid, quays: PreviewData.quays, selected: nil,
+                 journey: JourneyTrackModel(), highlightedQuays: highlighted) { quay in
+        if highlighted.contains(quay) { highlighted.remove(quay) } else { highlighted.insert(quay) }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: 30))
+    .padding()
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Carte de l'arrêt — parcours du départ", traits: .fixedLayout(width: 520, height: 420)) {
+    StopMapPanel(stopSloid: PreviewData.rive.sloid, quays: PreviewData.quays, selected: PreviewData.lineDeparture,
+                 journey: PreviewData.journeyModel())
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .padding()
+        .previewEnvironment(navigation: false)
+}
+
+#Preview("Lignes et quais", traits: .fixedLayout(width: 520, height: 600)) {
+    @Previewable @State var lineFilters: Set<String> = []
+    @Previewable @State var quayFilters: Set<String> = []
+    ScrollView {
+        StopInfoPanel(departures: PreviewData.departures, lineFilters: $lineFilters, quayFilters: $quayFilters) { quay in
+            if quayFilters.contains(quay) { quayFilters.remove(quay) } else { quayFilters.insert(quay) }
+        }
+        .padding(20)
+    }
+    .previewEnvironment(navigation: false)
 }

@@ -79,6 +79,37 @@ struct StopEventParserTests {
         #expect(result.quays.allSatisfy { !$0.quayName.isEmpty && Double($0.latitude) != nil })
     }
 
+    /// Meinier, église (19.09.2026) : incident sur la ligne A. Vers Gy, le bus saute l'arrêt ;
+    /// vers Rive, il le dessert et saute d'autres arrêts. Les deux portent l'attribut « Ausfall ».
+    @Test func incidentOnlyCancelsTheStopsItSkips() async throws {
+        let result = await parseStopEventsResult(try Fixture.data("stopEvents-meinier-incident"), stopCode: "ch:1:sloid:93001")
+        let skipped = try #require(result.events.first { $0.lineName == "A" && $0.timetabledTime == "2026-09-19T13:15:00Z" })
+        #expect(skipped.cancelled)
+        #expect(!skipped.routeChanged)
+        let served = try #require(result.events.first { $0.lineName == "A" && $0.timetabledTime == "2026-09-19T13:30:00Z" })
+        #expect(!served.cancelled)
+        #expect(served.routeChanged)
+        #expect(result.events.filter(\.cancelled).count == 2)
+        #expect(result.events.filter(\.routeChanged).count == 1)
+    }
+
+    /// Vésenaz, Capite (19.09.2026) : le G, dévié par Cologny, suit un horaire d'un seul jour.
+    /// Rien d'autre ne le distingue : ni incident, ni arrêt sauté.
+    @Test func oneDayTimetableIsExceptional() async throws {
+        let result = await parseStopEventsResult(try Fixture.data("stopEvents-capite-exceptional"), stopCode: "ch:1:sloid:87069")
+        let exceptional = result.events.filter(\.exceptional)
+        #expect(exceptional.count == 8)
+        // Hors de `#expect` : une closure composée dans la macro rendait la compilation très lente.
+        let onlyLineG = exceptional.allSatisfy { (event: StopEvent) -> Bool in
+            event.lineName == "G" && !event.routeChanged && !event.cancelled
+        }
+        let othersAreRegular = result.events.allSatisfy { (event: StopEvent) -> Bool in
+            event.lineName == "G" || !event.exceptional
+        }
+        #expect(onlyLineG)
+        #expect(othersAreRegular)
+    }
+
     /// Un départ enregistré avant OJP 2.0 (dans un rappel) se décode toujours.
     @Test func departureSavedBeforeOJP2StillDecodes() throws {
         let json = #"{"stopPointName":"Genève, Rive","stopId":"ch:1:sloid:87061","plannedQuay":"A","timetabledTime":"2026-09-17T09:18:00Z","estimatedTime":"","lineName":"8","origin":"","destination":"Palexpo","transportType":"Bus","operatorName":"Transports Publics Genevois","journeyRef":"x","operatingDayRef":"2026-09-17"}"#
@@ -157,6 +188,33 @@ struct TripParserTests {
         #expect(abs((walk.upperBound - walk.lowerBound) - walkMinutes / 45) < 0.001)
     }
 
+    /// Rive → Meinier, église (19.09.2026, incident sur la ligne A) : le calculateur passe par
+    /// Route de Corsinge, car le A saute seize arrêts, dont Meinier, église.
+    @Test func skippedIntermediatesAreFlagged() throws {
+        let trips = try parseTripEvents(from: Fixture.data("trip-rive-meinier-incident"),
+                                        startCoordinate: Coordinates(lon: 6.1508, lat: 46.2025),
+                                        endCoordinates: Coordinates(lon: 6.2338, lat: 46.2465),
+                                        startName: "Genève, Rive", endName: "Meinier, église",
+                                        startCode: "ch:1:sloid:87061", endCode: "ch:1:sloid:93001",
+                                        geoDeparture: false, geoArrival: false)
+        let legs = trips.flatMap(\.legs).filter { !$0.publishedLineName.isEmpty }
+        let detour = try #require(legs.first { $0.publishedLineName == "A" && !$0.skippedIntermediates.isEmpty })
+        #expect(detour.hasIncident)
+        #expect(detour.skippedIntermediates.count == 16)
+        #expect(detour.skippedIntermediates.first?.stopName == "Cologny, croisée")
+        #expect(detour.skippedIntermediates.last?.stopName == "Meinier, église")
+        let unaffected = try #require(legs.first { $0.publishedLineName == "39" })
+        #expect(!unaffected.hasIncident)
+        #expect(unaffected.skippedIntermediates.isEmpty)
+    }
+
+    /// Un itinéraire enregistré avant la lecture des arrêts sautés se décode toujours.
+    @Test func tripSavedBeforeSkippedStopsStillDecodes() throws {
+        let json = #"{"id":"1","stopId":"ch:1:sloid:87061","stopName":"Genève, Rive","longitude":"6.15","latitude":"46.20"}"#
+        let stop = try JSONDecoder().decode(LegIntermediate.self, from: Data(json.utf8))
+        #expect(!stop.skipped)
+    }
+
     @Test(arguments: cases)
     func outputIsUnchanged(_ testCase: (fixture: String, geoDeparture: Bool)) throws {
         try Fixture.assertSnapshot(try parse(testCase.fixture, geoDeparture: testCase.geoDeparture), named: testCase.fixture)
@@ -221,7 +279,71 @@ struct JourneyServiceTests {
         #expect(service.ptMode == "bus")
         #expect(service.hasLowFloor)
         #expect(!service.trainNumber.isEmpty)
-        #expect(!service.isCancelled)
+        #expect(!service.hasIncident)
+    }
+
+    /// Le A de 15h30 vers Rive (19.09.2026) : un incident, dix arrêts sautés, pas une suppression.
+    @Test func partialIncidentKeepsTheServedStops() throws {
+        let data = try Fixture.data("tripInfo-meinier-incident")
+        #expect(parseJourneyServiceSync(from: data).hasIncident)
+        let events = parseJourneyEventsSync(from: data).events
+        let skipped = events.filter { $0.isCancelled == true }.map(\.stopPointName)
+        #expect(skipped.first == "Choulex, Rouette")
+        #expect(skipped.last == "Cologny, temple")
+        #expect(skipped.count == 11)
+        #expect(events.contains { $0.stopPointName == "Meinier, église" && $0.isCancelled != true })
+    }
+
+    /// Le A de 14h45 vers Gy (19.09.2026) saute seize arrêts d'affilée : un seul bloc dans la liste.
+    @Test func consecutiveSkippedStopsAreGrouped() throws {
+        let events = parseJourneyEventsSync(from: try Fixture.data("tripInfo-gy-incident")).events
+        let rows = journeyRows(events)
+        let blocks = rows.compactMap { row -> [LineEvent]? in
+            if case .skipped(let stops) = row { return stops }
+            return nil
+        }
+        #expect(blocks.count == 1)
+        #expect(blocks.first?.count == 16)
+        #expect(blocks.first?.first?.stopPointName == "Cologny, croisée")
+        #expect(blocks.first?.last?.stopPointName == "Meinier, église")
+        #expect(rows.count == events.count - 15)
+        #expect(Set(rows.map(\.id)).count == rows.count)
+    }
+
+    @Test func aLoneSkippedStopStaysARow() {
+        let events = [stop("2026-09-17T10:00:00Z", lat: 46.0, lon: 6.0),
+                      stop("2026-09-17T10:02:00Z", lat: 46.1, lon: 6.0, skipped: true),
+                      stop("2026-09-17T10:04:00Z", lat: 46.2, lon: 6.0)]
+        #expect(journeyRows(events).count == 3)
+    }
+
+    /// Meinier, église est sauté : Route de Corsinge, à 250 m, est desservi six minutes plus tard.
+    @Test func nearestServedStopIsSuggested() throws {
+        let events = parseJourneyEventsSync(from: try Fixture.data("tripInfo-gy-incident")).events
+        let before = try #require(iso8601.date(from: "2026-09-19T12:40:00Z"))
+        let alternative = try #require(nearestServedStop(skipping: "ch:1:sloid:93001", in: events, now: before))
+        #expect(alternative.stop.stopPointName == "Meinier, Route de Corsinge")
+        #expect(alternative.distance > 200 && alternative.distance < 300)
+        #expect(alternative.walkingMinutes <= 5)
+        // Une fois le bus passé, plus rien à proposer.
+        let after = try #require(iso8601.date(from: "2026-09-19T13:00:00Z"))
+        #expect(nearestServedStop(skipping: "ch:1:sloid:93001", in: events, now: after) == nil)
+        // Un arrêt desservi n'a pas besoin d'alternative.
+        #expect(nearestServedStop(skipping: "ch:1:sloid:93006", in: events, now: before) == nil)
+    }
+
+    /// Entre Le-Fort et Route de Corsinge, le bus contourne les arrêts sautés : sa position
+    /// ne doit pas suivre leurs heures prévues (12h30–12h45), antérieures à son passage réel.
+    @Test func vehicleIgnoresSkippedStops() throws {
+        let events = parseJourneyEventsSync(from: try Fixture.data("tripInfo-gy-incident")).events
+        let leFort = try #require(events.first { $0.stopPointName == "Cologny, Le-Fort" })
+        let corsinge = try #require(events.first { $0.stopPointName == "Meinier, Route de Corsinge" })
+        let now = try #require(iso8601.date(from: "2026-09-19T12:44:00Z"))
+        let position = try #require(estimatedVehiclePosition(events: events, segments: nil, at: now))
+        let latitudes = [leFort.coordinate.latitude, corsinge.coordinate.latitude]
+        let longitudes = [leFort.coordinate.longitude, corsinge.coordinate.longitude]
+        #expect(position.latitude >= latitudes.min()! && position.latitude <= latitudes.max()!)
+        #expect(position.longitude >= longitudes.min()! && position.longitude <= longitudes.max()!)
     }
 
     @Test func callsCarryQuayAccess() throws {
@@ -229,9 +351,9 @@ struct JourneyServiceTests {
         #expect(events.contains { $0.quayAccess != nil })
     }
 
-    private func stop(_ time: String, lat: Double, lon: Double) -> LineEvent {
-        LineEvent(stopPointName: "", plannedQuay: "", timetabledTime: time, estimatedTime: "", stopPlaceRef: "", sloid: "",
-                  previousCall: false, longitude: String(lon), latitude: String(lat))
+    private func stop(_ time: String, lat: Double, lon: Double, skipped: Bool = false) -> LineEvent {
+        LineEvent(stopPointName: "", plannedQuay: "", timetabledTime: time, estimatedTime: "", stopPlaceRef: "", sloid: time,
+                  previousCall: false, longitude: String(lon), latitude: String(lat), isCancelled: skipped ? true : nil)
     }
 
     @Test func vehicleIsInterpolatedBetweenStops() throws {

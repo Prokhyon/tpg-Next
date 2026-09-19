@@ -354,16 +354,12 @@ func copyToMapStops(activeStops: [Stop]) -> [LocationStop] {
     return mapStops
 }
 
-struct MapView2_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
+#Preview("Carte") {
+    MapView()
+        .previewEnvironment(background: false)
+}
 
-        let keyboardResponder = KeyboardResponder()
-
-        return MapView()
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-            .environment(keyboardResponder)
-    }
+#Preview("Carte — iPad", traits: .iPadLandscape) {
+    MapView()
+        .previewEnvironment(background: false)
 }

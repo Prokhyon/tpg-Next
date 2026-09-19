@@ -294,18 +294,21 @@ extension TripView {
         let adjustTime: (Int) -> Void
         let timeChange: () -> Int
         let searchTrips: () -> Void
+        /// Sur grand écran : le trajet détaillé à droite, et l'action qui en choisit un autre.
+        var selectedID: String? = nil
+        var onSelect: ((TripEvent) -> Void)? = nil
         
         var body: some View {
             LazyVStack(spacing: 5) {
 
                 ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
-                        NavigationLink(value: AppRoute.trip(event)) {
+                        tripLink(event) {
                             TripElementView(event: event, showTime: showTime)
                                 .padding(.horizontal, 20)
                                 // La capsule prend la largeur disponible, pas celle du contenu : plus
                                 // large que l'écran, il la faisait déborder sur les côtés.
                                 .frame(maxWidth: .infinity)
-                                .basicElementBackground(minHeight: 72)
+                                .basicElementBackground(minHeight: 72, highlighted: event.id == selectedID)
                                 .padding(4)
                             
 //                            TripElementView(event: event, showTime: showTime)
@@ -339,6 +342,15 @@ extension TripView {
                             .frame(width: layout.previewWidth, height: 300)
                     }
                 }
+            }
+        }
+
+        /// Sur iPhone, un trajet ouvre sa page ; sur grand écran, il se détaille à droite.
+        @ViewBuilder private func tripLink<Label: View>(_ event: TripEvent, @ViewBuilder label: () -> Label) -> some View {
+            if let onSelect {
+                Button(action: { onSelect(event) }, label: label)
+            } else {
+                NavigationLink(value: AppRoute.trip(event), label: label)
             }
         }
     }

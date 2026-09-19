@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
-		782463402D21C6B900CDE4D2 /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
+		782463402D21C6B900CDE4D2 /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7829E3FB2D2297EB0049A10B /* tpg Next Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7829E3FF2D2298380049A10B /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
 		7829E4002D2298380049A10B /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -20,7 +20,7 @@
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
 		7BADCAFE0000000000000C04 /* DeparturesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B04 /* DeparturesWidget.swift */; };
-		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
+		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
 		7BADCAFE0000000000000C07 /* tpg Next Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000A01 /* tpg Next Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B08 /* WidgetPreviews.swift */; };
 		7E57A1B20000000000000007 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
@@ -547,6 +547,7 @@
 /* Begin PBXTargetDependency section */
 		7824633E2D21C6B900CDE4D2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
 			targetProxy = 7824633D2D21C6B900CDE4D2 /* PBXContainerItemProxy */;
 		};
@@ -575,6 +576,7 @@
 		};
 		7BADCAFE0000000000000103 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
 			targetProxy = 7BADCAFE0000000000000104 /* PBXContainerItemProxy */;
 		};
@@ -894,7 +896,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -931,7 +933,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -963,7 +965,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -996,7 +998,7 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

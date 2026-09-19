@@ -256,20 +256,18 @@ struct SearchView: View {
     }
 }
 
-struct SearchView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var stopStore = StopStore()
-        @State var favoritesViewModel = FavoritesViewModel()
-        @State var fullTripTest = FullTripTest()
-        @State var showSearch: Bool = true
-        
-        return NavigationStack() {
-            SearchView(/*futureTrips: [fullTripTest.Trip]*/)
-                .environment(favoritesViewModel)
-                .environment(stopStore)
-                .environment(RecentSearch())
-//                    .background(Background())
-            }
-            
-    }
+#Preview("Recherche") {
+    // Les trajets à venir viennent des itinéraires enregistrés.
+    SearchView()
+        .previewEnvironment(savedTrips: PreviewData.trips)
+}
+
+#Preview("Recherche — sans trajet enregistré") {
+    SearchView()
+        .previewEnvironment()
+}
+
+#Preview("Recherche — iPad", traits: .iPadLandscape) {
+    SearchView()
+        .previewEnvironment(savedTrips: PreviewData.trips)
 }

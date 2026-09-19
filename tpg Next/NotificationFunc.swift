@@ -379,3 +379,13 @@ final class PendingNotificationOpen {
     static let shared = PendingNotificationOpen()
     var route: AppRoute?
 }
+
+#Preview("Menu des rappels") {
+    // Toucher longuement le départ pour ouvrir le menu.
+    let event = PreviewData.departure(inMinutes: 12)
+    StopEventView(event: event, showTime: false)
+        .contextMenu {
+            NotificationContextMenu(event: event, stopID: PreviewData.rive.sloid)
+        }
+        .previewEnvironment()
+}
