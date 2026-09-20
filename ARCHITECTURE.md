@@ -221,8 +221,15 @@ horaires (`estimatedVehiclePosition`).
   bandeau est refait à chaque changement d'étape et emporterait sa feuille. Le trajet y est
   déroulé de haut en bas (départ, montées, véhicules et leurs arrêts, attentes, arrivée), l'étape
   en cours sur fond teinté et les étapes passées effacées.
+- **Position** : dans le véhicule, la position du voyageur est celle du véhicule.
+  `TripPositionEstimator.fix(on:…)` la projette sur le tracé (`TripRoute`, gardé dans l'app :
+  l'activité n'a pas la place) et en tire l'avance ou le retard, appliqué par
+  `TripActivityState.adjusted(leg:by:now:)`. Deux garde-fous : plus de 150 m du tracé (le trajet
+  est suivi de loin) ou plus de 3 minutes d'écart (tracé grossier), et c'est l'horaire d'OJP qui
+  reste. La correction part toujours du dernier état d'OJP (`baseStates`), jamais d'un état déjà
+  corrigé. Demandée seulement si la localisation est déjà autorisée, et seulement à bord.
 - Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
-  rappels, et reposées à chaque mise à jour du trajet.
+  rappels, et reposées à chaque mise à jour du trajet — donc avec la correction de position.
 - Une notification dont le moment est passé quitte le centre de notifications :
   `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
   minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte

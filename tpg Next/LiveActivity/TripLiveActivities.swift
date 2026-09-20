@@ -7,6 +7,7 @@
 
 import Foundation
 import ActivityKit
+import CoreLocation
 import Observation
 import tpgNextFunc
 
@@ -61,7 +62,17 @@ final class TripLiveActivities {
     @ObservationIgnored private var tracked: [String: Tracked]
     @ObservationIgnored private var lastRequest: [String: Date] = [:]
     /// Les passages de chaque course, par `journeyRef`, redemandés au plus une fois par minute.
-    @ObservationIgnored private var callsCache: [String: (calls: [TripActivityState.Call], fetched: Date)] = [:]
+    @ObservationIgnored private var journeyCache: [String: (events: [LineEvent], fetched: Date)] = [:]
+    /// Le tracé de chaque trajet suivi : il reste ici, l'activité n'en a pas besoin.
+    @ObservationIgnored private var routes: [String: TripRoute] = [:]
+    /// Le dernier état tiré d'OJP, avant correction par la position : c'est toujours lui qu'on
+    /// corrige, sinon le décalage s'appliquerait deux fois.
+    @ObservationIgnored private var baseStates: [String: TripActivityState] = [:]
+    /// La position sert à savoir où en est le véhicule qu'on occupe. Plus précise qu'ailleurs
+    /// dans l'app : elle est projetée sur un parcours.
+    @ObservationIgnored private lazy var locationManager = LocationManager(accuracy: kCLLocationAccuracyNearestTenMeters)
+    @ObservationIgnored private var lastLocation: CLLocation?
+    @ObservationIgnored private var isLocating = false
     /// Les clés des activités en cours, pour les menus.
     private(set) var activeKeys: Set<String> = []
     /// Ce que l'app affiche du trajet suivi (bandeau, page de suivi) : le même état que
@@ -133,7 +144,7 @@ final class TripLiveActivities {
         let entry = Tracked.JourneyTracking(event: event, boardSloid: board.sloid, alightSloid: alight.sloid,
                                             boardName: board.stopPointName, alightName: alight.stopPointName)
         start(key: key, tracked: .journey(entry), title: "\(event.lineName) → \(shortStopName(event.destination))",
-              state: state(for: entry, events: events, operatorName: operatorName),
+              state: state(for: entry, key: key, events: events, operatorName: operatorName),
               origin: board.stopPointName, destination: alight.stopPointName)
     }
 
@@ -151,9 +162,8 @@ final class TripLiveActivities {
             // course, qui dit où chacun se trouve. Une course suivie les a déjà.
             if case .trip(let trip) = entry {
                 Task {
-                    if let detailed = await self.state(for: trip.trip, alert: state.alert) {
-                        await activity.update(content(for: detailed))
-                        self.record(attributes: attributes, state: detailed)
+                    if let detailed = await self.state(for: trip.trip, key: key, alert: state.alert) {
+                        await self.push(base: detailed, to: activity)
                     }
                 }
             }
@@ -162,27 +172,43 @@ final class TripLiveActivities {
         }
     }
 
-    /// L'état d'une course suivie, lu dans ses passages.
-    private func state(for entry: Tracked.JourneyTracking, events: [LineEvent], operatorName: String) -> TripActivityState? {
-        TripActivityState(journey: events, line: entry.event.lineName,
+    /// L'état d'une course suivie, lu dans ses passages, et son tracé.
+    private func state(for entry: Tracked.JourneyTracking, key: String, events: [LineEvent],
+                       operatorName: String) -> TripActivityState? {
+        routes[key] = TripRoute(legs: [TripRoute.points(from: events, boardSloid: entry.boardSloid,
+                                                        alightSloid: entry.alightSloid)])
+        return TripActivityState(journey: events, line: entry.event.lineName,
                           operatorName: operatorName.isEmpty ? entry.event.operatorName : operatorName,
                           transportType: entry.event.transportType, destination: entry.event.destination,
                           boardSloid: entry.boardSloid, alightSloid: entry.alightSloid)
     }
 
-    /// L'état de l'activité, avec les passages des courses pas encore terminées.
-    private func state(for trip: TripEvent, alert: String?, now: Date = Date()) async -> TripActivityState? {
+    /// L'état de l'activité, avec les passages des courses pas encore terminées. Les mêmes
+    /// passages donnent le tracé, gardé à part pour la correction par la position.
+    private func state(for trip: TripEvent, key: String, alert: String?, now: Date = Date()) async -> TripActivityState? {
+        var events: [String: [LineEvent]] = [:]
         var calls: [String: [TripActivityState.Call]] = [:]
         for leg in trip.vehicleLegs where !leg.journeyRef.isEmpty && (leg.alightDate ?? .distantFuture) > now {
-            if let cached = callsCache[leg.journeyRef], now.timeIntervalSince(cached.fetched) < 60 {
-                calls[leg.journeyRef] = cached.calls
-            } else if let fetched = await TripActivityState.fetchCalls(for: leg) {
-                callsCache[leg.journeyRef] = (fetched, now)
-                calls[leg.journeyRef] = fetched
-            } else if let cached = callsCache[leg.journeyRef] {
-                calls[leg.journeyRef] = cached.calls
+            if let cached = journeyCache[leg.journeyRef], now.timeIntervalSince(cached.fetched) < 60 {
+                events[leg.journeyRef] = cached.events
+            } else if let fetched = await TripActivityState.fetchJourney(for: leg) {
+                journeyCache[leg.journeyRef] = (fetched, now)
+                events[leg.journeyRef] = fetched
+            } else if let cached = journeyCache[leg.journeyRef] {
+                events[leg.journeyRef] = cached.events
+            }
+            if let found = events[leg.journeyRef] {
+                let legCalls = TripActivityState.calls(from: found, for: leg)
+                if !legCalls.isEmpty { calls[leg.journeyRef] = legCalls }
             }
         }
+        // Le tracé suit les étapes de l'état : même filtre que `TripActivityState(trip:)`, pour
+        // que l'étape en cours désigne le même véhicule de part et d'autre.
+        routes[key] = TripRoute(legs: trip.vehicleLegs.compactMap { leg in
+            guard leg.boardDate != nil, leg.alightDate != nil else { return nil }
+            let points = TripRoute.points(from: events[leg.journeyRef] ?? [], for: leg)
+            return points.count >= 2 ? points : TripRoute.endpoints(of: leg)
+        })
         return TripActivityState(trip: trip, alert: alert, calls: calls)
     }
 
@@ -191,6 +217,54 @@ final class TripLiveActivities {
     private func record(attributes: TripActivityAttributes, state: TripActivityState) {
         live[attributes.key] = LiveTrip(attributes: attributes, state: state)
         TripStepAlerts.schedule(key: attributes.key, title: attributes.title, state: state)
+    }
+
+    // MARK: La position
+
+    /// Met l'activité à jour avec l'état d'OJP, corrigé par la position quand elle dit quelque
+    /// chose de fiable.
+    private func push(base state: TripActivityState, to activity: Activity<TripActivityAttributes>,
+                      now: Date = Date()) async {
+        let key = activity.attributes.key
+        baseStates[key] = state
+        let corrected = await adjusted(state, key: key, now: now)
+        await activity.update(content(for: corrected))
+        record(attributes: activity.attributes, state: corrected)
+    }
+
+    /// L'état corrigé par la position du voyageur, quand il est dans le véhicule en cours.
+    ///
+    /// Les deux sources se complètent : OJP donne l'horaire, la position dit l'avance ou le
+    /// retard du véhicule qu'on occupe, y compris entre deux requêtes. Un écart trop grand
+    /// trahit une position qui ne parle pas de ce véhicule-là (trajet suivi de loin, tracé
+    /// grossier) : OJP l'emporte alors, et rien n'est corrigé.
+    private func adjusted(_ state: TripActivityState, key: String, now: Date) async -> TripActivityState {
+        guard case .riding(let index) = state.phase(at: now) else { return state }
+        let points = routes[key]?.points(of: index) ?? []
+        guard points.count >= 2, let location = await currentLocation(now: now) else { return state }
+        guard let fix = TripPositionEstimator.fix(on: points, latitude: location.coordinate.latitude,
+                                                  longitude: location.coordinate.longitude,
+                                                  accuracy: location.horizontalAccuracy, now: now) else { return state }
+        Log.location.debug("Trajet suivi corrigé de \(Int(fix.offset)) s, à \(Int(fix.distance)) m du parcours")
+        return state.adjusted(leg: index, by: fix.offset, now: now)
+    }
+
+    /// La position du moment, au plus une par minute, et seulement si elle est déjà autorisée :
+    /// le suivi n'a pas à la réclamer, l'horaire d'OJP suffit sans elle.
+    private func currentLocation(now: Date) async -> CLLocation? {
+        if let last = lastLocation, now.timeIntervalSince(last.timestamp) < 45 { return last }
+        guard !isLocating, let status = locationManager.locationStatus,
+              status == .authorizedWhenInUse || status == .authorizedAlways else { return nil }
+        isLocating = true
+        let location: CLLocation? = await withCheckedContinuation { continuation in
+            locationManager.requestLocation { continuation.resume(returning: $0) }
+        }
+        isLocating = false
+        // Une position trop vague projetée sur un parcours ne dit rien de bon.
+        guard let location, location.horizontalAccuracy >= 0,
+              location.horizontalAccuracy <= TripPositionEstimator.maximumAccuracy * 2 else { return nil }
+        lastLocation = location
+        return location
     }
 
     func stop(_ key: String) {
@@ -230,9 +304,9 @@ final class TripLiveActivities {
         tracked[key] = .trip(entry)
         save()
         guard let activity = activity(for: key),
-              let state = await state(for: match.trip, alert: RegularTripAlerts.changes(in: match).first) else { return }
-        await activity.update(content(for: state))
-        record(attributes: activity.attributes, state: state)
+              let state = await state(for: match.trip, key: key,
+                                      alert: RegularTripAlerts.changes(in: match).first) else { return }
+        await push(base: state, to: activity)
     }
 
     /// Relit les trajets suivis, termine ceux qui sont arrivés, et redessine les autres
@@ -270,29 +344,33 @@ final class TripLiveActivities {
             case .journey(let entry):
                 if mayRequest {
                     lastRequest[key] = now
-                    if let refreshed = await refreshedState(of: entry) {
-                        await activity.update(content(for: refreshed))
-                        record(attributes: activity.attributes, state: refreshed)
+                    if let refreshed = await refreshedState(of: entry, key: key) {
+                        await push(base: refreshed, to: activity, now: now)
                         continue
                     }
                 }
             case nil:
                 continue
             }
-            // Rien de neuf : redessiner quand même, pour passer à l'étape suivante.
-            await activity.update(content(for: activity.content.state))
-            record(attributes: activity.attributes, state: activity.content.state)
+            // Rien de neuf : redessiner quand même, pour passer à l'étape suivante et suivre
+            // la position.
+            if let base = baseStates[key] {
+                await push(base: base, to: activity, now: now)
+            } else {
+                await activity.update(content(for: activity.content.state))
+                record(attributes: activity.attributes, state: activity.content.state)
+            }
         }
     }
 
     /// Redemande la course suivie et relit ses heures (`OJPTripInfoRequest`).
-    private func refreshedState(of entry: Tracked.JourneyTracking) async -> TripActivityState? {
+    private func refreshedState(of entry: Tracked.JourneyTracking, key: String) async -> TripActivityState? {
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTransportJourney(with: entry.event) { continuation.resume(returning: $0) }
         }
         guard let data else { return nil }
         let result = parseJourneyEventsSync(from: data)
-        return state(for: entry, events: result.events, operatorName: result.operatorName)
+        return state(for: entry, key: key, events: result.events, operatorName: result.operatorName)
     }
 
     /// L'échéance est le prochain changement d'étape : le système redessine l'activité à ce moment.
@@ -310,10 +388,12 @@ final class TripLiveActivities {
 
     private func forget(_ key: String) {
         if case .trip(let entry) = tracked[key] {
-            entry.trip.vehicleLegs.forEach { callsCache[$0.journeyRef] = nil }
+            entry.trip.vehicleLegs.forEach { journeyCache[$0.journeyRef] = nil }
         }
         tracked[key] = nil
         lastRequest[key] = nil
+        routes[key] = nil
+        baseStates[key] = nil
         live[key] = nil
         TripStepAlerts.cancel(key: key)
         save()

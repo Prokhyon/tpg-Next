@@ -165,6 +165,23 @@ struct LiveTripView: View {
                     .foregroundStyle(.orange)
                     .padding(.top, 4)
             }
+            // Dans le véhicule, la position affine l'horaire : le dire, pour que l'écart avec
+            // l'heure annoncée ailleurs ne surprenne pas.
+            if let offset = trip.state.positionOffset {
+                let minutes = max(1, Int((Double(abs(offset)) / 60).rounded()))
+                Label {
+                    if offset > 0 {
+                        Text("Ajusté d'après votre position : \(minutes)' de retard")
+                    } else {
+                        Text("Ajusté d'après votre position : \(minutes)' d'avance")
+                    }
+                } icon: {
+                    Image(systemName: "location.fill")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 20)
@@ -521,6 +538,7 @@ extension TripLiveActivities.LiveTrip {
         }
         trip.state.departure.addTimeInterval(shift)
         trip.state.arrival.addTimeInterval(shift)
+        trip.state.positionOffset = 95
         return trip
     }
 }
