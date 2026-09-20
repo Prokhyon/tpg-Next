@@ -30,10 +30,15 @@ public struct TripActivityState: Codable, Hashable {
         /// Quelques passages du véhicule (avant la montée, puis jusqu'à la descente), pour dire
         /// où il se trouve. `nil` sans course connue (itinéraire prévu, API muette).
         public var calls: [Call]?
+        /// Le temps qu'OJP compte après cette descente pour rejoindre le véhicule suivant, en
+        /// secondes. `nil` : inconnu, ou dernière étape.
+        public var transferTime: Int?
+        /// Vrai si le véhicule ne s'arrête plus à la montée (course supprimée, arrêt sauté).
+        public var cancelled: Bool?
 
         public init(line: String, operatorName: String, transportType: String, destination: String,
                     boardName: String, boardQuay: String, board: Date, alight: Date, alightName: String, delay: Int,
-                    calls: [Call]? = nil) {
+                    calls: [Call]? = nil, transferTime: Int? = nil, cancelled: Bool? = nil) {
             self.line = line
             self.operatorName = operatorName
             self.transportType = transportType
@@ -45,6 +50,8 @@ public struct TripActivityState: Codable, Hashable {
             self.alightName = alightName
             self.delay = delay
             self.calls = calls
+            self.transferTime = transferTime
+            self.cancelled = cancelled
         }
 
         /// Le dernier arrêt passé par le véhicule à `date`, d'après les heures des passages.
@@ -91,6 +98,7 @@ public struct TripActivityState: Codable, Hashable {
     /// `nil` si le trajet n'a ni véhicule ni heures lisibles. `calls` : les passages de chaque
     /// course, par `journeyRef` (voir `TripActivityState.calls(from:for:)`).
     public init?(trip: TripEvent, alert: String?, calls: [String: [Call]] = [:], updated: Date = Date()) {
+        let transfers = trip.transferTimes
         let legs: [Leg] = trip.vehicleLegs.compactMap { leg in
             guard let board = leg.boardDate, let alight = leg.alightDate else { return nil }
             let planned = OJPDate.date(from: leg.legBoardTimetableTime) ?? board
@@ -98,7 +106,8 @@ public struct TripActivityState: Codable, Hashable {
                        destination: leg.legDestination, boardName: leg.legBoardStopName, boardQuay: leg.legBoardQuay,
                        board: board, alight: alight, alightName: leg.legAlightStopName,
                        delay: Int((board.timeIntervalSince(planned) / 60).rounded()),
-                       calls: leg.journeyRef.isEmpty ? nil : calls[leg.journeyRef])
+                       calls: leg.journeyRef.isEmpty ? nil : calls[leg.journeyRef],
+                       transferTime: transfers[leg.id].map { Int($0) })
         }
         guard let first = legs.first, let last = legs.last else { return nil }
         let status = RegularTripStatus(trip: trip)

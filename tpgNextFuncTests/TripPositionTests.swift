@@ -76,6 +76,43 @@ struct TripPositionTests {
                                           longitude: start.longitude, now: base) == nil)
     }
 
+    // MARK: Dans le véhicule, ou resté à l'arrêt
+
+    @Test func movingWithTheVehicleMeansAboard() {
+        // Deux arrêts plus loin, à l'heure où le véhicule devrait y être.
+        #expect(TripPositionEstimator.isAboard(on: route(), latitude: start.latitude,
+                                               longitude: start.longitude + 2 * step,
+                                               now: base.addingTimeInterval(240)) == true)
+    }
+
+    @Test func stayingAtTheStopMeansTheVehicleLeftWithoutUs() {
+        // Toujours au premier arrêt alors que le véhicule est à 800 m : la correspondance est ratée.
+        #expect(TripPositionEstimator.isAboard(on: route(), latitude: start.latitude,
+                                               longitude: start.longitude,
+                                               now: base.addingTimeInterval(240)) == false)
+    }
+
+    @Test func farFromTheRouteIsNotAboard() {
+        #expect(TripPositionEstimator.isAboard(on: route(), latitude: start.latitude + 0.02,
+                                               longitude: start.longitude,
+                                               now: base.addingTimeInterval(240)) == false)
+    }
+
+    @Test func aWiderToleranceForgivesTheDistance() {
+        // À 400 m de là où le véhicule devrait être : trop pour 300 m, assez pour 500.
+        #expect(TripPositionEstimator.isAboard(on: route(), latitude: start.latitude,
+                                               longitude: start.longitude + step,
+                                               now: base.addingTimeInterval(240)) == false)
+        #expect(TripPositionEstimator.isAboard(on: route(), latitude: start.latitude,
+                                               longitude: start.longitude + step,
+                                               now: base.addingTimeInterval(240), tolerance: 500) == true)
+    }
+
+    @Test func aRouteTooShortSaysNothing() {
+        #expect(TripPositionEstimator.isAboard(on: Array(route().prefix(1)), latitude: start.latitude,
+                                               longitude: start.longitude, now: base) == nil)
+    }
+
     // MARK: L'état corrigé
 
     private func state(now: Date) -> TripActivityState {

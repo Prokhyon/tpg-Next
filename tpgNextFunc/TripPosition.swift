@@ -110,6 +110,52 @@ public enum TripPositionEstimator {
     /// écart trop grand avec l'horaire.
     public static func fix(on points: [TripRoute.Point], latitude: Double, longitude: Double,
                            accuracy: Double = 0, now: Date) -> TripPositionFix? {
+        guard let projected = projections(on: points, latitude: latitude, longitude: longitude, now: now),
+              let nearest = projected.fixes.min(by: { $0.distance < $1.distance }),
+              nearest.distance <= maximumDistance + min(max(accuracy, 0), maximumAccuracy) else { return nil }
+        // Un parcours qui repasse près de lui-même donne deux points aussi proches : celui dont
+        // l'heure colle le mieux est le bon.
+        let chosen = projected.fixes
+            .filter { $0.distance <= nearest.distance + 50 }
+            .min { abs($0.offset) < abs($1.offset) } ?? nearest
+        guard abs(chosen.offset) <= maximumOffset else { return nil }
+        return chosen
+    }
+
+    /// Le voyageur est-il dans ce véhicule ?
+    ///
+    /// Il l'est s'il se trouve là où le véhicule devrait être à cette heure. Resté à l'arrêt
+    /// pendant que le véhicule s'éloigne, il ne l'est pas — c'est ce qui départage une
+    /// correspondance serrée attrapée d'une correspondance manquée. `nil` quand on ne peut
+    /// rien en dire (tracé trop court).
+    public static func isAboard(on points: [TripRoute.Point], latitude: Double, longitude: Double,
+                                accuracy: Double = 0, now: Date, tolerance: Double = 300) -> Bool? {
+        guard let projected = projections(on: points, latitude: latitude, longitude: longitude, now: now),
+              let nearest = projected.fixes.min(by: { $0.distance < $1.distance }) else { return nil }
+        let margin = min(max(accuracy, 0), maximumAccuracy)
+        // Ailleurs que sur le parcours : ce n'est pas dans ce véhicule-là.
+        guard nearest.distance <= maximumDistance + margin else { return false }
+        let travelled = nearest.progress * projected.length
+        return abs(travelled - expected(on: points, lengths: projected.lengths, at: now)) <= tolerance + margin
+    }
+
+    /// La distance que le véhicule devrait avoir parcourue à cette heure.
+    private static func expected(on points: [TripRoute.Point], lengths: [Double], at date: Date) -> Double {
+        guard let first = points.first, let last = points.last, let total = lengths.last else { return 0 }
+        if date <= first.time { return 0 }
+        if date >= last.time { return total }
+        for index in 0..<(points.count - 1) where date < points[index + 1].time {
+            let span = points[index + 1].time.timeIntervalSince(points[index].time)
+            guard span > 0 else { return lengths[index] }
+            let fraction = date.timeIntervalSince(points[index].time) / span
+            return lengths[index] + fraction * (lengths[index + 1] - lengths[index])
+        }
+        return total
+    }
+
+    /// La position projetée sur chaque segment du tracé, avec les longueurs cumulées.
+    private static func projections(on points: [TripRoute.Point], latitude: Double, longitude: Double,
+                                    now: Date) -> (fixes: [TripPositionFix], lengths: [Double], length: Double)? {
         guard points.count >= 2 else { return nil }
         // Tout en mètres autour de la position : à l'échelle d'une ville, la terre est plate.
         let metersPerLatitude = 111_132.0
@@ -124,25 +170,16 @@ public enum TripPositionEstimator {
         }
         guard let total = lengths.last, total > 0 else { return nil }
 
-        var candidates: [TripPositionFix] = []
+        var fixes: [TripPositionFix] = []
         for index in 0..<(local.count - 1) {
             let (fraction, distance) = closest(from: local[index], to: local[index + 1])
             let span = points[index + 1].time.timeIntervalSince(points[index].time)
             let reached = points[index].time.addingTimeInterval(fraction * span)
             let travelled = lengths[index] + fraction * (lengths[index + 1] - lengths[index])
-            candidates.append(TripPositionFix(offset: now.timeIntervalSince(reached), distance: distance,
-                                              progress: travelled / total, reached: reached))
+            fixes.append(TripPositionFix(offset: now.timeIntervalSince(reached), distance: distance,
+                                         progress: travelled / total, reached: reached))
         }
-
-        guard let nearest = candidates.min(by: { $0.distance < $1.distance }),
-              nearest.distance <= maximumDistance + min(max(accuracy, 0), maximumAccuracy) else { return nil }
-        // Un parcours qui repasse près de lui-même donne deux points aussi proches : celui dont
-        // l'heure colle le mieux est le bon.
-        let chosen = candidates
-            .filter { $0.distance <= nearest.distance + 50 }
-            .min { abs($0.offset) < abs($1.offset) } ?? nearest
-        guard abs(chosen.offset) <= maximumOffset else { return nil }
-        return chosen
+        return (fixes, lengths, total)
     }
 
     /// Le point du segment le plus proche de l'origine : la fraction parcourue et la distance.

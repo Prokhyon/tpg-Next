@@ -233,10 +233,16 @@ horaires (`estimatedVehiclePosition`).
   corrigé. Demandée seulement si la localisation est déjà autorisée, et seulement à bord.
 - **Un trajet commencé ne se remplace plus** (`TripActivityState.hasLeft(at:)`) : redemander
   l'itinéraire depuis le point de départ renverrait en arrière un voyageur déjà à mi-chemin.
-  Ses heures sont relues dans les passages de ses courses, et si une correspondance tombe
-  (`brokenTransfer()`), `TripReplanner.tail(from:at:to:)` redemande la suite depuis l'arrêt de
-  descente, recollée par `TripEvent.splicing(after:with:)`. Le motif est gardé dans le suivi
-  (`change`) et affiché comme alerte.
+  Un véhicule supprimé ne compte pas comme un départ : tout reste alors à refaire.
+- `transferProblem()` dit ce qu'il advient de la première correspondance en défaut, avec le
+  temps de correspondance d'OJP (`Leg.transferTime`) plutôt qu'une minute forfaitaire :
+  - `.missed` (véhicule parti, ou `Leg.cancelled` : il ne s'arrête plus là) → `TripReplanner.tails`
+    redemande la suite depuis l'arrêt de descente, recollée par `TripEvent.splicing(after:with:)`.
+    Les autres propositions restent offertes (`alternatives`, `choose(_:for:)`).
+  - `.doubtful` (le véhicule partait à l'instant où l'on descendait) → rien n'est réécrit :
+    `TripPositionEstimator.isAboard(on:…)` compare la position du voyageur à celle où le véhicule
+    devrait être ; à défaut de réponse, `doubtful[key]` pose la question dans la page du trajet
+    (`confirmBoarded` / `confirmMissed`).
 - Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
   rappels, et reposées à chaque mise à jour du trajet — donc avec la correction de position.
 - Une notification dont le moment est passé quitte le centre de notifications :
