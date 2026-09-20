@@ -207,8 +207,11 @@ horaires (`estimatedVehiclePosition`).
 - L'activité en direct (`tpg Next/LiveActivity/`) : données dans `tpgNextFunc/TripActivity.swift`,
   vues dans `TripLiveActivity.swift`, compilé aussi pour le widget (exception de membre, comme
   `BasicViews.swift`), gestion dans `TripLiveActivities.swift`.
-- **Pas de serveur push** : seule l'app met l'activité à jour (chaque minute au premier plan,
-  réveils en arrière-plan décidés par iOS). L'affichage tient seul entre deux mises à jour :
+- **Pas de serveur push** : seule l'app met l'activité à jour. Pendant un trajet suivi, une
+  session d'activité d'arrière-plan (`TripBackgroundLocation`, `CLBackgroundActivitySession`,
+  mode `location`) la tient éveillée : le flux de positions sert d'horloge (une relecture par
+  minute) et de source pour la correction des heures. Elle se ferme au dernier trajet terminé,
+  et ne s'ouvre pas sans autorisation de localisation — restent alors les réveils d'iOS. L'affichage tient seul entre deux mises à jour :
   minutes restantes en format système (`Text(.currentDate, format: .offset(…))`, « 4 minutes » ;
   un format maison ne serait pas évalué par l'écran verrouillé), étape et position du véhicule
   déduites de l'heure (`phase(at:)`, `vehicleStop(at:)` sur les passages embarqués),
@@ -228,6 +231,12 @@ horaires (`estimatedVehiclePosition`).
   est suivi de loin) ou plus de 3 minutes d'écart (tracé grossier), et c'est l'horaire d'OJP qui
   reste. La correction part toujours du dernier état d'OJP (`baseStates`), jamais d'un état déjà
   corrigé. Demandée seulement si la localisation est déjà autorisée, et seulement à bord.
+- **Un trajet commencé ne se remplace plus** (`TripActivityState.hasLeft(at:)`) : redemander
+  l'itinéraire depuis le point de départ renverrait en arrière un voyageur déjà à mi-chemin.
+  Ses heures sont relues dans les passages de ses courses, et si une correspondance tombe
+  (`brokenTransfer()`), `TripReplanner.tail(from:at:to:)` redemande la suite depuis l'arrêt de
+  descente, recollée par `TripEvent.splicing(after:with:)`. Le motif est gardé dans le suivi
+  (`change`) et affiché comme alerte.
 - Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
   rappels, et reposées à chaque mise à jour du trajet — donc avec la correction de position.
 - Une notification dont le moment est passé quitte le centre de notifications :

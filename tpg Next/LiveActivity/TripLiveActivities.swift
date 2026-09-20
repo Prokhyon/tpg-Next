@@ -41,6 +41,8 @@ final class TripLiveActivities {
             var trip: TripEvent
             /// Vrai pour un trajet régulier : il passe par `RegularTripsModel` (alertes, cache).
             var isRegular: Bool
+            /// Pourquoi la suite a été recalculée en route, s'il y a lieu : affiché tel quel.
+            var change: String?
 
             var occurrence: RegularTripOccurrence { RegularTripOccurrence(trip: recipe, day: day, target: target) }
         }
@@ -209,6 +211,21 @@ final class TripLiveActivities {
             let points = TripRoute.points(from: events[leg.journeyRef] ?? [], for: leg)
             return points.count >= 2 ? points : TripRoute.endpoints(of: leg)
         })
+        // Les heures des courses, relues à la source : le véhicule prend du retard sans qu'on
+        // ait à redemander tout l'itinéraire.
+        var trip = trip
+        trip.legs = trip.legs.map { leg in
+            guard let passages = events[leg.journeyRef] else { return leg }
+            func time(at sloid: String) -> String? {
+                let wanted = sloidHarmonizer(code: sloid)
+                let event = passages.first { sloidHarmonizer(code: $0.sloid.isEmpty ? $0.stopPlaceRef : $0.sloid) == wanted }
+                return (event?.estimatedTime).flatMap { $0.isEmpty ? nil : $0 }
+            }
+            var leg = leg
+            if let board = time(at: leg.legBoardStopId) { leg.legBoardEstimatedTime = board }
+            if let alight = time(at: leg.legAlightStopId) { leg.legAlightEstimatedTime = alight }
+            return leg
+        }
         return TripActivityState(trip: trip, alert: alert, calls: calls)
     }
 
@@ -252,6 +269,9 @@ final class TripLiveActivities {
     /// La position du moment, au plus une par minute, et seulement si elle est déjà autorisée :
     /// le suivi n'a pas à la réclamer, l'horaire d'OJP suffit sans elle.
     private func currentLocation(now: Date) async -> CLLocation? {
+        // Pendant un suivi, les positions arrivent d'elles-mêmes : rien à demander.
+        if let live = TripBackgroundLocation.shared.lastLocation,
+           now.timeIntervalSince(live.timestamp) < 60 { return live }
         if let last = lastLocation, now.timeIntervalSince(last.timestamp) < 45 { return last }
         guard !isLocating, let status = locationManager.locationStatus,
               status == .authorizedWhenInUse || status == .authorizedAlways else { return nil }
@@ -298,8 +318,11 @@ final class TripLiveActivities {
     // MARK: Mettre à jour
 
     /// Un trajet régulier vient d'être relu (appelé par `RegularTripsModel`).
-    func didResolve(_ key: String, match: RegularTripMatch) async {
+    func didResolve(_ key: String, match: RegularTripMatch, now: Date = Date()) async {
         guard case .trip(var entry) = tracked[key] else { return }
+        // Parti : un itinéraire recalculé depuis le point de départ renverrait le voyageur en
+        // arrière. Seule la suite peut encore changer, et c'est `followedState` qui s'en charge.
+        if hasLeft(key, now: now) { return }
         entry.trip = match.trip
         tracked[key] = .trip(entry)
         save()
@@ -326,6 +349,24 @@ final class TripLiveActivities {
                 continue
             }
             let mayRequest = lastRequest[key].map { now.timeIntervalSince($0) >= 60 } ?? true
+            // Déjà parti : l'itinéraire est figé. On relit les heures de ses courses, et si une
+            // correspondance tombe, la suite est redemandée depuis l'arrêt où l'on descend.
+            if case .trip(let entry) = tracked[key], hasLeft(key, now: now) {
+                if mayRequest {
+                    lastRequest[key] = now
+                    if let followed = await followedState(of: entry, key: key, now: now) {
+                        await push(base: followed, to: activity, now: now)
+                        continue
+                    }
+                }
+                if let base = baseStates[key] {
+                    await push(base: base, to: activity, now: now)
+                } else {
+                    await activity.update(content(for: state))
+                    record(attributes: activity.attributes, state: state)
+                }
+                continue
+            }
             switch tracked[key] {
             case .trip(let entry) where entry.isRegular:
                 // Le modèle limite les requêtes, et rend le dernier trajet connu entre-temps.
@@ -361,6 +402,45 @@ final class TripLiveActivities {
                 record(attributes: activity.attributes, state: activity.content.state)
             }
         }
+    }
+
+    /// Vrai si le voyageur est déjà parti sur ce trajet.
+    private func hasLeft(_ key: String, now: Date) -> Bool {
+        (baseStates[key] ?? live[key]?.state)?.hasLeft(at: now) ?? false
+    }
+
+    /// L'état d'un itinéraire déjà commencé : ses heures relues, et sa suite réparée si elle ne
+    /// tient plus.
+    ///
+    /// Ce qui est parcouru ne bouge plus. Si la descente arrive trop tard pour la correspondance,
+    /// un nouvel itinéraire est demandé depuis cet arrêt-là, à cette heure-là, et recollé à la
+    /// suite : le voyageur garde son avance, et lit pourquoi le trajet prévu ne tient plus.
+    private func followedState(of entry: Tracked.TripTracking, key: String, now: Date) async -> TripActivityState? {
+        guard var state = await state(for: entry.trip, key: key, alert: entry.change, now: now) else { return nil }
+        guard let broken = state.brokenTransfer() else { return state }
+        let leg = state.legs[broken]
+        let stop = shortStopName(leg.alightName)
+        let planned = entry.trip.trackedLegs
+        guard planned.indices.contains(broken),
+              let latitude = Double(planned[broken].legAlightLatitude),
+              let longitude = Double(planned[broken].legAlightLongitude) else { return state }
+        let alightLeg = planned[broken]
+        let from = RegularTripPlace(name: alightLeg.legAlightStopName, sloid: alightLeg.legAlightStopId,
+                                    coordinates: Coordinates(lon: longitude, lat: latitude))
+        let tail = await TripReplanner.tail(from: from,
+                                            at: leg.alight.addingTimeInterval(TripActivityState.minimumTransfer),
+                                            to: entry.recipe.destination)
+        guard let tail else {
+            state.alert = String(localized: "Correspondance manquée à \(stop) · aucune suite trouvée")
+            return state
+        }
+        var entry = entry
+        entry.trip = entry.trip.splicing(after: alightLeg, with: tail)
+        entry.change = String(localized: "Correspondance manquée à \(stop) · suite recalculée")
+        self.tracked[key] = .trip(entry)
+        save()
+        Log.network.info("Suite du trajet recalculée depuis \(stop)")
+        return await self.state(for: entry.trip, key: key, alert: entry.change, now: now) ?? state
     }
 
     /// Redemande la course suivie et relit ses heures (`OJPTripInfoRequest`).
@@ -418,6 +498,13 @@ final class TripLiveActivities {
         if !stale.isEmpty {
             stale.forEach { tracked[$0] = nil }
             save()
+        }
+        // L'app doit tourner pour mettre les activités à jour : tant qu'un trajet est suivi,
+        // la session d'arrière-plan l'y aide.
+        if keys.isEmpty {
+            TripBackgroundLocation.shared.stop()
+        } else {
+            TripBackgroundLocation.shared.start()
         }
     }
 
