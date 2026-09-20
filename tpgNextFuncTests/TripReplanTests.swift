@@ -46,6 +46,34 @@ struct TripReplanTests {
         #expect(state.hasLeft(at: base.addingTimeInterval(700)))
     }
 
+    // MARK: Marcher ou attendre
+
+    @Test func walkingBeforeTheFirstBoarding() {
+        // Cinq minutes de marche avant la montée.
+        let state = TripActivityState(legs: [leg(board: 300, alight: 900)], departure: base,
+                                      arrival: base.addingTimeInterval(900), arrivalDelay: 0,
+                                      alert: nil, updated: base)
+        #expect(!state.isWalking(at: base.addingTimeInterval(-60)))
+        #expect(state.isWalking(at: base.addingTimeInterval(60)))
+        // Dans le véhicule, on ne marche plus.
+        #expect(!state.isWalking(at: base.addingTimeInterval(600)))
+    }
+
+    @Test func waitingAtTheStopIsNotWalking() {
+        // Le trajet commence à l'arrêt : rien à marcher, on attend.
+        let state = state([leg(board: 300, alight: 900)])
+        #expect(!state.isWalking(at: base.addingTimeInterval(60)))
+    }
+
+    @Test func walkingDuringTheTransferTime() {
+        let state = state([leg(board: 0, alight: 600, transfer: 300),
+                           leg(board: 1200, alight: 1800, line: "15")])
+        // Trois minutes après la descente : encore en chemin vers l'autre quai.
+        #expect(state.isWalking(at: base.addingTimeInterval(780)))
+        // Passé les cinq minutes de marche, c'est de l'attente.
+        #expect(!state.isWalking(at: base.addingTimeInterval(1000)))
+    }
+
     // MARK: L'état d'une correspondance
 
     @Test func aConnectionThatHoldsIsNotAProblem() {

@@ -85,6 +85,20 @@ public struct TripActivityState: Codable, Hashable {
     /// Le décalage appliqué d'après la position du voyageur, en secondes (`nil` : horaires
     /// d'OJP seuls). Facultatif : une activité lancée par une version précédente n'en a pas.
     public var positionOffset: Int?
+    /// La question posée au voyageur quand une correspondance serrée ne se tranche pas seule.
+    /// L'activité en direct l'affiche à la place de sa frise, avec deux boutons.
+    public var question: Question?
+
+    /// « Êtes-vous monté dans le 15 à Plainpalais ? »
+    public struct Question: Codable, Hashable, Sendable {
+        public var stop: String
+        public var line: String
+
+        public init(stop: String, line: String) {
+            self.stop = stop
+            self.line = line
+        }
+    }
 
     public init(legs: [Leg], departure: Date, arrival: Date, arrivalDelay: Int, alert: String?, updated: Date) {
         self.legs = legs
@@ -182,6 +196,18 @@ public struct TripActivityState: Codable, Hashable {
         case transfer(leg: Int, waitMinutes: Int)
         /// À bord de la dernière étape : l'arrivée, et la marche éventuelle.
         case arrival(at: Date, walkMinutes: Int)
+    }
+
+    /// Vrai quand le voyageur marche vers l'arrêt : avant la première montée quand le trajet
+    /// commence à pied, ou pendant le temps de correspondance qui suit une descente. Passé ce
+    /// temps-là, il attend.
+    public func isWalking(at date: Date) -> Bool {
+        guard case .waiting(let index) = phase(at: date) else { return false }
+        if index == 0 {
+            return date >= departure && legs[0].board.timeIntervalSince(departure) > 60
+        }
+        guard let transfer = legs[index - 1].transferTime, transfer > 60 else { return false }
+        return date < legs[index - 1].alight.addingTimeInterval(TimeInterval(transfer))
     }
 
     public func nextStep(after phase: Phase) -> NextStep? {

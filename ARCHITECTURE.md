@@ -241,14 +241,20 @@ horaires (`estimatedVehiclePosition`).
     Les autres propositions restent offertes (`alternatives`, `choose(_:for:)`).
   - `.doubtful` (le véhicule partait à l'instant où l'on descendait) → rien n'est réécrit :
     `TripPositionEstimator.isAboard(on:…)` compare la position du voyageur à celle où le véhicule
-    devrait être ; à défaut de réponse, `doubtful[key]` pose la question dans la page du trajet
-    (`confirmBoarded` / `confirmMissed`).
+    devrait être ; à défaut de réponse, `state.question` fait poser la question par l'activité en
+    direct elle-même (`TripActivityQuestion`, sur fond teinté, à la place de la frise) et par la
+    page du trajet. Les boutons de l'écran verrouillé passent par `TripBoardingIntent`
+    (`LiveActivityIntent`, compilé aussi dans le widget) : il poste une notification que l'app
+    reçoit, faute de pouvoir appeler `TripLiveActivities` depuis le widget.
 - Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
   rappels, et reposées à chaque mise à jour du trajet — donc avec la correction de position.
 - Une notification dont le moment est passé quitte le centre de notifications :
   `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
   minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte
   attendent sa prochaine ouverture.
+- Dans la Dynamic Island compacte, le décompte est celui du système (`Text(timerInterval:)`,
+  « 4:32 ») : les formats en toutes lettres n'y tiennent pas. Le marqueur dit ce qu'il y a à
+  faire — badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, véhicule à l'arrivée.
 - Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
   utiliser les aperçus de `TripLiveActivity.swift`.
 
