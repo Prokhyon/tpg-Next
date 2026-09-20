@@ -23,18 +23,35 @@ final class TripLiveActivities {
     /// Lancée automatiquement ce délai avant le départ d'un trajet régulier.
     static let autoStartLead: TimeInterval = 20 * 60
 
-    /// Ce qu'il faut pour redemander le trajet à OJP.
-    private struct Tracked: Codable {
-        /// La recette : le trajet régulier, ou un itinéraire transformé en recette d'un jour.
-        var recipe: RegularTrip
-        var day: String
-        var target: Date
-        /// Le dernier itinéraire reçu, pour l'ouvrir depuis l'activité.
-        var trip: TripEvent
-        /// Vrai pour un trajet régulier : il passe par `RegularTripsModel` (alertes, cache).
-        var isRegular: Bool
+    /// Ce qu'il faut pour redemander à OJP ce qui est suivi.
+    private enum Tracked: Codable {
+        /// Un itinéraire (trajet régulier ou non) : redemandé par `OJPTripRequest`.
+        case trip(TripTracking)
+        /// Une course choisie sur la page d'un arrêt ou d'une ligne : redemandée par
+        /// `OJPTripInfoRequest`, pour rester sur ce véhicule-là même s'il prend du retard.
+        case journey(JourneyTracking)
 
-        var occurrence: RegularTripOccurrence { RegularTripOccurrence(trip: recipe, day: day, target: target) }
+        struct TripTracking: Codable {
+            /// La recette : le trajet régulier, ou un itinéraire transformé en recette d'un jour.
+            var recipe: RegularTrip
+            var day: String
+            var target: Date
+            /// Le dernier itinéraire reçu, pour l'ouvrir depuis l'activité.
+            var trip: TripEvent
+            /// Vrai pour un trajet régulier : il passe par `RegularTripsModel` (alertes, cache).
+            var isRegular: Bool
+
+            var occurrence: RegularTripOccurrence { RegularTripOccurrence(trip: recipe, day: day, target: target) }
+        }
+
+        struct JourneyTracking: Codable {
+            /// La course suivie (référence, ligne, exploitant, destination).
+            var event: StopEvent
+            var boardSloid: String
+            var alightSloid: String
+            var boardName: String
+            var alightName: String
+        }
     }
 
     private static let store = CodableStore<[String: Tracked]>(key: "liveActivityTrips")
@@ -47,20 +64,45 @@ final class TripLiveActivities {
     @ObservationIgnored private var callsCache: [String: (calls: [TripActivityState.Call], fetched: Date)] = [:]
     /// Les clés des activités en cours, pour les menus.
     private(set) var activeKeys: Set<String> = []
+    /// Ce que l'app affiche du trajet suivi (bandeau, page de suivi) : le même état que
+    /// l'activité, gardé ici pour que les vues se mettent à jour avec lui.
+    private(set) var live: [String: LiveTrip] = [:]
+
+    /// Un trajet suivi, tel qu'affiché.
+    struct LiveTrip {
+        var attributes: TripActivityAttributes
+        var state: TripActivityState
+    }
 
     private init() {
         tracked = Self.store.load() ?? [:]
         syncActiveKeys()
     }
 
+    /// Le trajet suivi à mettre en avant : celui qui arrive le plus tôt.
+    var current: (key: String, trip: LiveTrip)? {
+        live.min { $0.value.state.arrival < $1.value.state.arrival }.map { ($0.key, $0.value) }
+    }
+
     var areEnabled: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
 
     func isTracking(_ key: String) -> Bool { activeKeys.contains(key) }
 
-    /// Le dernier itinéraire connu du trajet suivi, pour l'ouvrir depuis l'activité.
-    func trip(for key: String) -> TripEvent? { tracked[key]?.trip }
+    /// L'écran à ouvrir quand on touche l'activité : l'itinéraire suivi, ou la course.
+    func route(for key: String) -> AppRoute? {
+        switch tracked[key] {
+        case .trip(let entry): return .trip(entry.trip)
+        case .journey(let entry):
+            return .line(event: entry.event, currentStop: ShortStop(name: entry.boardName, sloid: entry.boardSloid))
+        case nil: return nil
+        }
+    }
 
     static func key(for trip: TripEvent) -> String { "trip_" + trip.id }
+
+    static func key(forJourney event: StopEvent, boardSloid: String) -> String {
+        "journey_" + event.journeyRef + "_" + sloidHarmonizer(code: boardSloid)
+    }
 
     // MARK: Lancer et arrêter
 
@@ -69,38 +111,63 @@ final class TripLiveActivities {
         let recipe = RegularTrip(trip: trip, weekdays: Set(Weekday.allCases), reminderMinutes: nil, alertsEnabled: false)
         guard let target = trip.anchorDate(.departure, timetabled: true) else { return }
         let occurrence = RegularTripOccurrence(trip: recipe, day: Calendar.swissTransit.dayKey(for: target), target: target)
-        start(key: Self.key(for: trip), tracked: Tracked(recipe: recipe, day: occurrence.day, target: target, trip: trip, isRegular: false),
-              title: recipe.routeName, alert: nil)
+        start(key: Self.key(for: trip),
+              tracked: .trip(.init(recipe: recipe, day: occurrence.day, target: target, trip: trip, isRegular: false)),
+              title: recipe.routeName, state: TripActivityState(trip: trip, alert: nil),
+              origin: recipe.origin.name, destination: recipe.destination.name)
     }
 
     /// Suit le trajet régulier du jour, avec l'itinéraire connu (du jour, ou prévu).
     func start(occurrence: RegularTripOccurrence, of recipe: RegularTrip, trip: TripEvent, match: RegularTripMatch?) {
+        let alert = match.flatMap { RegularTripAlerts.changes(in: $0).first }
         start(key: occurrence.id,
-              tracked: Tracked(recipe: recipe, day: occurrence.day, target: occurrence.target, trip: trip, isRegular: true),
-              title: recipe.displayName,
-              alert: match.flatMap { RegularTripAlerts.changes(in: $0).first })
+              tracked: .trip(.init(recipe: recipe, day: occurrence.day, target: occurrence.target, trip: trip, isRegular: true)),
+              title: recipe.displayName, state: TripActivityState(trip: trip, alert: alert),
+              origin: recipe.origin.name, destination: recipe.destination.name)
     }
 
-    private func start(key: String, tracked entry: Tracked, title: String, alert: String?) {
-        guard areEnabled, activity(for: key) == nil,
-              let state = TripActivityState(trip: entry.trip, alert: alert),
-              state.arrival > Date() else { return }
-        let attributes = TripActivityAttributes(key: key, title: title,
-                                                origin: entry.recipe.origin.name, destination: entry.recipe.destination.name)
+    /// Suit une course choisie sur la page d'un arrêt ou d'une ligne, d'un arrêt à un autre.
+    /// `events` sont les passages de la course, déjà chargés par l'écran qui appelle.
+    func start(journey event: StopEvent, events: [LineEvent], operatorName: String, board: LineEvent, alight: LineEvent) {
+        let key = Self.key(forJourney: event, boardSloid: board.sloid)
+        let entry = Tracked.JourneyTracking(event: event, boardSloid: board.sloid, alightSloid: alight.sloid,
+                                            boardName: board.stopPointName, alightName: alight.stopPointName)
+        start(key: key, tracked: .journey(entry), title: "\(event.lineName) → \(shortStopName(event.destination))",
+              state: state(for: entry, events: events, operatorName: operatorName),
+              origin: board.stopPointName, destination: alight.stopPointName)
+    }
+
+    private func start(key: String, tracked entry: Tracked, title: String,
+                       state: TripActivityState?, origin: String, destination: String) {
+        guard areEnabled, activity(for: key) == nil, let state, state.arrival > Date() else { return }
+        let attributes = TripActivityAttributes(key: key, title: title, origin: origin, destination: destination)
         do {
             let activity = try Activity.request(attributes: attributes, content: content(for: state), pushType: nil)
             tracked[key] = entry
             save()
             syncActiveKeys()
-            // Puis les passages des véhicules, pour dire où ils se trouvent.
-            Task {
-                if let detailed = await self.state(for: entry.trip, alert: alert) {
-                    await activity.update(content(for: detailed))
+            record(attributes: attributes, state: state)
+            // Pour un itinéraire, les passages des véhicules suivent : une requête de plus par
+            // course, qui dit où chacun se trouve. Une course suivie les a déjà.
+            if case .trip(let trip) = entry {
+                Task {
+                    if let detailed = await self.state(for: trip.trip, alert: state.alert) {
+                        await activity.update(content(for: detailed))
+                        self.record(attributes: attributes, state: detailed)
+                    }
                 }
             }
         } catch {
             Log.notifications.error("Activité en direct non lancée : \(error.localizedDescription)")
         }
+    }
+
+    /// L'état d'une course suivie, lu dans ses passages.
+    private func state(for entry: Tracked.JourneyTracking, events: [LineEvent], operatorName: String) -> TripActivityState? {
+        TripActivityState(journey: events, line: entry.event.lineName,
+                          operatorName: operatorName.isEmpty ? entry.event.operatorName : operatorName,
+                          transportType: entry.event.transportType, destination: entry.event.destination,
+                          boardSloid: entry.boardSloid, alightSloid: entry.alightSloid)
     }
 
     /// L'état de l'activité, avec les passages des courses pas encore terminées.
@@ -117,6 +184,13 @@ final class TripLiveActivities {
             }
         }
         return TripActivityState(trip: trip, alert: alert, calls: calls)
+    }
+
+    /// Garde l'état affiché dans l'app, et prévoit les alertes de montée, de descente et
+    /// d'arrivée. Appelé à chaque fois que l'activité change.
+    private func record(attributes: TripActivityAttributes, state: TripActivityState) {
+        live[attributes.key] = LiveTrip(attributes: attributes, state: state)
+        TripStepAlerts.schedule(key: attributes.key, title: attributes.title, state: state)
     }
 
     func stop(_ key: String) {
@@ -151,13 +225,14 @@ final class TripLiveActivities {
 
     /// Un trajet régulier vient d'être relu (appelé par `RegularTripsModel`).
     func didResolve(_ key: String, match: RegularTripMatch) async {
-        guard var entry = tracked[key] else { return }
+        guard case .trip(var entry) = tracked[key] else { return }
         entry.trip = match.trip
-        tracked[key] = entry
+        tracked[key] = .trip(entry)
         save()
         guard let activity = activity(for: key),
               let state = await state(for: match.trip, alert: RegularTripAlerts.changes(in: match).first) else { return }
         await activity.update(content(for: state))
+        record(attributes: activity.attributes, state: state)
     }
 
     /// Relit les trajets suivis, termine ceux qui sont arrivés, et redessine les autres
@@ -176,23 +251,48 @@ final class TripLiveActivities {
                 forget(key)
                 continue
             }
-            guard let entry = tracked[key] else { continue }
-            if entry.isRegular {
+            let mayRequest = lastRequest[key].map { now.timeIntervalSince($0) >= 60 } ?? true
+            switch tracked[key] {
+            case .trip(let entry) where entry.isRegular:
                 // Le modèle limite les requêtes, et rend le dernier trajet connu entre-temps.
                 if let match = await model.resolve(entry.occurrence) {
                     await didResolve(key, match: match)
                     continue
                 }
-            } else if lastRequest[key].map({ now.timeIntervalSince($0) >= 60 }) ?? true {
-                lastRequest[key] = now
-                if let match = try? await RegularTripResolver.resolve(entry.recipe, on: entry.occurrence) {
-                    await didResolve(key, match: match)
-                    continue
+            case .trip(let entry):
+                if mayRequest {
+                    lastRequest[key] = now
+                    if let match = try? await RegularTripResolver.resolve(entry.recipe, on: entry.occurrence) {
+                        await didResolve(key, match: match)
+                        continue
+                    }
                 }
+            case .journey(let entry):
+                if mayRequest {
+                    lastRequest[key] = now
+                    if let refreshed = await refreshedState(of: entry) {
+                        await activity.update(content(for: refreshed))
+                        record(attributes: activity.attributes, state: refreshed)
+                        continue
+                    }
+                }
+            case nil:
+                continue
             }
             // Rien de neuf : redessiner quand même, pour passer à l'étape suivante.
             await activity.update(content(for: activity.content.state))
+            record(attributes: activity.attributes, state: activity.content.state)
         }
+    }
+
+    /// Redemande la course suivie et relit ses heures (`OJPTripInfoRequest`).
+    private func refreshedState(of entry: Tracked.JourneyTracking) async -> TripActivityState? {
+        let data: Data? = await withCheckedContinuation { continuation in
+            fetchTransportJourney(with: entry.event) { continuation.resume(returning: $0) }
+        }
+        guard let data else { return nil }
+        let result = parseJourneyEventsSync(from: data)
+        return state(for: entry, events: result.events, operatorName: result.operatorName)
     }
 
     /// L'échéance est le prochain changement d'étape : le système redessine l'activité à ce moment.
@@ -209,21 +309,31 @@ final class TripLiveActivities {
     }
 
     private func forget(_ key: String) {
-        if let trip = tracked[key]?.trip {
-            trip.vehicleLegs.forEach { callsCache[$0.journeyRef] = nil }
+        if case .trip(let entry) = tracked[key] {
+            entry.trip.vehicleLegs.forEach { callsCache[$0.journeyRef] = nil }
         }
         tracked[key] = nil
         lastRequest[key] = nil
+        live[key] = nil
+        TripStepAlerts.cancel(key: key)
         save()
         syncActiveKeys()
     }
 
     /// L'utilisateur peut fermer une activité depuis l'écran verrouillé : la liste suit.
     private func syncActiveKeys() {
-        let keys = Set(Activity<TripActivityAttributes>.activities
+        let activities = Activity<TripActivityAttributes>.activities
             .filter { $0.activityState == .active || $0.activityState == .stale }
-            .map(\.attributes.key))
+        let keys = Set(activities.map(\.attributes.key))
         if keys != activeKeys { activeKeys = keys }
+        // Au lancement, l'app retrouve ainsi les trajets suivis avant sa fermeture.
+        for activity in activities where live[activity.attributes.key] == nil {
+            live[activity.attributes.key] = LiveTrip(attributes: activity.attributes, state: activity.content.state)
+        }
+        for key in live.keys where !keys.contains(key) {
+            live[key] = nil
+            TripStepAlerts.cancel(key: key)
+        }
         let stale = tracked.keys.filter { !keys.contains($0) }
         if !stale.isEmpty {
             stale.forEach { tracked[$0] = nil }

@@ -178,6 +178,15 @@ struct LineView: View {
             HStack {
                 ShowTimeButton(showTime: $showTime)
                 
+                if TripLiveActivities.shared.areEnabled, !stopEvent.journeyRef.isEmpty {
+                    Button {
+                        openRoute(.trackJourney(event: stopEvent, stopSloid: currentStop?.sloid ?? stopEvent.stopId))
+                    } label: {
+                        Image(systemName: "livephoto")
+                            .padding(.horizontal, 2)
+                    }
+                    .accessibilityLabel("Suivre en direct")
+                }
                 Button {
                     openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
                 } label: {

@@ -25,6 +25,10 @@ enum AppRoute: Hashable {
     case favoritesOrder
     case scheduledNotifications
     case regularTrips
+    /// Suivre une course en direct : choix de la montée et de la descente.
+    case trackJourney(event: StopEvent, stopSloid: String)
+    /// Le trajet suivi en direct, en entier.
+    case liveTrip(key: String)
 }
 
 /// La course à mettre en avant sur la page d'un arrêt.
@@ -74,6 +78,10 @@ struct AppRouteDestination: View {
                 .navigationTitle("Rappels prévus")
         case .regularTrips:
             RegularTripsView()
+        case let .trackJourney(event, stopSloid):
+            TrackJourneyView(event: event, stopSloid: stopSloid)
+        case let .liveTrip(key):
+            LiveTripView(key: key)
         }
     }
 }

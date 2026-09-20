@@ -14,6 +14,7 @@ import tpgNextFunc
 struct NotificationContextMenu: View {
     @Environment(ItineraryViewModel.self) var tripModel
     @Environment(NavigationModel.self) var navigationModel
+    @Environment(\.openRoute) private var openRoute
     let transportNotificationManager = BusNotificationManager.shared
     let notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
     let event: StopEvent
@@ -43,6 +44,15 @@ struct NotificationContextMenu: View {
                     }
                 }) {
                     Text(notificationLabel(for: notificationInterval))
+                }
+            }
+            if !event.journeyRef.isEmpty, TripLiveActivities.shared.areEnabled {
+                Divider()
+
+                Button {
+                    openRoute(.trackJourney(event: event, stopSloid: stopID))
+                } label: {
+                    Label("Suivre en direct", systemImage: "livephoto")
                 }
             }
             if itinerary {
@@ -368,6 +378,32 @@ class NotificationConfirmationViewModel {
                 self.showConfirmation = false
                 self.errorMessage = false
             }
+        }
+    }
+}
+
+/// Une notification dont le moment est passé n'a plus rien à dire. iOS ne sait pas la retirer
+/// seul : l'app fait le ménage dès qu'elle tourne — au premier plan chaque minute, et à chaque
+/// réveil en arrière-plan. Une notification reçue pendant que l'app était éteinte reste donc
+/// jusqu'à sa prochaine ouverture.
+enum NotificationExpiry {
+    /// Dans le `userInfo` : le moment après lequel la notification ne sert plus à rien.
+    static let key = "clearAfter"
+
+    static func mark(_ content: UNMutableNotificationContent, after date: Date) {
+        content.userInfo[key] = date.timeIntervalSince1970
+    }
+
+    /// Retire du centre de notifications celles dont le moment est passé.
+    static func clearExpired(now: Date = Date()) {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { delivered in
+            let stale = delivered.filter {
+                guard let limit = $0.request.content.userInfo[key] as? TimeInterval else { return false }
+                return limit <= now.timeIntervalSince1970
+            }.map(\.request.identifier)
+            guard !stale.isEmpty else { return }
+            center.removeDeliveredNotifications(withIdentifiers: stale)
         }
     }
 }
