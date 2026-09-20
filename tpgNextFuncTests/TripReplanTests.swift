@@ -11,16 +11,20 @@ import Testing
 struct TripReplanTests {
     private let base = Date(timeIntervalSince1970: 1_700_000_000)
 
-    private func leg(board: TimeInterval, alight: TimeInterval, line: String = "12") -> TripActivityState.Leg {
+    private func leg(board: TimeInterval, alight: TimeInterval, line: String = "12",
+                     transfer: Int? = nil, cancelled: Bool? = nil) -> TripActivityState.Leg {
         .init(line: line, operatorName: "tpg", transportType: "Tram", destination: "Bachet",
               boardName: "Genève, Rive", boardQuay: "B", board: base.addingTimeInterval(board),
-              alight: base.addingTimeInterval(alight), alightName: "Genève, Plainpalais", delay: 0)
+              alight: base.addingTimeInterval(alight), alightName: "Genève, Plainpalais", delay: 0,
+              calls: nil, transferTime: transfer, cancelled: cancelled)
     }
 
     private func state(_ legs: [TripActivityState.Leg]) -> TripActivityState {
         TripActivityState(legs: legs, departure: legs[0].board.addingTimeInterval(-60),
                           arrival: legs[legs.count - 1].alight, arrivalDelay: 0, alert: nil, updated: base)
     }
+
+    // MARK: Parti ou non
 
     @Test func leavingIsBoardingTheFirstVehicle() {
         let state = state([leg(board: 600, alight: 1200)])
@@ -30,16 +34,52 @@ struct TripReplanTests {
         #expect(state.hasLeft(at: base.addingTimeInterval(900)))
     }
 
-    @Test func aConnectionThatHoldsIsNotBroken() {
-        let state = state([leg(board: 0, alight: 600), leg(board: 900, alight: 1500, line: "15")])
-        #expect(state.brokenTransfer() == nil)
+    @Test func aCancelledFirstVehicleLeavesNobody() {
+        // Le véhicule ne passe plus : rien n'est commencé, tout peut être redemandé.
+        let state = state([leg(board: 600, alight: 1200, cancelled: true)])
+        #expect(!state.hasLeft(at: base.addingTimeInterval(900)))
     }
 
-    @Test func aConnectionMissedByTheDelayIsBroken() {
-        // La descente tombe trente secondes avant la montée suivante : on ne monte pas.
-        let state = state([leg(board: 0, alight: 870), leg(board: 900, alight: 1500, line: "15")])
-        #expect(state.brokenTransfer() == 0)
+    @Test func aTransferMeansTheTripHasStarted() {
+        let state = state([leg(board: 0, alight: 600), leg(board: 900, alight: 1500, line: "15")])
+        // Entre les deux véhicules : une étape est déjà parcourue.
+        #expect(state.hasLeft(at: base.addingTimeInterval(700)))
     }
+
+    // MARK: L'état d'une correspondance
+
+    @Test func aConnectionThatHoldsIsNotAProblem() {
+        let state = state([leg(board: 0, alight: 600), leg(board: 900, alight: 1500, line: "15")])
+        #expect(state.transferProblem() == .held)
+    }
+
+    @Test func theTransferTimeOfTheApiWins() {
+        // Quatre minutes entre la descente et la montée, mais OJP en demande cinq pour marcher.
+        #expect(state([leg(board: 0, alight: 600, transfer: 300),
+                       leg(board: 840, alight: 1500, line: "15")]).transferProblem() == .doubtful(leg: 0))
+        // Une minute demandée : la même correspondance tient.
+        #expect(state([leg(board: 0, alight: 600, transfer: 60),
+                       leg(board: 840, alight: 1500, line: "15")]).transferProblem() == .held)
+    }
+
+    @Test func aTightConnectionIsOnlyDoubtful() {
+        // Le 15 part trente secondes après la descente : jouable, à la course.
+        let state = state([leg(board: 0, alight: 870), leg(board: 900, alight: 1500, line: "15")])
+        #expect(state.transferProblem() == .doubtful(leg: 0))
+    }
+
+    @Test func aVehicleAlreadyGoneIsMissed() {
+        let state = state([leg(board: 0, alight: 960), leg(board: 900, alight: 1500, line: "15")])
+        #expect(state.transferProblem() == .missed(leg: 0))
+    }
+
+    @Test func aCancelledNextVehicleIsMissedHoweverEarlyOneArrives() {
+        let state = state([leg(board: 0, alight: 300),
+                           leg(board: 900, alight: 1500, line: "15", cancelled: true)])
+        #expect(state.transferProblem() == .missed(leg: 0))
+    }
+
+    // MARK: Recoller la suite
 
     @Test func splicingKeepsWhatIsAlreadyTravelled() throws {
         let trip = FullTripTest().Trip
@@ -58,5 +98,16 @@ struct TripReplanTests {
         var stranger = trip.legs[0]
         stranger.id = "ailleurs"
         #expect(trip.splicing(after: stranger, with: trip) == trip)
+    }
+
+    @Test func theTransferTimesComeFromTheTrip() throws {
+        // Le trajet d'essai a une correspondance à pied entre ses deux véhicules.
+        let trip = FullTripTest().Trip
+        let times = trip.transferTimes
+        let first = try #require(trip.trackedLegs.first)
+        #expect(times[first.id] ?? 0 > 0)
+        // Et l'état la reprend telle quelle.
+        let state = try #require(TripActivityState(trip: trip, alert: nil))
+        #expect(state.legs[0].transferTime == times[first.id].map { Int($0) })
     }
 }

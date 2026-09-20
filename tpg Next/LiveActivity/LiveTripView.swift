@@ -111,6 +111,18 @@ struct LiveTripView: View {
             if let trip {
                 VStack(alignment: .leading, spacing: 0) {
                     header(trip)
+                    if let doubt = liveActivities.doubtful[key] {
+                        DoubtfulTransferCard(doubt: doubt,
+                                             boarded: { liveActivities.confirmBoarded(key) },
+                                             missed: { liveActivities.confirmMissed(key) })
+                            .padding(.bottom, 14)
+                    }
+                    if let options = liveActivities.alternatives[key], options.count > 1 {
+                        ReplanOptionsCard(options: options, chosen: liveActivities.chosenAlternative[key]) {
+                            liveActivities.choose($0, for: key)
+                        }
+                        .padding(.bottom, 14)
+                    }
                     timeline(trip)
                     Button(role: .destructive) {
                         liveActivities.stop(key)
@@ -387,6 +399,84 @@ struct LiveTripView: View {
     }
 }
 
+/// La correspondance serrée : ni l'horaire ni la position ne tranchent, seul le voyageur sait.
+struct DoubtfulTransferCard: View {
+    let doubt: TripLiveActivities.DoubtfulTransfer
+    let boarded: () -> Void
+    let missed: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("Correspondance serrée à \(doubt.stop)")
+                    .font(.subheadline.bold())
+            } icon: {
+                Image(systemName: "questionmark.circle.fill")
+                    .foregroundStyle(.orange)
+            }
+            Text("Le \(doubt.line) partait au moment où vous descendiez. Êtes-vous monté dedans ?")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Button(action: boarded) {
+                    Text("Je suis monté").frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(.borderedProminent)
+                Button(action: missed) {
+                    Text("Je l'ai manqué").frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(BasicCard(cornerRadius: 25))
+    }
+}
+
+/// Les suites proposées après un recalcul : la plus tôt arrivée s'applique, le voyageur peut
+/// en préférer une autre.
+struct ReplanOptionsCard: View {
+    let options: [TripLiveActivities.ReplanOption]
+    let chosen: String?
+    let choose: (TripLiveActivities.ReplanOption) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Autres suites possibles")
+                .font(.subheadline.bold())
+                .padding(.bottom, 2)
+            ForEach(options) { option in
+                Button {
+                    choose(option)
+                } label: {
+                    HStack(spacing: 10) {
+                        TripActivityLineBadge(line: option.line,
+                                              color: LineColors.lineColor(for: option.line,
+                                                                          operatorName: option.operatorName),
+                                              compact: true)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Départ \(dateToString(with: option.departure))")
+                                .font(.subheadline)
+                            Text("Arrivée \(dateToString(with: option.arrival))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: chosen == option.id ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(chosen == option.id ? Color.accentColor : .secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(BasicCard(cornerRadius: 25))
+    }
+}
+
 // MARK: - Les traits et les rangées
 
 /// Un trait de la frise : plein à la couleur de la ligne à bord, en pointillés à pied ou en
@@ -556,6 +646,36 @@ extension TripLiveActivities.LiveTrip {
 #Preview("Trajet suivi — correspondance") {
     LiveTripView(key: "preview", previewTrip: .previewTransfer)
         .previewEnvironment()
+}
+
+extension TripLiveActivities.ReplanOption {
+    /// Deux suites inventées depuis Plainpalais, pour l'aperçu.
+    static var previews: [TripLiveActivities.ReplanOption] {
+        var trip = PreviewData.tripWithTransfer
+        guard let after = trip.trackedLegs.first, let departure = after.boardDate,
+              let arrival = trip.endDate else { return [] }
+        let first = TripLiveActivities.ReplanOption(
+            trip: trip, after: after, line: "15", operatorName: "Transports Publics Genevois",
+            departure: departure, arrival: arrival)
+        trip.id += "-bis"
+        let second = TripLiveActivities.ReplanOption(
+            trip: trip, after: after, line: "1", operatorName: "Transports Publics Genevois",
+            departure: departure.addingTimeInterval(240), arrival: arrival.addingTimeInterval(180))
+        return [first, second]
+    }
+}
+
+#Preview("Correspondance serrée et autres suites") {
+    ScrollView {
+        VStack(spacing: 14) {
+            DoubtfulTransferCard(doubt: .init(leg: 0, stop: "Plainpalais", line: "15"),
+                                 boarded: {}, missed: {})
+            ReplanOptionsCard(options: TripLiveActivities.ReplanOption.previews,
+                              chosen: TripLiveActivities.ReplanOption.previews.first?.id) { _ in }
+        }
+        .padding(15)
+    }
+    .previewEnvironment()
 }
 
 #Preview("Trajet suivi — plus suivi") {

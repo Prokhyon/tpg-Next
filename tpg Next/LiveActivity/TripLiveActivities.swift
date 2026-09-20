@@ -43,6 +43,9 @@ final class TripLiveActivities {
             var isRegular: Bool
             /// Pourquoi la suite a été recalculée en route, s'il y a lieu : affiché tel quel.
             var change: String?
+            /// L'étape dans laquelle le voyageur a confirmé être monté, quand la correspondance
+            /// était serrée : on ne lui repose pas la question.
+            var boardedLeg: Int?
 
             var occurrence: RegularTripOccurrence { RegularTripOccurrence(trip: recipe, day: day, target: target) }
         }
@@ -86,6 +89,35 @@ final class TripLiveActivities {
         var attributes: TripActivityAttributes
         var state: TripActivityState
     }
+
+    /// Une correspondance serrée dont ni l'horaire ni la position ne disent si elle a été
+    /// attrapée : le voyageur tranche depuis la page du trajet.
+    struct DoubtfulTransfer: Hashable {
+        /// L'étape d'où l'on descend.
+        var leg: Int
+        var stop: String
+        var line: String
+    }
+
+    /// Une autre suite possible, quand le trajet a dû être recalculé en route.
+    struct ReplanOption: Identifiable, Hashable {
+        var trip: TripEvent
+        /// L'étape après laquelle la recoller.
+        var after: TripLeg
+        var line: String
+        var operatorName: String
+        var departure: Date
+        var arrival: Date
+
+        var id: String { trip.id }
+    }
+
+    /// Les correspondances en suspens, par trajet.
+    private(set) var doubtful: [String: DoubtfulTransfer] = [:]
+    /// Les suites proposées après un recalcul, par trajet, la plus tôt arrivée en tête.
+    private(set) var alternatives: [String: [ReplanOption]] = [:]
+    /// Celle qui est appliquée, parmi elles.
+    private(set) var chosenAlternative: [String: String] = [:]
 
     private init() {
         tracked = Self.store.load() ?? [:]
@@ -213,20 +245,31 @@ final class TripLiveActivities {
         })
         // Les heures des courses, relues à la source : le véhicule prend du retard sans qu'on
         // ait à redemander tout l'itinéraire.
+        func passage(of sloid: String, in passages: [LineEvent]) -> LineEvent? {
+            let wanted = sloidHarmonizer(code: sloid)
+            return passages.first { sloidHarmonizer(code: $0.sloid.isEmpty ? $0.stopPlaceRef : $0.sloid) == wanted }
+        }
         var trip = trip
         trip.legs = trip.legs.map { leg in
             guard let passages = events[leg.journeyRef] else { return leg }
-            func time(at sloid: String) -> String? {
-                let wanted = sloidHarmonizer(code: sloid)
-                let event = passages.first { sloidHarmonizer(code: $0.sloid.isEmpty ? $0.stopPlaceRef : $0.sloid) == wanted }
-                return (event?.estimatedTime).flatMap { $0.isEmpty ? nil : $0 }
-            }
             var leg = leg
-            if let board = time(at: leg.legBoardStopId) { leg.legBoardEstimatedTime = board }
-            if let alight = time(at: leg.legAlightStopId) { leg.legAlightEstimatedTime = alight }
+            if let board = passage(of: leg.legBoardStopId, in: passages)?.estimatedTime, !board.isEmpty {
+                leg.legBoardEstimatedTime = board
+            }
+            if let alight = passage(of: leg.legAlightStopId, in: passages)?.estimatedTime, !alight.isEmpty {
+                leg.legAlightEstimatedTime = alight
+            }
             return leg
         }
-        return TripActivityState(trip: trip, alert: alert, calls: calls)
+        var state = TripActivityState(trip: trip, alert: alert, calls: calls)
+        // Un véhicule qui ne s'arrête plus là où l'on devait monter : la suite ne tient pas.
+        for (index, leg) in trip.trackedLegs.enumerated() {
+            guard let passages = events[leg.journeyRef],
+                  passage(of: leg.legBoardStopId, in: passages)?.isCancelled == true,
+                  state?.legs.indices.contains(index) == true else { continue }
+            state?.legs[index].cancelled = true
+        }
+        return state
     }
 
     /// Garde l'état affiché dans l'app, et prévoit les alertes de montée, de descente et
@@ -412,35 +455,145 @@ final class TripLiveActivities {
     /// L'état d'un itinéraire déjà commencé : ses heures relues, et sa suite réparée si elle ne
     /// tient plus.
     ///
-    /// Ce qui est parcouru ne bouge plus. Si la descente arrive trop tard pour la correspondance,
-    /// un nouvel itinéraire est demandé depuis cet arrêt-là, à cette heure-là, et recollé à la
-    /// suite : le voyageur garde son avance, et lit pourquoi le trajet prévu ne tient plus.
+    /// Ce qui est parcouru ne bouge plus. Une correspondance perdue fait redemander la suite
+    /// depuis l'arrêt de descente ; une correspondance serrée attend d'être tranchée, par la
+    /// position du voyageur ou par le voyageur lui-même.
     private func followedState(of entry: Tracked.TripTracking, key: String, now: Date) async -> TripActivityState? {
         guard var state = await state(for: entry.trip, key: key, alert: entry.change, now: now) else { return nil }
-        guard let broken = state.brokenTransfer() else { return state }
-        let leg = state.legs[broken]
-        let stop = shortStopName(leg.alightName)
+        switch state.transferProblem() {
+        case .held:
+            doubtful[key] = nil
+            return state
+        case .doubtful(let index):
+            // Le voyageur a déjà dit qu'il était monté : on n'y revient pas.
+            if (entry.boardedLeg ?? -1) > index {
+                doubtful[key] = nil
+                return state
+            }
+            switch await aboard(leg: index + 1, key: key, state: state, now: now) {
+            case true:
+                var entry = entry
+                entry.boardedLeg = index + 1
+                tracked[key] = .trip(entry)
+                save()
+                doubtful[key] = nil
+                return state
+            case false:
+                return await replanned(entry, key: key, state: state, after: index, now: now)
+            default:
+                let stop = shortStopName(state.legs[index].alightName)
+                let line = state.legs[index + 1].line
+                doubtful[key] = DoubtfulTransfer(leg: index, stop: stop, line: line)
+                state.alert = String(localized: "Êtes-vous monté dans le \(line) à \(stop) ?")
+                return state
+            }
+        case .missed(let index):
+            doubtful[key] = nil
+            return await replanned(entry, key: key, state: state, after: index, now: now)
+        }
+    }
+
+    /// Redemande la suite depuis l'arrêt de descente, la recolle, et garde les autres
+    /// propositions sous la main : la meilleure s'applique, le voyageur peut en préférer une autre.
+    private func replanned(_ entry: Tracked.TripTracking, key: String, state: TripActivityState,
+                           after index: Int, now: Date) async -> TripActivityState {
+        var state = state
+        let stop = shortStopName(state.legs[index].alightName)
         let planned = entry.trip.trackedLegs
-        guard planned.indices.contains(broken),
-              let latitude = Double(planned[broken].legAlightLatitude),
-              let longitude = Double(planned[broken].legAlightLongitude) else { return state }
-        let alightLeg = planned[broken]
+        guard planned.indices.contains(index),
+              let latitude = Double(planned[index].legAlightLatitude),
+              let longitude = Double(planned[index].legAlightLongitude) else { return state }
+        let alightLeg = planned[index]
         let from = RegularTripPlace(name: alightLeg.legAlightStopName, sloid: alightLeg.legAlightStopId,
                                     coordinates: Coordinates(lon: longitude, lat: latitude))
-        let tail = await TripReplanner.tail(from: from,
-                                            at: leg.alight.addingTimeInterval(TripActivityState.minimumTransfer),
-                                            to: entry.recipe.destination)
-        guard let tail else {
-            state.alert = String(localized: "Correspondance manquée à \(stop) · aucune suite trouvée")
+        let needed = state.legs[index].transferTime.map { TimeInterval($0) } ?? TripActivityState.minimumTransfer
+        let leaving = max(now, state.legs[index].alight).addingTimeInterval(needed)
+        let tails = await TripReplanner.tails(from: from, at: leaving, to: entry.recipe.destination)
+        // Le motif, tel qu'il s'affichera : c'est la seule explication que le voyageur aura.
+        let cancelled = state.legs.indices.contains(index + 1) && state.legs[index + 1].cancelled == true
+        guard let best = tails.first else {
+            state.alert = cancelled
+                ? String(localized: "Le \(state.legs[index + 1].line) ne passe plus · aucune suite trouvée depuis \(stop)")
+                : String(localized: "Correspondance manquée à \(stop) · aucune suite trouvée")
             return state
         }
         var entry = entry
-        entry.trip = entry.trip.splicing(after: alightLeg, with: tail)
-        entry.change = String(localized: "Correspondance manquée à \(stop) · suite recalculée")
-        self.tracked[key] = .trip(entry)
+        entry.trip = entry.trip.splicing(after: alightLeg, with: best)
+        entry.change = cancelled
+            ? String(localized: "Le \(state.legs[index + 1].line) ne passe plus · suite recalculée depuis \(stop)")
+            : String(localized: "Correspondance manquée à \(stop) · suite recalculée")
+        entry.boardedLeg = nil
+        tracked[key] = .trip(entry)
         save()
+        // Toutes les suites restent proposées : celle qui s'applique n'est qu'une par défaut.
+        alternatives[key] = tails.compactMap { option(from: $0, after: alightLeg) }
+            .sorted { $0.arrival < $1.arrival }
+        chosenAlternative[key] = best.id
         Log.network.info("Suite du trajet recalculée depuis \(stop)")
         return await self.state(for: entry.trip, key: key, alert: entry.change, now: now) ?? state
+    }
+
+    private func option(from trip: TripEvent, after leg: TripLeg) -> ReplanOption? {
+        guard let first = trip.trackedLegs.first, let departure = first.boardDate,
+              let arrival = trip.endDate else { return nil }
+        return ReplanOption(trip: trip, after: leg, line: first.publishedLineName,
+                            operatorName: first.legOperator, departure: departure, arrival: arrival)
+    }
+
+    /// Le voyageur est-il dans ce véhicule ? `nil` tant qu'on ne peut pas le dire.
+    private func aboard(leg index: Int, key: String, state: TripActivityState, now: Date) async -> Bool? {
+        guard state.legs.indices.contains(index) else { return nil }
+        // Avant que le véhicule ne s'en aille, la position ne prouve rien : tout le monde est
+        // encore à l'arrêt.
+        guard now >= state.legs[index].board.addingTimeInterval(60) else { return nil }
+        let points = routes[key]?.points(of: index) ?? []
+        guard points.count >= 2, let location = await currentLocation(now: now) else { return nil }
+        return TripPositionEstimator.isAboard(on: points, latitude: location.coordinate.latitude,
+                                              longitude: location.coordinate.longitude,
+                                              accuracy: location.horizontalAccuracy, now: now)
+    }
+
+    // MARK: Ce que le voyageur tranche
+
+    /// « Je suis monté » : la correspondance serrée est attrapée, le trajet reste tel quel.
+    func confirmBoarded(_ key: String) {
+        guard case .trip(var entry) = tracked[key], let doubt = doubtful[key] else { return }
+        entry.boardedLeg = doubt.leg + 1
+        entry.change = nil
+        tracked[key] = .trip(entry)
+        save()
+        doubtful[key] = nil
+        Task { await rebuild(key) }
+    }
+
+    /// « Je l'ai manqué » : la suite est redemandée tout de suite.
+    func confirmMissed(_ key: String) {
+        guard case .trip(let entry) = tracked[key], let doubt = doubtful[key] else { return }
+        doubtful[key] = nil
+        Task {
+            let now = Date()
+            guard let state = await self.state(for: entry.trip, key: key, alert: nil, now: now),
+                  let activity = self.activity(for: key) else { return }
+            let repaired = await self.replanned(entry, key: key, state: state, after: doubt.leg, now: now)
+            await self.push(base: repaired, to: activity, now: now)
+        }
+    }
+
+    /// Prend une autre des suites proposées.
+    func choose(_ option: ReplanOption, for key: String) {
+        guard case .trip(var entry) = tracked[key], chosenAlternative[key] != option.id else { return }
+        entry.trip = entry.trip.splicing(after: option.after, with: option.trip)
+        tracked[key] = .trip(entry)
+        save()
+        chosenAlternative[key] = option.id
+        Task { await rebuild(key) }
+    }
+
+    /// Redessine l'activité après un choix du voyageur.
+    private func rebuild(_ key: String) async {
+        guard case .trip(let entry) = tracked[key], let activity = activity(for: key),
+              let state = await state(for: entry.trip, key: key, alert: entry.change) else { return }
+        await push(base: state, to: activity)
     }
 
     /// Redemande la course suivie et relit ses heures (`OJPTripInfoRequest`).
@@ -474,6 +627,9 @@ final class TripLiveActivities {
         lastRequest[key] = nil
         routes[key] = nil
         baseStates[key] = nil
+        doubtful[key] = nil
+        alternatives[key] = nil
+        chosenAlternative[key] = nil
         live[key] = nil
         TripStepAlerts.cancel(key: key)
         save()
