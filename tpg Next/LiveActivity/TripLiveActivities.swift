@@ -122,6 +122,19 @@ final class TripLiveActivities {
     private init() {
         tracked = Self.store.load() ?? [:]
         syncActiveKeys()
+        // La réponse donnée depuis l'écran verrouillé : l'intention tourne dans le processus de
+        // l'app, mais son code est aussi compilé dans le widget et ne peut pas appeler ceci.
+        NotificationCenter.default.addObserver(forName: .tripBoardingAnswer, object: nil, queue: .main) { note in
+            guard let key = note.userInfo?[TripBoardingAnswer.key] as? String,
+                  let aboard = note.userInfo?[TripBoardingAnswer.aboard] as? Bool else { return }
+            Task { @MainActor in
+                if aboard {
+                    TripLiveActivities.shared.confirmBoarded(key)
+                } else {
+                    TripLiveActivities.shared.confirmMissed(key)
+                }
+            }
+        }
     }
 
     /// Le trajet suivi à mettre en avant : celui qui arrive le plus tôt.
@@ -132,16 +145,6 @@ final class TripLiveActivities {
     var areEnabled: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
 
     func isTracking(_ key: String) -> Bool { activeKeys.contains(key) }
-
-    /// L'écran à ouvrir quand on touche l'activité : l'itinéraire suivi, ou la course.
-    func route(for key: String) -> AppRoute? {
-        switch tracked[key] {
-        case .trip(let entry): return .trip(entry.trip)
-        case .journey(let entry):
-            return .line(event: entry.event, currentStop: ShortStop(name: entry.boardName, sloid: entry.boardSloid))
-        case nil: return nil
-        }
-    }
 
     static func key(for trip: TripEvent) -> String { "trip_" + trip.id }
 
@@ -484,7 +487,8 @@ final class TripLiveActivities {
                 let stop = shortStopName(state.legs[index].alightName)
                 let line = state.legs[index + 1].line
                 doubtful[key] = DoubtfulTransfer(leg: index, stop: stop, line: line)
-                state.alert = String(localized: "Êtes-vous monté dans le \(line) à \(stop) ?")
+                // L'activité en direct pose la question sur son propre écran, avec ses boutons.
+                state.question = TripActivityState.Question(stop: stop, line: line)
                 return state
             }
         case .missed(let index):
@@ -555,10 +559,19 @@ final class TripLiveActivities {
 
     // MARK: Ce que le voyageur tranche
 
+    /// L'étape dont la correspondance est en suspens. Relue dans l'état quand elle n'est plus
+    /// en mémoire : répondre depuis l'écran verrouillé peut relancer l'app par ce seul chemin.
+    private func doubtfulLeg(_ key: String) -> Int? {
+        if let doubt = doubtful[key] { return doubt.leg }
+        guard let state = baseStates[key] ?? live[key]?.state,
+              case .doubtful(let index) = state.transferProblem() else { return nil }
+        return index
+    }
+
     /// « Je suis monté » : la correspondance serrée est attrapée, le trajet reste tel quel.
     func confirmBoarded(_ key: String) {
-        guard case .trip(var entry) = tracked[key], let doubt = doubtful[key] else { return }
-        entry.boardedLeg = doubt.leg + 1
+        guard case .trip(var entry) = tracked[key], let leg = doubtfulLeg(key) else { return }
+        entry.boardedLeg = leg + 1
         entry.change = nil
         tracked[key] = .trip(entry)
         save()
@@ -568,13 +581,13 @@ final class TripLiveActivities {
 
     /// « Je l'ai manqué » : la suite est redemandée tout de suite.
     func confirmMissed(_ key: String) {
-        guard case .trip(let entry) = tracked[key], let doubt = doubtful[key] else { return }
+        guard case .trip(let entry) = tracked[key], let leg = doubtfulLeg(key) else { return }
         doubtful[key] = nil
         Task {
             let now = Date()
             guard let state = await self.state(for: entry.trip, key: key, alert: nil, now: now),
                   let activity = self.activity(for: key) else { return }
-            let repaired = await self.replanned(entry, key: key, state: state, after: doubt.leg, now: now)
+            let repaired = await self.replanned(entry, key: key, state: state, after: leg, now: now)
             await self.push(base: repaired, to: activity, now: now)
         }
     }

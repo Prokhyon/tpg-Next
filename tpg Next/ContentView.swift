@@ -332,14 +332,14 @@ struct ContentView: View {
         guard url.scheme == "tpgnext",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
         if url.host == "regulartrips" || url.host == "livetrip" {
-            // Activité en direct : le dernier itinéraire connu du trajet suivi.
+            // Toucher l'activité en direct ouvre le suivi, comme le bandeau.
             let key = components.queryItems?.first { $0.name == "key" }?.value
-            if let key, let route = TripLiveActivities.shared.route(for: key) {
-                navigationModel.open(route, in: .home)
+            if let key, TripLiveActivities.shared.isTracking(key) {
+                liveTrip.open(key)
             } else {
                 navigationModel.open(.regularTrips, in: .home)
+                navigationModel.selectedTab = .home
             }
-            navigationModel.selectedTab = .home
             return
         }
         func query(_ name: String) -> String? {

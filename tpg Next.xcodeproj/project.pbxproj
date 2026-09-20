@@ -165,6 +165,7 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				BasicViews.swift,
+				LiveActivity/TripBoardingIntent.swift,
 				LiveActivity/TripLiveActivity.swift,
 			);
 			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;

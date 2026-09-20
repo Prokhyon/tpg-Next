@@ -15,25 +15,32 @@ struct TripLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TripActivityAttributes.self) { context in
             TripActivityContent(step: TripActivityStep(attributes: context.attributes, state: context.state, now: Date()),
-                                alert: context.state.alert)
-                .activityBackgroundTint(nil)
+                                alert: context.state.alert, key: context.attributes.key)
+                // Une question ne ressemble pas au reste : elle se démarque par son fond.
+                .activityBackgroundTint(context.state.question == nil ? nil : Color.orange.opacity(0.25))
                 .widgetURL(TripActivityLink.url(for: context.attributes.key))
         } dynamicIsland: { context in
             let step = TripActivityStep(attributes: context.attributes, state: context.state, now: Date())
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.bottom) {
-                    TripActivityTimeline(step: step, alert: context.state.alert, compact: true, verticalInset: 4)
-                        .padding(.horizontal, 6)
+                    if let question = step.question {
+                        TripActivityQuestion(question: question, key: context.attributes.key, compact: true)
+                            .padding(.horizontal, 6)
+                    } else {
+                        TripActivityTimeline(step: step, alert: context.state.alert, compact: true, verticalInset: 4)
+                            .padding(.horizontal, 6)
+                    }
                 }
             } compactLeading: {
                 // De l'air autour du badge : collé au bord, la caméra le rogne.
                 TripActivityMarker(step: step, compact: true)
-                    .padding(.leading, 5)
+                    .padding(.horizontal, 3)
             } compactTrailing: {
-                TripActivityMinutes(target: step.target)
+                // Le compte à rebours du système, en minutes et secondes : « 4 minutes » en
+                // toutes lettres ne tient pas à côté de la caméra.
+                TripActivityTimer(target: step.target)
                     .font(.caption2.bold())
-                    .minimumScaleFactor(0.6)
-                    .frame(maxWidth: 58)
+                    .frame(maxWidth: 52)
                     .padding(.trailing, 4)
             } minimal: {
                 TripActivityMarker(step: step, compact: true)
@@ -52,15 +59,62 @@ struct TripActivityContent: View {
     @Environment(\.activityFamily) private var family
     let step: TripActivityStep
     let alert: String?
+    let key: String
 
     var body: some View {
         switch family {
         case .small:
             TripActivityWatchView(step: step, alert: alert)
         default:
-            TripActivityTimeline(step: step, alert: alert)
-                .padding(.horizontal, 16)
+            if let question = step.question {
+                TripActivityQuestion(question: question, key: key)
+                    .padding(.horizontal, 16)
+            } else {
+                TripActivityTimeline(step: step, alert: alert)
+                    .padding(.horizontal, 16)
+            }
         }
+    }
+}
+
+/// La question d'une correspondance serrée, à la place de la frise : elle n'a rien à voir avec
+/// ce qui s'affiche le reste du temps, et mérite son propre écran.
+struct TripActivityQuestion: View {
+    let question: TripActivityState.Question
+    let key: String
+    var compact = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 6 : 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "questionmark.circle.fill")
+                    .foregroundStyle(.orange)
+                Text("Correspondance serrée à \(question.stop)")
+                    .font(compact ? .caption.bold() : .subheadline.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            Text("Êtes-vous monté dans le \(question.line) ?")
+                .font(compact ? .caption2 : .footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            HStack(spacing: 8) {
+                Button(intent: TripBoardingIntent(key: key, aboard: true)) {
+                    Text("Je suis monté")
+                        .font(compact ? .caption.bold() : .subheadline.bold())
+                        .frame(maxWidth: .infinity, minHeight: compact ? 28 : 34)
+                }
+                .buttonStyle(.borderedProminent)
+                Button(intent: TripBoardingIntent(key: key, aboard: false)) {
+                    Text("Manqué")
+                        .font(compact ? .caption.bold() : .subheadline.bold())
+                        .frame(maxWidth: .infinity, minHeight: compact ? 28 : 34)
+                }
+                .buttonStyle(.bordered)
+            }
+            .tint(.orange)
+        }
+        .padding(.vertical, compact ? 4 : 14)
     }
 }
 
@@ -96,9 +150,15 @@ struct TripActivityStep {
     let arrivalDelay: Int
     /// La ligne de l'étape d'après, pour la frise.
     let nextLeg: TripActivityState.Leg?
+    /// Vrai quand le voyageur marche vers l'arrêt, plutôt que d'y attendre.
+    let isWalking: Bool
+    /// La question posée au voyageur, s'il y en a une.
+    let question: TripActivityState.Question?
 
     init(attributes: TripActivityAttributes, state: TripActivityState, now: Date) {
         phase = state.phase(at: now)
+        isWalking = state.isWalking(at: now)
+        question = state.question
         target = state.target(of: phase)
         next = state.nextStep(after: phase)
         title = attributes.title
@@ -116,7 +176,8 @@ struct TripActivityStep {
             var parts = [String(localized: "Montée")]
             if !leg.boardQuay.isEmpty { parts.append(String(localized: "quai \(leg.boardQuay)")) }
             // La direction en entier : « Village » seul ne dit pas où va la ligne.
-            parts.append("→ \(leg.destination)")
+            // La ligne dans le texte : en attente, le marqueur montre la marche ou l'attente.
+            parts.append("\(leg.line) → \(leg.destination)")
             if leg.delay >= 2 { parts.append("+\(leg.delay)'") }
             action = parts.joined(separator: " · ")
         case .riding(let index):
@@ -346,14 +407,33 @@ struct TripActivityMarker: View {
     var compact = false
 
     var body: some View {
-        if case .arrived = step.phase {
-            transportIcon(with: step.leg?.transportType ?? "Bus")
-                .font(compact ? .caption : .title3)
-                .foregroundStyle(step.color)
-                .frame(minWidth: compact ? 28 : 40, minHeight: compact ? 19 : 27)
-        } else if let leg = step.leg {
-            TripActivityLineBadge(line: leg.line, color: step.color, compact: compact)
+        switch step.phase {
+        case .riding:
+            // Dans le véhicule : sa ligne.
+            if let leg = step.leg {
+                TripActivityLineBadge(line: leg.line, color: step.color, compact: compact)
+            }
+        case .waiting:
+            // Pas encore dedans : ce qu'il y a à faire d'ici là, marcher ou attendre.
+            symbol(step.isWalking ? "figure.walk" : "clock")
+        case .arrived:
+            symbol(nil)
         }
+    }
+
+    /// Une icône à la place du badge, de la même taille pour ne pas décaler la frise.
+    @ViewBuilder
+    private func symbol(_ name: String?) -> some View {
+        Group {
+            if let name {
+                Image(systemName: name)
+            } else {
+                transportIcon(with: step.leg?.transportType ?? "Bus")
+            }
+        }
+        .font(compact ? .caption : .title3)
+        .foregroundStyle(step.color)
+        .frame(minWidth: compact ? 28 : 40, minHeight: compact ? 19 : 27)
     }
 }
 
@@ -441,6 +521,21 @@ struct TripActivityNextMarker: View {
 /// Les formats système n'ont pas de forme courte : « 4 minutes », pas « 4' ». Un format maison
 /// ne serait pas évalué par l'écran verrouillé, qui redessine le texte sans l'extension.
 /// Arrondi à la minute la plus proche (l'ancre est décalée de 30 s).
+/// Le décompte court de la Dynamic Island : « 4:32 », qui défile tout seul. Les formats en
+/// toutes lettres du système (« 4 minutes ») ne tiennent pas à côté de la caméra.
+struct TripActivityTimer: View {
+    let target: Date?
+
+    var body: some View {
+        if let target, target > .now {
+            Text(timerInterval: Date.now...target, countsDown: true, showsHours: false)
+                .monospacedDigit()
+                .lineLimit(1)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
 struct TripActivityMinutes: View {
     let target: Date?
 
