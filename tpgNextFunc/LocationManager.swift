@@ -17,9 +17,12 @@ public final class LocationManager: NSObject, CLLocationManagerDelegate {
     @ObservationIgnored private lazy var locationManager: CLLocationManager = {
         let manager = CLLocationManager()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.desiredAccuracy = accuracy
         return manager
     }()
+    /// La précision demandée. Cent mètres suffisent pour les arrêts proches ; le suivi d'un
+    /// trajet, qui projette la position sur un parcours, en demande plus.
+    @ObservationIgnored private let accuracy: CLLocationAccuracy
     public private(set) var userLocation: CLLocation?
     private var authorizationStatus: CLAuthorizationStatus?
     /// Rappelé à chaque demande, avec `nil` si la position n'a pas pu être obtenue.
@@ -32,7 +35,8 @@ public final class LocationManager: NSObject, CLLocationManagerDelegate {
         return authorizationStatus
     }
 
-    public override init() {
+    public init(accuracy: CLLocationAccuracy = kCLLocationAccuracyHundredMeters) {
+        self.accuracy = accuracy
         super.init()
     }
 

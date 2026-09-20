@@ -75,6 +75,9 @@ public struct TripActivityState: Codable, Hashable {
     /// Le changement à signaler, déjà traduit par l'app. `nil` : rien à signaler.
     public var alert: String?
     public var updated: Date
+    /// Le décalage appliqué d'après la position du voyageur, en secondes (`nil` : horaires
+    /// d'OJP seuls). Facultatif : une activité lancée par une version précédente n'en a pas.
+    public var positionOffset: Int?
 
     public init(legs: [Leg], departure: Date, arrival: Date, arrivalDelay: Int, alert: String?, updated: Date) {
         self.legs = legs
@@ -222,8 +225,9 @@ public func shortStopName(_ name: String) -> String {
 
 extension TripActivityState {
     /// Les passages de la course d'une étape, demandés à OJP (`OJPTripInfoRequest`, 2.0).
-    /// `nil` sans référence de course ou si l'API ne répond pas.
-    public static func fetchCalls(for leg: TripLeg) async -> [Call]? {
+    /// `nil` sans référence de course ou si l'API ne répond pas. L'appelant en tire les
+    /// passages affichés (`calls(from:for:)`) et le tracé (`TripRoute.points(from:for:)`).
+    public static func fetchJourney(for leg: TripLeg) async -> [LineEvent]? {
         guard !leg.journeyRef.isEmpty else { return nil }
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTransportJourney(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef,
@@ -232,7 +236,14 @@ extension TripActivityState {
             }
         }
         guard let data else { return nil }
-        let calls = calls(from: parseJourneyEventsSync(from: data).events, for: leg)
+        let events = parseJourneyEventsSync(from: data).events
+        return events.isEmpty ? nil : events
+    }
+
+    /// Les passages affichés d'une étape. `nil` si la course est muette.
+    public static func fetchCalls(for leg: TripLeg) async -> [Call]? {
+        guard let events = await fetchJourney(for: leg) else { return nil }
+        let calls = calls(from: events, for: leg)
         return calls.isEmpty ? nil : calls
     }
 }
