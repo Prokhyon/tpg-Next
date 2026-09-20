@@ -201,6 +201,9 @@ horaires (`estimatedVehiclePosition`).
   heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` 1.0 est redemandée et le
   trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
   notifications : `tpg Next/RegularTrips/`.
+- L'activité en direct suit soit un **itinéraire** (redemandé par `OJPTripRequest`), soit une
+  **course** choisie depuis un départ (`TrackJourneyView`, route `.trackJourney`) et redemandée
+  par `OJPTripInfoRequest` : on reste sur ce véhicule-là même s'il prend du retard.
 - L'activité en direct (`tpg Next/LiveActivity/`) : données dans `tpgNextFunc/TripActivity.swift`,
   vues dans `TripLiveActivity.swift`, compilé aussi pour le widget (exception de membre, comme
   `BasicViews.swift`), gestion dans `TripLiveActivities.swift`.
@@ -210,6 +213,20 @@ horaires (`estimatedVehiclePosition`).
   un format maison ne serait pas évalué par l'écran verrouillé), étape et position du véhicule
   déduites de l'heure (`phase(at:)`, `vehicleStop(at:)` sur les passages embarqués),
   `staleDate` au prochain changement d'étape. L'état doit tenir en 4 Ko (passages limités).
+- Dans l'app, le trajet suivi s'affiche en bandeau sous les onglets (`tabViewBottomAccessory`
+  sur iOS 26, capsule au-dessus du dock avant) et en entier sur la route `.liveTrip`
+  (`LiveTripView`). L'état vient de `TripLiveActivities.live`, tenu à jour avec l'activité.
+  Le bandeau n'est posé que s'il y a un trajet suivi (vide, il occuperait quand même sa place).
+  Il s'ouvre en feuille plein écran, posée par `ContentView` (`LiveTripPresentation.shared`) : le
+  bandeau est refait à chaque changement d'étape et emporterait sa feuille. Le trajet y est
+  déroulé de haut en bas (départ, montées, véhicules et leurs arrêts, attentes, arrivée), l'étape
+  en cours sur fond teinté et les étapes passées effacées.
+- Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
+  rappels, et reposées à chaque mise à jour du trajet.
+- Une notification dont le moment est passé quitte le centre de notifications :
+  `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
+  minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte
+  attendent sa prochaine ouverture.
 - Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
   utiliser les aperçus de `TripLiveActivity.swift`.
 

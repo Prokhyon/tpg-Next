@@ -50,6 +50,8 @@ enum RegularTripAlerts {
                 ?? plannedDescription(of: trip.plannedTrip(for: occurrence))
             content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
             content.userInfo = [occurrenceKey: occurrence.id]
+            // Le départ passé, le rappel ne sert plus : il quitte le centre de notifications.
+            NotificationExpiry.mark(content, after: departure.addingTimeInterval(120))
             content.threadIdentifier = trip.id.uuidString
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(fireDate.timeIntervalSince(now), 1), repeats: false)
             requests.append(UNNotificationRequest(identifier: reminderPrefix + occurrence.id, content: content, trigger: trigger))
@@ -99,6 +101,7 @@ enum RegularTripAlerts {
         }
         content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
         content.userInfo = [occurrenceKey: occurrence.id]
+        NotificationExpiry.mark(content, after: leavingTime(occurrence: occurrence, match: match).addingTimeInterval(300))
         content.threadIdentifier = trip.id.uuidString
         // Même identifiant : la nouvelle alerte remplace la précédente dans le centre de notifications.
         let request = UNNotificationRequest(identifier: alertPrefix + occurrence.id, content: content, trigger: nil)

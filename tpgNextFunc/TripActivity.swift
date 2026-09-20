@@ -112,6 +112,33 @@ public struct TripActivityState: Codable, Hashable {
                   updated: updated)
     }
 
+    /// Une course suivie depuis la page d'un arrêt ou d'une ligne : un seul véhicule, de
+    /// `boardSloid` à `alightSloid`, d'après les passages de la course (`OJPTripInfoRequest`).
+    /// `nil` si l'un des deux arrêts manque, ou s'ils sont dans le mauvais ordre.
+    public init?(journey events: [LineEvent], line: String, operatorName: String, transportType: String,
+                 destination: String, boardSloid: String, alightSloid: String, alert: String? = nil,
+                 updated: Date = Date()) {
+        func stop(_ event: LineEvent) -> String { sloidHarmonizer(code: event.sloid.isEmpty ? event.stopPlaceRef : event.sloid) }
+        let board = sloidHarmonizer(code: boardSloid)
+        let alight = sloidHarmonizer(code: alightSloid)
+        guard let boardIndex = events.firstIndex(where: { stop($0) == board }),
+              let alightIndex = events[boardIndex...].firstIndex(where: { stop($0) == alight }),
+              let boardDate = events[boardIndex].departureDate,
+              let alightDate = events[alightIndex].departureDate else { return nil }
+        let planned = OJPDate.date(from: events[boardIndex].timetabledTime) ?? boardDate
+        let plannedAlight = OJPDate.date(from: events[alightIndex].timetabledTime) ?? alightDate
+        let calls = events[max(0, boardIndex - 4)...alightIndex].prefix(16).compactMap { event in
+            event.departureDate.map { Call(name: shortStopName(event.stopPointName), time: $0) }
+        }
+        let leg = Leg(line: line, operatorName: operatorName, transportType: transportType, destination: destination,
+                      boardName: events[boardIndex].stopPointName, boardQuay: events[boardIndex].plannedQuay,
+                      board: boardDate, alight: alightDate, alightName: events[alightIndex].stopPointName,
+                      delay: Int((boardDate.timeIntervalSince(planned) / 60).rounded()), calls: Array(calls))
+        self.init(legs: [leg], departure: boardDate, arrival: alightDate,
+                  arrivalDelay: Int((alightDate.timeIntervalSince(plannedAlight) / 60).rounded()),
+                  alert: alert, updated: updated)
+    }
+
     /// Où en est le voyageur.
     @frozen public enum Phase: Hashable {
         /// En attente du véhicule de l'étape (avant la première montée, ou en correspondance).

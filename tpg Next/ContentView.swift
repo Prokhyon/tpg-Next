@@ -105,6 +105,10 @@ struct ContentView: View {
     @State private var tripManager = TripManager()
     @State var notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
     @State var navigationModel = NavigationModel()
+    /// Le trajet suivi, affiché en bandeau sous les onglets.
+    private var liveActivities = TripLiveActivities.shared
+    /// Le trajet suivi ouvert en plein écran par-dessus l'app.
+    @State private var liveTrip = LiveTripPresentation.shared
     
     
     @AppStorage(SettingKey.showWelcome) var showWelcome = true
@@ -149,11 +153,21 @@ struct ContentView: View {
                 .environment(recentSearchModel)
                 .environment(navigationModel)
                 .searchTabActivatesField()
+                // iOS 26 : le bandeau du trajet suivi s'attache aux onglets, comme dans Musique.
+                .liveTripAccessory()
             if #available(iOS 26, *), !testingNewDock {
             } else {
                 if !(keyboardResponder.isKeyboardVisible && navigationModel.selectedTab != .search) {
                     VStack {
                         Spacer()
+                        // Avant iOS 26, le bandeau du trajet suivi flotte au-dessus du dock.
+                        if let current = liveActivities.current {
+                            TripLiveAccessory(key: current.key, live: current.trip)
+                                .frame(height: 52)
+                                .background(Capsule().fill(.thinMaterial).shadow(color: .customShadows, radius: 2, y: 1.5))
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 4)
+                        }
                         DockView()
                             .padding(.bottom)
                             .environment(navigationModel)
@@ -262,8 +276,20 @@ struct ContentView: View {
         .onChange(of: PendingNotificationOpen.shared.route, initial: true) {
             guard let route = PendingNotificationOpen.shared.route else { return }
             PendingNotificationOpen.shared.route = nil
+            // Le trajet suivi s'ouvre en plein écran, comme depuis le bandeau.
+            if case let .liveTrip(key) = route {
+                liveTrip.open(key)
+                return
+            }
             navigationModel.open(route, in: .home)
             navigationModel.selectedTab = .home
+        }
+        // Le bandeau s'ouvre en plein écran, et se referme en glissant vers le bas.
+        .sheet(isPresented: Bindable(liveTrip).isOpen) {
+            if let key = liveTrip.openedKey {
+                LiveTripView(key: key)
+                    .presentationDragIndicator(.visible)
+            }
         }
         .onOpenURL { handleOpenURL($0) }
         // Au premier plan, chaque minute : temps réel des trajets réguliers proches, rappels,
@@ -281,6 +307,8 @@ struct ContentView: View {
                                 }
                                
                             } else if scenePhase == .active {
+                                // Les alertes reçues pendant l'absence de l'app, dont le moment est passé.
+                                NotificationExpiry.clearExpired()
                                 if lastUsedTime?.timeIntervalSinceNow ?? 0 < -3600 { //if the app hasn't been used for over an hour, reset to home, remove any trip search and results
                                     withAnimation {
                                         navigationModel.selectedTab = .home
@@ -306,8 +334,8 @@ struct ContentView: View {
         if url.host == "regulartrips" || url.host == "livetrip" {
             // Activité en direct : le dernier itinéraire connu du trajet suivi.
             let key = components.queryItems?.first { $0.name == "key" }?.value
-            if let key, let trip = TripLiveActivities.shared.trip(for: key) {
-                navigationModel.open(.trip(trip), in: .home)
+            if let key, let route = TripLiveActivities.shared.route(for: key) {
+                navigationModel.open(route, in: .home)
             } else {
                 navigationModel.open(.regularTrips, in: .home)
             }

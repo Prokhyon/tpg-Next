@@ -119,6 +119,8 @@ final class RegularTripsModel {
         RegularTripAlerts.scheduleReminders(for: self)
         TripLiveActivities.shared.startSoonDepartingTrips(of: self, now: now)
         await TripLiveActivities.shared.refresh(model: self, now: now)
+        // Le ménage des notifications dont le moment est passé : c'est ici que l'app est réveillée.
+        NotificationExpiry.clearExpired(now: now)
     }
 
     /// Retrouve le trajet du jour auprès d'OJP. Rend le trajet trouvé, `nil` sinon.

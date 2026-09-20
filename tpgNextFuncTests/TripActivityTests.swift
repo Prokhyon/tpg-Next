@@ -108,3 +108,49 @@ struct TripActivityStepTests {
         #expect(try JSONEncoder().encode(state).count < 4096)
     }
 }
+
+@Suite("Activité en direct : course suivie")
+struct TripActivityJourneyTests {
+    /// Une course de six arrêts, un passage toutes les deux minutes à partir de 14:00.
+    private func journey(delayAt: Int? = nil) -> [LineEvent] {
+        ["Bel-Air", "Molard", "Rive", "Terrassière", "Villereuse", "Grange-Canal"].enumerated().map { position, name in
+            let timetabled = "2025-02-08T14:\(String(format: "%02d", position * 2)):00Z"
+            let estimated = position >= (delayAt ?? .max)
+                ? "2025-02-08T14:\(String(format: "%02d", position * 2 + 3)):00Z" : ""
+            return LineEvent(stopPointName: "Genève, \(name)", plannedQuay: position == 2 ? "B" : "",
+                             timetabledTime: timetabled, estimatedTime: estimated, stopPlaceRef: name, sloid: name,
+                             previousCall: false, longitude: "", latitude: "")
+        }
+    }
+
+    private func state(from board: String = "Rive", to alight: String = "Villereuse", delayAt: Int? = nil) -> TripActivityState? {
+        TripActivityState(journey: journey(delayAt: delayAt), line: "12", operatorName: "Transports Publics Genevois",
+                          transportType: "Tram", destination: "Carouge, Bachet", boardSloid: board, alightSloid: alight)
+    }
+
+    @Test func oneLegFromTheJourney() throws {
+        let state = try #require(state())
+        let leg = try #require(state.legs.first)
+        #expect(state.legs.count == 1)
+        #expect(leg.boardName == "Genève, Rive")
+        #expect(leg.boardQuay == "B")
+        #expect(leg.alightName == "Genève, Villereuse")
+        #expect(state.departure == iso8601.date(from: "2025-02-08T14:04:00Z"))
+        #expect(state.arrival == iso8601.date(from: "2025-02-08T14:08:00Z"))
+        // Les passages vont de deux arrêts avant la montée (la course commence là) à la descente.
+        #expect(leg.calls?.map(\.name) == ["Bel-Air", "Molard", "Rive", "Terrassière", "Villereuse"])
+    }
+
+    @Test func delayIsRead() throws {
+        let state = try #require(state(delayAt: 2))
+        #expect(state.legs.first?.delay == 3)
+        #expect(state.arrivalDelay == 3)
+        #expect(state.departure == iso8601.date(from: "2025-02-08T14:07:00Z"))
+    }
+
+    /// L'arrêt de descente doit venir après celui de montée sur la course.
+    @Test func wrongOrderIsRefused() {
+        #expect(state(from: "Villereuse", to: "Rive") == nil)
+        #expect(state(from: "Rive", to: "Inconnu") == nil)
+    }
+}

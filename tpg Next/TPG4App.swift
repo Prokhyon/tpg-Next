@@ -146,7 +146,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         ) {
             // Extract information from the notification
             let userInfo = response.notification.request.content.userInfo
-            if userInfo[RegularTripAlerts.occurrenceKey] != nil {
+            if let key = userInfo[TripStepAlerts.userInfoKey] as? String {
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .liveTrip(key: key)
+                }
+            } else if userInfo[RegularTripAlerts.occurrenceKey] != nil {
                 DispatchQueue.main.async {
                     PendingNotificationOpen.shared.route = .regularTrips
                 }
