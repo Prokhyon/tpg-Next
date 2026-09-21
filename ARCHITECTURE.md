@@ -252,6 +252,9 @@ horaires (`estimatedVehiclePosition`).
   `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
   minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte
   attendent sa prochaine ouverture.
+- Dynamic Island dépliée : le marqueur à gauche de la caméra, le temps restant et l'arrivée à
+  droite, l'arrêt et l'action au centre, l'étape suivante et l'alerte (ou la question et ses
+  boutons) dessous. La frise (`TripActivityTimeline`) ne sert plus qu'à l'écran verrouillé.
 - Dans la Dynamic Island compacte, le décompte est celui du système (`Text(timerInterval:)`,
   « 4:32 ») : les formats en toutes lettres n'y tiennent pas. Le marqueur dit ce qu'il y a à
   faire — badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, véhicule à l'arrivée.

@@ -22,12 +22,26 @@ struct TripLiveActivity: Widget {
         } dynamicIsland: { context in
             let step = TripActivityStep(attributes: context.attributes, state: context.state, now: Date())
             return DynamicIsland {
+                // Autour de la caméra : quoi faire à gauche, combien de temps à droite, et où
+                // au centre. Le détail et l'étape suivante passent dessous, sur toute la largeur.
+                DynamicIslandExpandedRegion(.leading) {
+                    TripIslandMarker(step: step)
+                        .padding(.leading, 4)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    TripIslandTime(step: step)
+                        .padding(.trailing, 4)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    TripIslandStop(step: step)
+                }
                 DynamicIslandExpandedRegion(.bottom) {
                     if let question = step.question {
-                        TripActivityQuestion(question: question, key: context.attributes.key, compact: true)
+                        TripActivityQuestion(question: question, key: context.attributes.key,
+                                             compact: true, showsTitle: false)
                             .padding(.horizontal, 6)
                     } else {
-                        TripActivityTimeline(step: step, alert: context.state.alert, compact: true, verticalInset: 4)
+                        TripIslandDetails(step: step, alert: context.state.alert)
                             .padding(.horizontal, 6)
                     }
                 }
@@ -83,16 +97,20 @@ struct TripActivityQuestion: View {
     let question: TripActivityState.Question
     let key: String
     var compact = false
+    /// La Dynamic Island met le titre au centre, sous la caméra : ici, la question et les boutons.
+    var showsTitle = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 6 : 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "questionmark.circle.fill")
-                    .foregroundStyle(.orange)
-                Text("Correspondance serrée à \(question.stop)")
-                    .font(compact ? .caption.bold() : .subheadline.bold())
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+            if showsTitle {
+                HStack(spacing: 8) {
+                    Image(systemName: "questionmark.circle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Correspondance serrée à \(question.stop)")
+                        .font(compact ? .caption.bold() : .subheadline.bold())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
             Text("Êtes-vous monté dans le \(question.line) ?")
                 .font(compact ? .caption2 : .footnote)
@@ -115,6 +133,117 @@ struct TripActivityQuestion: View {
             .tint(.orange)
         }
         .padding(.vertical, compact ? 4 : 14)
+    }
+}
+
+// MARK: - Dynamic Island dépliée
+
+/// À gauche de la caméra : ce qu'il y a à faire, ou le point d'interrogation d'une question.
+struct TripIslandMarker: View {
+    let step: TripActivityStep
+
+    var body: some View {
+        Group {
+            if step.question != nil {
+                Image(systemName: "questionmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.orange)
+            } else {
+                TripActivityMarker(step: step)
+            }
+        }
+        .frame(maxHeight: .infinity)
+    }
+}
+
+/// À droite de la caméra : le temps restant avant la montée ou la descente, et l'arrivée.
+struct TripIslandTime: View {
+    let step: TripActivityStep
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            if step.isArrived {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(step.color)
+            } else {
+                TripActivityMinutes(target: step.target)
+                    .font(.headline)
+                    .minimumScaleFactor(0.6)
+                HStack(spacing: 3) {
+                    Text("Arr. \(step.arrival.formatted(date: .omitted, time: .shortened))")
+                    if step.arrivalDelay >= 2 {
+                        Text("+\(step.arrivalDelay)'")
+                            .foregroundStyle(.orange)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+        }
+        .frame(maxHeight: .infinity)
+    }
+}
+
+/// Sous la caméra : l'arrêt de l'étape en cours et ce qu'on y fait, ou le titre de la question.
+struct TripIslandStop: View {
+    let step: TripActivityStep
+
+    var body: some View {
+        VStack(spacing: 1) {
+            if let question = step.question {
+                Text("Correspondance serrée")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(question.stop)
+                    .font(.headline)
+            } else {
+                // À bord : où se trouve le véhicule, au-dessus de l'arrêt où descendre.
+                if let note = step.vehicleNote {
+                    Text(note)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Text(step.stopName)
+                    .font(.headline)
+                    .minimumScaleFactor(0.7)
+                Text(step.action)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .lineLimit(1)
+        .multilineTextAlignment(.center)
+    }
+}
+
+/// Sur toute la largeur, sous le reste : l'étape d'après, et l'alerte s'il y en a une.
+struct TripIslandDetails: View {
+    let step: TripActivityStep
+    let alert: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let nextText = step.nextText {
+                HStack(spacing: 8) {
+                    TripActivityNextMarker(step: step)
+                        .frame(width: 28)
+                    Text(nextText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            if let alert {
+                Label(alert, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
     }
 }
 
@@ -554,7 +683,8 @@ struct TripActivityMinutes: View {
 private extension TripActivityState {
     /// Le 12 de Rive à Terrassière, puis le 19 jusqu'à Cornavin. Données inventées, calées sur
     /// maintenant ; `boardIn` : minutes avant la montée dans le 12 (négatif : déjà à bord).
-    static func preview(boardIn: Double = 4, delay: Int = 0, alert: String? = nil) -> TripActivityState {
+    static func preview(boardIn: Double = 4, delay: Int = 0, alert: String? = nil,
+                        question: Question? = nil) -> TripActivityState {
         let now = Date()
         let board = now.addingTimeInterval(boardIn * 60)
         let calls = ["Bel-Air", "Molard", "Rive", "Terrassière"].enumerated().map { index, name in
@@ -573,6 +703,13 @@ private extension TripActivityState {
             ],
             departure: now, arrival: board.addingTimeInterval(21 * 60), arrivalDelay: delay,
             alert: alert, updated: now)
+            .asking(question)
+    }
+
+    func asking(_ question: Question?) -> TripActivityState {
+        var state = self
+        state.question = question
+        return state
     }
 }
 
@@ -595,6 +732,9 @@ private let previewAttributes = TripActivityAttributes(key: "preview", title: "T
 } contentStates: {
     TripActivityState.preview()
     TripActivityState.preview(boardIn: -2)
+    TripActivityState.preview(boardIn: -7, alert: "Le 19 a 4 minutes de retard")
+    TripActivityState.preview(boardIn: -22)
+    TripActivityState.preview(boardIn: -4, question: .init(stop: "Terrassière", line: "19"))
 }
 
 #Preview("Dynamic Island compacte", as: .dynamicIsland(.compact), using: previewAttributes) {
