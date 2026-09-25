@@ -18,15 +18,23 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
         layout.widthClass != .compact
     }
 
+    /// Les barres flottantes laissaient un grand vide au-dessus des deux moitiés : leur contenu
+    /// remonte d'autant, sans passer dessous.
+    private var topGapReduction: CGFloat { 48 }
+
     var body: some View {
         if Self.isSplit(layout) {
-            HStack(spacing: 0) {
-                primary
-                    .frame(maxWidth: .infinity)
-                    // Les titres flottants débordent volontairement du bord : coupés à la moitié.
-//                    .clipped()
-                secondary
-                    .frame(maxWidth: .infinity)
+            GeometryReader { geometry in
+                HStack(spacing: 0) {
+                    primary
+                        .frame(maxWidth: .infinity)
+                        // Les titres flottants débordent volontairement du bord : coupés à la moitié.
+    //                    .clipped()
+                    secondary
+                        .frame(maxWidth: .infinity)
+                }
+                .safeAreaPadding(.top, max(geometry.safeAreaInsets.top - topGapReduction, 12))
+                .ignoresSafeArea(.container, edges: .top)
             }
         } else {
             primary

@@ -68,7 +68,6 @@ struct LineDetailPane: View {
 /// Carte de la course : tracé, arrêts, arrêt sélectionné et position estimée du véhicule.
 struct LineMapPanel: View {
     @Environment(\.displayTime) private var now
-    @Environment(\.paneTopInset) private var topInset
     let stopEvent: StopEvent
     let currentStopSloid: String?
     let journey: JourneyTrackModel
@@ -99,7 +98,6 @@ struct LineMapPanel: View {
             }
             UserAnnotation()
         }
-        .safeAreaPadding(.top, topInset)
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .mapControls {
             MapUserLocationButton()
