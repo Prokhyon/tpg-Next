@@ -32,14 +32,23 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
         GeometryReader { geometry in
             let mapHeight = geometry.size.height * mapFraction
             ZStack(alignment: .top) {
-                // Pleine largeur : le défilement part du bord de la fenêtre.
+                // Pleine largeur, jusqu'aux bords de la fenêtre.
                 ScrollView {
                     details
-                        .padding(.bottom, 30)
                 }
-                // Les détails commencent sous le titre et disparaissent au bas de la carte.
+                // Les détails commencent sous le titre, et passent derrière la carte sans
+                // jamais dépasser de son cadre.
                 .contentMargins(.top, mapHeight + titleHeight + spacing * 2, for: .automatic)
-                .mask(Rectangle().padding(.top, mapHeight + spacing))
+                .contentMargins(.bottom, 30, for: .automatic)
+                .mask(alignment: .top) {
+                    VStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 30)
+                            .frame(height: mapHeight)
+                            .padding(.horizontal)
+                        Rectangle()
+                    }
+                }
+                .ignoresSafeArea(.container, edges: .bottom)
 
                 VStack(spacing: spacing) {
                     map
@@ -93,7 +102,7 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                 .padding([.horizontal, .bottom])
             }
         }
-        .padding([.top, .bottom], 8)
+        .padding(.top, 8)
     }
 }
 
