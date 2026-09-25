@@ -10,6 +10,9 @@ import SwiftUI
 /// son panneau secondaire quand la place le permet.
 struct AdaptiveSplit<Primary: View, Secondary: View>: View {
     @Environment(\.layout) private var layout
+    /// Espace mort à récupérer en haut, pour un écran dont la barre de navigation est vide :
+    /// son contenu remonte d'autant vers les barres flottantes.
+    var topGapReduction: CGFloat = 0
     @ViewBuilder var primary: Primary
     @ViewBuilder var secondary: Secondary
 
@@ -18,9 +21,14 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
         layout.widthClass != .compact
     }
 
-    /// Les barres flottantes laissaient un grand vide au-dessus des deux moitiés : leur contenu
-    /// remonte d'autant, sans passer dessous.
-    private var topGapReduction: CGFloat { 48 }
+    /// Jamais plus haut que le bas des barres flottantes.
+    private var minimumTopInset: CGFloat { 56 }
+
+    /// De combien le contenu remonte : l'espace demandé, mais seulement tant qu'il reste
+    /// sous les barres.
+    private func topShift(_ safeAreaTop: CGFloat) -> CGFloat {
+        min(topGapReduction, max(0, safeAreaTop - minimumTopInset))
+    }
 
     var body: some View {
         if Self.isSplit(layout) {
@@ -33,8 +41,7 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
                     secondary
                         .frame(maxWidth: .infinity)
                 }
-                .safeAreaPadding(.top, max(geometry.safeAreaInsets.top - topGapReduction, 12))
-                .ignoresSafeArea(.container, edges: .top)
+                .padding(.top, -topShift(geometry.safeAreaInsets.top))
             }
         } else {
             primary

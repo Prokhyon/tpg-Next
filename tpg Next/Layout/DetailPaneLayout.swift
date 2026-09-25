@@ -39,12 +39,12 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                 // Les rangées passent derrière la carte, qui les cache. La zone de défilement
                 // commence sous ses coins hauts : rien ne peut apparaître au-dessus d'elle.
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: corner)
+                    Color.clear.frame(height: corner + 4)
                     ScrollView {
                         details
                             .padding(.horizontal, sideInset)
                     }
-                    .contentMargins(.top, mapHeight + titleHeight + spacing * 2 - corner, for: .automatic)
+                    .contentMargins(.top, mapHeight + titleHeight + spacing * 2 - corner - 4, for: .automatic)
                     .contentMargins(.bottom, 30, for: .automatic)
                     .ignoresSafeArea(.container, edges: .bottom)
                 }
@@ -55,10 +55,11 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                         .clipShape(RoundedRectangle(cornerRadius: corner))
                         .overlay(alignment: .bottomTrailing) {
                             if let expandMap {
+                                // Même gabarit que le bouton de position de la carte.
                                 Button(action: expandMap) {
                                     Image(systemName: "arrow.down.backward.and.arrow.up.forward")
                                         .font(.subheadline.bold())
-                                        .padding(10)
+                                        .frame(width: PaneControl.size, height: PaneControl.size)
                                 }
                                 .tpgSurface(interactive: true, legacy: .thinMaterial)
                                 .padding(12)
@@ -74,16 +75,20 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                             title
                         }
                         if let close {
+                            // Aussi haute que le titre, qu'il tienne sur une ou deux lignes.
                             Button(action: close) {
                                 Image(systemName: "xmark")
                                     .font(.headline)
                                     .foregroundStyle(.secondary)
-                                    .padding(12)
+                                    .frame(width: PaneControl.size)
+                                    .frame(maxHeight: .infinity)
                             }
                             .tpgSurface(interactive: true, legacy: .thinMaterial)
                             .accessibilityLabel("Fermer")
                         }
                     }
+                    // Hauteur du plus haut : les autres s'y alignent au lieu de s'étirer.
+                    .fixedSize(horizontal: false, vertical: true)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
 
                     // Le reste de la colonne laisse passer les touchers vers les détails.
@@ -128,11 +133,19 @@ struct PaneTitleCapsule<Content: View>: View {
             .glassForegroundStyle(Color.text)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            // Toutes les capsules d'une rangée prennent la hauteur de la plus haute.
+            .frame(minHeight: PaneControl.size)
+            .frame(maxHeight: .infinity)
             .tpgSurface(interactive: true, legacy: .thinMaterial)
             // Plafonné comme les barres d'outils : en taille d'accessibilité, le titre
             // couvrait les détails.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
+}
+
+/// Gabarit commun des commandes rondes d'un panneau.
+enum PaneControl {
+    static let size: CGFloat = 44
 }
 
 /// Bouton flottant d'un panneau, en bas à droite.
@@ -145,7 +158,7 @@ struct PaneActionButton: View {
         Button(action: action) {
             icon
                 .font(.title3)
-                .padding(12)
+                .frame(width: PaneControl.size, height: PaneControl.size)
         }
         .tpgSurface(interactive: true, legacy: .thinMaterial)
         .accessibilityLabel(label)

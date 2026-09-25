@@ -89,7 +89,7 @@ struct LineView: View {
     @State private var titleHeight: CGFloat = 0
 
     var body: some View {
-        AdaptiveSplit {
+        AdaptiveSplit(topGapReduction: 48) {
             GeometryReader { geometry in
                 ZStack {
                     

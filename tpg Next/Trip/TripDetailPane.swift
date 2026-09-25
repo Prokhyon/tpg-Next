@@ -29,19 +29,10 @@ struct TripDetailPane: View {
                     TripMapCard(trip: trip, focus: $focus)
                 } title: {
                     // Plusieurs bulles plutôt qu'une grande capsule : le trajet, puis sa date
-                    // et sa durée.
-                    HStack(spacing: 10) {
-                        PaneTitleCapsule {
-                            HStack(spacing: 8) {
-                                fullTripViewTitle(departureStopName: trip.startName, arrivalStopName: trip.endName)
-                                Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.secondary)
-                            }
-                        }
-                        PaneTitleCapsule {
-                            fullTripViewTimeDate(duration: trip.duration, date: localDayString(fromUTC: trip.startTime))
-                                .font(.subheadline)
-                        }
-                        Spacer(minLength: 0)
+                    // et sa durée — qui s'efface quand la place manque.
+                    ViewThatFits(in: .horizontal) {
+                        titleBubbles(trip, showsTimeDate: true)
+                        titleBubbles(trip, showsTimeDate: false)
                     }
                 } actions: {
                     HStack(spacing: 10) {
@@ -77,6 +68,24 @@ struct TripDetailPane: View {
         }
         // Autre trajet : la carte repart sur le trajet entier.
         .onChange(of: trip?.id) { focus = nil }
+    }
+
+    private func titleBubbles(_ trip: TripEvent, showsTimeDate: Bool) -> some View {
+        HStack(spacing: 10) {
+            PaneTitleCapsule {
+                HStack(spacing: 8) {
+                    fullTripViewTitle(departureStopName: trip.startName, arrivalStopName: trip.endName)
+                    Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            if showsTimeDate {
+                PaneTitleCapsule {
+                    fullTripViewTimeDate(duration: trip.duration, date: localDayString(fromUTC: trip.startTime))
+                        .font(.subheadline)
+                }
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     /// Toucher l'étape déjà cadrée revient au trajet entier.

@@ -70,7 +70,7 @@ struct StopView: View {
     @Namespace var bottomID
 
     var body: some View {
-        AdaptiveSplit {
+        AdaptiveSplit(topGapReduction: 48) {
             ZStack {
                     ScrollViewReader { scroll in
                         ScrollView {

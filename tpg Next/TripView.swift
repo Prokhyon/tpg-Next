@@ -12,7 +12,6 @@ import tpgNextFunc
 struct TripView: View {
     var tripManager = TripManager()
     @Environment(SavedTripsModel.self) var savedTripsModel
-    @Environment(RegularTripsModel.self) var regularTripsModel
     @Environment(ItineraryViewModel.self) var viewModel
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
@@ -33,7 +32,6 @@ struct TripView: View {
     @State private var userPosition: CLLocation?
     
     @State private var showTime = true
-    @State private var showSavedTrips = false
     @Environment(\.openRoute) private var openRoute
     @Environment(\.layout) private var layout
     /// Sur grand écran, le trajet détaillé dans la moitié droite.
@@ -93,6 +91,8 @@ struct TripView: View {
     //                    .contentMargins(.top, 320.0, for: .automatic)
                         // Au moins la hauteur des champs et de la carte de recherche, qui grandit avec le texte.
                         .contentMargins(.bottom, (results == .tripResults) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
+                        // Titre compact sur grand écran : la première ligne passait sous les barres.
+                        .contentMargins(.top, layout.showsSecondaryPane ? 12 : 0, for: .automatic)
                         .readableScrollContent()
                     } else {
                         ScrollView {
@@ -197,6 +197,9 @@ struct TripView: View {
                         
                             tripManager.tripEvents.removeAll()
                             tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
+                            if let arrival = viewModel.arrival.endpoint {
+                                RecentTrips.shared.add(from: nil, to: arrival)
+                            }
                             viewModel.tripDone = true
     //                        results = Results.tripResults
                             viewModel.quickTrip = false
@@ -207,7 +210,9 @@ struct TripView: View {
                             results = Results.loading
                         }
                     }
+                    runPendingSearch()
                 })
+                .onChange(of: viewModel.pendingSearch) { runPendingSearch() }
             
                 VStack(spacing: 0) {
                     Spacer()
@@ -355,22 +360,10 @@ struct TripView: View {
                 self.selectedTrip = nil
             }
         }
-        .sheet(isPresented: $showSavedTrips) {
-            SavedTripsView(isPresented: $showSavedTrips, onTripSelected: { trip in
-                showSavedTrips = false
-                if layout.showsSecondaryPane {
-                    selectedTrip = trip
-                } else {
-                    openRoute(.trip(trip))
-                }
-            })
-                .environment(savedTripsModel)
-                .environment(regularTripsModel)
-                .presentationDetents([.fraction(0.99)])
-                .presentationCornerRadius(35)
-                .presentationBackground(.thinMaterial)
-        }
         .navigationTitle("Itinéraire") // Set back button text
+        // Grand écran : le grand titre chevauchait la liste, et son repli faisait bouger toute
+        // la page au moindre défilement des détails.
+        .navigationBarTitleDisplayMode(layout.showsSecondaryPane ? .inline : .automatic)
 //        .navigationBarTitleDisplayMode(.inline)
 //        .toolbar {
 //            ToolbarItem(placement: .principal) {
@@ -384,12 +377,12 @@ struct TripView: View {
                     ShowTimeButton(showTime: $showTime)
                         .padding(.trailing, 5)
                 }
+                // Une page de la pile, pas une feuille : le retour depuis un itinéraire ramène à la liste.
                 Button {
-                    self.showSavedTrips.toggle()
+                    openRoute(.savedTrips)
                 } label: {
                     Image("scurvepath.stack.fill")
                         .foregroundColor(TPGSurface.isGlass ? Color.text : .accent)
-                        .symbolEffect(.bounce, value: showSavedTrips)
                         .scaleEffect(0.9)
                         .padding(.trailing, TPGSurface.isGlass && results == .tripResults ? 10 : 0)
                 }
@@ -428,8 +421,18 @@ struct TripView: View {
         searchTrips()
     }
     
+    /// La recherche demandée depuis un autre écran (`ItineraryViewModel.searchNow`).
+    private func runPendingSearch() {
+        guard viewModel.pendingSearch else { return }
+        viewModel.pendingSearch = false
+        searchTrips()
+    }
+
     func searchTrips() {
         if viewModel.canSearch {
+            if let arrival = viewModel.arrival.endpoint {
+                RecentTrips.shared.add(from: viewModel.departure.endpoint, to: arrival)
+            }
             results = Results.loading
             tripManager.tripEvents.removeAll()
             tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
