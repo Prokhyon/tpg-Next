@@ -18,27 +18,45 @@ struct LineDetailPane: View {
     let selectedStop: LineEvent?
     let deselect: () -> Void
 
-    var body: some View {
-        VStack(spacing: 12) {
-            LineMapPanel(stopEvent: stopEvent, currentStopSloid: currentStopSloid, journey: journey, selectedStop: selectedStop)
-                .clipShape(RoundedRectangle(cornerRadius: 30))
-                .frame(maxHeight: .infinity)
+    /// Ouvert depuis un lien, le départ n'a pas toujours sa destination : le terminus de la
+    /// course la remplace.
+    private var destinationName: String {
+        stopEvent.destination.isEmpty ? (journey.events.last?.stopPointName ?? "") : stopEvent.destination
+    }
 
-            ScrollView {
-                Group {
+    var body: some View {
+        DetailPaneLayout {
+            LineMapPanel(stopEvent: stopEvent, currentStopSloid: currentStopSloid, journey: journey, selectedStop: selectedStop)
+        } title: {
+            PaneTitleCapsule {
+                HStack(spacing: 8) {
                     if let selectedStop {
-                        LineStopDeparturesPanel(stop: selectedStop, stopEvent: stopEvent, close: deselect)
+                        StopNameView(selectedStop.stopPointName, style: .row)
+                        Spacer(minLength: 0)
+                        Button(action: deselect) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityLabel("Fermer")
                     } else {
-                        VehicleInfoPanel(stopEvent: stopEvent, journey: journey, currentStopSloid: currentStopSloid)
+                        BusLineIcon(lineName: stopEvent.lineName, operatorName: journey.operatorName)
+                        Image(systemName: "arrow.right").font(.caption)
+                        StopNameView(destinationName, style: .row)
+                        Spacer(minLength: 0)
                     }
                 }
-                .padding(20)
             }
-            .frame(maxHeight: .infinity)
-            .background { BasicCard(cornerRadius: 30) }
+        } details: {
+            Group {
+                if let selectedStop {
+                    LineStopDeparturesPanel(stop: selectedStop, stopEvent: stopEvent)
+                } else {
+                    VehicleInfoPanel(stopEvent: stopEvent, journey: journey, currentStopSloid: currentStopSloid)
+                }
+            }
+            .padding(.horizontal, 12)
         }
-        .padding([.horizontal, .bottom])
-        .padding(.top, 8)
     }
 }
 
@@ -230,23 +248,12 @@ struct LineStopDeparturesPanel: View {
     @Environment(\.openRoute) private var openRoute
     let stop: LineEvent
     let stopEvent: StopEvent
-    let close: () -> Void
     @State private var stopManager = StopManager()
     /// Lignes affichées ; vide = toutes.
     @State private var lineFilters: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                StopNameView(stop.stopPointName, style: .row)
-                Spacer()
-                Button(action: close) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel("Fermer")
-            }
             if let access = stop.quayAccess {
                 InfoChip(text: access.label, systemImage: access.systemImage)
             }
@@ -347,7 +354,7 @@ struct LineStopDeparturesPanel: View {
 #Preview("Passages à un arrêt (API)", traits: .fixedLayout(width: 520, height: 600)) {
     let stop = PreviewData.journeyStops.first { $0.sloid == PreviewData.rive.sloid } ?? PreviewData.journeyStops[0]
     ScrollView {
-        LineStopDeparturesPanel(stop: stop, stopEvent: PreviewData.lineDeparture, close: {})
+        LineStopDeparturesPanel(stop: stop, stopEvent: PreviewData.lineDeparture)
             .padding(20)
     }
     .previewEnvironment()
