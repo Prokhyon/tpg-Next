@@ -12,11 +12,18 @@ import MapKit
 import tpgNextFunc
 
 struct LineDetailPane: View {
+    @Environment(\.openRoute) private var openRoute
     let stopEvent: StopEvent
     let currentStopSloid: String?
     let journey: JourneyTrackModel
     let selectedStop: LineEvent?
     let deselect: () -> Void
+
+    /// Le titre mène à la page de l'arrêt affiché.
+    private func openFullStop(_ stop: LineEvent) {
+        openRoute(.stop(name: stop.stopPointName, sloid: stop.sloid,
+                        highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: stopEvent.lineName, time: stop.timetabledTime)))
+    }
 
     /// Ouvert depuis un lien, le départ n'a pas toujours sa destination : le terminus de la
     /// course la remplace.
@@ -25,7 +32,10 @@ struct LineDetailPane: View {
     }
 
     var body: some View {
-        DetailPaneLayout {
+        DetailPaneLayout(openFull: selectedStop.map { stop in { openFullStop(stop) } },
+                         close: selectedStop == nil ? nil : deselect,
+                         expandMap: { openRoute(.lineMap(events: journey.events, operatorName: journey.operatorName,
+                                                         event: stopEvent, currentStopSloid: currentStopSloid)) }) {
             LineMapPanel(stopEvent: stopEvent, currentStopSloid: currentStopSloid, journey: journey, selectedStop: selectedStop)
         } title: {
             PaneTitleCapsule {
@@ -33,12 +43,7 @@ struct LineDetailPane: View {
                     if let selectedStop {
                         StopNameView(selectedStop.stopPointName, style: .row)
                         Spacer(minLength: 0)
-                        Button(action: deselect) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityLabel("Fermer")
+                        Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.secondary)
                     } else {
                         BusLineIcon(lineName: stopEvent.lineName, operatorName: journey.operatorName)
                         Image(systemName: "arrow.right").font(.caption)
@@ -63,6 +68,7 @@ struct LineDetailPane: View {
 /// Carte de la course : tracé, arrêts, arrêt sélectionné et position estimée du véhicule.
 struct LineMapPanel: View {
     @Environment(\.displayTime) private var now
+    @Environment(\.paneTopInset) private var topInset
     let stopEvent: StopEvent
     let currentStopSloid: String?
     let journey: JourneyTrackModel
@@ -93,6 +99,7 @@ struct LineMapPanel: View {
             }
             UserAnnotation()
         }
+        .safeAreaPadding(.top, topInset)
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .mapControls {
             MapUserLocationButton()
