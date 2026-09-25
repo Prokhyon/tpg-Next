@@ -62,7 +62,6 @@ struct StopDetailPane: View {
                                   toggleQuay: toggleQuay)
                 }
             }
-            .padding(.horizontal, 12)
         }
         .periodicRefresh(id: selected?.journeyRef) { _ in
             if let selected {

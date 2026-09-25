@@ -27,33 +27,32 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
     /// Hauteur du titre : les détails commencent dessous, même avec un texte agrandi.
     @State private var titleHeight: CGFloat = 0
     private let spacing: CGFloat = 10
+    /// Carte, titre et détails partagent ces bords : les rangées glissent derrière la carte
+    /// sans dépasser d'un côté ni de l'autre.
+    private let sideInset: CGFloat = 16
+    private let corner: CGFloat = 30
 
     var body: some View {
         GeometryReader { geometry in
             let mapHeight = geometry.size.height * mapFraction
             ZStack(alignment: .top) {
-                // Pleine largeur, jusqu'aux bords de la fenêtre.
-                ScrollView {
-                    details
-                }
-                // Les détails commencent sous le titre, et passent derrière la carte sans
-                // jamais dépasser de son cadre.
-                .contentMargins(.top, mapHeight + titleHeight + spacing * 2, for: .automatic)
-                .contentMargins(.bottom, 30, for: .automatic)
-                .mask(alignment: .top) {
-                    VStack(spacing: 0) {
-                        RoundedRectangle(cornerRadius: 30)
-                            .frame(height: mapHeight)
-                            .padding(.horizontal)
-                        Rectangle()
+                // Les rangées passent derrière la carte, qui les cache. La zone de défilement
+                // commence sous ses coins hauts : rien ne peut apparaître au-dessus d'elle.
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: corner)
+                    ScrollView {
+                        details
+                            .padding(.horizontal, sideInset)
                     }
+                    .contentMargins(.top, mapHeight + titleHeight + spacing * 2 - corner, for: .automatic)
+                    .contentMargins(.bottom, 30, for: .automatic)
+                    .ignoresSafeArea(.container, edges: .bottom)
                 }
-                .ignoresSafeArea(.container, edges: .bottom)
 
                 VStack(spacing: spacing) {
                     map
                         .frame(height: mapHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 30))
+                        .clipShape(RoundedRectangle(cornerRadius: corner))
                         .overlay(alignment: .bottomTrailing) {
                             if let expandMap {
                                 Button(action: expandMap) {
@@ -90,7 +89,7 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                     // Le reste de la colonne laisse passer les touchers vers les détails.
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, sideInset)
 
                 VStack {
                     Spacer()
