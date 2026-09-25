@@ -26,6 +26,8 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
 
     /// Hauteur du titre : les détails commencent dessous, même avec un texte agrandi.
     @State private var titleHeight: CGFloat = 0
+    /// Hauteur du titre seul : la croix en fait une bulle ronde.
+    @State private var titleContentHeight: CGFloat = 0
     private let spacing: CGFloat = 10
     /// Carte, titre et détails partagent ces bords : les rangées glissent derrière la carte
     /// sans dépasser d'un côté ni de l'autre.
@@ -34,19 +36,30 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
 
     var body: some View {
         GeometryReader { geometry in
-            let mapHeight = geometry.size.height * mapFraction
+            let mapHeight: CGFloat = geometry.size.height * mapFraction
+            // Les détails commencent sous les coins de la carte, et sous le titre.
+            let scrollStart: CGFloat = corner + 4
+            let detailsTop: CGFloat = mapHeight + titleHeight + spacing * 2 - scrollStart
             ZStack(alignment: .top) {
                 // Les rangées passent derrière la carte, qui les cache. La zone de défilement
                 // commence sous ses coins hauts : rien ne peut apparaître au-dessus d'elle.
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: corner + 4)
+                    Color.clear.frame(height: scrollStart)
                     ScrollView {
                         details
                             .padding(.horizontal, sideInset)
                     }
-                    .contentMargins(.top, mapHeight + titleHeight + spacing * 2 - corner - 4, for: .automatic)
+                    .contentMargins(.top, detailsTop, for: .automatic)
                     .contentMargins(.bottom, 30, for: .automatic)
                     .ignoresSafeArea(.container, edges: .bottom)
+                }
+                // Une zone de défilement s'étend d'elle-même dans la marge des barres : sans
+                // cette découpe, ses rangées se dessinaient au-dessus de la carte. Le bas reste
+                // ouvert, jusqu'au bord de la fenêtre.
+                .mask {
+                    Rectangle()
+                        .padding(.top, scrollStart)
+                        .padding(.bottom, -600)
                 }
 
                 VStack(spacing: spacing) {
@@ -68,20 +81,23 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                         }
 
                     HStack(spacing: spacing) {
-                        if let openFull {
-                            Button(action: openFull) { title }
-                                .buttonStyle(.plain)
-                        } else {
-                            title
+                        Group {
+                            if let openFull {
+                                Button(action: openFull) { title }
+                                    .buttonStyle(.plain)
+                            } else {
+                                title
+                            }
                         }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleContentHeight = $0 }
+
                         if let close {
-                            // Aussi haute que le titre, qu'il tienne sur une ou deux lignes.
+                            // Une bulle ronde, aussi haute que le titre.
                             Button(action: close) {
                                 Image(systemName: "xmark")
                                     .font(.headline)
                                     .foregroundStyle(.secondary)
-                                    .frame(width: PaneControl.size)
-                                    .frame(maxHeight: .infinity)
+                                    .frame(width: titleContentHeight, height: titleContentHeight)
                             }
                             .tpgSurface(interactive: true, legacy: .thinMaterial)
                             .accessibilityLabel("Fermer")
@@ -133,8 +149,7 @@ struct PaneTitleCapsule<Content: View>: View {
             .glassForegroundStyle(Color.text)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            // Toutes les capsules d'une rangée prennent la hauteur de la plus haute.
-            .frame(minHeight: PaneControl.size)
+            // Dans une rangée, toutes prennent la hauteur de la plus haute.
             .frame(maxHeight: .infinity)
             .tpgSurface(interactive: true, legacy: .thinMaterial)
             // Plafonné comme les barres d'outils : en taille d'accessibilité, le titre
