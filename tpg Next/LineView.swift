@@ -187,12 +187,14 @@ struct LineView: View {
                     }
                     .accessibilityLabel("Suivre en direct")
                 }
-                Button {
-                    openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
-                } label: {
-                    Image(systemName: "map")
-                        .padding(.trailing, TPGSurface.isGlass ? 5 : 10)
-                    //                        .font(.title3)
+                // Sur grand écran, la carte est déjà là : son plein écran est sur elle.
+                if !layout.showsSecondaryPane {
+                    Button {
+                        openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
+                    } label: {
+                        Image(systemName: "map")
+                            .padding(.trailing, TPGSurface.isGlass ? 5 : 10)
+                    }
                 }
             }
             .background {

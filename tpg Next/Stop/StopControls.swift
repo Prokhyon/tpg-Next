@@ -14,6 +14,7 @@ struct StopActionsMenu: View {
     @Environment(StopStore.self) private var stopStore
     @Environment(FavoritesViewModel.self) private var favoritesViewModel
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.layout) private var layout
     let stopName: String
     let stopSloid: String
     let quays: [Quay]
@@ -24,7 +25,8 @@ struct StopActionsMenu: View {
                 favoritesViewModel.isFavoriteID(stopSloid) ? Label("Retirer des favoris", systemImage: "star.fill") : Label("Ajouter aux favoris", systemImage: "star")
             }
             Divider()
-            if !quays.isEmpty {
+            // Sur grand écran, la carte des quais est déjà affichée : son plein écran est sur elle.
+            if !quays.isEmpty, !layout.showsSecondaryPane {
                 Button {
                     openRoute(.stopMap(quays: quays, sloid: stopSloid, name: stopName))
                 } label: {

@@ -10,6 +10,8 @@ import SwiftUI
 import tpgNextFunc
 
 struct TripDetailPane: View {
+    @Environment(SavedTripsModel.self) private var savedTripsModel
+    @Environment(\.openRoute) private var openRoute
     let trip: TripEvent?
     @Binding var showTime: Bool
     let close: () -> Void
@@ -20,11 +22,40 @@ struct TripDetailPane: View {
     var body: some View {
         Group {
             if let trip {
-                DetailPaneLayout(mapFraction: 1.0 / 3.0) {
+                DetailPaneLayout(mapFraction: 1.0 / 3.0,
+                                 openFull: { openRoute(.trip(trip)) },
+                                 close: close,
+                                 expandMap: { openRoute(.tripMap(trip)) }) {
                     TripMapCard(trip: trip, focus: $focus)
                 } title: {
-                    PaneTitleCapsule {
-                        TripDetailHeader(trip: trip, close: close)
+                    // Plusieurs bulles plutôt qu'une grande capsule : le trajet, puis sa date
+                    // et sa durée.
+                    HStack(spacing: 10) {
+                        PaneTitleCapsule {
+                            HStack(spacing: 8) {
+                                fullTripViewTitle(departureStopName: trip.startName, arrivalStopName: trip.endName)
+                                Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                        PaneTitleCapsule {
+                            fullTripViewTimeDate(duration: trip.duration, date: localDayString(fromUTC: trip.startTime))
+                                .font(.subheadline)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                } actions: {
+                    HStack(spacing: 10) {
+                        PaneActionButton(icon: Image(savedTripsModel.tripIsSaved(trip) ? "scurvepath.stack.fill.badge.minus" : "scurvepath.stack.fill.badge.plus"),
+                                         label: savedTripsModel.tripIsSaved(trip) ? "Ne plus enregistrer l'itinéraire" : "Enregistrer l'itinéraire") {
+                            if savedTripsModel.tripIsSaved(trip) {
+                                savedTripsModel.removeTrip(trip)
+                            } else {
+                                savedTripsModel.addTrip(trip)
+                            }
+                        }
+                        PaneActionButton(icon: Image(systemName: "arrow.up.forward.square"), label: "Ouvrir en plein écran") {
+                            openRoute(.trip(trip))
+                        }
                     }
                 } details: {
                     TripLegsList(fullTrip: trip, showTime: $showTime, onFocus: toggleFocus, focusedID: focus?.id)
@@ -51,50 +82,5 @@ struct TripDetailPane: View {
     /// Toucher l'étape déjà cadrée revient au trajet entier.
     private func toggleFocus(_ target: TripMapFocus) {
         withAnimation { focus = focus == target ? nil : target }
-    }
-}
-
-/// Départ → arrivée, date et durée, pleine page, enregistrement et fermeture.
-private struct TripDetailHeader: View {
-    @Environment(SavedTripsModel.self) private var savedTripsModel
-    @Environment(\.openRoute) private var openRoute
-    let trip: TripEvent
-    let close: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                fullTripViewTitle(departureStopName: trip.startName, arrivalStopName: trip.endName)
-                fullTripViewTimeDate(duration: trip.duration, date: localDayString(fromUTC: trip.startTime))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-            // La page de l'itinéraire, avec la carte à côté des étapes : le retour ramène ici.
-            Button {
-                openRoute(.trip(trip))
-            } label: {
-                Image(systemName: "arrow.up.forward.square")
-                    .font(.title2)
-            }
-            .accessibilityLabel("Ouvrir en plein écran")
-            Button {
-                if savedTripsModel.tripIsSaved(trip) {
-                    savedTripsModel.removeTrip(trip)
-                } else {
-                    savedTripsModel.addTrip(trip)
-                }
-            } label: {
-                Image(savedTripsModel.tripIsSaved(trip) ? "scurvepath.stack.fill.badge.minus" : "scurvepath.stack.fill.badge.plus")
-                    .font(.title2)
-            }
-            .accessibilityLabel(savedTripsModel.tripIsSaved(trip) ? "Ne plus enregistrer l'itinéraire" : "Enregistrer l'itinéraire")
-            Button(action: close) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityLabel("Fermer")
-        }
     }
 }

@@ -24,11 +24,15 @@ struct StopDetailPane: View {
     let select: (StopEvent) -> Void
     let deselect: () -> Void
 
+    @Environment(\.openRoute) private var openRoute
+
     /// Parcours du départ sélectionné, chargé à la sélection (pas avec la liste : 8 fois plus lourd).
     @State private var journey = JourneyTrackModel()
 
     var body: some View {
-        DetailPaneLayout {
+        DetailPaneLayout(openFull: selected.map { event in { openFullJourney(event) } },
+                         close: selected == nil ? nil : deselect,
+                         expandMap: quays.isEmpty ? nil : { openRoute(.stopMap(quays: quays, sloid: stopSloid, name: stopName)) }) {
             StopMapPanel(stopSloid: stopSloid, quays: quays, selected: selected, journey: journey,
                          highlightedQuays: highlightedQuays, toggleQuay: toggleQuay)
         } title: {
@@ -40,12 +44,7 @@ struct StopDetailPane: View {
                         StopNameView(selected.destination, style: .row)
                             .strikethrough(selected.cancelled)
                         Spacer(minLength: 0)
-                        Button(action: deselect) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityLabel("Fermer")
+                        Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.secondary)
                     } else {
                         Text("Lignes et quais").font(.title3).bold()
                         Spacer(minLength: 0)
@@ -72,6 +71,11 @@ struct StopDetailPane: View {
         }
     }
 
+    /// Le titre mène à la course entière du départ affiché.
+    private func openFullJourney(_ event: StopEvent) {
+        openRoute(.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: stopSloid))))
+    }
+
     /// Quais mis en avant sur la carte : ceux filtrés, sinon ceux des lignes filtrées.
     private var highlightedQuays: Set<String> {
         if !quayFilters.isEmpty { return quayFilters }
@@ -93,6 +97,7 @@ struct StopDetailPane: View {
 /// Carte de l'arrêt : ses quais, et le parcours du départ sélectionné.
 struct StopMapPanel: View {
     @Environment(\.displayTime) private var now
+    @Environment(\.paneTopInset) private var topInset
     let stopSloid: String
     let quays: [Quay]
     let selected: StopEvent?
@@ -125,6 +130,7 @@ struct StopMapPanel: View {
             }
             UserAnnotation()
         }
+        .safeAreaPadding(.top, topInset)
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .mapControls {
             MapUserLocationButton()
