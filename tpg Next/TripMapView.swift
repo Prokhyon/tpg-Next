@@ -23,7 +23,6 @@ struct TripMapView: View {
     /// Partie du trajet à cadrer ; `nil` = le trajet entier.
     var focus: TripMapFocus? = nil
     @State private var position: MapCameraPosition = .automatic
-    @Environment(\.paneTopInset) private var topInset
     
     @State private var polylines: [Int : MKPolyline] = [:]
     /// Tracé réel des étapes en transport, par index d'étape.
@@ -130,7 +129,6 @@ struct TripMapView: View {
                         UserAnnotation()
                     }
                 }
-                .safeAreaPadding(.top, topInset)
                 .mapStyle(.standard(pointsOfInterest: .excludingAll))
                 .onAppear {
                     position = cameraPosition(for: focus)

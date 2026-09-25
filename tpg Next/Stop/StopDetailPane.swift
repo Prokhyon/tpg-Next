@@ -97,7 +97,6 @@ struct StopDetailPane: View {
 /// Carte de l'arrêt : ses quais, et le parcours du départ sélectionné.
 struct StopMapPanel: View {
     @Environment(\.displayTime) private var now
-    @Environment(\.paneTopInset) private var topInset
     let stopSloid: String
     let quays: [Quay]
     let selected: StopEvent?
@@ -130,7 +129,6 @@ struct StopMapPanel: View {
             }
             UserAnnotation()
         }
-        .safeAreaPadding(.top, topInset)
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .mapControls {
             MapUserLocationButton()

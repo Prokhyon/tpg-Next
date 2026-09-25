@@ -30,11 +30,7 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
 
     var body: some View {
         GeometryReader { geometry in
-            // La carte monte jusqu'en haut de la fenêtre, sous les barres flottantes ; ses
-            // commandes, elles, restent sous elles.
-            let topInset = geometry.safeAreaInsets.top
-            let height = geometry.size.height + topInset
-            let mapHeight = height * mapFraction
+            let mapHeight = geometry.size.height * mapFraction
             ZStack(alignment: .top) {
                 // Pleine largeur : le défilement part du bord de la fenêtre.
                 ScrollView {
@@ -47,8 +43,6 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
 
                 VStack(spacing: spacing) {
                     map
-                        // La carte passe sous les barres ; ses commandes restent dessous.
-                        .environment(\.paneTopInset, topInset)
                         .frame(height: mapHeight)
                         .clipShape(RoundedRectangle(cornerRadius: 30))
                         .overlay(alignment: .bottomTrailing) {
@@ -98,9 +92,8 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                 }
                 .padding([.horizontal, .bottom])
             }
-            .ignoresSafeArea(.container, edges: .top)
         }
-        .padding(.bottom)
+        .padding([.top, .bottom], 8)
     }
 }
 
@@ -116,11 +109,6 @@ extension DetailPaneLayout where Actions == EmptyView {
         self.init(mapFraction: mapFraction, openFull: openFull, close: close, expandMap: expandMap,
                   map: map, title: title, actions: { EmptyView() }, details: details)
     }
-}
-
-/// Hauteur des barres flottantes au-dessus d'une carte de panneau : ses commandes s'en écartent.
-extension EnvironmentValues {
-    @Entry var paneTopInset: CGFloat = 0
 }
 
 /// Titre d'un panneau de détail : une capsule posée entre la carte et les détails.
