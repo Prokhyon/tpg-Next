@@ -28,30 +28,43 @@ struct StopDetailPane: View {
     @State private var journey = JourneyTrackModel()
 
     var body: some View {
-        VStack(spacing: 12) {
+        DetailPaneLayout {
             StopMapPanel(stopSloid: stopSloid, quays: quays, selected: selected, journey: journey,
                          highlightedQuays: highlightedQuays, toggleQuay: toggleQuay)
-                .clipShape(RoundedRectangle(cornerRadius: 30))
-                .frame(maxHeight: .infinity)
-
-            ScrollView {
-                Group {
+        } title: {
+            PaneTitleCapsule {
+                HStack(spacing: 8) {
                     if let selected {
-                        DepartureDetailPanel(event: selected, stopName: stopName, stopSloid: stopSloid,
-                                             departures: departures, showTime: showTime, journey: journey,
-                                             select: select, close: deselect)
+                        BusLineIcon(lineName: selected.lineName, operatorName: selected.operatorName)
+                        Image(systemName: "arrow.right").font(.caption)
+                        StopNameView(selected.destination, style: .row)
+                            .strikethrough(selected.cancelled)
+                        Spacer(minLength: 0)
+                        Button(action: deselect) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityLabel("Fermer")
                     } else {
-                        StopInfoPanel(departures: departures, lineFilters: $lineFilters, quayFilters: $quayFilters,
-                                      toggleQuay: toggleQuay)
+                        Text("Lignes et quais").font(.title3).bold()
+                        Spacer(minLength: 0)
                     }
                 }
-                .padding(20)
             }
-            .frame(maxHeight: .infinity)
-            .background { BasicCard(cornerRadius: 30) }
+        } details: {
+            Group {
+                if let selected {
+                    DepartureDetailPanel(event: selected, stopName: stopName, stopSloid: stopSloid,
+                                         departures: departures, showTime: showTime, journey: journey,
+                                         select: select)
+                } else {
+                    StopInfoPanel(departures: departures, lineFilters: $lineFilters, quayFilters: $quayFilters,
+                                  toggleQuay: toggleQuay)
+                }
+            }
+            .padding(.horizontal, 12)
         }
-        .padding([.horizontal, .bottom])
-        .padding(.top, 8)
         .periodicRefresh(id: selected?.journeyRef) { _ in
             if let selected {
                 journey.load(selected)
@@ -147,27 +160,12 @@ struct DepartureDetailPanel: View {
     let showTime: Bool
     let journey: JourneyTrackModel
     let select: (StopEvent) -> Void
-    let close: () -> Void
 
     @State private var showsPreviousStops = false
     @State private var busIsHere = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center) {
-                BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
-                Image(systemName: "arrow.right")
-                StopNameView(event.destination, style: .row)
-                    .strikethrough(event.cancelled)
-                Spacer()
-                Button(action: close) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel("Fermer")
-            }
-
             HStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Départ").font(.caption).foregroundStyle(.secondary)
@@ -478,10 +476,9 @@ struct StopInfoPanel: View {
     ScrollView {
         DepartureDetailPanel(event: event, stopName: PreviewData.rive.name, stopSloid: PreviewData.rive.sloid,
                              departures: PreviewData.departures, showTime: false, journey: journey,
-                             select: { event = $0 }, close: {})
+                             select: { event = $0 })
             .padding(20)
     }
-    .background { BasicCard(cornerRadius: 30) }
     .padding()
     .previewEnvironment()
 }

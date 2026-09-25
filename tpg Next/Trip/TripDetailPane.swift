@@ -17,47 +17,18 @@ struct TripDetailPane: View {
     /// L'étape cadrée sur la carte ; `nil` = le trajet entier.
     @State private var focus: TripMapFocus?
 
-    private let spacing: CGFloat = 12
-
     var body: some View {
         Group {
             if let trip {
-                GeometryReader { geometry in
-                    VStack(spacing: spacing) {
-                        // Nouvelle carte à chaque trajet : les tracés sont calculés à l'apparition.
-                        TripMapView(tripEvent: trip, focus: focus)
-                            .id(trip)
-                            .overlay(alignment: .bottomTrailing) {
-                                if focus != nil {
-                                    Button {
-                                        focus = nil
-                                    } label: {
-                                        Label("Tout le trajet", systemImage: "arrow.up.left.and.arrow.down.right")
-                                            .font(.subheadline.bold())
-                                            .padding(.horizontal, 14)
-                                            .padding(.vertical, 8)
-                                    }
-                                    .tpgSurface(interactive: true, legacy: .thinMaterial)
-                                    .padding(12)
-                                    .transition(.opacity)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 30))
-                            .frame(height: (geometry.size.height - spacing) / 3)
-
-                        VStack(spacing: 0) {
-                            TripDetailHeader(trip: trip, close: close)
-                                .padding(20)
-                            Divider()
-                            ScrollView {
-                                TripLegsList(fullTrip: trip, showTime: $showTime, onFocus: toggleFocus, focusedID: focus?.id)
-                                    .padding(.vertical, 10)
-                            }
-                            .id(trip)
-                        }
-                        .frame(maxHeight: .infinity)
-                        .background { BasicCard(cornerRadius: 30) }
+                DetailPaneLayout(mapFraction: 1.0 / 3.0) {
+                    TripMapCard(trip: trip, focus: $focus)
+                } title: {
+                    PaneTitleCapsule {
+                        TripDetailHeader(trip: trip, close: close)
                     }
+                } details: {
+                    TripLegsList(fullTrip: trip, showTime: $showTime, onFocus: toggleFocus, focusedID: focus?.id)
+                        .id(trip)
                 }
             } else {
                 VStack(spacing: 12) {
@@ -69,11 +40,10 @@ struct TripDetailPane: View {
                 .foregroundStyle(.secondary)
                 .padding(30)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background { BasicCard(cornerRadius: 30) }
+                .padding([.horizontal, .bottom])
+                .padding(.top, 8)
             }
         }
-        .padding([.horizontal, .bottom])
-        .padding(.top, 8)
         // Autre trajet : la carte repart sur le trajet entier.
         .onChange(of: trip?.id) { focus = nil }
     }
@@ -84,7 +54,7 @@ struct TripDetailPane: View {
     }
 }
 
-/// Départ → arrivée, date et durée, enregistrement et fermeture.
+/// Départ → arrivée, date et durée, pleine page, enregistrement et fermeture.
 private struct TripDetailHeader: View {
     @Environment(SavedTripsModel.self) private var savedTripsModel
     @Environment(\.openRoute) private var openRoute
@@ -100,6 +70,14 @@ private struct TripDetailHeader: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
+            // La page de l'itinéraire, avec la carte à côté des étapes : le retour ramène ici.
+            Button {
+                openRoute(.trip(trip))
+            } label: {
+                Image(systemName: "arrow.up.forward.square")
+                    .font(.title2)
+            }
+            .accessibilityLabel("Ouvrir en plein écran")
             Button {
                 if savedTripsModel.tripIsSaved(trip) {
                     savedTripsModel.removeTrip(trip)
