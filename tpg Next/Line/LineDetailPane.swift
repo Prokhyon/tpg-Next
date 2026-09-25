@@ -60,7 +60,6 @@ struct LineDetailPane: View {
                     VehicleInfoPanel(stopEvent: stopEvent, journey: journey, currentStopSloid: currentStopSloid)
                 }
             }
-            .padding(.horizontal, 12)
         }
     }
 }
