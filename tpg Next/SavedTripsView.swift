@@ -61,7 +61,9 @@ struct SavedTripsView: View {
             }
         }
         .navigationTitle("Trajets")
-//        .navigationBarTitleDisplayMode(.inline)
+        // En deux moitiés, un grand titre se réduisait en faisant défiler l'agenda, et la barre
+        // rétrécie faisait remonter l'itinéraire détaillé à droite.
+        .navigationBarTitleDisplayMode(layout.showsSecondaryPane ? .inline : .automatic)
     }
 
     /// L'itinéraire détaillé, tel que l'agenda l'affiche : ses itinéraires sont redemandés chaque

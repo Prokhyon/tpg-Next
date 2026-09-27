@@ -2689,7 +2689,7 @@
     "Résultats" : {
 
     },
-    "Rétablir l'ordre par défaut" : {
+    "Rétablir l'accueil par défaut" : {
 
     },
     "Retards et changements" : {
@@ -2897,6 +2897,9 @@
 
     },
     "Touchez l'icône à droite d'un résultat pour voir sa position sur une carte, puis Y aller ou Partir d'ici. L'étoile ajoute un arrêt à vos favoris." : {
+
+    },
+    "Touchez l'œil pour masquer une section ou l'afficher à nouveau." : {
 
     },
     "Touchez le bouton d'itinéraire" : {

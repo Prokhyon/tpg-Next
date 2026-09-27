@@ -46,7 +46,7 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
                 }
                 .padding(.top, -shift)
             }
-            .modifier(FixedNavigationBar())
+            .fixedNavigationBar()
         } else {
             primary
         }
@@ -64,6 +64,7 @@ struct AdaptiveSplit<Primary: View, Secondary: View>: View {
 /// Depuis iOS 27, la barre de navigation se réduit quand une liste défile, et la safe area du
 /// haut rétrécit d'autant : titres flottants, carte et panneau remontaient avec elle, même en
 /// faisant défiler l'autre moitié. Deux moitiés défilent chacune de leur côté : la barre reste.
+/// (Un grand titre fait de même en se réduisant : ces écrans passent aussi leur titre en petit.)
 private struct FixedNavigationBar: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 27, *) {
@@ -71,6 +72,14 @@ private struct FixedNavigationBar: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+extension View {
+    /// La barre de navigation ne se réduit pas au défilement (`FixedNavigationBar`) : pour un
+    /// écran à deux colonnes qui défilent chacune de leur côté, sans `AdaptiveSplit`.
+    func fixedNavigationBar() -> some View {
+        modifier(FixedNavigationBar())
     }
 }
 
