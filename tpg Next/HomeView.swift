@@ -97,22 +97,6 @@ struct HomeView: View {
                     }
                     .readableScrollContent()
                 }
-                // Sous la barre d'état, ce qui défile se floute. Sur grand écran rien ne défile, et la
-                // barre des onglets a son propre fond : le flou n'y laissait qu'une bande sur le contenu.
-                if !layout.showsSecondaryPane {
-                    VStack {
-                        BackdropBlurView(radius: 5)
-                            .frame(height: geometry.safeAreaInsets.top)
-                            .mask {
-                                Rectangle()
-                                    .overlay(alignment: .top) {
-                                        ScrollMask(leading: true, vertical: true, gradientLength: 100)
-                                    }
-                            }
-                            .ignoresSafeArea()
-                        Spacer()
-                    }
-                }
             }
             .sensoryFeedback(.selection, trigger: isExpanded)
             .environment(nearby)
@@ -127,8 +111,10 @@ struct HomeView: View {
             }
         }
         .navigationTitle("Accueil") // Set back button text
-        // Sans titre visible : « Accueil » ne sert qu'au bouton retour des pages ouvertes d'ici.
-//        .navigationBarTitleDisplayMode(.inline)
+        // Deux colonnes qui défilent chacune : ni grand titre qui se réduit, ni barre qui se
+        // minimise. Sans quoi faire défiler les départs faisait remonter la colonne de gauche.
+        .navigationBarTitleDisplayMode(layout.showsSecondaryPane ? .inline : .automatic)
+        .fixedNavigationBar()
         .toolbar {
 //            ToolbarItem(placement: .principal) {
 //                Text("")
