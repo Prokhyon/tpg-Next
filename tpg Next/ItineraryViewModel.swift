@@ -38,6 +38,9 @@ class ItineraryViewModel {
 
     var tripDone = false
     var quickTrip = false
+    /// Une recherche demandée depuis un autre écran (raccourci, « Y aller », itinéraire récent) :
+    /// l'onglet Itinéraire la lance en s'affichant.
+    var pendingSearch = false
 
     var selectedTextField: Int = 1
 
@@ -58,6 +61,37 @@ class ItineraryViewModel {
         arrival = TripPoint()
         selectedTime = Date()
         isArrivalTime = false
+    }
+
+    /// Cherche les itinéraires de maintenant dans l'onglet Itinéraire, et y bascule. Sans
+    /// départ, on part de la position actuelle (comme « Trajet rapide »).
+    func searchNow(from origin: TripEndpoint?, to destination: TripEndpoint, tab: NavigationModel) {
+        if let origin {
+            departure.select(origin)
+            quickTrip = false
+            pendingSearch = true
+        } else {
+            departure = TripPoint()
+            quickTrip = true
+        }
+        arrival.select(destination)
+        selectedTime = Date()
+        isArrivalTime = false
+        selectedField = nil
+        tripDone = false
+        tab.popToRoot(.trip)
+        tab.selectedTab = .trip
+    }
+
+    /// Un itinéraire qui part de `origin` : l'arrivée reste à choisir dans l'onglet Itinéraire.
+    func start(from origin: TripEndpoint, tab: NavigationModel) {
+        departure.select(origin)
+        arrival = TripPoint()
+        selectedTextField = 2
+        tripDone = false
+        quickTrip = false
+        tab.popToRoot(.trip)
+        tab.selectedTab = .trip
     }
 
     func outerTrip(tab: NavigationModel, isDeparture: Bool, stop: Stop, isQuickTrip: Bool) {

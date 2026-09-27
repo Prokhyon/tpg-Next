@@ -2,145 +2,15 @@
 //  RegularTripsView.swift
 //  tpg Next
 //
-//  Les prochains trajets réguliers, avec leur état en direct, et la liste des trajets enregistrés.
+//  Les cartes des trajets réguliers : un prochain trajet avec son état en direct, un trajet
+//  enregistré. La liste elle-même est l'agenda de `SavedTripsView`.
 //
 
 import SwiftUI
 import tpgNextFunc
 
-/// L'écran des trajets réguliers (ouvert aussi depuis une notification).
-struct RegularTripsView: View {
-    @Environment(\.openRoute) private var openRoute
-
-    var body: some View {
-        ScrollView {
-            RegularTripsContent { openRoute(.trip($0)) }
-                .padding(.horizontal, 15)
-                .padding(.bottom, 30)
-        }
-        .readableScrollContent()
-        .navigationTitle("Trajets réguliers")
-    }
-}
-
-/// Prochains trajets puis trajets enregistrés. `onSelect` ouvre le trajet du jour.
-struct RegularTripsContent: View {
-    @Environment(RegularTripsModel.self) private var model
-    @Environment(\.displayTime) private var now
-    private var liveActivities = TripLiveActivities.shared
-    /// Nombre de prochains trajets affichés.
-    var upcomingLimit = 10
-    let onSelect: (TripEvent) -> Void
-
-    @State private var editing: RegularTrip?
-    /// Le trajet en cours de chargement après un toucher.
-    @State private var opening: String?
-
-    var body: some View {
-        let upcoming = Array(model.upcoming(after: now).prefix(upcomingLimit))
-        VStack(alignment: .leading, spacing: 8) {
-            if model.regularTrips.isEmpty {
-                RegularTripsEmptyView()
-            } else {
-                sectionTitle("Prochains trajets")
-                if upcoming.isEmpty {
-                    Text("Aucun trajet dans les sept prochains jours.")
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                }
-                ForEach(upcoming) { occurrence in
-                    if let trip = model.trip(for: occurrence), let displayed = model.displayedTrip(for: occurrence) {
-                        Button { open(occurrence, displayed: displayed) } label: {
-                            UpcomingRegularTripCard(occurrence: occurrence, trip: trip, displayed: displayed,
-                                                    state: model.state(of: occurrence), isOpening: opening == occurrence.id,
-                                                    isLive: liveActivities.isTracking(occurrence.id))
-                        }
-                        .buttonStyle(.plain)
-                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 30))
-                        .contextMenu {
-                            if liveActivities.isTracking(occurrence.id) {
-                                Button {
-                                    liveActivities.stop(occurrence.id)
-                                } label: {
-                                    Label("Arrêter le suivi en direct", systemImage: "stop.circle")
-                                }
-                            } else if liveActivities.areEnabled, occurrence.plannedDeparture.timeIntervalSince(now) < 6 * 3600 {
-                                Button {
-                                    var match: RegularTripMatch?
-                                    if case .found(let found, _) = model.state(of: occurrence) { match = found }
-                                    liveActivities.start(occurrence: occurrence, of: trip, trip: displayed, match: match)
-                                } label: {
-                                    Label("Suivre en direct", systemImage: "livephoto")
-                                }
-                            }
-                            Button {
-                                withAnimation { model.skip(occurrence) }
-                            } label: {
-                                Label("Pas de trajet ce jour-là", systemImage: "calendar.badge.minus")
-                            }
-                            Button {
-                                editing = trip
-                            } label: {
-                                Label("Modifier le trajet régulier", systemImage: "pencil")
-                            }
-                        }
-                    }
-                }
-
-                sectionTitle("Mes trajets réguliers")
-                    .padding(.top, 10)
-                ForEach(model.regularTrips) { trip in
-                    Button { editing = trip } label: {
-                        RegularTripRow(trip: trip)
-                    }
-                    .buttonStyle(.plain)
-                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 30))
-                    .contextMenu {
-                        Button {
-                            editing = trip
-                        } label: {
-                            Label("Modifier", systemImage: "pencil")
-                        }
-                        Button(role: .destructive) {
-                            withAnimation { model.remove(trip) }
-                        } label: {
-                            Label("Supprimer", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(item: $editing) { trip in
-            RegularTripEditor(trip: trip)
-                .environment(model)
-        }
-    }
-
-    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            .font(.title3).bold()
-            .padding(.horizontal, 10)
-            .padding(.top, 6)
-    }
-
-    /// Le trajet du jour s'il est connu ; sinon il est demandé d'abord, et l'itinéraire prévu
-    /// s'ouvre si OJP ne répond pas.
-    private func open(_ occurrence: RegularTripOccurrence, displayed: TripEvent) {
-        if case .found(let match, _) = model.state(of: occurrence) {
-            onSelect(match.trip)
-            return
-        }
-        guard opening == nil else { return }
-        opening = occurrence.id
-        Task {
-            let match = await model.resolve(occurrence, force: true)
-            opening = nil
-            onSelect(match?.trip ?? displayed)
-        }
-    }
-}
-
-/// Un prochain trajet : le jour, l'état en direct et l'itinéraire du jour (ou prévu).
+/// Un prochain trajet, dans l'agenda déjà groupé par jour : son nom, l'état en direct et
+/// l'itinéraire du jour (ou prévu). Sans fond : l'agenda le pose avec les actions.
 struct UpcomingRegularTripCard: View {
     let occurrence: RegularTripOccurrence
     let trip: RegularTrip
@@ -149,25 +19,22 @@ struct UpcomingRegularTripCard: View {
     var isOpening = false
     /// Suivi en direct sur l'écran verrouillé.
     var isLive = false
+    /// Un autre itinéraire que le trajet habituel a été choisi pour ce jour.
+    var isChosen = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(dayLabel)
-                        .font(.headline)
-                    HStack(spacing: 4) {
-                        if isLive {
-                            Image(systemName: "livephoto")
-                                .foregroundStyle(.tint)
-                                .accessibilityLabel("Suivi en direct")
-                        }
-                        Text(trip.displayName)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                HStack(spacing: 6) {
+                    if isLive {
+                        Image(systemName: "inset.filled.circle")
+                            .foregroundStyle(.tint)
+                            .accessibilityLabel("Suivi en direct")
                     }
-                    .font(.subheadline)
+                    Label(trip.displayName, systemImage: "repeat")
+                        .lineLimit(1)
                 }
+                .font(.headline)
                 Spacer()
                 if isOpening {
                     ProgressView()
@@ -175,43 +42,46 @@ struct UpcomingRegularTripCard: View {
                     RegularTripStatusBadge(state: state)
                 }
             }
+            if isChosen {
+                Label("Autre trajet choisi pour ce jour", systemImage: "arrow.triangle.swap")
+                    .font(.caption.bold())
+                    .foregroundStyle(.tint)
+            }
             SavedTripView(event: displayed)
             if case .found(let match, _) = state {
-                let changes = RegularTripAlerts.changes(in: match)
-                if !changes.isEmpty {
-                    Label {
-                        Text(changes.joined(separator: "\n"))
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-                }
+                RegularTripChanges(changes: RegularTripAlerts.changes(in: match))
             }
         }
-        .padding(15)
-        .background(BasicCard(cornerRadius: 30))
-        .padding(.vertical, 2)
     }
+}
 
-    /// « Aujourd'hui », « Demain », « lundi 21 septembre ».
-    private var dayLabel: String {
-        let calendar = Calendar.current
-        let date = occurrence.plannedDeparture
-        if calendar.isDateInToday(date) { return String(localized: "Aujourd'hui") }
-        if calendar.isDateInTomorrow(date) { return String(localized: "Demain") }
-        let text = date.formatted(.dateTime.weekday(.wide).day().month(.wide))
-        return text.prefix(1).capitalized + text.dropFirst()
+/// Retards, horaire modifié, parcours perturbé : une phrase par changement.
+struct RegularTripChanges: View {
+    let changes: [String]
+
+    var body: some View {
+        if !changes.isEmpty {
+            Label {
+                Text(changes.joined(separator: "\n"))
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+            }
+            .font(.footnote)
+            .foregroundStyle(.orange)
+        }
     }
 }
 
 /// L'état du trajet du jour, en une capsule.
 struct RegularTripStatusBadge: View {
     let state: RegularTripsModel.LiveState?
+    /// Un itinéraire enregistré : ne plus le retrouver veut dire qu'il n'est plus possible.
+    var isSavedTrip = false
 
     var body: some View {
-        let (text, symbol, color) = content
-        Label(text, systemImage: symbol)
+        let badge = Self.badge(for: state, isSavedTrip: isSavedTrip)
+        let color = badge.tone.color
+        Label(badge.text, systemImage: badge.symbol)
             .font(.caption.bold())
             .foregroundStyle(color)
             .padding(.horizontal, 8)
@@ -220,39 +90,43 @@ struct RegularTripStatusBadge: View {
             .lineLimit(1)
     }
 
-    private var content: (String, String, Color) {
+    /// Le texte, le symbole et le ton : repris tels quels par le widget « Prochain trajet ».
+    static func badge(for state: RegularTripsModel.LiveState?, isSavedTrip: Bool) -> UpcomingTrip.Badge {
         switch state {
         case nil:
-            return (String(localized: "Horaire prévu"), "calendar", .secondary)
+            return .init(text: String(localized: "Horaire prévu"), symbol: "calendar", tone: .neutral)
         case .loading:
-            return (String(localized: "Vérification…"), "arrow.triangle.2.circlepath", .secondary)
+            return .init(text: String(localized: "Vérification…"), symbol: "arrow.triangle.2.circlepath", tone: .neutral)
         case .notFound:
-            return (String(localized: "Aucun trajet"), "xmark.octagon.fill", .red)
+            return .init(text: String(localized: "Aucun trajet"), symbol: "xmark.octagon.fill", tone: .critical)
         case .failed:
-            return (String(localized: "Hors ligne"), "wifi.slash", .secondary)
+            return .init(text: String(localized: "Hors ligne"), symbol: "wifi.slash", tone: .neutral)
         case .found(let match, _):
             let status = match.status
             switch match.kind {
+            case .alternative where isSavedTrip:
+                return .init(text: String(localized: "Plus proposé"), symbol: "xmark.circle.fill", tone: .critical)
             case .alternative:
-                return (String(localized: "Trajet modifié"), "arrow.triangle.branch", .orange)
+                return .init(text: String(localized: "Trajet modifié"), symbol: "arrow.triangle.branch", tone: .warning)
             case .shifted:
-                return (String(localized: "Horaire modifié"), "clock.badge.exclamationmark", .orange)
+                return .init(text: String(localized: "Horaire modifié"), symbol: "clock.badge.exclamationmark", tone: .warning)
             case .usual:
                 break
             }
             if !status.riskyConnections.isEmpty {
-                return (String(localized: "Correspondance"), "exclamationmark.triangle.fill", .red)
+                return .init(text: String(localized: "Correspondance"), symbol: "exclamationmark.triangle.fill", tone: .critical)
             }
             if !status.disruptedLines.isEmpty {
-                return (String(localized: "Perturbé"), "exclamationmark.triangle.fill", .orange)
+                return .init(text: String(localized: "Perturbé"), symbol: "exclamationmark.triangle.fill", tone: .warning)
             }
             if status.departureDelay >= 2 {
-                return (String(localized: "+\(status.departureDelay) min"), "clock.fill", status.departureDelay >= 5 ? .red : .orange)
+                return .init(text: String(localized: "+\(status.departureDelay) min"), symbol: "clock.fill",
+                             tone: status.departureDelay >= 5 ? .critical : .warning)
             }
             if !status.hasRealtime {
-                return (String(localized: "Horaire"), "calendar", .secondary)
+                return .init(text: String(localized: "Horaire"), symbol: "calendar", tone: .neutral)
             }
-            return (String(localized: "À l'heure"), "checkmark.circle.fill", .green)
+            return .init(text: String(localized: "À l'heure"), symbol: "checkmark.circle.fill", tone: .good)
         }
     }
 }
@@ -292,20 +166,12 @@ struct RegularTripRow: View {
 
 /// Aucun trajet régulier : comment en créer un.
 struct RegularTripsEmptyView: View {
+    var onCreate: (() -> Void)?
+
     var body: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "calendar.badge.clock")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text("Aucun trajet régulier")
-                .font(.headline)
-            Text("Dans un itinéraire, touchez « Répéter chaque semaine » : le trajet reviendra ici chaque jour choisi, avec les retards en direct et un rappel avant de partir.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(25)
+        AgendaEmptyView(symbol: "calendar.badge.clock", title: "Aucun trajet régulier",
+                        message: "Créez-en un ici, ou touchez longuement un itinéraire puis « Répéter chaque semaine » : le trajet reviendra chaque jour choisi, avec les retards en direct et un rappel avant de partir.",
+                        onCreate: onCreate)
     }
 }
 
@@ -332,19 +198,19 @@ private enum RegularTripsPreview {
 }
 
 #Preview("Trajets réguliers") {
-    RegularTripsView()
+    SavedTripsPage(filter: .regular)
         .environment(RegularTripsPreview.model)
         .previewEnvironment()
 }
 
 #Preview("Trajets réguliers — iPad", traits: .iPadLandscape) {
-    RegularTripsView()
+    SavedTripsPage(filter: .regular)
         .environment(RegularTripsPreview.model)
         .previewEnvironment()
 }
 
 #Preview("Trajets réguliers — vide") {
-    RegularTripsView()
+    SavedTripsPage(filter: .regular)
         .environment(RegularTripsModel(previewTrips: []))
         .previewEnvironment()
 }
@@ -357,6 +223,7 @@ private enum RegularTripsPreview {
         RegularTripStatusBadge(state: .found(RegularTripMatch(trip: trip, kind: .usual), updated: Date()))
         RegularTripStatusBadge(state: .found(RegularTripMatch(trip: trip, kind: .shifted(minutes: 4)), updated: Date()))
         RegularTripStatusBadge(state: .found(RegularTripMatch(trip: trip, kind: .alternative), updated: Date()))
+        RegularTripStatusBadge(state: .found(RegularTripMatch(trip: trip, kind: .alternative), updated: Date()), isSavedTrip: true)
         RegularTripStatusBadge(state: .notFound)
         RegularTripStatusBadge(state: .failed)
     }

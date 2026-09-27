@@ -3,7 +3,8 @@
 //  tpgNextFunc
 //
 //  OJP 2.0 ne donne que la référence d'un exploitant (`siri:OperatorRef`), alors que
-//  `LineColors` est indexé par son nom complet, celui qu'OJP 1.0 envoyait.
+//  `LineColors` est indexé par son nom complet, celui qu'OJP 1.0 envoyait. Le registre des
+//  lignes (`LineDirectory`) complète ce relevé pour le reste de la Suisse.
 //
 
 import Foundation
@@ -33,8 +34,9 @@ enum OJPOperators {
         "ojp:839": "Zugerland Verkehrsbetriebe",
     ]
 
-    /// Nom complet de l'exploitant, `nil` s'il n'est pas connu.
+    /// Nom complet de l'exploitant, `nil` s'il n'est pas connu. Hors du relevé, le registre
+    /// national (ATLAS) : la référence d'OJP y est le numéro d'organisation du transporteur.
     static func name(forRef ref: String) -> String? {
-        names[ref]
+        names[ref] ?? LineDirectory.operator(ojpRef: ref)?.colorName
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 import UserNotifications
 import tpgNextFunc
 
@@ -27,12 +28,31 @@ enum RegularTripAlerts {
     /// Ce qui a déjà été signalé, par trajet du jour : on ne répète pas la même alerte.
     private static let notifiedStore = CodableStore<[String: String]>(key: "regularTripAlerts")
 
+    // MARK: Cet appareil
+
+    /// Les trajets réguliers arrivent sur tous les appareils par iCloud : sans ce réglage,
+    /// l'iPhone et l'iPad préviendraient chacun. Par défaut, seul l'iPhone prévient.
+    static var defaultOnThisDevice: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
+    /// Alertes de retard et activités en direct lancées d'elles-mêmes.
+    static var isEnabledOnThisDevice: Bool {
+        UserDefaults.standard.object(forKey: SettingKey.regularTripAlertsOnThisDevice) as? Bool ?? defaultOnThisDevice
+    }
+
+    /// Rappels avant le départ, au délai choisi dans chaque trajet.
+    static var remindersEnabledOnThisDevice: Bool {
+        UserDefaults.standard.object(forKey: SettingKey.regularTripRemindersOnThisDevice) as? Bool ?? defaultOnThisDevice
+    }
+
     // MARK: Rappels
 
-    /// Repose tous les rappels des sept prochains jours.
+    /// Repose tous les rappels des sept prochains jours, ou les retire tous si cet appareil
+    /// ne prévient pas.
     static func scheduleReminders(for model: RegularTripsModel, now: Date = Date()) {
         var requests: [UNNotificationRequest] = []
-        for occurrence in model.upcoming(after: now) {
+        for occurrence in remindersEnabledOnThisDevice ? model.upcoming(after: now) : [] {
             guard requests.count < maximumReminders,
                   let trip = model.trip(for: occurrence), let minutes = trip.reminderMinutes else { continue }
             var match: RegularTripMatch?
@@ -43,9 +63,9 @@ enum RegularTripAlerts {
 
             let content = UNMutableNotificationContent()
             content.title = title(of: trip)
-            content.subtitle = minutes == 0
-                ? String(localized: "C'est l'heure de partir")
-                : String(localized: "Départ dans \(minutes) min")
+            content.subtitle = TripCountdown(trip: match?.trip ?? trip.plannedTrip(for: occurrence))?
+                .reminderSubtitle(minutesBefore: minutes)
+                ?? String(localized: "Départ dans \(minutes) min")
             content.body = match.map { description(of: $0) }
                 ?? plannedDescription(of: trip.plannedTrip(for: occurrence))
             content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
@@ -75,7 +95,7 @@ enum RegularTripAlerts {
 
     /// Prévient si le trajet du jour a changé depuis la dernière alerte.
     static func notifyChanges(of trip: RegularTrip, occurrence: RegularTripOccurrence, match: RegularTripMatch, now: Date = Date()) {
-        guard trip.alertsEnabled else { return }
+        guard trip.alertsEnabled, isEnabledOnThisDevice else { return }
         let untilDeparture = occurrence.plannedDeparture.timeIntervalSince(now)
         guard untilDeparture < alertWindow, untilDeparture > -10 * 60 else { return }
 
@@ -168,10 +188,6 @@ enum RegularTripAlerts {
     /// L'heure de départ du trajet, marche comprise : la montée estimée, moins la marche prévue
     /// jusqu'à l'arrêt.
     private static func leavingTime(occurrence: RegularTripOccurrence, match: RegularTripMatch?) -> Date {
-        guard let match,
-              let start = match.trip.startDate,
-              let plannedBoard = match.trip.anchorDate(.departure, timetabled: true),
-              let board = match.trip.anchorDate(.departure, timetabled: false) else { return occurrence.plannedDeparture }
-        return board.addingTimeInterval(-plannedBoard.timeIntervalSince(start))
+        match?.trip.leavingDate ?? occurrence.plannedDeparture
     }
 }

@@ -21,9 +21,15 @@ struct LayoutContext: Equatable {
     }
 
     var width: CGFloat
+    var height: CGFloat = 0
+    /// Écran à moitié plié (iPhone Duo) : un pli actif le partage en deux.
+    var isFolded = false
+    /// Forcé à l'affichage iPhone, quelle que soit la largeur : voir `singleColumnWhenFoldedPortrait()`.
+    var isSingleColumn = false
 
     var widthClass: WidthClass {
-        switch width {
+        if isSingleColumn { return .compact }
+        return switch width {
         case ..<600: .compact
         case ..<1000: .regular
         default: .wide
@@ -47,6 +53,11 @@ struct LayoutContext: Equatable {
         min(width, 500)
     }
 
+    /// Plié en portrait, chaque moitié est plus étroite qu'un iPhone.
+    var isFoldedPortrait: Bool {
+        isFolded && height > width
+    }
+
     /// Avant la première mesure : une largeur d'iPhone, l'affichage historique.
     static let initial = LayoutContext(width: 393)
 }
@@ -60,6 +71,12 @@ extension View {
     /// feuilles comprises.
     func providingLayoutContext() -> some View {
         modifier(LayoutContextProvider())
+    }
+
+    /// Plié en portrait (iPhone Duo), la vue garde l'affichage iPhone sur toute la largeur, sans
+    /// panneau à côté : dans une moitié d'écran, ni la liste ni le détail n'avaient la place.
+    func singleColumnWhenFoldedPortrait() -> some View {
+        modifier(SingleColumnWhenFoldedPortrait())
     }
 
     /// Borne le contenu à une largeur de lecture et le centre. Sans effet sur iPhone,
@@ -101,11 +118,35 @@ private struct ReadableScrollContent: ViewModifier {
 private struct LayoutContextProvider: ViewModifier {
     @State private var layout = LayoutContext.initial
 
+    private struct Measure: Equatable {
+        var size: CGSize
+        var isFolded: Bool
+    }
+
     func body(content: Content) -> some View {
         content
             .environment(\.layout, layout)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
-                layout.width = width
+            .onGeometryChange(for: Measure.self) { proxy in
+                Measure(size: proxy.size, isFolded: Self.isFolded(proxy))
+            } action: { measure in
+                layout.width = measure.size.width
+                layout.height = measure.size.height
+                layout.isFolded = measure.isFolded
             }
+    }
+
+    private static func isFolded(_ proxy: GeometryProxy) -> Bool {
+        guard #available(iOS 27.1, *) else { return false }
+        return proxy.reservedRegions(kind: .division).contains { $0.isActive }
+    }
+}
+
+private struct SingleColumnWhenFoldedPortrait: ViewModifier {
+    @Environment(\.layout) private var layout
+
+    func body(content: Content) -> some View {
+        var single = layout
+        single.isSingleColumn = layout.isFoldedPortrait
+        return content.environment(\.layout, single)
     }
 }

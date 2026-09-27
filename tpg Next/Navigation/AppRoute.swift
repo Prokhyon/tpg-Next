@@ -23,12 +23,25 @@ enum AppRoute: Hashable {
     case tripMap(TripEvent)
     case settings
     case favoritesOrder
+    /// L'ordre des sections de l'accueil.
+    case homeLayout
     case scheduledNotifications
+    /// Mes itinéraires : enregistrés et réguliers.
+    case savedTrips
+    /// Les mêmes, filtrés sur les trajets réguliers (notifications).
     case regularTrips
+    /// Toutes les lignes du réseau.
+    case lines
+    /// Une ligne, sans course choisie : terminus, prochains départs, parcours.
+    case lineInfo(TransitLine)
     /// Suivre une course en direct : choix de la montée et de la descente.
     case trackJourney(event: StopEvent, stopSloid: String)
     /// Le trajet suivi en direct, en entier.
     case liveTrip(key: String)
+    /// Le guide d'utilisation.
+    case userGuide
+    /// Une rubrique du guide ; `entry` : le point à montrer (depuis la recherche du guide).
+    case userGuideTopic(id: String, entry: String? = nil)
 }
 
 /// La course à mettre en avant sur la page d'un arrêt.
@@ -73,11 +86,25 @@ struct AppRouteDestination: View {
         case .favoritesOrder:
             FavoritesOrderView()
                 .navigationTitle("Ordre des favoris")
+        case .homeLayout:
+            HomeLayoutView()
+        case .userGuide:
+            UserGuideView()
+        case let .userGuideTopic(id, entry):
+            if let topic = UserGuide.topic(id: id) {
+                UserGuideTopicView(topic: topic, entry: entry)
+            }
         case .scheduledNotifications:
             ScheduledNotifications()
                 .navigationTitle("Rappels prévus")
+        case .savedTrips:
+            SavedTripsPage()
         case .regularTrips:
-            RegularTripsView()
+            SavedTripsPage(filter: .regular)
+        case .lines:
+            LinesView()
+        case let .lineInfo(line):
+            LineInfoView(line: line)
         case let .trackJourney(event, stopSloid):
             TrackJourneyView(event: event, stopSloid: stopSloid)
         case let .liveTrip(key):

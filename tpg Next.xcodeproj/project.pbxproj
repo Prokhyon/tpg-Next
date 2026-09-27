@@ -23,6 +23,7 @@
 		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
 		7BADCAFE0000000000000C07 /* tpg Next Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000A01 /* tpg Next Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B08 /* WidgetPreviews.swift */; };
+		7BADCAFE0000000000000C09 /* NextTripWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B09 /* NextTripWidget.swift */; };
 		7E57A1B20000000000000007 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
 /* End PBXBuildFile section */
 
@@ -135,6 +136,7 @@
 		7BADCAFE0000000000000B06 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B07 /* tpg Next Widget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tpg Next Widget.entitlements"; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B08 /* WidgetPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPreviews.swift; sourceTree = "<group>"; };
+		7BADCAFE0000000000000B09 /* NextTripWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextTripWidget.swift; sourceTree = "<group>"; };
 		7E57A1B20000000000000002 /* tpgNextFuncTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tpgNextFuncTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -271,6 +273,7 @@
 				7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */,
 				7BADCAFE0000000000000B01 /* SelectStopIntent.swift */,
 				7BADCAFE0000000000000B08 /* WidgetPreviews.swift */,
+				7BADCAFE0000000000000B09 /* NextTripWidget.swift */,
 			);
 			path = "tpg Next Widget";
 			sourceTree = "<group>";
@@ -534,6 +537,7 @@
 				7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */,
 				7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */,
 				7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */,
+				7BADCAFE0000000000000C09 /* NextTripWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -32,7 +32,6 @@ struct TripView: View {
     @State private var userPosition: CLLocation?
     
     @State private var showTime = true
-    @Environment(\.openRoute) private var openRoute
     @Environment(\.layout) private var layout
     /// Sur grand écran, le trajet détaillé dans la moitié droite.
     @State private var selectedTrip: TripEvent?
@@ -371,30 +370,12 @@ struct TripView: View {
 //            }   
 //        }
 //        .toolbar(.hidden, for: .navigationBar)
+        // Les itinéraires enregistrés ont leur onglet, Trajets.
         .toolbar {
-            HStack {
-                if results == .tripResults {
+            if results == .tripResults {
+                TrailingBarButtons {
                     ShowTimeButton(showTime: $showTime)
-                        .padding(.trailing, 5)
                 }
-                // Une page de la pile, pas une feuille : le retour depuis un itinéraire ramène à la liste.
-                Button {
-                    openRoute(.savedTrips)
-                } label: {
-                    Image("scurvepath.stack.fill")
-                        .foregroundColor(TPGSurface.isGlass ? Color.text : .accent)
-                        .scaleEffect(0.9)
-                        .padding(.trailing, TPGSurface.isGlass && results == .tripResults ? 10 : 0)
-                }
-                .frame(width: TPGSurface.isGlass ? 30 : 40, height: 30)
-            }
-            .background {
-                Capsule()
-                    .frame(height: 40)
-                    .foregroundStyle(.ultraThinMaterial)
-                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                    .opacity(TPGSurface.isGlass ? 0 : 1)
-                    .offset(x: 4)
             }
         }
     }

@@ -12,7 +12,12 @@ struct RegularTripEditor: View {
     @Environment(RegularTripsModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var trip: RegularTrip
+    @AppStorage(SettingKey.regularTripAlertsOnThisDevice) private var alertsOnThisDevice = RegularTripAlerts.defaultOnThisDevice
+    @AppStorage(SettingKey.regularTripRemindersOnThisDevice) private var remindersOnThisDevice = RegularTripAlerts.defaultOnThisDevice
     private let isNew: Bool
+    /// Poussé dans la pile de la création (`NewRegularTripView`) : ni pile propre ni « Annuler »,
+    /// et l'enregistrement ferme toute la feuille.
+    private var onSaved: (() -> Void)?
 
     init(trip: RegularTrip) {
         _trip = State(initialValue: trip)
@@ -28,108 +33,129 @@ struct RegularTripEditor: View {
         isNew = true
     }
 
+    /// La dernière étape de la création : jours et heure retenue sont déjà choisis.
+    init(creatingFrom event: TripEvent, weekdays: Set<Weekday>, anchor: RegularTrip.Anchor, onSaved: @escaping () -> Void) {
+        _trip = State(initialValue: RegularTrip(trip: event, weekdays: weekdays, anchor: anchor))
+        isNew = true
+        self.onSaved = onSaved
+    }
+
     private static let reminderChoices: [Int?] = [nil, 0, 2, 5, 10, 15, 30]
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    SavedTripView(event: trip.snapshot)
-                        .padding(.vertical, 6)
-                    // Sans nom, le trajet s'affiche « départ → arrivée ».
-                    TextField("Nom", text: $trip.name, prompt: Text(verbatim: trip.routeName))
-                }
+        if onSaved == nil {
+            NavigationStack { form }
+        } else {
+            form
+        }
+    }
 
-                Section {
-                    WeekdayPicker(selection: $trip.weekdays)
-                        .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
-                    HStack {
-                        presetButton("Semaine", days: Weekday.workdays)
-                        presetButton("Week-end", days: Weekday.weekend)
-                        presetButton("Tous les jours", days: Set(Weekday.allCases))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                } header: {
-                    Text("Jours")
-                } footer: {
-                    Text(trip.weekdays.isEmpty ? String(localized: "Choisissez au moins un jour.") : trip.daysSummary)
-                }
+    private var form: some View {
+        Form {
+            Section {
+                SavedTripView(event: trip.snapshot)
+                    .padding(.vertical, 6)
+                // Sans nom, le trajet s'affiche « départ → arrivée ».
+                TextField("Nom", text: $trip.name, prompt: Text(verbatim: trip.routeName))
+            }
 
-                Section {
-                    Picker("Heure retenue", selection: anchorBinding) {
-                        Text("Départ").tag(RegularTrip.Anchor.departure)
-                        Text("Arrivée").tag(RegularTrip.Anchor.arrival)
-                    }
-                    .pickerStyle(.segmented)
-                    DatePicker(trip.anchor == .departure ? "Montée à bord" as LocalizedStringKey : "Arrivée à l'arrêt",
-                               selection: timeBinding, displayedComponents: .hourAndMinute)
-                        // Les horaires sont ceux de Genève, même depuis l'étranger.
-                        .environment(\.timeZone, Calendar.swissTransit.timeZone)
-                } header: {
-                    Text("Heure")
-                } footer: {
-                    Text(trip.anchor == .departure
-                         ? "Le trajet part à cette heure, ou juste après." as LocalizedStringKey
-                         : "Le trajet arrive au plus tard à cette heure.")
-                }
+            Section {
+                WeekdayPicker(selection: $trip.weekdays)
+                    .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
+                WeekdayPresets(selection: $trip.weekdays)
+            } header: {
+                Text("Jours")
+            } footer: {
+                Text(trip.weekdays.isEmpty ? String(localized: "Choisissez au moins un jour.") : trip.daysSummary)
+            }
 
-                if !trip.legs.isEmpty {
-                    Section {
-                        Toggle(isOn: $trip.followsLines) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Toujours ces lignes")
-                                RegularTripLines(snapshot: trip.snapshot)
-                            }
-                        }
-                    } footer: {
-                        Text(trip.followsLines
-                             ? "Vous êtes prévenu si ces lignes ne sont pas proposées ce jour-là, avec une alternative." as LocalizedStringKey
-                             : "Le meilleur itinéraire du moment est proposé, quelles que soient les lignes.")
-                    }
+            Section {
+                Picker("Heure retenue", selection: anchorBinding) {
+                    Text("Départ").tag(RegularTrip.Anchor.departure)
+                    Text("Arrivée").tag(RegularTrip.Anchor.arrival)
                 }
+                .pickerStyle(.segmented)
+                DatePicker(trip.anchor == .departure ? "Montée à bord" as LocalizedStringKey : "Arrivée à l'arrêt",
+                           selection: timeBinding, displayedComponents: .hourAndMinute)
+                    // Les horaires sont ceux de Genève, même depuis l'étranger.
+                    .environment(\.timeZone, Calendar.swissTransit.timeZone)
+            } header: {
+                Text("Heure")
+            } footer: {
+                Text(trip.anchor == .departure
+                     ? "Le trajet part à cette heure, ou juste après." as LocalizedStringKey
+                     : "Le trajet arrive au plus tard à cette heure.")
+            }
 
+            if !trip.legs.isEmpty {
                 Section {
-                    Picker("Rappel", selection: $trip.reminderMinutes) {
-                        ForEach(Self.reminderChoices, id: \.self) { minutes in
-                            Text(reminderLabel(minutes)).tag(minutes)
+                    Toggle(isOn: $trip.followsLines) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Toujours ces lignes")
+                            RegularTripLines(snapshot: trip.snapshot)
                         }
                     }
-                    Toggle("Retards et changements", isOn: $trip.alertsEnabled)
-                    Toggle("Activité en direct", isOn: $trip.showsLiveActivity)
-                } header: {
-                    Text("Notifications")
                 } footer: {
+                    Text(trip.followsLines
+                         ? "Vous êtes prévenu si ces lignes ne sont pas proposées ce jour-là, avec une alternative." as LocalizedStringKey
+                         : "Le meilleur itinéraire du moment est proposé, quelles que soient les lignes.")
+                }
+            }
+
+            Section {
+                Picker("Rappel", selection: $trip.reminderMinutes) {
+                    ForEach(Self.reminderChoices, id: \.self) { minutes in
+                        Text(reminderLabel(minutes)).tag(minutes)
+                    }
+                }
+                Toggle("Retards et changements", isOn: $trip.alertsEnabled)
+                Toggle("Activité en direct", isOn: $trip.showsLiveActivity)
+            } header: {
+                Text("Notifications")
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    if !alertsOnThisDevice && !remindersOnThisDevice {
+                        Label("Cet appareil ne prévient pas : les rappels, alertes et activités en direct arrivent sur vos autres appareils. Pour changer, allez dans Paramètres.",
+                              systemImage: "bell.slash")
+                    } else if !remindersOnThisDevice {
+                        Label("Les rappels sont désactivés sur cet appareil. Pour changer, allez dans Paramètres.",
+                              systemImage: "bell.slash")
+                    } else if !alertsOnThisDevice {
+                        Label("Les alertes et activités en direct sont désactivées sur cet appareil. Pour changer, allez dans Paramètres.",
+                              systemImage: "bell.slash")
+                    }
                     Text("Le rappel suit l'heure réelle du départ. Les alertes arrivent dans l'heure et demie qui précède, quand l'iPhone laisse l'app vérifier les horaires. L'activité en direct s'affiche sur l'écran verrouillé 20 minutes avant le départ, si l'app est ouverte à ce moment-là.")
                 }
+            }
 
-                Section {
-                    Toggle("Jusqu'à une date", isOn: hasLastDay)
-                    if trip.lastDay != nil {
-                        DatePicker("Dernier jour", selection: lastDayBinding, in: Date()..., displayedComponents: .date)
-                            .environment(\.timeZone, Calendar.swissTransit.timeZone)
-                    }
+            Section {
+                Toggle("Jusqu'à une date", isOn: hasLastDay)
+                if trip.lastDay != nil {
+                    DatePicker("Dernier jour", selection: lastDayBinding, in: Date()..., displayedComponents: .date)
+                        .environment(\.timeZone, Calendar.swissTransit.timeZone)
                 }
+            }
 
-                if !isNew {
-                    Section {
-                        Button("Supprimer le trajet régulier", role: .destructive) {
-                            model.remove(trip)
-                            dismiss()
-                        }
+            if !isNew {
+                Section {
+                    Button("Supprimer le trajet régulier", role: .destructive) {
+                        model.remove(trip)
+                        dismiss()
                     }
                 }
             }
-            .navigationTitle(isNew ? "Trajet régulier" : "Modifier le trajet")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+        }
+        .navigationTitle(isNew ? "Trajet régulier" : "Modifier le trajet")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if onSaved == nil {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") { save() }
-                        .disabled(trip.weekdays.isEmpty)
-                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Enregistrer") { save() }
+                    .disabled(trip.weekdays.isEmpty)
             }
         }
     }
@@ -141,12 +167,7 @@ struct RegularTripEditor: View {
             NotificationManager.shared.requestAuthorization()
         }
         Task { await model.refresh() }
-        dismiss()
-    }
-
-    private func presetButton(_ title: LocalizedStringKey, days: Set<Weekday>) -> some View {
-        Button(title) { trip.weekdays = days }
-            .tint(trip.weekdays == days ? .accentColor : .secondary)
+        if let onSaved { onSaved() } else { dismiss() }
     }
 
     private func reminderLabel(_ minutes: Int?) -> String {
@@ -231,6 +252,26 @@ struct WeekdayPicker: View {
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
+    }
+}
+
+/// Semaine, week-end, tous les jours : en un toucher.
+struct WeekdayPresets: View {
+    @Binding var selection: Set<Weekday>
+
+    var body: some View {
+        HStack {
+            preset("Semaine", days: Weekday.workdays)
+            preset("Week-end", days: Weekday.weekend)
+            preset("Tous les jours", days: Set(Weekday.allCases))
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private func preset(_ title: LocalizedStringKey, days: Set<Weekday>) -> some View {
+        Button(title) { selection = days }
+            .tint(selection == days ? .accentColor : .secondary)
     }
 }
 

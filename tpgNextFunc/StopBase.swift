@@ -164,7 +164,7 @@ public class StopStore {
     /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
     private var stopsBySloid: [String: Stop] = [:]
     /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
-    private var searchIndex: [(key: String, stop: Stop)] = []
+    private(set) var searchIndex: [(key: String, stop: Stop)] = []
 
     public init() {
         // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
@@ -362,6 +362,11 @@ public class FavoritesViewModel {
     /// Les favoris vivent dans le groupe d'app : le widget doit pouvoir les lire.
     private var store: UserDefaults { SharedStorage.defaults }
 
+    /// Seul le sloid compte : chaque appareil rafraîchit l'instantané depuis sa propre base,
+    /// qui peut ne pas être à la même version.
+    private let cloud = CloudCollection<FavoriteStop>(key: "cloud.favorites", id: \.id,
+                                                       isSame: { $0.id == $1.id })
+
     public init() {
         loadFavorites()
     }
@@ -373,6 +378,17 @@ public class FavoritesViewModel {
         refresh()
         // Les noms viennent d'être re-résolus : la montre doit recevoir cette version-là.
         syncFavoritesToWatch()
+    }
+
+    /// Partage les favoris avec les autres appareils via iCloud. Seule l'app iOS l'appelle.
+    public func startCloudSync() {
+        cloud.start(current: favorites) { [weak self] merged in
+            guard let self else { return }
+            favorites = merged
+            saveFavorites()
+            refresh()
+            syncFavoritesToWatch()
+        }
     }
 
     // MARK: - Mutations
@@ -453,6 +469,7 @@ public class FavoritesViewModel {
         saveFavorites()
         refresh()
         syncFavoritesToWatch()
+        cloud.record(favorites)
     }
 
     // MARK: - Persistance

@@ -14,14 +14,33 @@ import ClusterMapSwiftUI
 import Foundation
 import tpgNextFunc
 
+/// Le point d'un arrêt sur une carte. Sélectionné, il grossit et prend la couleur de l'app.
+/// Partagé par la carte des arrêts et son aperçu sur l'accueil.
+struct StopMapMarker: View {
+    var isSelected: Bool
+
+    var body: some View {
+        Circle()
+            .strokeBorder(Color.primary, lineWidth: isSelected ? 5 : 3)
+            .background(Circle().fill(isSelected ? .accent : .color1))
+            .frame(width: isSelected ? 30 : 18, height: isSelected ? 25 : 18)
+            .animation(.bouncy, value: isSelected)
+    }
+}
+
 struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
     public var coordinate: CLLocationCoordinate2D
     public var id: String
     public var name: String
 }
 
+/// La carte des arrêts, en plein écran par-dessus l'accueil.
 struct MapView: View {
     @Environment(StopStore.self) var stopStore
+    /// La zone de l'aperçu d'où la carte s'ouvre : elle s'y ouvre aussi, sans attendre la position.
+    var initialRegion: MKCoordinateRegion? = nil
+    /// Referme la carte. Sans barre d'onglets en dessous, le bas n'a pas à lui laisser de place.
+    var onClose: (() -> Void)? = nil
     @State private var stopManager = StopManager()
     @State var locationManager = LocationManager()
     @State private var dataSource = DataSource()
@@ -60,13 +79,7 @@ struct MapView: View {
                             let splitStopName = splitString(stop.name, separator: ",")
                             let isSelected = stop.id == selectedResult ? true : false
                             Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: stop.coordinate, anchor: .center) {
-                                Circle()
-                                    .strokeBorder(Color.primary, lineWidth: isSelected ? 5 : 3).animation(.bouncy, value: selectedResult)
-                                    .background(
-                                        Circle()
-                                            .fill(isSelected ? .accent : .color1).animation(.bouncy, value: selectedResult)
-                                    )
-                                    .frame(width: (isSelected ? 30 : 18), height: (isSelected ? 25 : 18)).animation(.bouncy, value: selectedResult)
+                                StopMapMarker(isSelected: isSelected)
                             }
                             .tag(stop.id)
                         }
@@ -159,7 +172,9 @@ struct MapView: View {
                             }
                         }
                         .animation(.easeInOut(duration: 0.2), value: selectedResult)
-                        if #available(iOS 26, *) { //remplacer avec appVersion object
+                        if onClose != nil {
+                            Spacer().frame(height: 10)
+                        } else if #available(iOS 26, *) { //remplacer avec appVersion object
                             Rectangle()
                                 .foregroundStyle(.clear)
                                 .frame(height: 50)
@@ -168,6 +183,19 @@ struct MapView: View {
                                 .foregroundStyle(.clear)
                                 .frame(height: 60)
                         }
+                    }
+                }
+                .overlay(alignment: .topLeading) {
+                    if let onClose {
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.title3.bold())
+                                .foregroundStyle(.primary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .tpgSurface(in: Circle(), interactive: true, legacy: .thinMaterial)
+                        .accessibilityLabel("Fermer la carte")
+                        .padding(.leading, 15)
                     }
                 }
                 .navigationTitle("Carte") // Set back button text
@@ -179,7 +207,9 @@ struct MapView: View {
 //                }
                 .toolbar(.hidden, for: .navigationBar)
                 .onAppear {
-                    if (selectedResult == nil) {
+                    if selectedResult == nil, let initialRegion {
+                        position = .region(initialRegion)
+                    } else if (selectedResult == nil) {
                         withAnimation {
                             getLocationRegion { region in
                                 position = .region(region)

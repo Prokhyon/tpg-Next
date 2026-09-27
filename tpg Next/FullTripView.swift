@@ -13,7 +13,10 @@ struct FullTripView: View {
     @Environment(\.displayTime) private var now
     @Environment(SavedTripsModel.self) var savedTripsModel
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.layout) private var layout
     var fullTrip: TripEvent
+    /// Sur grand écran, l'étape cadrée sur la carte ; `nil` = le trajet entier.
+    @State private var focus: TripMapFocus?
     @State private var lineManager = LineManager()
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
@@ -26,11 +29,14 @@ struct FullTripView: View {
 
     var body: some View {
 //        GeometryReader { geometry in
+        // Sur grand écran, la carte à droite des étapes : toucher une étape la cadre.
+        AdaptiveSplit {
             ZStack {
                 VStack(alignment: .leading) {
 //                    Spacer(minLength: 70) //Space for trip title to be placed on top
                     ScrollView { //trip details scroll area
-                        TripLegsList(fullTrip: fullTrip, showTime: $showTime)
+                        TripLegsList(fullTrip: fullTrip, showTime: $showTime,
+                                     onFocus: layout.showsSecondaryPane ? toggleFocus : nil, focusedID: focus?.id)
                     }
                     .contentMargins(.top, 80.0, for: .automatic)
                     .contentMargins(.bottom, 40, for: .automatic)
@@ -63,9 +69,13 @@ struct FullTripView: View {
                     Spacer()
                 }
             }
-        
+        } secondary: {
+            TripMapCard(trip: fullTrip, focus: $focus)
+                .padding([.horizontal, .bottom])
+                .padding(.top, 8)
+        }
             .toolbar {
-                HStack {
+                TrailingBarButtons {
                     ShowTimeButton(showTime: $showTime)
                     Menu {
                         if savedTripsModel.tripIsSaved(fullTrip) {
@@ -91,7 +101,7 @@ struct FullTripView: View {
                             Button {
                                 liveActivities.start(trip: fullTrip)
                             } label: {
-                                Label("Suivre en direct", systemImage: "livephoto")
+                                Label("Suivre en direct", systemImage: "inset.filled.circle")
                             }
                         }
                         Button {
@@ -99,10 +109,12 @@ struct FullTripView: View {
                         } label: {
                             Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
                         }
-                        Button {
-                            openRoute(.tripMap(fullTrip))
-                        } label: {
-                            Label("Afficher la carte", systemImage: "map")
+                        if !layout.showsSecondaryPane {
+                            Button {
+                                openRoute(.tripMap(fullTrip))
+                            } label: {
+                                Label("Afficher la carte", systemImage: "map")
+                            }
                         }
                         //                    Button(action: {
                         //
@@ -110,17 +122,9 @@ struct FullTripView: View {
                         //                        Label("Partager l'itinéraire", systemImage: "square.and.arrow.up")
                         //                    }
                     } label: {
-                        Image(systemName: "ellipsis").font(.title3)
-                            .padding(.trailing, 10)
+                        Label("Actions de l'itinéraire", systemImage: "ellipsis")
                     }
                 }
-                .background {
-                    Capsule()
-                        .opacity(TPGSurface.isGlass ? 0 : 1)
-                        .foregroundStyle(.ultraThinMaterial)
-                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                }
-
             }
         .sheet(item: $repeating) { trip in
             RegularTripEditor(creatingFrom: trip)
@@ -134,6 +138,11 @@ struct FullTripView: View {
                 Text("") // Visible title
             }
         }
+    }
+
+    /// Toucher l'étape déjà cadrée revient au trajet entier.
+    private func toggleFocus(_ target: TripMapFocus) {
+        withAnimation { focus = focus == target ? nil : target }
     }
 }
 

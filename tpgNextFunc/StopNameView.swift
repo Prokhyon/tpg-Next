@@ -29,8 +29,10 @@ public struct StopNameView: View {
 
         /// En-tête de l'écran d'un arrêt.
         public static let title = Style(single: .largeTitle, locality: .title2, name: .largeTitle)
-        /// Départ et arrivée d'un trajet.
-        public static let header = Style(single: .title3, locality: .callout, name: .title2)
+        /// Départ et arrivée d'un trajet. Une ligne par partie : dans une colonne étroite, « gare
+        /// Cornavin » passait à la ligne et le titre, puis sa bulle de fermeture, doublaient de hauteur.
+        public static let header = Style(single: .title3, locality: .callout, name: .title2,
+                                         singleLineLimit: 1, localityLineLimit: 1, nameLineLimit: 1)
         /// Carte d'arrêt de l'accueil et des cartes.
         public static let card = Style(single: .title3, locality: .subheadline, name: .title3, icon: .headline)
         /// Ligne de liste. Les limites de lignes ne jouent qu'avec un texte agrandi : sans elles,

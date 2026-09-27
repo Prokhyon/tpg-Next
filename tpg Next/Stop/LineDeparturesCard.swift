@@ -20,6 +20,8 @@ struct SortedStopEventsView: View {
     var stopSloid: String
     /// Sur grand écran : un départ se sélectionne au lieu d'ouvrir sa course.
     var onSelect: ((StopEvent) -> Void)? = nil
+    /// Faux dans les démonstrations du guide : leurs départs sont factices.
+    var allowsReminders = true
 
     @ViewBuilder private func chipLink<Label: View>(_ event: StopEvent, @ViewBuilder label: () -> Label) -> some View {
         if let onSelect {
@@ -68,7 +70,7 @@ struct SortedStopEventsView: View {
                                     }
                                     .padding(2)
                                     .contentShape(.contextMenuPreview, Capsule())
-                                    .if(!stopEvent.cancelled && !hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
+                                    .if(allowsReminders && !stopEvent.cancelled && !hasPassed(stopEvent.departureDate, includingCurrentMinute: false, now: now)) { view in
                                         view.contextMenu {
                                             NotificationContextMenu(event: stopEvent, stopID: stopSloid)
                                         } preview: {

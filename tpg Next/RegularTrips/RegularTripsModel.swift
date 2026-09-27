@@ -16,6 +16,7 @@ final class RegularTripsModel {
     static let shared = RegularTripsModel()
     static let backgroundTaskID = "com.loristhomas.tpgNext.regularTrips"
     private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
+    @ObservationIgnored private let cloud = CloudCollection<RegularTrip>(key: "cloud.regularTrips") { $0.id.uuidString }
 
     /// Un trajet est redemandé à OJP quand son départ approche : avant, le temps réel est vide.
     static let liveWindow: TimeInterval = 3 * 3600
@@ -38,6 +39,7 @@ final class RegularTripsModel {
         didSet {
             Self.store.save(regularTrips)
             RegularTripAlerts.scheduleReminders(for: self)
+            cloud.record(regularTrips)
         }
     }
 
@@ -47,6 +49,17 @@ final class RegularTripsModel {
 
     init() {
         regularTrips = Self.store.load() ?? []
+    }
+
+    /// Partage les trajets réguliers avec les autres appareils via iCloud.
+    func startCloudSync() {
+        cloud.start(current: regularTrips) { [weak self] merged in
+            guard let self else { return }
+            // Heure, jours ou lignes ont pu changer ailleurs : l'état du jour ne vaut plus.
+            let unchanged = Set(merged.filter { self.regularTrips.contains($0) }.map(\.id.uuidString))
+            live = live.filter { key, _ in unchanged.contains { key.hasPrefix($0) } }
+            regularTrips = merged
+        }
     }
 
     /// Pour les aperçus : rien n'est lu ni enregistré.
@@ -79,6 +92,33 @@ final class RegularTripsModel {
         // Les jours passés ne servent plus à rien.
         let today = Calendar.swissTransit.dayKey(for: Date())
         regularTrips[index].skippedDays = regularTrips[index].skippedDays.filter { $0 >= today }
+    }
+
+    /// Ce jour-là, un autre itinéraire que le trajet habituel : c'est lui qui est suivi, rappelé
+    /// et signalé. `trip` vient d'OJP : il vaut déjà pour l'état du jour.
+    func choose(_ trip: TripEvent, for occurrence: RegularTripOccurrence) {
+        guard let index = regularTrips.firstIndex(where: { $0.id == occurrence.tripID }) else { return }
+        let today = Calendar.swissTransit.dayKey(for: Date())
+        // Les jours passés ne servent plus à rien.
+        var overrides = (regularTrips[index].dayOverrides ?? [:]).filter { $0.key >= today }
+        overrides[occurrence.day] = trip
+        regularTrips[index].dayOverrides = overrides
+        let match = RegularTripMatch(trip: trip, kind: .usual)
+        live[occurrence.id] = .found(match, updated: Date())
+        lastRequest[occurrence.id] = Date()
+        Task { await TripLiveActivities.shared.didResolve(occurrence.id, match: match) }
+    }
+
+    /// Revenir au trajet habituel ce jour-là.
+    func restoreUsual(_ occurrence: RegularTripOccurrence) {
+        guard let index = regularTrips.firstIndex(where: { $0.id == occurrence.tripID }),
+              regularTrips[index].dayOverrides?[occurrence.day] != nil else { return }
+        regularTrips[index].dayOverrides?[occurrence.day] = nil
+        live[occurrence.id] = nil
+        lastRequest[occurrence.id] = nil
+        // L'heure a changé avec la recette : le trajet du jour est recalculé.
+        guard let restored = upcoming().first(where: { $0.id == occurrence.id }) else { return }
+        Task { await resolve(restored, force: true) }
     }
 
     // MARK: Lire
@@ -159,7 +199,9 @@ final class RegularTripsModel {
     func scheduleBackgroundRefresh(now: Date = Date()) {
         let watched = upcoming(after: now, days: 2).filter { occurrence in
             guard let trip = trip(for: occurrence) else { return false }
-            return trip.alertsEnabled || trip.reminderMinutes != nil
+            // Le réveil relit le temps réel : pour les alertes, et pour que le rappel dise l'heure réelle.
+            return (RegularTripAlerts.isEnabledOnThisDevice && trip.alertsEnabled)
+                || (RegularTripAlerts.remindersEnabledOnThisDevice && trip.reminderMinutes != nil)
         }
         let request = BGAppRefreshTaskRequest(identifier: Self.backgroundTaskID)
         if let arrival = TripLiveActivities.shared.nextActivityArrival {
@@ -189,6 +231,7 @@ final class RegularTripsModel {
             guard let task = task as? BGAppRefreshTask else { return }
             let work = Task { @MainActor in
                 await shared.refresh()
+                UpcomingTripsPublisher.publish(regular: shared, saved: nil)
                 shared.scheduleBackgroundRefresh()
                 task.setTaskCompleted(success: !Task.isCancelled)
             }

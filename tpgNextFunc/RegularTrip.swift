@@ -32,6 +32,21 @@ public enum Weekday: Int, Codable, CaseIterable, Comparable, Identifiable {
     public static let weekend: Set<Weekday> = [.saturday, .sunday]
 
     public static func < (lhs: Weekday, rhs: Weekday) -> Bool { lhs.rawValue < rhs.rawValue }
+
+    /// Le prochain de ces jours, à `minuteOfDay` heure de Genève, encore à venir après `date` :
+    /// le jour dont on demande les itinéraires en créant un trajet régulier.
+    public static func nextDate(on weekdays: Set<Weekday>, minuteOfDay: Int, after date: Date,
+                                calendar: Calendar = .swissTransit) -> Date? {
+        let startOfDay = calendar.startOfDay(for: date)
+        return (0...7).lazy.compactMap { offset -> Date? in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: startOfDay),
+                  let weekday = Weekday(calendarWeekday: calendar.component(.weekday, from: day)),
+                  weekdays.contains(weekday),
+                  let time = calendar.date(byAdding: .minute, value: minuteOfDay, to: day),
+                  time > date else { return nil }
+            return time
+        }.first
+    }
 }
 
 extension Calendar {
@@ -62,6 +77,16 @@ public struct RegularTripPlace: Codable, Hashable {
         self.name = name
         self.sloid = sloid
         self.coordinates = coordinates
+    }
+
+    /// Le départ d'un itinéraire : l'arrêt, ou le lieu (adresse, position).
+    public static func origin(of trip: TripEvent) -> RegularTripPlace {
+        RegularTripPlace(name: trip.startName, sloid: trip.geoDeparture ? nil : trip.startCode, coordinates: trip.startCoordinates)
+    }
+
+    /// L'arrivée d'un itinéraire.
+    public static func destination(of trip: TripEvent) -> RegularTripPlace {
+        RegularTripPlace(name: trip.endName, sloid: trip.geoArrival ? nil : trip.endCode, coordinates: trip.endCoordinates)
     }
 
     public var endpoint: TripEndpoint {
@@ -136,16 +161,18 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
     /// L'itinéraire choisi à la création : affichage hors ligne et écarts entre le départ du
     /// trajet et la montée (marche jusqu'à l'arrêt), puis entre la descente et l'arrivée.
     public var snapshot: TripEvent
+    /// Un autre itinéraire choisi pour un jour (« yyyy-MM-dd ») : ce jour-là, il remplace le
+    /// trajet habituel, et c'est lui qui est suivi. Optionnel : les trajets enregistrés avant
+    /// n'en ont pas.
+    public var dayOverrides: [String: TripEvent]?
 
     public init(trip: TripEvent, weekdays: Set<Weekday>, anchor: Anchor = .departure, name: String = "",
                 followsLines: Bool = true, reminderMinutes: Int? = 5, alertsEnabled: Bool = true,
                 calendar: Calendar = .swissTransit) {
         id = UUID()
         self.name = name
-        origin = RegularTripPlace(name: trip.startName, sloid: trip.geoDeparture ? nil : trip.startCode,
-                                  coordinates: trip.startCoordinates)
-        destination = RegularTripPlace(name: trip.endName, sloid: trip.geoArrival ? nil : trip.endCode,
-                                       coordinates: trip.endCoordinates)
+        origin = .origin(of: trip)
+        destination = .destination(of: trip)
         self.anchor = anchor
         self.weekdays = weekdays
         legs = trip.vehicleLegs.map(RegularTripLeg.init(leg:))
@@ -157,6 +184,27 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         let anchorDate = trip.anchorDate(anchor, timetabled: true) ?? Date()
         let components = calendar.dateComponents([.hour, .minute], from: anchorDate)
         minuteOfDay = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+    }
+
+    /// La recette de ce jour-là : le trajet habituel, ou l'itinéraire choisi à sa place, suivi
+    /// ligne pour ligne.
+    public func recipe(for day: String, calendar: Calendar = .swissTransit) -> RegularTrip {
+        guard let chosen = dayOverrides?[day] else { return self }
+        var recipe = self
+        recipe.dayOverrides = nil
+        recipe.snapshot = chosen
+        recipe.legs = chosen.vehicleLegs.map(RegularTripLeg.init(leg:))
+        recipe.followsLines = true
+        if let anchorDate = chosen.anchorDate(anchor, timetabled: true) {
+            let components = calendar.dateComponents([.hour, .minute], from: anchorDate)
+            recipe.minuteOfDay = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+        }
+        return recipe
+    }
+
+    /// Un autre itinéraire a été choisi pour ce jour-là.
+    public func isOverridden(on day: String) -> Bool {
+        dayOverrides?[day] != nil
     }
 
     /// L'activité en direct, activée par défaut.
@@ -183,9 +231,13 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         let startOfDay = calendar.startOfDay(for: date)
         return (0..<days).compactMap { offset in
             guard let day = calendar.date(byAdding: .day, value: offset, to: startOfDay),
-                  runs(on: day, calendar: calendar),
-                  let target = calendar.date(byAdding: .minute, value: minuteOfDay, to: day) else { return nil }
-            let occurrence = RegularTripOccurrence(trip: self, day: calendar.dayKey(for: day), target: target)
+                  runs(on: day, calendar: calendar) else { return nil }
+            let key = calendar.dayKey(for: day)
+            let recipe = recipe(for: key, calendar: calendar)
+            // L'itinéraire choisi donne son heure exacte, même s'il passe minuit.
+            guard let target = dayOverrides?[key]?.anchorDate(anchor, timetabled: true)
+                    ?? calendar.date(byAdding: .minute, value: minuteOfDay, to: day) else { return nil }
+            let occurrence = RegularTripOccurrence(trip: recipe, day: key, target: target)
             return occurrence.plannedArrival > date ? occurrence : nil
         }
     }
@@ -201,6 +253,9 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
 
     /// Le trajet de `trips` qui correspond au trajet habituel ce jour-là, sinon le meilleur à sa place.
     public func match(in trips: [TripEvent], for occurrence: RegularTripOccurrence) -> RegularTripMatch? {
+        if isOverridden(on: occurrence.day) {
+            return recipe(for: occurrence.day).match(in: trips, for: occurrence)
+        }
         let target = occurrence.target
         func gap(_ trip: TripEvent) -> TimeInterval {
             abs((trip.anchorDate(anchor, timetabled: true) ?? .distantFuture).timeIntervalSince(target))
@@ -234,6 +289,9 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
     /// L'itinéraire enregistré, recalé sur ce jour : ce qu'on affiche tant qu'OJP n'a pas été
     /// interrogé. Sans temps réel ni référence de course, qui ne valent que pour le jour enregistré.
     public func plannedTrip(for occurrence: RegularTripOccurrence) -> TripEvent {
+        if isOverridden(on: occurrence.day) {
+            return recipe(for: occurrence.day).plannedTrip(for: occurrence)
+        }
         guard let anchorDate = snapshot.anchorDate(anchor, timetabled: true) else { return snapshot }
         let delta = occurrence.target.timeIntervalSince(anchorDate)
         func shift(_ time: String) -> String {
@@ -366,6 +424,15 @@ public struct RegularTripStatus: Hashable {
 }
 
 extension TripEvent {
+    /// L'heure où partir, marche comprise : la montée estimée, moins la marche prévue jusqu'à
+    /// l'arrêt. Sans véhicule, le départ de l'itinéraire.
+    public var leavingDate: Date? {
+        guard let start = startDate,
+              let plannedBoard = anchorDate(.departure, timetabled: true),
+              let board = anchorDate(.departure, timetabled: false) else { return startDate }
+        return board.addingTimeInterval(-plannedBoard.timeIntervalSince(start))
+    }
+
     /// Les étapes en bus, tram, train ou bateau ; sans la marche.
     public var vehicleLegs: [TripLeg] {
         legs.filter { !$0.transfer && !$0.publishedLineName.isEmpty }
@@ -397,25 +464,57 @@ public enum RegularTripResolver {
     /// si l'API ne répond pas, `Failure.noTrip` si aucun itinéraire ne convient.
     public static func resolve(_ trip: RegularTrip, on occurrence: RegularTripOccurrence) async throws -> RegularTripMatch {
         let (time, isArrivalTime) = trip.request(for: occurrence)
-        let origin = trip.origin.endpoint
-        let destination = trip.destination.endpoint
+        let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime)
+        guard let match = trip.match(in: trips, for: occurrence) else { throw Failure.noTrip }
+        return match
+    }
+
+    /// Les itinéraires proposés par OJP : ceux du jour pour reconnaître le trajet habituel, ou
+    /// ceux parmi lesquels choisir en créant un trajet régulier.
+    public static func trips(from origin: RegularTripPlace, to destination: RegularTripPlace,
+                             at time: Date, isArrivalTime: Bool) async throws -> [TripEvent] {
+        let start = origin.endpoint
+        let end = destination.endpoint
         let data: Data? = await withCheckedContinuation { continuation in
-            fetchTrips(with: origin.stop, with: origin.place, with: origin.isPlace,
-                       with: destination.stop, with: destination.place, with: destination.isPlace,
+            fetchTrips(with: start.stop, with: start.place, with: start.isPlace,
+                       with: end.stop, with: end.place, with: end.isPlace,
                        with: time, with: isArrivalTime) { continuation.resume(returning: $0) }
         }
         guard let data else { throw Failure.request }
-        let trips: [TripEvent]
         do {
-            trips = try parseTripEvents(from: data, startCoordinate: trip.origin.coordinates,
-                                        endCoordinates: trip.destination.coordinates,
-                                        startName: trip.origin.name, endName: trip.destination.name,
-                                        startCode: trip.origin.sloid, endCode: trip.destination.sloid,
-                                        geoDeparture: trip.origin.sloid == nil, geoArrival: trip.destination.sloid == nil)
+            return try parseTripEvents(from: data, startCoordinate: origin.coordinates,
+                                       endCoordinates: destination.coordinates,
+                                       startName: origin.name, endName: destination.name,
+                                       startCode: origin.sloid, endCode: destination.sloid,
+                                       geoDeparture: origin.sloid == nil, geoArrival: destination.sloid == nil)
         } catch ParserError.noEventFound {
             throw Failure.noTrip
         }
-        guard let match = trip.match(in: trips, for: occurrence) else { throw Failure.noTrip }
-        return match
+    }
+}
+
+/// Un itinéraire enregistré, redemandé à OJP : ses courses sont datées, il n'est donc
+/// reconnu que le jour enregistré. On le traite comme un trajet régulier d'un seul jour.
+public enum SavedTripResolver {
+    /// `.usual` : la même course (à une minute près), avec son temps réel ; `.shifted` : mêmes
+    /// lignes, à une autre heure ; `.alternative` : il n'est plus proposé, voici le meilleur à
+    /// sa place. `nil` : aucun itinéraire, ou un itinéraire sans heure.
+    public static func update(of saved: TripEvent, in trips: [TripEvent]) -> RegularTripMatch? {
+        guard let (recipe, occurrence) = recipe(for: saved) else { return nil }
+        return recipe.match(in: trips, for: occurrence)
+    }
+
+    /// Demande les itinéraires à l'heure de l'itinéraire enregistré et l'y retrouve.
+    public static func resolve(_ saved: TripEvent) async throws -> RegularTripMatch {
+        guard let (recipe, occurrence) = recipe(for: saved) else { throw RegularTripResolver.Failure.noTrip }
+        return try await RegularTripResolver.resolve(recipe, on: occurrence)
+    }
+
+    private static func recipe(for saved: TripEvent) -> (RegularTrip, RegularTripOccurrence)? {
+        guard let target = saved.anchorDate(.departure, timetabled: true) else { return nil }
+        let calendar = Calendar.swissTransit
+        guard let weekday = Weekday(calendarWeekday: calendar.component(.weekday, from: target)) else { return nil }
+        let recipe = RegularTrip(trip: saved, weekdays: [weekday], reminderMinutes: nil, alertsEnabled: false)
+        return (recipe, RegularTripOccurrence(trip: recipe, day: calendar.dayKey(for: target), target: target))
     }
 }

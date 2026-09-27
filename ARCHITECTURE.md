@@ -91,6 +91,7 @@ Outils disponibles :
 | Une liste qui ne s'étire pas sur iPad | `.readableScrollContent()` sur le `ScrollView` |
 | Une carte ou un panneau borné et centré | `.readableWidth()` |
 | Nombre de colonnes de favoris | `layout.favoriteColumns` |
+| Boutons à droite de la barre | `.toolbar { TrailingBarButtons { … } }` : un élément de barre par bouton, posés à la verticale sur l'iPhone Duo fermé |
 
 Exemple réel, la page arrêt (`StopView.swift`) :
 
@@ -201,6 +202,32 @@ horaires (`estimatedVehiclePosition`).
   heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` 1.0 est redemandée et le
   trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
   notifications : `tpg Next/RegularTrips/`.
+- « Mes itinéraires » (`SavedTripsAgenda`, dans `SavedTripsView.swift`) mélange jour par jour les
+  itinéraires enregistrés et les prochains trajets réguliers, avec un filtre Tous / Enregistrés /
+  Réguliers. Tout va du plus ancien (en haut) au plus récent. Les passés, au-dessus, sont
+  repliés derrière un bouton : défiler jusqu'aux prochains à l'ouverture n'a pas lieu pendant
+  l'animation d'arrivée de l'écran. C'est la racine de l'onglet **Trajets** (qui remplace
+  l'onglet Carte) : un itinéraire s'ouvre par-dessus et le retour ramène à la liste. Son filtre
+  est tenu par `NavigationModel.tripsFilter` ; `showTrips(_:)` y ramène (lien
+  `tpgnext://savedtrips`, `tpgnext://regulartrips`, routes `.savedTrips` et `.regularTrips`
+  venues d'une notification). Poussée sur une autre pile, la liste est `SavedTripsPage`.
+- Sur grand écran, la page d'un itinéraire (`FullTripView`) pose sa carte à droite
+  (`TripMapCard`, partagée avec `TripDetailPane`) ; toucher une étape la cadre. Dans la
+  recherche, la moitié droite a un bouton « Ouvrir en plein écran », repris dans le menu des
+  résultats.
+- Un trajet régulier se crée aussi sans recherche préalable (`NewRegularTripView`, bouton
+  `calendar.badge.plus` de l'agenda) : départ, arrivée, jours et heure, puis
+  `RegularTripResolver.trips` propose les itinéraires du prochain jour coché
+  (`Weekday.nextDate`) ; celui choisi devient la recette.
+- **Un autre trajet pour un jour** : `RegularTrip.dayOverrides` (optionnel) garde l'itinéraire
+  choisi par jour ; `recipe(for:)` en fait la recette de ce jour-là (heure, lignes suivies), donc
+  reconnaissance, rappels, alertes et activité en direct le suivent sans rien savoir de plus.
+- **Itinéraires enregistrés en direct** : `SavedTripResolver` les traite comme un trajet régulier
+  d'un seul jour (même course → `.usual`, mêmes lignes à une autre heure → `.shifted`, plus
+  proposé → `.alternative` avec le meilleur à sa place). `SavedTripsModel.refresh` les redemande
+  une fois dans la semaine qui précède, puis au rythme des trajets réguliers dans les trois
+  heures, tant que l'agenda est affiché ; l'état n'est pas enregistré. « Autres horaires » et
+  « Choisir un autre trajet » passent par `TripAlternativesView`.
 - L'activité en direct suit soit un **itinéraire** (redemandé par `OJPTripRequest`), soit une
   **course** choisie depuis un départ (`TrackJourneyView`, route `.trackJourney`) et redemandée
   par `OJPTripInfoRequest` : on reste sur ce véhicule-là même s'il prend du retard.
@@ -252,14 +279,47 @@ horaires (`estimatedVehiclePosition`).
   `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
   minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte
   attendent sa prochaine ouverture.
-- Dynamic Island dépliée : le marqueur à gauche de la caméra, le temps restant et l'arrivée à
-  droite, l'arrêt et l'action au centre, l'étape suivante et l'alerte (ou la question et ses
-  boutons) dessous. La frise (`TripActivityTimeline`) ne sert plus qu'à l'écran verrouillé.
+- Dynamic Island dépliée : le nom du trajet (ou, à bord, l'arrêt du véhicule) à gauche de la
+  caméra, l'heure d'arrivée à droite, et dessous la frise sans son en-tête
+  (`showsHeader: false`), avec ses traits de lignes — ou la question et ses boutons.
 - Dans la Dynamic Island compacte, le décompte est celui du système (`Text(timerInterval:)`,
   « 4:32 ») : les formats en toutes lettres n'y tiennent pas. Le marqueur dit ce qu'il y a à
   faire — badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, véhicule à l'arrivée.
 - Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
   utiliser les aperçus de `TripLiveActivity.swift`.
+
+## Accueil et recherche
+
+- **Accueil** (`HomeView`, morceaux dans `Home/`) : sections dans l'ordre choisi par l'utilisateur
+  (`HomeSection`, Paramètres → Organiser l'accueil, réglages `HomeSectionsOrder` et `HomeHiddenSections` ; départs masqués sur iPad : une seule colonne, et la carte cherche elle-même les arrêts proches). L'arrêt choisi
+  (`NearbyStops.selectedSloid`) est partagé par la liste et la carte : toucher un arrêt de la
+  carte le choisit (recherche du plus proche du doigt via `MapReader`, pas de bouton dans les
+  marqueurs), toucher ailleurs ouvre la carte plein écran. Contenu : le prochain trajet des douze prochaines
+  heures (`NextTripSection`, régulier ou enregistré, avec l'heure où partir
+  `TripEvent.leavingDate`), précédé de sa date — sans trajet, pas de date —, les favoris, les
+  départs à proximité, puis la carte « Autour de vous » (`HomeMapCard`, aperçu figé qui montre
+  les mêmes arrêts que la liste, `NearbyStops`, et met en évidence celui qu'elle affiche ; le toucher ouvre `MapView`
+  en plein écran, avec sa propre pile et son propre `\.layout`, mesuré à nouveau). Sur grand
+  écran, rien ne défile : à gauche le prochain trajet, les favoris et la carte qui prend la place
+  restante ; à droite les départs empilés (`HomeDepartures(stacked:)`, un arrêt déplié à la
+  fois) ; les réglages passent dans la barre du haut. Chaque colonne reçoit un `\.layout` de sa
+  largeur.
+- **Recherche** (`SearchView`, morceaux dans `Search/`) : résultats groupés (mes itinéraires,
+  arrêts, lieux de Plans) ; sans texte, les récents (itinéraires, arrêts, lieux) et les arrêts
+  proches. Un lieu ou un arrêt ouvre `PlaceSheet` : « Y aller », « Partir d'ici », arrêts proches.
+- **Lignes** : le registre national (ATLAS), embarqué comme la base des arrêts
+  (`tpgNextFunc/Stops Database/Lines.json`, lu par `LineDirectory`) : toutes les lignes
+  régulières de Suisse et leurs transporteurs (`TransitOperator`, dont la référence OJP 2.0,
+  `ojp:<numéro d'organisation>`, qui complète `OJPOperators`). À régénérer à chaque horaire
+  annuel avec `python3 Scripts/lines-from-atlas.py`. L'utilisateur choisit ses transporteurs
+  (`LineOperatorChoice`, réglage `LineOperators`, tpg par défaut) et passe de l'un à l'autre en
+  haut de `LinesView` ; la recherche ne propose que leurs lignes. Routes `.lines` et `.lineInfo`
+  (terminus, prochains départs de chaque terminus qui ouvrent la course, arrêts principaux). Les arrêts du registre (« Thônex Moillesulaz ») sont retrouvés dans la base
+  (« Thônex, Moillesulaz ») par `StopStore.stop(named:)`, à la ponctuation près.
+- **Lancer une recherche d'itinéraire depuis ailleurs** (« Y aller », itinéraire récent) :
+  `ItineraryViewModel.searchNow(from:to:tab:)`
+  (sans départ : depuis la position, par le chemin de « Trajet rapide »). L'onglet Itinéraire
+  la lance en s'affichant (`pendingSearch`). Chaque recherche est retenue dans `RecentTrips`.
 
 ## Tests
 
@@ -284,7 +344,51 @@ tpgnext://stop?sloid=ch:1:sloid:87061&name=Rive&journeyRef=…   (course présé
 tpgnext://line?journeyRef=…&operatingDayRef=…&line=12&sloid=…
 tpgnext://tab?name=trip
 tpgnext://regulartrips
+tpgnext://savedtrips
 tpgnext://settings
 ```
 
 Dans Xcode : Product → Scheme → Edit Scheme → Run → Arguments → Environment Variables.
+
+## Widget « Prochain trajet »
+
+L'app écrit les prochains trajets (réguliers et enregistrés, avec leur temps réel s'il est
+connu) dans le groupe d'app : `UpcomingTripsPublisher` → `UpcomingTripsStorage`, à chaque
+rafraîchissement (premier plan, tâche de fond) et à chaque modification. Le widget
+(`tpg Next Widget/NextTripWidget.swift`, ajouté à la main au projet : ce dossier n'est pas
+synchronisé) ne fait qu'afficher, avec une entrée par minute dans l'heure qui précède le départ.
+Le rechargement n'a lieu que si les trajets changent (budget WidgetKit).
+
+Le décompte (`TripCountdown`, partagé par le widget et la carte « Prochain trajet ») met le
+véhicule en avant : ligne → direction, heure de montée et « dans 8 min ». La marche jusqu'à
+l'arrêt n'y est jamais comprise ; elle est rappelée à part, avec le marcheur : « Partir dans
+11 min · 3 min à pied jusqu'à Rive » (minutes déduites de celles du bus moins la marche, pour
+que les chiffres s'additionnent). Une fois monté : « En route · arrivée à … ».
+
+Le suivi en direct automatique des itinéraires enregistrés (réglage `SavedTripAutoTrackMinutes`)
+ne peut démarrer que l'app ouverte : `SavedTripAutoTracking` pose une notification à l'heure
+voulue, qui ouvre l'app ; `TripLiveActivities.startSoonDepartingSavedTrips` lance alors le suivi.
+
+Rappels avant le départ, réglés par appareil (les trajets arrivent partout par iCloud) :
+- trajets réguliers : `RegularTripRemindersOnThisDevice` active les rappels (délai choisi dans
+  chaque trajet), `RegularTripAlertsOnThisDevice` les alertes de retard et le suivi en direct ;
+- itinéraires enregistrés : `SavedTripReminderMinutes` (−1 : jamais), posé par
+  `SavedTripReminders` à l'heure de partir du temps réel. Pas de rappel quand l'invitation au
+  suivi automatique tombe au même moment.
+Le sous-titre (`TripCountdown.reminderSubtitle`) ne compte jamais la marche dans le départ :
+« Partir dans 10 min · 5 min à pied », ou « Départ dans 10 min » depuis l'arrêt même.
+
+Bienvenue (`WelcomeView`) : 1) les deux autorisations, sans sortie tant que chacune n'a pas
+reçu de réponse ; 2) au choix, visite guidée, guide complet ou commencer ; 3) la visite
+(`Guide/GuideTourView.swift`). Les démonstrations à toucher (`Guide/GuideDemos.swift`, départs
+factices sauf l'étoile, qui ajoute vraiment le favori) servent à la visite et au guide
+(`GuideEntry.demo`). Elles reprennent les vues de la page d'un arrêt (`StopEventView`,
+`SortedStopEventsView` sans rappels, `StopFloatingControls`, `LineFilterSheet`).
+L'icône de l'app dans l'app : `AppIconView`, image `AppIconImage` tirée des PNG de
+`AppIcon.appiconset` (l'icône `tpgNext26.icon` n'est pas lisible à l'exécution) ; à refaire si
+l'icône change.
+
+Guide d'utilisation (Paramètres → Guide d'utilisation, route `.userGuide`) : le texte vit seul
+dans `Guide/UserGuideContent.swift` (groupes → rubriques → points, avec un lien facultatif vers
+une `AppRoute`) ; `Guide/UserGuideView.swift` l'affiche et y cherche. Capture :
+`tpgnext://guide` ou `tpgnext://guide?topic=<id>`.
