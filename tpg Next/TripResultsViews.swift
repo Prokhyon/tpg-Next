@@ -18,6 +18,13 @@ extension TripView {
         @Environment(RecentSearch.self) var recentSearchModel
         @Binding var results: Results
 
+        /// Sur grand écran, la recherche n'occupe que la moitié gauche : trois noms par ligne
+        /// quand elle est large (paysage), deux sinon. Quatre et trois étaient trop serrés.
+        private var favoriteColumns: Int {
+            guard layout.showsSecondaryPane else { return layout.favoriteColumns }
+            return layout.width / 2 >= 540 ? 3 : 2
+        }
+
         var body: some View {
             VStack {
                 if !favoritesViewModel.favoriteStops.isEmpty {
@@ -27,7 +34,7 @@ extension TripView {
                         Spacer()
                     }
                 }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: layout.favoriteColumns), spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: favoriteColumns), spacing: 10) {
                     ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
                         Button(action: {
                             withAnimation {
@@ -289,6 +296,7 @@ extension TripView {
         var tripManager: TripManager
         @Environment(SavedTripsModel.self) var savedTripsModel
         @Environment(\.layout) private var layout
+        @Environment(\.openRoute) private var openRoute
         @Binding var showTime: Bool
         
         let adjustTime: (Int) -> Void
@@ -326,6 +334,14 @@ extension TripView {
                     .contentShape(.contextMenuPreview, Capsule())
                     .padding(.horizontal, 10)
                     .contextMenu {
+                        // Sur grand écran, toucher l'itinéraire le détaille à droite ; sa page reste ici.
+                        if onSelect != nil {
+                            Button {
+                                openRoute(.trip(event))
+                            } label: {
+                                Label("Ouvrir en plein écran", systemImage: "arrow.up.forward.square")
+                            }
+                        }
                         if savedTripsModel.tripIsSaved(event) {
                             Button(action: {
                                 savedTripsModel.removeTrip(event)

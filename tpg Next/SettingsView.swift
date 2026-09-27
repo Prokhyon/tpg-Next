@@ -16,6 +16,11 @@ struct SettingsView: View {
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @AppStorage(SettingKey.delayIncludedInTime) var delayTimeIntegrated = false
     @AppStorage(SettingKey.showWelcome) var showWelcome = true
+    @AppStorage(SettingKey.regularTripAlertsOnThisDevice) var regularTripAlerts = RegularTripAlerts.defaultOnThisDevice
+    @AppStorage(SettingKey.regularTripRemindersOnThisDevice) var regularTripReminders = RegularTripAlerts.defaultOnThisDevice
+    @AppStorage(SettingKey.savedTripAutoTrackMinutes) var savedTripAutoTrack = 0
+    @AppStorage(SettingKey.savedTripReminderMinutes) var savedTripReminder = SavedTripReminders.off
+    @Environment(SavedTripsModel.self) private var savedTripsModel
     @Namespace private var animation
     @State private var circleButtonMessage = false
     @State var showMail: Bool = false
@@ -62,6 +67,17 @@ struct SettingsView: View {
                                 Text("Départs sur la page d'accueil:")
                                 CustomPicker(secondSelected: $homeFavorites, height: 40, firstOption: String(localized:"Proches"), firstIcon: "location.circle", secondOption: String(localized:"Favoris"), secondIcon: "star", name: "homeDeparture", animation: animation)
                             }
+                            NavigationLink(value: AppRoute.homeLayout) {
+                                HStack {
+                                    Label("Organiser l'accueil", systemImage: "rectangle.3.group")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal)
+                                .basicElementBackground(minHeight: 45)
+                            }
+                            .foregroundStyle(.primary)
                         }
                         .padding()
                         .padding(.vertical, 5)
@@ -104,6 +120,101 @@ struct SettingsView: View {
                             BasicCard(cornerRadius: 30)
                                 .padding(.vertical, 5)
                         )
+
+                        HStack(alignment: .bottom) {
+                            Text("Trajets réguliers")
+                                .font(.headline)
+                                .padding(.leading, 3)
+                            Spacer()
+                        }
+                        .padding(.top, 10)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Toggle("Rappels avant le départ", isOn: $regularTripReminders)
+                                .onChange(of: regularTripReminders) {
+                                    if regularTripReminders { NotificationManager.shared.requestAuthorization() }
+                                    RegularTripAlerts.scheduleReminders(for: .shared)
+                                    RegularTripsModel.shared.scheduleBackgroundRefresh()
+                                }
+                            Toggle("Alertes de retard et suivi en direct", isOn: $regularTripAlerts)
+                                .onChange(of: regularTripAlerts) {
+                                    if regularTripAlerts { NotificationManager.shared.requestAuthorization() }
+                                    RegularTripsModel.shared.scheduleBackgroundRefresh()
+                                }
+                            Text("Le délai du rappel se choisit dans chaque trajet. Vos trajets réguliers sont partagés entre vos appareils via iCloud : activez ces notifications sur un seul pour ne pas être prévenu en double.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 5)
+                        .padding()
+                        .background(
+                            BasicCard(cornerRadius: 30)
+                                .padding(.vertical, 5)
+                        )
+
+                        HStack(alignment: .bottom) {
+                            Text("Itinéraires enregistrés")
+                                .font(.headline)
+                                .padding(.leading, 3)
+                            Spacer()
+                        }
+                        .padding(.top, 10)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Rappel avant le départ")
+                                Spacer()
+                                Picker("Rappel avant le départ", selection: $savedTripReminder) {
+                                    ForEach(SavedTripReminders.choices, id: \.self) { minutes in
+                                        Text(SavedTripReminders.label(for: minutes))
+                                            .tag(minutes)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .labelsHidden()
+                                .onChange(of: savedTripReminder) {
+                                    if savedTripReminder != SavedTripReminders.off {
+                                        NotificationManager.shared.requestAuthorization()
+                                    }
+                                    savedTripsModel.scheduleNotifications()
+                                }
+                            }
+                            HStack {
+                                Text("Suivi en direct automatique")
+                                Spacer()
+                                Picker("Suivi en direct automatique", selection: $savedTripAutoTrack) {
+                                    ForEach(SavedTripAutoTracking.choices, id: \.self) { minutes in
+                                        Text(minutes == 0 ? "Désactivé" : "\(minutes) min avant")
+                                            .tag(minutes)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .labelsHidden()
+                                .onChange(of: savedTripAutoTrack) {
+                                    if savedTripAutoTrack > 0 { NotificationManager.shared.requestAuthorization() }
+                                    savedTripsModel.scheduleNotifications()
+                                }
+                            }
+                            Text("Le rappel compte depuis l'heure de partir, marche jusqu'à l'arrêt comprise. L'activité en direct démarre d'elle-même avant le départ ; iOS ne la laisse démarrer que l'app ouverte : une notification vous invite à l'ouvrir au bon moment. Réglages propres à cet appareil.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 5)
+                        .padding()
+                        .background(
+                            BasicCard(cornerRadius: 30)
+                                .padding(.vertical, 5)
+                        )
+
+                        NavigationLink(value: AppRoute.userGuide) {
+                            HStack {
+                                Text("Guide d'utilisation")
+                                Spacer()
+                                Image(systemName: "book.pages.fill")
+                            }
+                            .padding(.horizontal)
+                            .basicElementBackground(minHeight: 50)
+                            .padding(.vertical, 5)
+                        }
+
                         Button {
                             showWelcome = true
                         } label: {

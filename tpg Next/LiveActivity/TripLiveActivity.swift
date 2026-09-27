@@ -22,26 +22,24 @@ struct TripLiveActivity: Widget {
         } dynamicIsland: { context in
             let step = TripActivityStep(attributes: context.attributes, state: context.state, now: Date())
             return DynamicIsland {
-                // Autour de la caméra : quoi faire à gauche, combien de temps à droite, et où
-                // au centre. Le détail et l'étape suivante passent dessous, sur toute la largeur.
+                // De part et d'autre de la caméra : le trajet (ou le véhicule, à bord) et l'heure
+                // d'arrivée. Dessous, sur toute la largeur, la frise et ses traits de lignes.
                 DynamicIslandExpandedRegion(.leading) {
-                    TripIslandMarker(step: step)
-                        .padding(.leading, 4)
+                    TripIslandTitle(step: step)
+                        .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    TripIslandTime(step: step)
-                        .padding(.trailing, 4)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    TripIslandStop(step: step)
+                    TripIslandArrival(step: step)
+                        .padding(.trailing, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     if let question = step.question {
-                        TripActivityQuestion(question: question, key: context.attributes.key,
-                                             compact: true, showsTitle: false)
+                        TripActivityQuestion(question: question, key: context.attributes.key, compact: true)
                             .padding(.horizontal, 6)
                     } else {
-                        TripIslandDetails(step: step, alert: context.state.alert)
+                        // L'en-tête de la frise est déjà autour de la caméra.
+                        TripActivityTimeline(step: step, alert: context.state.alert, compact: true,
+                                             verticalInset: 4, showsHeader: false)
                             .padding(.horizontal, 6)
                     }
                 }
@@ -97,20 +95,16 @@ struct TripActivityQuestion: View {
     let question: TripActivityState.Question
     let key: String
     var compact = false
-    /// La Dynamic Island met le titre au centre, sous la caméra : ici, la question et les boutons.
-    var showsTitle = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 6 : 10) {
-            if showsTitle {
-                HStack(spacing: 8) {
-                    Image(systemName: "questionmark.circle.fill")
-                        .foregroundStyle(.orange)
-                    Text("Correspondance serrée à \(question.stop)")
-                        .font(compact ? .caption.bold() : .subheadline.bold())
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
+            HStack(spacing: 8) {
+                Image(systemName: "questionmark.circle.fill")
+                    .foregroundStyle(.orange)
+                Text("Correspondance serrée à \(question.stop)")
+                    .font(compact ? .caption.bold() : .subheadline.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             Text("Êtes-vous monté dans le \(question.line) ?")
                 .font(compact ? .caption2 : .footnote)
@@ -138,112 +132,39 @@ struct TripActivityQuestion: View {
 
 // MARK: - Dynamic Island dépliée
 
-/// À gauche de la caméra : ce qu'il y a à faire, ou le point d'interrogation d'une question.
-struct TripIslandMarker: View {
+/// À gauche de la caméra : le nom du trajet, ou à bord l'arrêt où se trouve le véhicule.
+struct TripIslandTitle: View {
     let step: TripActivityStep
 
     var body: some View {
-        Group {
-            if step.question != nil {
-                Image(systemName: "questionmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.orange)
-            } else {
-                TripActivityMarker(step: step)
-            }
-        }
-        .frame(maxHeight: .infinity)
+        Text(step.vehicleNote ?? step.title)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(maxHeight: .infinity)
     }
 }
 
-/// À droite de la caméra : le temps restant avant la montée ou la descente, et l'arrivée.
-struct TripIslandTime: View {
+/// À droite de la caméra : l'heure d'arrivée et son retard. À l'arrivée, elle est déjà sous
+/// l'arrêt : une seule fois suffit.
+struct TripIslandArrival: View {
     let step: TripActivityStep
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 1) {
-            if step.isArrived {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(step.color)
-            } else {
-                TripActivityMinutes(target: step.target)
-                    .font(.headline)
-                    .minimumScaleFactor(0.6)
-                HStack(spacing: 3) {
-                    Text("Arr. \(step.arrival.formatted(date: .omitted, time: .shortened))")
-                    if step.arrivalDelay >= 2 {
-                        Text("+\(step.arrivalDelay)'")
-                            .foregroundStyle(.orange)
-                    }
+        HStack(spacing: 3) {
+            if !step.isArrived {
+                Text("Arrivée \(step.arrival.formatted(date: .omitted, time: .shortened))")
+                if step.arrivalDelay >= 2 {
+                    Text("+\(step.arrivalDelay)'")
+                        .foregroundStyle(.orange)
                 }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
             }
         }
-        .frame(maxHeight: .infinity)
-    }
-}
-
-/// Sous la caméra : l'arrêt de l'étape en cours et ce qu'on y fait, ou le titre de la question.
-struct TripIslandStop: View {
-    let step: TripActivityStep
-
-    var body: some View {
-        VStack(spacing: 1) {
-            if let question = step.question {
-                Text("Correspondance serrée")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(question.stop)
-                    .font(.headline)
-            } else {
-                // À bord : où se trouve le véhicule, au-dessus de l'arrêt où descendre.
-                if let note = step.vehicleNote {
-                    Text(note)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Text(step.stopName)
-                    .font(.headline)
-                    .minimumScaleFactor(0.7)
-                Text(step.action)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
         .lineLimit(1)
-        .multilineTextAlignment(.center)
-    }
-}
-
-/// Sur toute la largeur, sous le reste : l'étape d'après, et l'alerte s'il y en a une.
-struct TripIslandDetails: View {
-    let step: TripActivityStep
-    let alert: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let nextText = step.nextText {
-                HStack(spacing: 8) {
-                    TripActivityNextMarker(step: step)
-                        .frame(width: 28)
-                    Text(nextText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            if let alert {
-                Label(alert, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 4)
+        .frame(maxHeight: .infinity)
     }
 }
 
@@ -372,6 +293,8 @@ struct TripActivityTimeline: View {
     let alert: String?
     var compact = false
     var verticalInset: CGFloat = 14
+    /// Faux dans la Dynamic Island, qui place le titre et l'arrivée autour de la caméra.
+    var showsHeader = true
 
     private var railWidth: CGFloat { compact ? 34 : 40 }
     private let railSpacing: CGFloat = 10
@@ -386,19 +309,26 @@ struct TripActivityTimeline: View {
         VStack(alignment: .leading, spacing: 0) {
             // En haut : le véhicule (à bord) ou le trajet, et l'heure d'arrivée. À bord, le trait
             // de la ligne vient du bord de la carte jusqu'au badge.
-            row(rail: step.isRiding ? step.color : nil, topInset: verticalInset) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(step.vehicleNote ?? step.title)
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    // À l'arrivée, l'heure est déjà sous l'arrêt : une seule fois suffit.
-                    if !step.isArrived {
-                        arrivalText
+            if showsHeader {
+                row(rail: step.isRiding ? step.color : nil, topInset: verticalInset) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(step.vehicleNote ?? step.title)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        // À l'arrivée, l'heure est déjà sous l'arrêt : une seule fois suffit.
+                        if !step.isArrived {
+                            arrivalText
+                        }
                     }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 4)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
+            } else {
+                // Sans en-tête, à bord, le trait de la ligne sort quand même par le haut.
+                row(rail: step.isRiding ? step.color : nil, topInset: 0) {
+                    Color.clear.frame(height: verticalInset)
+                }
             }
 
             // L'étape en cours ; le trait descend jusqu'à l'étape suivante.

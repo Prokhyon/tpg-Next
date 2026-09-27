@@ -107,51 +107,57 @@ struct LiveTripView: View {
     private var trip: TripLiveActivities.LiveTrip? { liveActivities.live[key] ?? previewTrip }
 
     var body: some View {
-        ScrollView {
-            if let trip {
-                VStack(alignment: .leading, spacing: 0) {
-                    header(trip)
-                    if let doubt = liveActivities.doubtful[key] {
-                        DoubtfulTransferCard(doubt: doubt,
-                                             boarded: { liveActivities.confirmBoarded(key) },
-                                             missed: { liveActivities.confirmMissed(key) })
+        ZStack {
+            ScrollView {
+                if let trip {
+                    VStack(alignment: .leading, spacing: 0) {
+                        header(trip)
+                        if let doubt = liveActivities.doubtful[key] {
+                            DoubtfulTransferCard(doubt: doubt,
+                                                 boarded: { liveActivities.confirmBoarded(key) },
+                                                 missed: { liveActivities.confirmMissed(key) })
                             .padding(.bottom, 14)
-                    }
-                    if let options = liveActivities.alternatives[key], options.count > 1 {
-                        ReplanOptionsCard(options: options, chosen: liveActivities.chosenAlternative[key]) {
-                            liveActivities.choose($0, for: key)
                         }
-                        .padding(.bottom, 14)
+                        if let options = liveActivities.alternatives[key], options.count > 1 {
+                            ReplanOptionsCard(options: options, chosen: liveActivities.chosenAlternative[key]) {
+                                liveActivities.choose($0, for: key)
+                            }
+                            .padding(.bottom, 14)
+                        }
+                        timeline(trip)
                     }
-                    timeline(trip)
-                    Button(role: .destructive) {
-                        liveActivities.stop(key)
-                        dismiss()
-                    } label: {
-                        Label("Arrêter le suivi", systemImage: "stop.circle")
-                            .frame(maxWidth: .infinity, minHeight: 50)
+                    .padding(.horizontal, 15)
+                    .padding(.top, 10)
+                    .padding(.bottom, 40)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "inset.filled.circle.slash")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("Ce trajet n'est plus suivi")
+                            .font(.headline)
                     }
-                    .buttonStyle(.bordered)
-                    .padding(.top, 16)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
                 }
-                .padding(.horizontal, 15)
-                .padding(.top, 10)
-                .padding(.bottom, 40)
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "livephoto.slash")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("Ce trajet n'est plus suivi")
-                        .font(.headline)
+            }
+            .readableScrollContent()
+            .navigationTitle(trip?.attributes.title ?? String(localized: "Trajet suivi"))
+            .navigationBarTitleDisplayMode(.inline)
+            VStack {
+                Spacer()
+                Button(role: .destructive) {
+                    liveActivities.stop(key)
+                    dismiss()
+                } label: {
+                    Label("Arrêter le suivi", systemImage: "stop.circle")
+                        .frame(maxWidth: .infinity, minHeight: 50)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
+                .tpgSurface(interactive: true)
+                .buttonStyle(.bordered)
+                .padding()
             }
         }
-        .readableScrollContent()
-        .navigationTitle(trip?.attributes.title ?? String(localized: "Trajet suivi"))
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: En-tête

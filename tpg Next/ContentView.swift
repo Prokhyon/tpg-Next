@@ -11,19 +11,21 @@ import MapKit
 import tpgNextFunc
 
 enum Tabs: String, Equatable, Hashable {
-    case home = "Départs"
+    case home = "Accueil"
     case trip = "Itinéraire"
-    case map = "Carte"
+    /// Mes itinéraires : enregistrés et réguliers.
+    case trips = "Trajets"
     case search = "Recherche"
-    
-    var imageName: String {
-            switch self {
-            case .home: return "house.fill"
-            case .trip: return "point.bottomleft.forward.to.point.topright.scurvepath.fill"
-            case .map: return "map.fill"
-            case .search: return "magnifyingglass"
-            }
+
+    /// Pour le dock d'avant iOS 26. Les trajets ont un symbole de l'app, pas un symbole système.
+    var image: Image {
+        switch self {
+        case .home: Image(systemName: "house.fill")
+        case .trip: Image(systemName: "point.bottomleft.forward.to.point.topright.scurvepath.fill")
+        case .trips: Image("scurvepath.stack.fill")
+        case .search: Image(systemName: "magnifyingglass")
         }
+    }
 }
 
 
@@ -42,7 +44,15 @@ extension View {
 
 @Observable
 class NavigationModel {
-    var selectedTab: Tabs = .home
+    var selectedTab: Tabs = .home {
+        // La carte plein écran couvre les onglets : un itinéraire lancé depuis elle
+        // (bouton d'un arrêt) doit la refermer pour laisser voir l'onglet Itinéraire.
+        didSet { if selectedTab != .home { showsFullMap = false } }
+    }
+    /// Le filtre de l'onglet Trajets : une notification de trajet régulier l'ouvre sur les réguliers.
+    var tripsFilter: SavedTripsFilter = .all
+    /// La carte des arrêts en plein écran, ouverte depuis l'accueil.
+    var showsFullMap = false
     /// Texte de l'onglet Recherche, partagé par son champ et celui du dock (avant iOS 26).
     var searchQuery = ""
     /// Les écrans ouverts par-dessus chaque onglet.
@@ -68,6 +78,13 @@ class NavigationModel {
         // Toucher deux fois le même widget ou rappel n'empile pas deux fois le même écran.
         guard paths[tab]?.last != route else { return }
         paths[tab, default: []].append(route)
+    }
+
+    /// L'onglet Trajets, revenu à sa liste, sur ce filtre.
+    func showTrips(_ filter: SavedTripsFilter = .all) {
+        paths[.trips] = []
+        tripsFilter = filter
+        selectedTab = .trips
     }
 
     func popToRoot(_ tab: Tabs) {
@@ -125,7 +142,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
                 TabView(selection: Bindable(navigationModel).selectedTab) {
-                    Tab("Départs", systemImage: "house", value: .home) {
+                    Tab("Accueil", systemImage: "house", value: .home) {
                         TabStack(tab: .home) {
                             HomeView(testing: !autoRefresh)
                         }
@@ -133,11 +150,12 @@ struct ContentView: View {
                     Tab("Itinéraire", systemImage: "point.bottomleft.forward.to.point.topright.scurvepath", value: .trip) {
                         TabStack(tab: .trip) {
                             TripView(tripManager: tripManager)
+                                .singleColumnWhenFoldedPortrait()
                         }
                     }
-                    Tab("Carte", systemImage: "map", value: .map) {
-                        TabStack(tab: .map) {
-                            MapView()
+                    Tab("Trajets", image: "scurvepath.stack.fill", value: .trips) {
+                        TabStack(tab: .trips) {
+                            SavedTripsView(filter: Bindable(navigationModel).tripsFilter)
                         }
                     }
                     Tab(value: .search, role: .search) {
@@ -228,7 +246,9 @@ struct ContentView: View {
             //                }
         }
                 .sheet(isPresented: $showWelcome) {
-                    WelcomeView(viewingWelcome: $showWelcome)
+                    WelcomeView(viewingWelcome: $showWelcome) {
+                        navigationModel.open(.userGuide, in: navigationModel.selectedTab)
+                    }
                         .presentationDetents([.large])
                         .presentationCornerRadius(35)
 //                        .presentationBackground(.thinMaterial)
@@ -281,8 +301,14 @@ struct ContentView: View {
                 liveTrip.open(key)
                 return
             }
-            navigationModel.open(route, in: .home)
-            navigationModel.selectedTab = .home
+            switch route {
+            case .savedTrips: navigationModel.showTrips()
+            case .regularTrips: navigationModel.showTrips(.regular)
+            default:
+                let tab = Self.tab(for: route)
+                navigationModel.open(route, in: tab)
+                navigationModel.selectedTab = tab
+            }
         }
         // Le bandeau s'ouvre en plein écran, et se referme en glissant vers le bas.
         .sheet(isPresented: Bindable(liveTrip).isOpen) {
@@ -295,7 +321,22 @@ struct ContentView: View {
         // Au premier plan, chaque minute : temps réel des trajets réguliers proches, rappels,
         // alertes et activités en direct (qui ne sont mises à jour que par l'app).
         .periodicRefresh(every: .seconds(60)) { _ in
-            Task { await regularTripsModel.refresh() }
+            Task {
+                await regularTripsModel.refresh()
+                UpcomingTripsPublisher.publish(regular: regularTripsModel, saved: savedTripsModel)
+            }
+            liveActivities.startSoonDepartingSavedTrips(of: savedTripsModel)
+        }
+        // Un trajet ajouté, modifié ou supprimé : le widget « Prochain trajet » suit aussitôt.
+        .onChange(of: savedTripsModel.savedTrips) {
+            UpcomingTripsPublisher.publish(regular: regularTripsModel, saved: savedTripsModel)
+        }
+        .onChange(of: regularTripsModel.regularTrips) {
+            UpcomingTripsPublisher.publish(regular: regularTripsModel, saved: savedTripsModel)
+        }
+        .task {
+            savedTripsModel.startCloudSync()
+            savedTripsModel.scheduleNotifications()
         }
         #if DEBUG
         .task { openDebugURLs() }
@@ -324,21 +365,34 @@ struct ContentView: View {
                             }
                         }
     }
+    /// L'onglet où ouvrir une route venue de l'extérieur (notification) : les itinéraires dans
+    /// l'onglet Trajets, par-dessus leur liste, le reste dans Départs.
+    private static func tab(for route: AppRoute) -> Tabs {
+        switch route {
+        case .savedTrips, .regularTrips, .trip, .tripMap: .trips
+        default: .home
+        }
+    }
+
     // Ouverture depuis le widget :
     //   tpgnext://stop?sloid=…&name=…
     //   tpgnext://line?journeyRef=…&operatingDayRef=…&line=…&sloid=…
     //   tpgnext://regulartrips   tpgnext://livetrip?key=…   (activité en direct)
+    //   tpgnext://savedtrips
     private func handleOpenURL(_ url: URL) {
         guard url.scheme == "tpgnext",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        if url.host == "savedtrips" {
+            navigationModel.showTrips()
+            return
+        }
         if url.host == "regulartrips" || url.host == "livetrip" {
             // Toucher l'activité en direct ouvre le suivi, comme le bandeau.
             let key = components.queryItems?.first { $0.name == "key" }?.value
             if let key, TripLiveActivities.shared.isTracking(key) {
                 liveTrip.open(key)
             } else {
-                navigationModel.open(.regularTrips, in: .home)
-                navigationModel.selectedTab = .home
+                navigationModel.showTrips(.regular)
             }
             return
         }
@@ -377,16 +431,26 @@ struct ContentView: View {
     #if DEBUG
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
-    ///   tpgnext://tab?name=home|trip|map|search   tpgnext://settings
+    ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
             switch url.host {
             case "tab":
                 let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value
-                navigationModel.selectedTab = [Tabs.home, .trip, .map, .search].first { "\($0)" == name } ?? .home
+                navigationModel.selectedTab = [Tabs.home, .trip, .trips, .search].first { "\($0)" == name } ?? .home
             case "settings":
                 navigationModel.open(.settings, in: navigationModel.selectedTab)
+            case "map":
+                navigationModel.selectedTab = .home
+                navigationModel.showsFullMap = true
+            case "lines":
+                navigationModel.selectedTab = .search
+                navigationModel.open(.lines, in: .search)
+            case "guide":
+                // tpgnext://guide, ou tpgnext://guide?topic=stop pour une rubrique.
+                let topic = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value
+                navigationModel.open(topic.map { .userGuideTopic(id: $0) } ?? .userGuide, in: navigationModel.selectedTab)
             default:
                 handleOpenURL(url)
             }
@@ -457,16 +521,16 @@ struct DockView: View {
                         }
                         .frame(width: !search ? 90 : 40)
                     }
-                        if !search || (search && previousMainTab == .map) {
+                        if !search || (search && previousMainTab == .trips) {
                             ZStack {
-                                if navigationModel.selectedTab == .map {
+                                if navigationModel.selectedTab == .trips {
                                     Capsule()
                                         .fill(.gray.opacity(0.1))
                                         .stroke(Color.accent.opacity(0.4), lineWidth: 2)
                                         .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
                                         .matchedGeometryEffect(id: "activeTab", in: animationNamespace)
                                 }
-                                dockButton(previousMainTab: $previousMainTab, searchFocus: $searchFocus, tab: .map)
+                                dockButton(previousMainTab: $previousMainTab, searchFocus: $searchFocus, tab: .trips)
                             }
                             .frame(width: !search ? 90 : 40)
                     }
@@ -485,7 +549,7 @@ struct DockView: View {
                         .font(search ? .callout : .title2)
                         .foregroundStyle(search ? .gray : .primary)
                     if search {
-                        TextField("Rechercher un arrêt", text: Bindable(navigationModel).searchQuery)
+                        TextField("Arrêts, lieux, itinéraires", text: Bindable(navigationModel).searchQuery)
                             .focused($searchFocus)
                     }
                 }
@@ -557,7 +621,7 @@ struct DockView: View {
                 }
             }) {
                     VStack(spacing: 5) {
-                        Image(systemName: tab.imageName).font(.title2)
+                        tab.image.font(.title2)
                         if !search {
                             Text(tab.rawValue).font(.caption2)
                         }

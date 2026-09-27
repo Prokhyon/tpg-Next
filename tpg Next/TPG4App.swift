@@ -73,6 +73,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         center.delegate = self  // Set the delegate
         // Avant la fin du lancement, sinon iOS refuse l'enregistrement.
         RegularTripsModel.registerBackgroundTask()
+        // Ici plutôt que dans une vue : une tâche de fond lance l'app sans interface.
+        FavoritesViewModel.shared.startCloudSync()
+        RegularTripsModel.shared.startCloudSync()
         
         // Initialize WCSession
         if WCSession.isSupported() {
@@ -136,6 +139,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // App ouverte, le suivi démarre de lui-même : la notification qui invitait à l'ouvrir
+        // n'a rien à dire.
+        if notification.request.content.userInfo[SavedTripAutoTracking.userInfoKey] != nil {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .badge])
     }
     
@@ -149,6 +158,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             if let key = userInfo[TripStepAlerts.userInfoKey] as? String {
                 DispatchQueue.main.async {
                     PendingNotificationOpen.shared.route = .liveTrip(key: key)
+                }
+            } else if userInfo[SavedTripAutoTracking.userInfoKey] != nil || userInfo[SavedTripReminders.userInfoKey] != nil {
+                // Rappel ou invitation au suivi (qui démarre au retour au premier plan) : on montre
+                // l'itinéraire dans sa liste.
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .savedTrips
                 }
             } else if userInfo[RegularTripAlerts.occurrenceKey] != nil {
                 DispatchQueue.main.async {

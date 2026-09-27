@@ -52,7 +52,7 @@ struct NotificationContextMenu: View {
                 Button {
                     openRoute(.trackJourney(event: event, stopSloid: stopID))
                 } label: {
-                    Label("Suivre en direct", systemImage: "livephoto")
+                    Label("Suivre en direct", systemImage: "inset.filled.circle")
                 }
             }
             if itinerary {

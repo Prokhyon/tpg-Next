@@ -191,7 +191,7 @@ struct StopView: View {
             }
         }
         .toolbar {
-            HStack {
+            TrailingBarButtons {
                 ShowTimeButton(showTime: $showTime)
 
                 Button {
@@ -203,7 +203,6 @@ struct StopView: View {
 
                 StopActionsMenu(stopName: stopName, stopSloid: stopSloid, quays: stopManager.quays)
             }
-            .legacySurface()
         }
         
         

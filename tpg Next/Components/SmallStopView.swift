@@ -18,10 +18,22 @@ struct SmallStopView: View {
     var stop: Stop
     var quay = ""
     var isQuay: Bool = false
+    /// Le style de l'accueil (carte opaque) plutôt que celui de la carte des arrêts (verre, dont
+    /// l'ombre déborde). Décide aussi du bouton d'itinéraire, sauf `tripMenu`.
     var isHome: Bool = false
+    /// Le bouton d'itinéraire ouvre le menu (partir d'ici, y aller…) plutôt que de lancer un
+    /// itinéraire depuis l'arrêt. Par défaut : hors de l'accueil.
+    var tripMenu: Bool? = nil
     var stopEventNumber: Int = 3
+    /// Départs affichés, parmi ceux demandés.
+    var departureCount: Int = 3
     //    var autoRefresh = true
     var testing: Bool = false
+    /// Replié : le nom et le bouton d'itinéraire seulement. Les départs restent chargés, pour
+    /// s'afficher aussitôt dépliés.
+    var isExpanded: Bool = true
+    /// Toucher le nom d'un arrêt replié le déplie (au lieu d'ouvrir sa page).
+    var onExpand: (() -> Void)? = nil
     @Namespace private var namespace
     
     
@@ -33,30 +45,34 @@ struct SmallStopView: View {
                 GlassEffectContainer() {
                     VStack {
                         HeaderView()
+                        // Replié, le verre des départs se fond dans celui du titre (même conteneur).
+                        if isExpanded {
                             DeparturesList()
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 15)
                                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 40))
                                 .glassEffectID("departures", in: namespace)
+                                .transition(Self.foldIntoTitle)
+                        }
                     }
                 }
             } else {
                 VStack {
                     HeaderView()
-                    if !testing {
-                        DeparturesList()
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 5)
-                            .background {
-                                BasicCard(cornerRadius: 35)
+                    if isExpanded {
+                        Group {
+                            if !testing {
+                                DeparturesList()
+                            } else {
+                                DeparturesTestList()
                             }
-                    } else {
-                        DeparturesTestList()
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 5)
-                            .background {
-                                BasicCard(cornerRadius: 35)
-                            }
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 5)
+                        .background {
+                            BasicCard(cornerRadius: 35)
+                        }
+                        .transition(Self.foldIntoTitle)
                     }
                 }
                 .padding(.horizontal)
@@ -79,6 +95,11 @@ struct SmallStopView: View {
         }
     }
     
+    /// Les départs se replient dans le titre, et en sortent au dépliage : ils rétrécissent vers
+    /// le nom de l'arrêt, en haut à gauche, en s'effaçant.
+    private static let foldIntoTitle: AnyTransition = .scale(scale: 0.1, anchor: UnitPoint(x: 0.2, y: 0))
+        .combined(with: .opacity)
+
     private func HeaderView() -> some View {
         HStack {
             if #available(iOS 26, *), !isHome {
@@ -131,14 +152,25 @@ struct SmallStopView: View {
         }
     }
     
-    private func StopTitleView() -> some View {
-        NavigationLink(value: AppRoute.stop(stop)) {
-            HStack {
-                //                StopIcon(color: .color1)
-                StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
-                if splitString(stop.name, separator: ",").1.isEmpty {
-                    Spacer() // Un nom sur une ligne occupe toute la largeur de la carte.
-                }
+    @ViewBuilder private func StopTitleView() -> some View {
+        if !isExpanded, let onExpand {
+            Button(action: onExpand) {
+                StopTitleLabel()
+            }
+            .accessibilityHint("Affiche les prochains départs")
+        } else {
+            NavigationLink(value: AppRoute.stop(stop)) {
+                StopTitleLabel()
+            }
+        }
+    }
+
+    private func StopTitleLabel() -> some View {
+        HStack {
+            //                StopIcon(color: .color1)
+            StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
+            if splitString(stop.name, separator: ",").1.isEmpty {
+                Spacer() // Un nom sur une ligne occupe toute la largeur de la carte.
             }
         }
     }
@@ -148,7 +180,7 @@ struct SmallStopView: View {
             let menu = Group {
                 TripActionsMenu(stop: stop)
             }
-            if isHome {
+            if !(tripMenu ?? !isHome) {
                 Button(action: {
                     tripViewModel.outerTrip(tab: navigationModel, isDeparture: true, stop: stop, isQuickTrip: false)
                 }) {
@@ -172,7 +204,7 @@ struct SmallStopView: View {
     private func DeparturesList() -> some View {
         VStack(spacing: 0) {
             if !stopManager.stopEvents.isEmpty {
-                ForEach(isQuay ? filteredEvents.sortedByDeparture().prefix(3) : stopManager.stopEvents.sortedByDeparture().prefix(3), id: \.id) { event in
+                ForEach((isQuay ? filteredEvents : stopManager.stopEvents).sortedByDeparture().prefix(departureCount), id: \.id) { event in
                     NavigationLink(value: AppRoute.line(event: event, currentStop: ShortStop(name: stop.name, sloid: sloidHarmonizer(code: stop.sloid)))) {
                         StopEventView(event: event, showTime: false, mapVersion: !isHome)
                     }
@@ -198,7 +230,8 @@ struct SmallStopView: View {
                 }
             }
         }
-        .heightGrowingWithText(170)
+        // La hauteur de trois départs, pour des pages égales ; au-delà, la hauteur naturelle.
+        .if(departureCount <= 3) { $0.heightGrowingWithText(170) }
     }
     
     private func DeparturesTestList() -> some View {

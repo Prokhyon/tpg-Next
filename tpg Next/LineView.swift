@@ -175,33 +175,24 @@ struct LineView: View {
 //                    .padding(.horizontal, 5)
 //                    .padding(.vertical, 2)
 //            }
-            HStack {
+            TrailingBarButtons {
                 ShowTimeButton(showTime: $showTime)
-                
+
                 if TripLiveActivities.shared.areEnabled, !stopEvent.journeyRef.isEmpty {
                     Button {
                         openRoute(.trackJourney(event: stopEvent, stopSloid: currentStop?.sloid ?? stopEvent.stopId))
                     } label: {
-                        Image(systemName: "livephoto")
-                            .padding(.horizontal, 2)
+                        Label("Suivre en direct", systemImage: "inset.filled.circle")
                     }
-                    .accessibilityLabel("Suivre en direct")
                 }
                 // Sur grand écran, la carte est déjà là : son plein écran est sur elle.
                 if !layout.showsSecondaryPane {
                     Button {
                         openRoute(.lineMap(events: lineEvents, operatorName: operatorName, event: stopEvent, currentStopSloid: currentStop?.sloid))
                     } label: {
-                        Image(systemName: "map")
-                            .padding(.trailing, TPGSurface.isGlass ? 5 : 10)
+                        Label("Carte de la ligne", systemImage: "map")
                     }
                 }
-            }
-            .background {
-                Capsule()
-                    .opacity(TPGSurface.isGlass ? 0 : 1)
-                    .foregroundStyle(.ultraThinMaterial)
-                    .shadow(color: Color.customShadows, radius: 2, y: 1.5)
             }
         }
         .navigationTitle("Ligne \(currentLine)") // Set back button text

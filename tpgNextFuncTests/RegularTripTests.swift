@@ -38,6 +38,24 @@ struct RegularTripTests {
         }
     }
 
+    /// Le jour des itinéraires proposés à la création : le jour même si l'heure n'est pas
+    /// passée, sinon le prochain jour coché.
+    @Test func nextDateSkipsPassedTimeAndUncheckedDays() throws {
+        let calendar = Calendar.swissTransit
+        // Mercredi 23.09.2026, 08:00 à Genève.
+        let now = try #require(calendar.date(from: DateComponents(year: 2026, month: 9, day: 23, hour: 8)))
+        func components(_ date: Date?) -> DateComponents? {
+            date.map { calendar.dateComponents([.day, .hour, .minute], from: $0) }
+        }
+        let later = Weekday.nextDate(on: [.wednesday], minuteOfDay: 17 * 60 + 30, after: now)
+        #expect(components(later) == DateComponents(day: 23, hour: 17, minute: 30))
+        let nextWeek = Weekday.nextDate(on: [.wednesday], minuteOfDay: 7 * 60 + 42, after: now)
+        #expect(components(nextWeek) == DateComponents(day: 30, hour: 7, minute: 42))
+        let weekend = Weekday.nextDate(on: Weekday.weekend, minuteOfDay: 9 * 60, after: now)
+        #expect(components(weekend) == DateComponents(day: 26, hour: 9, minute: 0))
+        #expect(Weekday.nextDate(on: [], minuteOfDay: 0, after: now) == nil)
+    }
+
     @Test func recipeComesFromTheTrip() throws {
         let trip = try tripWithTransfer()
         let regular = RegularTrip(trip: trip, weekdays: Weekday.workdays)
@@ -97,6 +115,43 @@ struct RegularTripTests {
         let match = try #require(regular.match(in: try trips(), for: try occurrence(of: regular, shiftedBy: 5)))
         #expect(match.kind == .shifted(minutes: -5))
         #expect(match.trip.id == trip.id)
+    }
+
+    /// Un autre itinéraire choisi pour un jour : ce jour-là, c'est lui qu'on attend et qu'on suit.
+    @Test func chosenTripReplacesTheDay() throws {
+        let usual = try tripWithTransfer()
+        let chosen = try #require(try trips().first { $0.vehicleLegs.map(\.publishedLineName) != ["12", "19"] && !$0.vehicleLegs.isEmpty })
+        var regular = RegularTrip(trip: usual, weekdays: [.sunday])
+        regular.dayOverrides = ["2026-09-13": chosen]
+        #expect(regular.isOverridden(on: "2026-09-13"))
+
+        let before = try #require(chosen.startDate).addingTimeInterval(-3600)
+        let occurrence = try #require(regular.occurrences(after: before, days: 1).first)
+        #expect(occurrence.target == chosen.anchorDate(.departure, timetabled: true))
+        #expect(regular.plannedTrip(for: occurrence).vehicleLegs.map(\.publishedLineName) == chosen.vehicleLegs.map(\.publishedLineName))
+        let match = try #require(regular.match(in: try trips(), for: occurrence))
+        #expect(match.kind == .usual)
+        #expect(match.trip.id == chosen.id)
+
+        // Les autres jours gardent le trajet habituel.
+        #expect(regular.recipe(for: "2026-09-20").legs.map(\.line) == ["12", "19"])
+    }
+
+    /// Un itinéraire enregistré retrouvé dans une nouvelle réponse : la même course.
+    @Test func savedTripIsFoundAgain() throws {
+        let saved = try tripWithTransfer()
+        let match = try #require(SavedTripResolver.update(of: saved, in: try trips()))
+        #expect(match.kind == .usual)
+        #expect(match.trip.id == saved.id)
+    }
+
+    /// Ses lignes ne sont plus proposées : il n'est plus possible, le meilleur à sa place.
+    @Test func goneSavedTripGivesAProposal() throws {
+        let saved = try tripWithTransfer()
+        let others = try trips().filter { $0.vehicleLegs.map(\.publishedLineName) != ["12", "19"] }
+        let match = try #require(SavedTripResolver.update(of: saved, in: others))
+        #expect(match.kind == .alternative)
+        #expect(match.trip.id != saved.id)
     }
 
     @Test func missingLineGivesAnAlternative() throws {

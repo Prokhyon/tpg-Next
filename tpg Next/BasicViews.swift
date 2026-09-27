@@ -239,12 +239,15 @@ struct BasicElement: View {
 
 struct BasicCard: View {
     var cornerRadius: CGFloat = 30
+    /// Bordure orange, comme `BasicElement` : la carte détaillée à côté, sur grand écran.
+    var highlighted = false
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
-    
+    var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
+
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
             .fill(.color1)
-            .stroke(AngularGradient(gradient: borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
+            .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
             .shadow(color: .customShadows.opacity(0.2), radius: 10)
     }
 }
@@ -283,6 +286,12 @@ struct BasicLocationView: View {
                         }
                     } else {
                         SmallStopTitleView(stopName: name, transportType: transportType ?? "")
+                        // Pour un arrêt, la distance.
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                         Spacer()
                     if showButton, let buttonAction = buttonAction {
@@ -329,6 +338,26 @@ struct StopIcon: View {
     }
 }
 
+/// Les boutons à droite de la barre de navigation. Depuis iOS 26, chacun devient un élément de
+/// barre à part : le système peut les poser à la verticale sur le côté (iPhone Duo) ou replier les
+/// moins utiles dans un menu. Avant, ils partagent une capsule posée sur le contenu.
+struct TrailingBarButtons<Content: View>: ToolbarContent {
+    @ViewBuilder var content: Content
+
+    var body: some ToolbarContent {
+        if TPGSurface.isGlass {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                content
+            }
+        } else {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack { content }
+                    .legacySurface()
+            }
+        }
+    }
+}
+
 struct ShowTimeButton: View {
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @Binding var showTime: Bool
@@ -346,7 +375,7 @@ struct ShowTimeButton: View {
                 Image(systemName: imageName)
                     .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
                     .foregroundColor(showTime ? .text : .white)
-                    .padding(.horizontal, 13)
+                    .padding(.horizontal, 7)
                     .padding(.vertical, 5)
                     .rotationEffect(.degrees(rotation))
                     .background {
@@ -409,8 +438,8 @@ struct Filterbutton: View {
 //                    .symbolEffect(.bounce.up.byLayer, value: trueAnimation)
 //                    .symbolEffect(.wiggle, value: falseAnimation)
                     .foregroundColor(viewLineFiltered ? .white : .text)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 11)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 9)
                     .background {
                         Capsule()
                             .foregroundStyle(viewLineFiltered ? .accent : .clear)

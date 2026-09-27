@@ -344,7 +344,7 @@ final class TripLiveActivities {
     /// Lance l'activité des trajets réguliers qui partent bientôt. Une seule fois par trajet :
     /// fermée par l'utilisateur, elle ne revient pas.
     func startSoonDepartingTrips(of model: RegularTripsModel, now: Date = Date()) {
-        guard areEnabled else { return }
+        guard areEnabled, RegularTripAlerts.isEnabledOnThisDevice else { return }
         var started = Set(Self.autoStartedStore.load() ?? [])
         for occurrence in model.upcoming(after: now, days: 1) {
             guard occurrence.plannedDeparture.timeIntervalSince(now) < Self.autoStartLead,
@@ -357,6 +357,27 @@ final class TripLiveActivities {
             started.insert(occurrence.id)
         }
         // Les jours passés ne servent plus.
+        let today = Calendar.swissTransit.dayKey(for: now)
+        Self.autoStartedStore.save(started.filter { String($0.suffix(10)) >= today })
+    }
+
+    /// Lance le suivi des itinéraires enregistrés qui partent bientôt, si l'utilisateur l'a choisi
+    /// (`SavedTripAutoTracking`). Une seule fois par itinéraire : fermé, il ne revient pas.
+    func startSoonDepartingSavedTrips(of model: SavedTripsModel, now: Date = Date()) {
+        let minutes = SavedTripAutoTracking.leadMinutes
+        guard areEnabled, minutes > 0 else { return }
+        var started = Set(Self.autoStartedStore.load() ?? [])
+        for saved in model.savedTrips {
+            let trip = model.displayedTrip(for: saved)
+            guard let departure = trip.leavingDate ?? trip.startDate,
+                  departure.timeIntervalSince(now) < TimeInterval(minutes * 60),
+                  (trip.endDate ?? departure) > now else { continue }
+            // Le jour à la fin : c'est lui qui sert au ménage ci-dessous.
+            let startedKey = "saved_\(saved.id)_\(Calendar.swissTransit.dayKey(for: departure))"
+            guard !started.contains(startedKey) else { continue }
+            start(trip: trip)
+            started.insert(startedKey)
+        }
         let today = Calendar.swissTransit.dayKey(for: now)
         Self.autoStartedStore.save(started.filter { String($0.suffix(10)) >= today })
     }
