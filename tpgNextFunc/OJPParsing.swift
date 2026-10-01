@@ -182,6 +182,8 @@ final class StopEventParser: OJPParser {
             event.origin = value
         case "Text" where parent == "DestinationText":
             event.destination = value
+        case "DestinationStopPointRef":
+            event.destinationRef = value
         case "OperatorRef":
             operatorRef = value
         case "JourneyRef":
@@ -320,6 +322,7 @@ final class TripEventParser: OJPParser {
                 if boarding { leg?.legBoardEstimatedTime = value } else if alighting { leg?.legAlightEstimatedTime = value }
             case "StopPointRef":
                 if boarding { leg?.legBoardStopId = value } else if alighting { leg?.legAlightStopId = value }
+            case "DestinationStopPointRef": leg?.legDestinationRef = value
             default: break
             }
         }

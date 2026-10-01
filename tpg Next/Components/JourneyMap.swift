@@ -28,8 +28,9 @@ final class JourneyTrackModel {
     /// La course affichée : une réponse arrivée pour une course précédente est ignorée.
     @ObservationIgnored private var journeyRef: String?
 
-    init(events: [LineEvent] = []) {
+    init(events: [LineEvent] = [], operatorName: String = "") {
         self.events = events
+        self.operatorName = operatorName
     }
 
     /// - Parameter includeTrack: sans carte à l'écran (liste de la ligne sur iPhone), le tracé
@@ -107,6 +108,10 @@ struct JourneyMapContent: MapContent {
     let operatorName: String
     var currentStopSloid: String?
     let now: Date
+    /// Toucher un arrêt (carte de ligne) ; sans, les arrêts ne réagissent pas.
+    var selectStop: ((LineEvent) -> Void)? = nil
+    /// L'arrêt choisi : son point grossit.
+    var selectedStop: LineEvent? = nil
 
     var body: some MapContent {
         ForEach(events, id: \.self) { event in
@@ -115,8 +120,23 @@ struct JourneyMapContent: MapContent {
             Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: event.coordinate, anchor: .center) {
                 StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true),
                          currentStop: event.sloid == currentStopSloid && event.sloid != "",
-                         size: isEnd ? 18 : 12)
+                         size: event == selectedStop ? 26 : isEnd ? 18 : 12)
+                    .overlay {
+                        // Le terminus : un point au centre, comme l'arrivée d'un itinéraire.
+                        if event == events.last {
+                            Circle()
+                                .fill(Color.primary)
+                                .frame(width: event == selectedStop ? 6 : 4, height: event == selectedStop ? 6 : 4)
+                        }
+                    }
+                    .animation(.bouncy, value: event == selectedStop)
                     .opacity(event.isCancelled == true || hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
+                    .if(selectStop != nil) { icon in
+                        // Zone de toucher plus large que le point.
+                        icon.frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                            .onTapGesture { selectStop?(event) }
+                    }
             }
         }
 

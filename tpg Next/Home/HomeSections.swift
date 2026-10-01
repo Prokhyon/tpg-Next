@@ -10,7 +10,7 @@ import SwiftUI
 import tpgNextFunc
 
 enum HomeSection: String, CaseIterable, Identifiable {
-    case nextTrip, favorites, departures, map
+    case nextTrip, favorites, places, departures, map
 
     var id: Self { self }
 
@@ -18,8 +18,19 @@ enum HomeSection: String, CaseIterable, Identifiable {
         switch self {
         case .nextTrip: "Prochain trajet"
         case .favorites: "Favoris"
+        case .places: "Lieux favoris"
         case .departures: "Départs"
         case .map: "Autour de vous"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .nextTrip: .teal
+        case .favorites: .yellow
+        case .places: .red
+        case .departures: .blue
+        case .map: .green
         }
     }
 
@@ -27,22 +38,29 @@ enum HomeSection: String, CaseIterable, Identifiable {
         switch self {
         case .nextTrip: "clock"
         case .favorites: "star"
+        case .places: "mappin.and.ellipse"
         case .departures: "list.bullet"
         case .map: "map"
         }
     }
 
-    static let defaultOrder: [HomeSection] = [.nextTrip, .favorites, .departures, .map]
+    static let defaultOrder: [HomeSection] = [.nextTrip, .favorites, .places, .departures, .map]
 
-    /// L'ordre enregistré (`SettingKey.homeSectionsOrder`). Une section inconnue est ignorée,
-    /// une section absente (ajoutée par une version plus récente) rejoint la fin.
+    /// L'ordre enregistré (`SettingKey.homeSectionsOrder`). Une section inconnue est ignorée.
+    /// Une section absente (ajoutée par une version plus récente) se place après celle qui la
+    /// précède dans l'ordre par défaut : les lieux favoris suivent les favoris, plutôt que la carte.
     static func order(from stored: String) -> [HomeSection] {
         var order: [HomeSection] = []
         for section in stored.split(separator: ",").compactMap({ HomeSection(rawValue: String($0)) })
         where !order.contains(section) {
             order.append(section)
         }
-        return order + defaultOrder.filter { !order.contains($0) }
+        for (index, section) in defaultOrder.enumerated() where !order.contains(section) {
+            let previous = defaultOrder[..<index].last(where: order.contains)
+            let position = previous.flatMap(order.firstIndex(of:)).map { $0 + 1 } ?? 0
+            order.insert(section, at: position)
+        }
+        return order
     }
 
     static func stored(_ sections: [HomeSection]) -> String {
@@ -56,7 +74,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
 }
 
 /// Réordonner les sections de l'accueil en les faisant glisser, et masquer celles dont on ne
-/// veut pas.
+/// veut pas. En cartes, comme les paramètres.
 struct HomeLayoutView: View {
     @AppStorage(SettingKey.homeSectionsOrder) private var stored = ""
     @AppStorage(SettingKey.homeHiddenSections) private var storedHidden = ""
@@ -66,35 +84,38 @@ struct HomeLayoutView: View {
     private var hidden: Set<HomeSection> { HomeSection.hidden(from: storedHidden) }
 
     var body: some View {
-        List {
-            Section {
-                ForEach(order) { section in
-                    row(section)
-                }
-                .onMove { source, destination in
-                    var order = self.order
-                    order.move(fromOffsets: source, toOffset: destination)
-                    stored = HomeSection.stored(order)
-                }
-            } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Touchez l'œil pour masquer une section ou l'afficher à nouveau.")
-                    if layout.showsSecondaryPane {
-                        Text("Sur grand écran, les départs restent dans la colonne de droite ; l'ordre s'applique aux autres sections.")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                CardSection(footer: layout.showsSecondaryPane
+                            ? "Maintenez une section puis faites-la glisser pour changer l'ordre. L'œil la masque ou l'affiche à nouveau. Sur grand écran, les départs restent dans la colonne de droite ; l'ordre s'applique aux autres sections."
+                            : "Maintenez une section puis faites-la glisser pour changer l'ordre. L'œil la masque ou l'affiche à nouveau.") {
+                    ReorderableCardRows(items: order) { from, to in
+                        var order = self.order
+                        order.move(fromOffsets: IndexSet(integer: from), toOffset: to)
+                        stored = HomeSection.stored(order)
+                    } row: { section in
+                        row(section)
                     }
                 }
-            }
-            Section {
-                Button("Rétablir l'accueil par défaut") {
-                    withAnimation {
-                        stored = ""
-                        storedHidden = ""
+                CardSection {
+                    Button {
+                        withAnimation {
+                            stored = ""
+                            storedHidden = ""
+                        }
+                    } label: {
+                        SettingsRow("Rétablir l'accueil par défaut", systemImage: "arrow.counterclockwise", color: .gray)
                     }
+                    .buttonStyle(.plain)
+                    .disabled(order == HomeSection.defaultOrder && hidden.isEmpty)
+                    .opacity(order == HomeSection.defaultOrder && hidden.isEmpty ? 0.5 : 1)
                 }
-                .disabled(order == HomeSection.defaultOrder && hidden.isEmpty)
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 30)
         }
-        .environment(\.editMode, .constant(.active))
+        .readableScrollContent()
         .navigationTitle("Organiser l'accueil")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -105,8 +126,10 @@ extension HomeLayoutView {
         let isHidden = hidden.contains(section)
         // La dernière section visible reste : un accueil vide n'aurait plus rien à dire.
         let isLastVisible = !isHidden && order.filter { !hidden.contains($0) }.count == 1
-        return HStack {
-            Label(section.title, systemImage: section.systemImage)
+        return HStack(spacing: 14) {
+            SettingsIcon(systemImage: section.systemImage, color: section.color)
+                .opacity(isHidden ? 0.35 : 1)
+            Text(section.title)
                 .foregroundStyle(isHidden ? .secondary : .primary)
             Spacer()
             Button {
@@ -120,11 +143,14 @@ extension HomeLayoutView {
                     .contentTransition(.symbolEffect(.replace))
                     .foregroundStyle(isHidden ? Color.secondary : Color.accentColor)
                     .frame(width: 44, height: 32)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .disabled(isLastVisible)
+            .opacity(isLastVisible ? 0.4 : 1)
             .accessibilityLabel(Text(isHidden ? "Afficher" : "Masquer") + Text(verbatim: " ") + Text(section.title))
         }
+        .frame(minHeight: 50)
         .sensoryFeedback(.selection, trigger: isHidden)
     }
 }
@@ -133,6 +159,13 @@ extension HomeLayoutView {
     NavigationStack {
         HomeLayoutView()
     }
+}
+
+#Preview("Organiser l'accueil — sections masquées") {
+    NavigationStack {
+        HomeLayoutView()
+    }
+    .previewSettings([SettingKey.homeHiddenSections: HomeSection.stored([.departures, .map])])
 }
 
 /// Le titre d'une section de l'accueil : une seule taille pour toutes.

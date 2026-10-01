@@ -2,7 +2,7 @@
 //  NextTripWidget.swift
 //  tpg Next Widget
 //
-//  Le prochain trajet, régulier ou enregistré : quand partir, la montée, ce qui a changé.
+//  Le prochain trajet, régulier ou enregistré : quand partir, l'itinéraire, ce qui a changé.
 //  L'app laisse les trajets dans le groupe d'app (`UpcomingTripsStorage`) ; le widget se
 //  contente de les afficher, avec un décompte minute par minute avant le départ.
 //
@@ -55,13 +55,16 @@ struct NextTripProvider: TimelineProvider {
         completion(Timeline(entries: Array(entries), policy: .after(refresh)))
     }
 
-    static let sample = UpcomingTrip(id: "sample", title: "Travail", isRegular: true,
-                                     origin: "Genève, Rive", destination: "Genève, gare Cornavin",
-                                     leaving: Date().addingTimeInterval(8 * 60), arrival: Date().addingTimeInterval(25 * 60),
-                                     line: "12", operatorName: "Transports Publics Genevois",
-                                     lineDestination: "Moillesulaz", quay: "B",
-                                     boarding: Date().addingTimeInterval(13 * 60), boardingStop: "Genève, Rive",
-                                     badge: .init(text: "À l'heure", symbol: "checkmark.circle.fill", tone: .good))
+    /// Un trajet avec une correspondance, qui part dans 8 min.
+    static var sample: UpcomingTrip { .sample() }
+
+    /// Le même, en retard : pour les aperçus.
+    static var delayed: UpcomingTrip {
+        var trip = UpcomingTrip.sample(delay: 4)
+        trip.alert = "Retard de 4 min"
+        trip.badge = .init(text: "+4 min", symbol: "clock.badge.exclamationmark.fill", tone: .warning)
+        return trip
+    }
 }
 
 struct NextTripWidget: Widget {
@@ -75,8 +78,8 @@ struct NextTripWidget: Widget {
     }
 }
 
-/// La carte « Prochain trajet » de l'accueil, en widget : même ordre, mêmes textes. Le petit
-/// format la resserre ; le moyen la reprend telle quelle, pour le seul prochain trajet.
+/// Le prochain trajet en widget : quand partir, la frise, le départ et l'arrivée. Le petit
+/// format ne garde que l'arrivée.
 struct NextTripWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: NextTripEntry
@@ -100,101 +103,102 @@ struct NextTripWidgetView: View {
 
     // MARK: Carte
 
-    /// En-tête et pastille d'état, le véhicule (ligne, direction, heure), le quai et « dans
-    /// 8 min », le rappel de marche, le parcours, ce qui a changé.
+    /// Quand partir, l'heure d'arrivée, puis l'itinéraire comme dans les résultats : la frise, et
+    /// dessous le départ et l'arrivée, nommés en entier (la commune au-dessus). Les retards
+    /// suivent les heures. Ce qui a changé n'est affiché que s'il reste de la place.
     private func card(_ trip: UpcomingTrip, compact: Bool) -> some View {
+        ViewThatFits(in: .vertical) {
+            if trip.alert != nil {
+                cardContent(trip, compact: compact, density: .withAlert)
+            }
+            cardContent(trip, compact: compact, density: .regular)
+            cardContent(trip, compact: compact, density: .tight)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // Un widget ne défile pas : une frise trop large devient la suite de ses lignes.
+        .environment(\.tripTimelineScrolls, false)
+    }
+
+    private enum Density {
+        /// Avec ce qui a changé, sous les heures.
+        case withAlert
+        case regular
+        /// Heure de départ sur une seule ligne, rapetissée au besoin.
+        case tight
+    }
+
+    private func cardContent(_ trip: UpcomingTrip, compact: Bool, density: Density) -> some View {
         let countdown = trip.countdown
         let phase = countdown.phase(at: entry.date)
-        // Le petit format ne nomme pas l'arrêt : il n'y tiendrait pas.
-        let walk = countdown.walkReminder(at: entry.date, namingStop: !compact)
-        return VStack(alignment: .leading, spacing: compact ? 3 : 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                title(trip, compact: compact)
-                    .font((compact ? Font.caption2 : .caption).bold())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if let badge = trip.badge {
-                    BadgeView(badge: badge, iconOnly: compact)
-                }
-            }
-            if let line = trip.line, phase != .onTheWay {
-                if compact {
-                    // Trop étroit pour tout sur une ligne : l'heure passe dessous, en gros.
-                    vehicle(line, trip: trip)
-                        .font(.subheadline.bold())
-                    Text(verbatim: trip.boarding.map(dateToString(with:)) ?? "")
-                        .font(.title2.bold().monospacedDigit())
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        vehicle(line, trip: trip)
-                        Spacer(minLength: 4)
-                        if let boarding = trip.boarding {
-                            Text(dateToString(with: boarding))
-                                .monospacedDigit()
-                        }
-                    }
-                    .font(.title3.bold())
-                }
-                HStack(spacing: 6) {
-                    if let quay = trip.quay {
-                        Text("Quai \(quay)")
-                    }
-                    Spacer(minLength: 0)
-                    if let relative = countdown.departureRelative(at: entry.date) {
-                        Text(verbatim: relative)
-                    }
-                }
-                .font(compact ? .caption : .subheadline)
-                .foregroundStyle(.secondary)
-            } else {
-                // À pied, ou déjà dans le véhicule : une phrase suffit.
+        let status = trip.event.map(RegularTripStatus.init(trip:))
+        return VStack(alignment: .leading, spacing: compact ? 3 : 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(verbatim: countdown.headline(at: entry.date))
                     .font((compact ? Font.headline : .title3).bold())
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(compact && density != .tight ? 2 : 1)
+                    .minimumScaleFactor(0.7)
+                // Le retard du véhicule, tant qu'on ne l'a pas pris.
+                if phase != .onTheWay, let status {
+                    DelayText(minutes: status.departureDelay)
+                        .font((compact ? Font.subheadline : .headline).bold())
+                }
+                if !compact {
+                    Spacer(minLength: 4)
+                    departureDetail(trip, phase: phase)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
-            if let walk {
-                Label(walk, systemImage: "figure.walk")
-                    .font((compact ? Font.caption2 : .footnote).weight(phase == .walkToStop ? .semibold : .regular))
-                    .foregroundStyle(phase == .walkToStop ? .primary : .secondary)
-                    .lineLimit(compact || trip.alert == nil ? 2 : 1)
-                    .minimumScaleFactor(0.8)
-            }
-            // Le parcours, si la place le permet : il cède à la marche et à l'alerte.
-            if !compact, walk == nil || trip.alert == nil {
-                Text(verbatim: "\(trip.origin) → \(trip.destination)")
-                    .font(.footnote)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("Arrivée à \(dateToString(with: trip.arrival))")
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let status {
+                    DelayText(minutes: status.arrivalDelay)
+                }
             }
-            if let alert = trip.alert, !(compact && walk != nil) {
+            .font((compact ? Font.caption : .subheadline).monospacedDigit())
+            .lineLimit(1)
+            if density == .withAlert, let alert = trip.alert {
                 Label(alert, systemImage: trip.badge?.tone == .critical ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
                     .font(compact ? .caption2 : .caption)
                     .foregroundStyle(trip.badge?.tone == .critical ? Color.red : .orange)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
+            if let event = trip.event {
+                TripTimeline(event: event)
+                endpoints(trip, compact: compact)
+            } else {
+                // Instantané d'une version plus ancienne de l'app, sans l'itinéraire.
+                Text(verbatim: "\(trip.origin) → \(trip.destination)")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// À côté de l'heure : la marche tant qu'il faut partir, puis le quai.
     @ViewBuilder
-    private func title(_ trip: UpcomingTrip, compact: Bool) -> some View {
-        if trip.isRegular {
-            Label(trip.title, systemImage: "repeat")
-        } else {
-            // « Itinéraire enregistré » ne tient pas à côté de la pastille dans le petit format.
-            Label(compact ? String(localized: "Enregistré") : trip.title, image: "scurvepath.stack.fill")
+    private func departureDetail(_ trip: UpcomingTrip, phase: TripCountdown.Phase) -> some View {
+        if phase == .walkToStop, let minutes = trip.countdown.walkMinutes {
+            Label("\(minutes) min à pied", systemImage: "figure.walk")
+        } else if phase != .onTheWay, let quay = trip.quay {
+            Text("Quai \(quay)")
         }
     }
 
-    private func vehicle(_ line: String, trip: UpcomingTrip) -> some View {
-        HStack(spacing: 6) {
-            BusLineIcon(lineName: line, operatorName: trip.operatorName ?? "")
-            Text(verbatim: "→ \(Self.short(trip.lineDestination ?? trip.destination))")
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+    /// Sous la frise, comme dans les résultats : le départ à gauche, l'arrivée à droite. Le
+    /// petit format ne garde que l'arrivée.
+    private func endpoints(_ trip: UpcomingTrip, compact: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            if !compact {
+                StopNameView(trip.origin, style: .row)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            StopNameView(trip.destination, style: .row, alignment: compact ? .leading : .trailing)
+                .frame(maxWidth: .infinity, alignment: compact ? .leading : .trailing)
         }
     }
 
@@ -273,26 +277,15 @@ struct NextTripWidgetView: View {
     }
 }
 
-/// La pastille d'état de l'accueil. `iconOnly` : le petit format n'a pas la place du texte.
-private struct BadgeView: View {
-    let badge: UpcomingTrip.Badge
-    var iconOnly = false
+/// « +4' » en orange, comme dans le suivi en direct ; rien à moins de 2 min de retard.
+private struct DelayText: View {
+    let minutes: Int
 
     var body: some View {
-        let color = badge.tone.color
-        Group {
-            if iconOnly {
-                Image(systemName: badge.symbol)
-            } else {
-                Label(badge.text, systemImage: badge.symbol)
-            }
+        if minutes >= 2 {
+            Text(verbatim: "+\(minutes)'")
+                .foregroundStyle(.orange)
         }
-        .font(.caption2.bold())
-        .foregroundStyle(color)
-        .padding(.horizontal, iconOnly ? 5 : 7)
-        .padding(.vertical, 3)
-        .background(Capsule().fill(color.opacity(0.15)))
-        .lineLimit(1)
     }
 }
 
@@ -307,6 +300,8 @@ private struct BadgeView: View {
     NextTripWidget()
 } timeline: {
     NextTripEntry(date: .now, trips: [NextTripProvider.sample])
+    // En attendant le véhicule, avec un changement.
+    NextTripEntry(date: .now.addingTimeInterval(10 * 60), trips: [NextTripProvider.delayed])
 }
 
 #Preview("Prochain trajet — écran verrouillé", as: .accessoryRectangular) {

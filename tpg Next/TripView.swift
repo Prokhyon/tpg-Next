@@ -66,7 +66,10 @@ struct TripView: View {
                             ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
                         case.tripResults:
                             ResultsTripView(viewModel: viewModel, tripManager: tripManager, showTime: $showTime, adjustTime: adjustTime, timeChange: timeChange, searchTrips: searchTrips,
-                                            selectedID: selectedTrip?.id, onSelect: layout.showsSecondaryPane ? { trip in withAnimation { selectedTrip = trip } } : nil)
+                                            selectedID: selectedTrip?.id, onSelect: layout.showsSecondaryPane ? { trip in
+                                                // Retoucher l'itinéraire détaillé le désélectionne.
+                                                withAnimation { selectedTrip = selectedTrip?.id == trip.id ? nil : trip }
+                                            } : nil)
                         case.loading:
                             Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
                                 .opacity(0)
@@ -219,9 +222,14 @@ struct TripView: View {
                     if results == .tripResults {
                         HStack {
                             Spacer()
-                            AdjustTimeButton(moveTime: moveTime)
-                                .glassForegroundStyle(.primary)
-                                .tpgSurface(interactive: true)
+                            if #available(iOS 26, *) {
+                                TimeShiftButtons(moveTime: moveTime,
+                                                 earlierTitle: "Itinéraires précédents",
+                                                 laterTitle: "Itinéraires suivants")
+                            } else {
+                                AdjustTimeButton(moveTime: moveTime)
+                                    .tpgSurface(interactive: true)
+                            }
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 10)
@@ -280,10 +288,12 @@ struct TripView: View {
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                             .tpgSurface(interactive: true, glassID: "departure", namespace: animation)
 
+                                        if TripFieldButton.isVisible(field: .departure, focus: focusField, text: viewModel.departure.text, selected: viewModel.selectedField) {
                                         TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).departure.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .departure)
                                             .frame(width: 40, height: 40)
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                             .tpgSurface(interactive: true, glassID: "departureButton", namespace: animation)
+                                        }
                                             }
                                             .padding(.vertical, focusField == .departure ? 10 : 0)
                                             .offset(y: switchAnimate ? 25 : 0)
@@ -295,10 +305,12 @@ struct TripView: View {
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                             .tpgSurface(interactive: true, glassID: "arrival", namespace: animation)
 
+                                        if TripFieldButton.isVisible(field: .arrival, focus: focusField, text: viewModel.arrival.text, selected: viewModel.selectedField) {
                                         TripFieldButton(viewModel: viewModel, searchText: Bindable(viewModel).arrival.text, showCloseStops: $showCloseStops, calculationSuccess: $calculationSuccess, closestStops: $closestStops, results: $results, focusField: $focusField, field: .arrival)
                                             .frame(width: 40, height: 40)
                                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                             .tpgSurface(interactive: true, glassID: "arrivalButton", namespace: animation)
+                                        }
                                             }
                                             .padding(.vertical, focusField == .arrival ? 10 : 0)
                                             .offset(y: switchAnimate ? -25 : 0)

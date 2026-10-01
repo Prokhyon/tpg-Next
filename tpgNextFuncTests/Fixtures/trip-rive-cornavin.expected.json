@@ -63,6 +63,7 @@
         "legBoardStopName" : "Genève, Place des Eaux-Vives",
         "legBoardTimetableTime" : "2026-09-13T15:59:00Z",
         "legDestination" : "Lignon-Tours",
+        "legDestinationRef" : "ch:1:sloid:93173",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -133,6 +134,7 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T15:59:00Z",
         "legDestination" : "Lancy-Bachet-Gare",
+        "legDestinationRef" : "ch:1:sloid:87075",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -203,6 +205,7 @@
         "legBoardStopName" : "Genève, Bel-Air",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Vernier-Village",
+        "legDestinationRef" : "ch:1:sloid:93177",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -266,6 +269,7 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T15:56:00Z",
         "legDestination" : "Versoix-La Scie",
+        "legDestinationRef" : "ch:1:sloid:93186",
         "legDuration" : "",
         "legIntermediates" : [
 
@@ -331,6 +335,7 @@
         "legBoardStopName" : "Genève, Métropole",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Palexpo",
+        "legDestinationRef" : "ch:1:sloid:92950",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -424,6 +429,7 @@
         "legBoardStopName" : "Genève, Place des Eaux-Vives",
         "legBoardTimetableTime" : "2026-09-13T16:06:00Z",
         "legDestination" : "Vernier-Village",
+        "legDestinationRef" : "ch:1:sloid:93177",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -494,6 +500,7 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Genève-Aéroport-Terminal",
+        "legDestinationRef" : "ch:1:sloid:92775",
         "legDuration" : "",
         "legIntermediates" : [
           {

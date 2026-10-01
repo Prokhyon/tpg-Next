@@ -23,6 +23,10 @@ enum RegularTripAlerts {
     static let occurrenceKey = "regularTripOccurrence"
     /// Au-delà, iOS ignore les notifications en attente (64 pour toute l'app, rappels de départ compris).
     private static let maximumReminders = 30
+    /// iOS ne garde que les 64 notifications en attente les plus proches, pour toute l'app.
+    /// Les rappels des trajets réguliers, reposés à chaque réveil, cèdent la place aux autres
+    /// (rappels d'un départ, alertes d'un trajet suivi) : quelques-unes restent de marge.
+    private static let pendingLimit = 60
     /// Pas d'alerte plus tôt : le temps réel n'est pas encore fiable.
     private static let alertWindow: TimeInterval = 90 * 60
     /// Ce qui a déjà été signalé, par trajet du jour : on ne répète pas la même alerte.
@@ -81,7 +85,9 @@ enum RegularTripAlerts {
         center.getPendingNotificationRequests { pending in
             let stale = pending.map(\.identifier).filter { $0.hasPrefix(reminderPrefix) }
             center.removePendingNotificationRequests(withIdentifiers: stale)
-            for request in requests {
+            // Les plus proches d'abord : `requests` suit l'ordre des départs.
+            let room = max(0, pendingLimit - (pending.count - stale.count))
+            for request in requests.prefix(room) {
                 center.add(request) { error in
                     if let error {
                         Log.notifications.error("Rappel de trajet régulier non prévu : \(error.localizedDescription)")

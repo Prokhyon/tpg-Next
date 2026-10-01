@@ -50,10 +50,10 @@ struct LineFilterChips: View {
             label()
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
+                // Comme les lignes de la capsule du filtre des départs : une pastille teintée.
                 .background(
                     Capsule()
-                        .fill(isOn ? Color.accent.opacity(0.15) : Color.primary.opacity(0.04))
-                        .strokeBorder(isOn ? Color.accent : .clear, lineWidth: 1.5)
+                        .fill(isOn ? Color.accent.opacity(0.35) : Color.primary.opacity(0.04))
                 )
         }
         .foregroundStyle(.primary)

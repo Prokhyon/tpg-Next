@@ -63,6 +63,7 @@
         "legBoardStopName" : "Genève, Cirque",
         "legBoardTimetableTime" : "2026-09-13T16:00:00Z",
         "legDestination" : "Vernier-Village",
+        "legDestinationRef" : "ch:1:sloid:93177",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -169,6 +170,7 @@
         "legBoardStopName" : "Genève, Plainpalais",
         "legBoardTimetableTime" : "2026-09-13T15:58:00Z",
         "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -275,6 +277,7 @@
         "legBoardStopName" : "Genève, Plainpalais",
         "legBoardTimetableTime" : "2026-09-13T16:02:00Z",
         "legDestination" : "CERN",
+        "legDestinationRef" : "ch:1:sloid:87918",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -381,6 +384,7 @@
         "legBoardStopName" : "Genève, Cirque",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Jardin Botanique",
+        "legDestinationRef" : "ch:1:sloid:92843",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -480,6 +484,7 @@
         "legBoardStopName" : "Genève, Plainpalais",
         "legBoardTimetableTime" : "2026-09-13T16:06:00Z",
         "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
         "legDuration" : "",
         "legIntermediates" : [
           {

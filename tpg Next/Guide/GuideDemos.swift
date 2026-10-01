@@ -22,7 +22,7 @@ enum GuideDemo: CaseIterable {
         case .departureTime: "Touchez le sablier"
         case .reminder: "Appuyez longuement sur le départ"
         case .sortAndFilter: "Touchez le bouton de tri, puis le filtre"
-        case .earlierLater: "Touchez les flèches en bas à droite, puis l'horloge"
+        case .earlierLater: "Touchez les flèches en bas à droite, puis l'horloge entre elles"
         case .tripActions: "Touchez le bouton d'itinéraire"
         case .liveTracking: "Répondez à la question"
         }
@@ -366,7 +366,9 @@ private struct StopPageDemo: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                         .contentTransition(.numericText())
-                    // Le bouton de la barre du haut de la page d'un arrêt.
+                }
+                // Avant iOS 26, l'horloge est dans la barre du haut de la page d'un arrêt.
+                if goal == .earlierLater && !TPGSurface.isGlass {
                     Button {
                         pickedTime = Date.now.addingTimeInterval(TimeInterval(start * 60))
                         showsTimeSheet = true
@@ -404,22 +406,11 @@ private struct StopPageDemo: View {
             .frame(height: 300)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(alignment: .bottom) {
-                StopFloatingControls(isGroupedByLine: byLine,
-                                     toggleGrouping: {
-                                         withAnimation(.snappy) { byLine.toggle() }
-                                         sorted = true
-                                         update()
-                                     },
-                                     showsFilters: $showsFilters, isFiltered: $isFiltered,
-                                     moveTime: { earlier in
-                                         withAnimation(.snappy) { start += earlier ? -10 : 10 }
-                                         if earlier { wentEarlier = true } else { wentLater = true }
-                                         update()
-                                     })
-                    .padding(-10)
+                controls(groups: groups)
             }
         }
-        .sheet(isPresented: $showsTimeSheet) {
+        // Depuis iOS 26, la capsule de l'heure, comme sur la page d'un arrêt.
+        .sheet(isPresented: TPGSurface.isGlass ? .constant(false) : $showsTimeSheet) {
             DepartureTimeSheet(time: $pickedTime) {
                 withAnimation(.snappy) { start = Int((pickedTime.timeIntervalSinceNow / 60).rounded()) }
                 showsTimeSheet = false
@@ -427,7 +418,8 @@ private struct StopPageDemo: View {
                 update()
             }
         }
-        .sheet(isPresented: $showsFilters) {
+        // Depuis iOS 26, la capsule du filtre, comme sur la page d'un arrêt.
+        .sheet(isPresented: TPGSurface.isGlass ? .constant(false) : $showsFilters) {
             LineFilterSheet(groups: groups, selection: $selection, isFiltered: $isFiltered) {
                 showsFilters = false
             }
@@ -438,6 +430,73 @@ private struct StopPageDemo: View {
             isFiltered = !selection.isEmpty
             if !selection.isEmpty { filtered = true }
             update()
+        }
+    }
+
+    /// Les boutons du bas de la page d'un arrêt, tels quels : depuis iOS 26, la barre de verre et
+    /// la capsule du filtre ; avant, les boutons flottants.
+    @ViewBuilder private func controls(groups: [String: [StopEvent]]) -> some View {
+        let toggleGrouping = {
+            withAnimation(.snappy) { byLine.toggle() }
+            sorted = true
+            update()
+        }
+        let moveTime: (Bool) -> Void = { earlier in
+            withAnimation(.snappy) { start += earlier ? -10 : 10 }
+            if earlier { wentEarlier = true } else { wentLater = true }
+            update()
+        }
+        if #available(iOS 26, *) {
+            GlassEffectContainer(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
+                    if showsFilters {
+                        LineFilterBar(groups: groups, selection: $selection) {
+                            withAnimation(.snappy) { showsFilters = false }
+                        }
+                        .padding(.horizontal, 8)
+                    }
+                    if showsTimeSheet {
+                        DepartureTimeBar(time: Date.now.addingTimeInterval(TimeInterval(start * 60))) { date in
+                            withAnimation(.snappy) {
+                                start = Int((date.timeIntervalSinceNow / 60).rounded())
+                                showsTimeSheet = false
+                            }
+                            usedClock = true
+                            update()
+                        } returnToNow: {
+                            withAnimation(.snappy) {
+                                start = 0
+                                showsTimeSheet = false
+                            }
+                            usedClock = true
+                            update()
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    StopBottomBar(isGroupedByLine: Binding(get: { byLine }, set: { _ in toggleGrouping() }),
+                                  isFiltered: isFiltered, isFilterOpen: showsFilters,
+                                  showFilters: {
+                                      withAnimation(.snappy) {
+                                          showsTimeSheet = false
+                                          showsFilters.toggle()
+                                      }
+                                  },
+                                  moveTime: moveTime,
+                                  isShifted: start != 0, isTimeOpen: showsTimeSheet,
+                                  chooseTime: {
+                                      withAnimation(.snappy) {
+                                          showsFilters = false
+                                          showsTimeSheet.toggle()
+                                      }
+                                  })
+                    .padding(.horizontal, -8)
+                }
+            }
+        } else {
+            StopFloatingControls(isGroupedByLine: byLine, toggleGrouping: toggleGrouping,
+                                 showsFilters: $showsFilters, isFiltered: $isFiltered, moveTime: moveTime)
+                .padding(-10)
         }
     }
 
@@ -464,11 +523,11 @@ private struct StopPageDemo: View {
             if arrows && usedClock {
                 report.complete()
             } else if arrows {
-                report.advance("Bien ! Pour une heure précise, touchez maintenant l'horloge en haut.")
+                report.advance("Bien ! Pour une heure précise, touchez maintenant l'horloge entre les flèches.")
             } else if wentEarlier || wentLater {
                 report.advance("Bien ! Essayez maintenant l'autre flèche.")
             } else if usedClock {
-                report.advance("Bien ! Essayez aussi les flèches en bas à droite.")
+                report.advance("Bien ! Essayez aussi les flèches, de part et d'autre de l'horloge.")
             }
         }
     }

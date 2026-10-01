@@ -48,11 +48,13 @@ struct TripLiveActivity: Widget {
                 TripActivityMarker(step: step, compact: true)
                     .padding(.horizontal, 3)
             } compactTrailing: {
-                // Le compte à rebours du système, en minutes et secondes : « 4 minutes » en
-                // toutes lettres ne tient pas à côté de la caméra.
-                TripActivityTimer(target: step.target)
+                // Les minutes, comme sur l'écran verrouillé : les secondes promettraient une
+                // précision que les heures estimées n'ont pas. Le système n'a pas de forme
+                // courte (« 4' ») : « 12 minutes » se réduit un peu pour tenir.
+                TripActivityMinutes(target: step.target)
                     .font(.caption2.bold())
-                    .frame(maxWidth: 52)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: 64)
                     .padding(.trailing, 4)
             } minimal: {
                 TripActivityMarker(step: step, compact: true)
@@ -202,12 +204,15 @@ struct TripActivityStep {
     let nextLeg: TripActivityState.Leg?
     /// Vrai quand le voyageur marche vers l'arrêt, plutôt que d'y attendre.
     let isWalking: Bool
+    /// Vrai quand le véhicule attendu arrive à l'arrêt (une minute avant la montée).
+    let isVehicleApproaching: Bool
     /// La question posée au voyageur, s'il y en a une.
     let question: TripActivityState.Question?
 
     init(attributes: TripActivityAttributes, state: TripActivityState, now: Date) {
         phase = state.phase(at: now)
         isWalking = state.isWalking(at: now)
+        isVehicleApproaching = state.isVehicleApproaching(at: now)
         question = state.question
         target = state.target(of: phase)
         next = state.nextStep(after: phase)
@@ -473,8 +478,13 @@ struct TripActivityMarker: View {
                 TripActivityLineBadge(line: leg.line, color: step.color, compact: compact)
             }
         case .waiting:
-            // Pas encore dedans : ce qu'il y a à faire d'ici là, marcher ou attendre.
-            symbol(step.isWalking ? "figure.walk" : "clock")
+            // Pas encore dedans : ce qu'il y a à faire d'ici là, marcher ou attendre ; puis le
+            // véhicule, quand il arrive.
+            if step.isVehicleApproaching {
+                symbol(nil)
+            } else {
+                symbol(step.isWalking ? "figure.walk" : "clock")
+            }
         case .arrived:
             symbol(nil)
         }
@@ -577,24 +587,10 @@ struct TripActivityNextMarker: View {
 
 /// Les minutes restantes, qui défilent sans mise à jour de l'app.
 ///
-/// Les formats système n'ont pas de forme courte : « 4 minutes », pas « 4' ». Un format maison
-/// ne serait pas évalué par l'écran verrouillé, qui redessine le texte sans l'extension.
-/// Arrondi à la minute la plus proche (l'ancre est décalée de 30 s).
-/// Le décompte court de la Dynamic Island : « 4:32 », qui défile tout seul. Les formats en
-/// toutes lettres du système (« 4 minutes ») ne tiennent pas à côté de la caméra.
-struct TripActivityTimer: View {
-    let target: Date?
-
-    var body: some View {
-        if let target, target > .now {
-            Text(timerInterval: Date.now...target, countsDown: true, showsHours: false)
-                .monospacedDigit()
-                .lineLimit(1)
-                .multilineTextAlignment(.trailing)
-        }
-    }
-}
-
+/// Les formats système n'ont pas de forme courte : « 4 minutes », pas « 4' » (le minuteur réglé
+/// à la minute aussi). Un format maison ne serait pas évalué par l'écran verrouillé, qui
+/// redessine le texte sans l'extension. Arrondi à la minute la plus proche (l'ancre est
+/// décalée de 30 s).
 struct TripActivityMinutes: View {
     let target: Date?
 

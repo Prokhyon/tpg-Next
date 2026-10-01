@@ -41,24 +41,15 @@ struct FavoriteView: View {
     var body: some View {
         VStack {
             VStack {
-                if favoritesViewModel.favoriteStops.isEmpty {
-                    Button(action: {
-                        withAnimation {
-                            navigationModel.selectedTab = .search
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "star").font(.largeTitle)
-                            Text("Ajoutez un arrêt aux favoris en cliquant sur l'étoile depuis la recherche ou le menu d'une page arrêt").multilineTextAlignment(.leading)
-                        }
-                        .padding()
-                        .foregroundColor(Color.primary)
-                        .background {
-                            BasicCard(cornerRadius: 35)
+                LazyVGrid(columns: columns, spacing: 8) {
+                    // Sans favori : une case en pointillés, de la taille des autres, ouvre Explorer.
+                    if favoritesViewModel.favoriteStops.isEmpty {
+                        AddFavoriteButton("Ajouter un arrêt") {
+                            withAnimation {
+                                navigationModel.selectedTab = .search
+                            }
                         }
                     }
-                }
-                LazyVGrid(columns: columns, spacing: 8) {
                     if favoritesViewModel.favoriteStops.count > maxRows * columns.count {
                         let favorites = isExpanded ? favoritesViewModel.favoriteStops : Array(favoritesViewModel.favoriteStops.prefix(max(0, maxRows * columns.count - (isExpanded ? 0 : 1))))
                         ForEach(favorites, id: \.self) { stop in

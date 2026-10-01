@@ -19,6 +19,9 @@ public enum SettingKey {
     /// Retard intégré à l'heure (12:34) plutôt qu'affiché à côté (12:31 (+3')).
     public static let delayIncludedInTime = "DelayTimeIntegrated"
     public static let showWelcome = "ShowWelcome"
+    /// Favoris, lieux et trajets partagés entre les appareils via iCloud. Propre à chaque
+    /// appareil, activé par défaut ; le choix est proposé dans le message de bienvenue.
+    public static let iCloudSync = "ICloudSync"
     public static let notificationAsked = "NotificationAsked"
     /// Alertes de retard et activités en direct des trajets réguliers sur cet appareil. Propre à
     /// chaque appareil : les trajets sont partagés par iCloud, pas ce réglage.

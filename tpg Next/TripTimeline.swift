@@ -2,7 +2,9 @@
 //  TripTimeline.swift
 //  tpg Next
 //
-//  La frise d'un itinéraire, partagée par les résultats et les itinéraires enregistrés.
+//  La frise d'un itinéraire, partagée par les résultats, les itinéraires enregistrés, le
+//  prochain trajet de l'accueil et son widget. Compilé aussi pour le widget : ses aperçus, qui
+//  utilisent `PreviewData`, sont dans `TripTimelinePreviews.swift`.
 //
 
 import SwiftUI
@@ -23,10 +25,17 @@ struct TripTimeline: View {
     }
 }
 
+extension EnvironmentValues {
+    /// Faux dans un widget, qui ne défile pas : une frise trop large y devient la suite de ses
+    /// lignes (« 12 › 15 »).
+    @Entry var tripTimelineScrolls = true
+}
+
 /// Une vue à part pour que sa hauteur suive le plafond posé par `TripTimeline` : un
 /// `@ScaledMetric` lit la taille de texte de la vue qui le déclare.
 private struct CappedTripTimeline: View {
     let event: TripEvent
+    @Environment(\.tripTimelineScrolls) private var scrolls
     /// Hauteur de la frise : 30 à la taille normale, plus avec un texte agrandi.
     @ScaledMetric private var height: CGFloat = 30
     /// Diamètre des arrêts de départ et d'arrivée : la piste passe dessous et semble en sortir.
@@ -38,33 +47,59 @@ private struct CappedTripTimeline: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             content
-            ScrollView(.horizontal, showsIndicators: false) {
-                content
-                    .padding(.horizontal, fadeLength)
+            if scrolls {
+                scrolling
+            } else {
+                // Un widget ne défile pas : les lignes seules, à la suite.
+                lineSequence
             }
-            // Le contour des badges dépasse de la frise : rogné par le ScrollView, le haut et
-            // le bas des badges disparaissaient. Seuls les fondus limitent la vue, et
-            // uniquement sur les côtés.
-            .scrollClipDisabled()
-            .mask {
-                Rectangle()
-                    .overlay(alignment: .leading) {
-                        ScrollMask(leading: true, vertical: false, gradientLength: fadeLength)
-                    }
-                    .padding(.vertical, -8)
-            }
-            .mask {
-                Rectangle()
-                    .overlay(alignment: .trailing) {
-                        ScrollMask(leading: false, vertical: false, gradientLength: fadeLength)
-                    }
-                    .padding(.vertical, -8)
-            }
-            // Les fondus débordent dans la marge autour de la frise : défilée jusqu'à un bout,
-            // la frise a son arrêt aligné sur celui des frises qui ne défilent pas.
-            .padding(.horizontal, -fadeLength)
         }
         .frame(height: height)
+    }
+
+    /// Trop large : la frise défile, entre deux fondus.
+    private var scrolling: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            content
+                .padding(.horizontal, fadeLength)
+        }
+        // Le contour des badges dépasse de la frise : rogné par le ScrollView, le haut et
+        // le bas des badges disparaissaient. Seuls les fondus limitent la vue, et
+        // uniquement sur les côtés.
+        .scrollClipDisabled()
+        .mask {
+            Rectangle()
+                .overlay(alignment: .leading) {
+                    ScrollMask(leading: true, vertical: false, gradientLength: fadeLength)
+                }
+                .padding(.vertical, -8)
+        }
+        .mask {
+            Rectangle()
+                .overlay(alignment: .trailing) {
+                    ScrollMask(leading: false, vertical: false, gradientLength: fadeLength)
+                }
+                .padding(.vertical, -8)
+        }
+        // Les fondus débordent dans la marge autour de la frise : défilée jusqu'à un bout,
+        // la frise a son arrêt aligné sur celui des frises qui ne défilent pas.
+        .padding(.horizontal, -fadeLength)
+    }
+
+    /// Faute de place, et sans défilement : « 12 › 15 », de gauche à droite.
+    private var lineSequence: some View {
+        let lines = event.vehicleLegs
+        return HStack(spacing: 4) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { index, leg in
+                if index > 0 {
+                    Image(systemName: "chevron.forward")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.secondary)
+                }
+                BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var content: some View {
@@ -302,32 +337,4 @@ private struct TimelineScale {
         }
         return x((range.lowerBound + range.upperBound) / 2)
     }
-}
-
-#Preview("Frise des itinéraires") {
-    @Previewable @State var width = 340.0
-    VStack(spacing: 18) {
-        ForEach(PreviewData.trips) { trip in
-            TripTimeline(event: trip)
-                .frame(width: width)
-        }
-        Slider(value: $width, in: 120...600) {
-            Text(verbatim: "Largeur")
-        }
-        Text(verbatim: "Largeur : \(Int(width)) pt")
-            .font(.caption)
-    }
-    .padding()
-    .previewEnvironment(navigation: false)
-}
-
-#Preview("Frise — texte très grand") {
-    VStack(spacing: 18) {
-        ForEach(PreviewData.trips) { trip in
-            TripTimeline(event: trip)
-        }
-    }
-    .padding()
-    .dynamicTypeSize(.accessibility3)
-    .previewEnvironment(navigation: false)
 }

@@ -40,6 +40,16 @@ struct TripActivityTests {
         let state = try state()
         #expect(state.nextTransition(after: try at("15:00:00")) == (try at("15:10:42")))
         #expect(state.nextTransition(after: try at("15:40:00")) == nil)
+        // En correspondance, l'approche du 12 une minute avant sa montée.
+        #expect(state.nextTransition(after: try at("15:11:00")) == (try at("15:19:42")))
+    }
+
+    @Test func vehicleApproachesAMinuteBefore() throws {
+        let state = try state()
+        #expect(!state.isVehicleApproaching(at: try at("15:19:00")))
+        #expect(state.isVehicleApproaching(at: try at("15:20:00")))
+        // À bord, plus rien n'approche.
+        #expect(!state.isVehicleApproaching(at: try at("15:25:00")))
     }
 
     @Test func delayIsRead() throws {

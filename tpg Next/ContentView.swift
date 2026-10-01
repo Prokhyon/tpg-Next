@@ -104,6 +104,8 @@ private struct TabStack<Root: View>: View {
             root.appRouteDestinations()
         }
         .environment(\.openRoute, OpenRouteAction { navigationModel.open($0, in: tab) })
+        // Toutes les pages qui défilent, et leurs feuilles : le dégradé doux sous la barre.
+        .softTopScrollEdge()
         .id(navigationModel.stackID(tab))
         .toolbar(TPGSurface.isGlass ? .automatic : .hidden, for: .tabBar)
     }
@@ -269,6 +271,8 @@ struct ContentView: View {
                         autoRefresh = false
                     } else {
                         autoRefresh = true
+                        // Le choix d'iCloud est fait : la synchro peut commencer (ou non).
+                        CloudSync.settingChanged()
                     }
                 }
                 // Un nouvel utilisateur passe par la bienvenue : l'annonce en cours
@@ -432,6 +436,7 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
+    ///   tpgnext://homelayout   tpgnext://places
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -441,6 +446,10 @@ struct ContentView: View {
                 navigationModel.selectedTab = [Tabs.home, .trip, .trips, .search].first { "\($0)" == name } ?? .home
             case "settings":
                 navigationModel.open(.settings, in: navigationModel.selectedTab)
+            case "homelayout":
+                navigationModel.open(.homeLayout, in: navigationModel.selectedTab)
+            case "places":
+                navigationModel.open(.favoritePlacesOrder, in: navigationModel.selectedTab)
             case "map":
                 navigationModel.selectedTab = .home
                 navigationModel.showsFullMap = true

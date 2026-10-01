@@ -192,11 +192,15 @@ public struct UpcomingTrip: Codable, Hashable, Identifiable {
     public var badge: Badge?
     /// Ouvre la liste des trajets de l'app.
     public var url: URL?
+    /// L'itinéraire lui-même, pour sa frise ; sans les arrêts intermédiaires, que le widget
+    /// n'affiche pas. `nil` dans un instantané laissé par une version plus ancienne de l'app.
+    public var event: TripEvent?
 
     public init(id: String, title: String, isRegular: Bool, origin: String, destination: String,
                 leaving: Date, arrival: Date, line: String? = nil, operatorName: String? = nil,
                 lineDestination: String? = nil, quay: String? = nil, boarding: Date? = nil,
-                boardingStop: String? = nil, alert: String? = nil, badge: Badge? = nil, url: URL? = nil) {
+                boardingStop: String? = nil, alert: String? = nil, badge: Badge? = nil, url: URL? = nil,
+                event: TripEvent? = nil) {
         self.id = id
         self.title = title
         self.isRegular = isRegular
@@ -213,6 +217,7 @@ public struct UpcomingTrip: Codable, Hashable, Identifiable {
         self.alert = alert
         self.badge = badge
         self.url = url
+        self.event = event
     }
 
     public init?(trip: TripEvent, id: String, title: String, isRegular: Bool, alert: String?, badge: Badge?, url: URL?) {
@@ -223,11 +228,67 @@ public struct UpcomingTrip: Codable, Hashable, Identifiable {
                   leaving: leaving, arrival: arrival, line: board?.publishedLineName,
                   operatorName: board?.legOperator, lineDestination: board?.legDestination,
                   quay: board.flatMap { $0.legBoardQuay.isEmpty ? nil : $0.legBoardQuay },
-                  boarding: board?.boardDate, boardingStop: board?.legBoardStopName, alert: alert, badge: badge, url: url)
+                  boarding: board?.boardDate, boardingStop: board?.legBoardStopName, alert: alert, badge: badge, url: url,
+                  event: trip.withoutIntermediates)
     }
 
     public var countdown: TripCountdown {
         TripCountdown(leaving: leaving, boarding: boarding, arrival: arrival, boardingStop: boardingStop)
+    }
+}
+
+extension UpcomingTrip {
+    /// Un exemple, pour la galerie des widgets et les aperçus : 5 min à pied jusqu'à Rive, le 12
+    /// jusqu'à Bel-Air, puis le 15 jusqu'à Cornavin. `delay` : les deux véhicules en retard
+    /// d'autant de minutes.
+    public static func sample(at now: Date = Date(), delay: Double = 0) -> UpcomingTrip {
+        func time(_ minutes: Double) -> String { OJPDate.string(from: now.addingTimeInterval(minutes * 60)) }
+        func late(_ minutes: Double) -> String { time(minutes + delay) }
+        func walk(_ id: String, from start: Double, to end: Double, walking: Int) -> TripLeg {
+            TripLeg(id: id, transfer: true, legBoardStopName: "", legBoardStopId: "", legBoardQuay: "",
+                    legBoardTimetableTime: time(start), legBoardEstimatedTime: time(start), legBoardLongitude: "", legBoardLatitude: "",
+                    legAlightStopName: "", legAlightStopId: "", legAlightQuay: "",
+                    legAlightTimetableTime: time(end), legAlightEstimatedTime: time(end), legAlightLongitude: "", legAlightLatitude: "",
+                    legIntermediates: [], legDestination: "", journeyRef: "", publishedLineName: "",
+                    legDuration: "PT\(Int(end - start))M", transferDuration: "PT\(Int(end - start))M",
+                    transferWalkDuration: "PT\(walking)M", transferBuffer: "", transportTypeName: "walk", legOperator: "")
+        }
+        func ride(_ line: String, from board: String, _ start: Double, to alight: String, _ end: Double,
+                  destination: String, quay: String) -> TripLeg {
+            TripLeg(id: line, legBoardStopName: board, legBoardStopId: "", legBoardQuay: quay,
+                    legBoardTimetableTime: time(start), legBoardEstimatedTime: late(start), legBoardLongitude: "", legBoardLatitude: "",
+                    legAlightStopName: alight, legAlightStopId: "", legAlightQuay: "",
+                    legAlightTimetableTime: time(end), legAlightEstimatedTime: late(end), legAlightLongitude: "", legAlightLatitude: "",
+                    legIntermediates: [], legDestination: destination, journeyRef: "", publishedLineName: line,
+                    legDuration: "PT\(Int(end - start))M", transferDuration: "", transferWalkDuration: "", transferBuffer: "",
+                    transportTypeName: "Tram", legOperator: "Transports Publics Genevois")
+        }
+        let event = TripEvent(id: "sample", duration: "PT30M", startTime: late(8), endTime: late(38),
+                              startCoordinates: Coordinates(lon: 0, lat: 0), endCoordinates: Coordinates(lon: 0, lat: 0),
+                              startName: "Genève, Florissant", endName: "Genève, gare Cornavin",
+                              geoDeparture: false, geoArrival: false, transfers: "1", legs: [
+                                walk("walk-1", from: 8, to: 13, walking: 5),
+                                ride("12", from: "Genève, Rive", 13, to: "Genève, Bel-Air", 20,
+                                     destination: "Thônex, Moillesulaz", quay: "B"),
+                                walk("walk-2", from: 20, to: 25, walking: 2),
+                                ride("15", from: "Genève, Bel-Air", 25, to: "Genève, gare Cornavin", 38,
+                                     destination: "Genève, Nations", quay: "C"),
+                              ])
+        return UpcomingTrip(trip: event, id: "sample", title: "Travail", isRegular: true, alert: nil,
+                            badge: .init(text: "À l'heure", symbol: "checkmark.circle.fill", tone: .good), url: nil)!
+    }
+}
+
+extension TripEvent {
+    /// Sans les arrêts intermédiaires : l'instantané du widget reste léger.
+    var withoutIntermediates: TripEvent {
+        var trip = self
+        trip.legs = legs.map { leg in
+            var leg = leg
+            leg.legIntermediates = []
+            return leg
+        }
+        return trip
     }
 }
 

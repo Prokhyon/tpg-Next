@@ -153,6 +153,10 @@ struct TrackJourneyView: View {
                 error: true)
             return
         }
+        guard liveActivities.hasLocation else {
+            liveActivities.askForLocation()
+            return
+        }
         liveActivities.start(journey: event, events: manager.lineEvents, operatorName: manager.operatorName,
                              board: board, alight: alight)
         let started = liveActivities.isTracking(TripLiveActivities.key(forJourney: event, boardSloid: board.sloid))

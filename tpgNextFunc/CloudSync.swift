@@ -7,6 +7,27 @@
 
 import Foundation
 
+/// Le réglage de la synchro iCloud, propre à l'appareil.
+public enum CloudSync {
+    /// Prévient les collections que le réglage a changé, ou que la bienvenue est passée.
+    static let settingDidChange = Notification.Name("tpgNext.cloudSyncSettingDidChange")
+
+    /// Rien ne part vers iCloud, et rien n'en vient, tant que le message de bienvenue n'est pas
+    /// passé : c'est là que l'utilisateur choisit. Ensuite, selon le réglage (activé par défaut).
+    public static var isEnabled: Bool {
+        let defaults = UserDefaults.standard
+        let welcomePending = defaults.object(forKey: SettingKey.showWelcome) as? Bool ?? true
+        let wanted = defaults.object(forKey: SettingKey.iCloudSync) as? Bool ?? true
+        return wanted && !welcomePending
+    }
+
+    /// À appeler quand le réglage change, et à la fin de la bienvenue : activée, la synchro
+    /// fusionne aussitôt ce qui a changé ici et ailleurs entre-temps.
+    public static func settingChanged() {
+        NotificationCenter.default.post(name: settingDidChange, object: nil)
+    }
+}
+
 /// L'état d'une collection tel que partagé par iCloud, et gardé en miroir sur l'appareil.
 ///
 /// On ne synchronise pas un tableau entier : le dernier appareil à écrire effacerait les
@@ -114,6 +135,7 @@ public final class CloudCollection<Item: Codable> {
     private var local: [Item] = []
     private var apply: (([Item]) -> Void)?
     private var observer: NSObjectProtocol?
+    private var settingObserver: NSObjectProtocol?
 
     private var cloud: NSUbiquitousKeyValueStore { .default }
 
@@ -155,6 +177,11 @@ public final class CloudCollection<Item: Codable> {
         ) { [weak self] notification in
             self?.cloudDidChange(notification)
         }
+        settingObserver = NotificationCenter.default.addObserver(
+            forName: CloudSync.settingDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.sync()
+        }
         cloud.synchronize()
         sync()
     }
@@ -185,6 +212,12 @@ public final class CloudCollection<Item: Codable> {
 
     /// Fusionne avec iCloud, y écrit le résultat s'il diffère, et le rend au modèle s'il a changé.
     private func sync() {
+        // Synchro coupée : les changements gardent leur date dans le miroir, pour fusionner
+        // correctement si elle est rallumée.
+        guard CloudSync.isEnabled else {
+            mirror.save(snapshot)
+            return
+        }
         let remoteData = cloud.data(forKey: key)
         var merged = snapshot
         if let remoteData {

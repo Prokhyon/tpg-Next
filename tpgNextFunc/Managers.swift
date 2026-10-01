@@ -53,7 +53,8 @@ public final class StopManager {
                     }
                     return
                 }
-                self.stopEvents = events
+                // Le nom officiel de chaque destination (voir `StopNames`).
+                self.stopEvents = events.map(StopNames.withOfficialDestination)
                 self.quays = quays
                 Log.network.debug("\(events.count) départs reçus")
                 completion()

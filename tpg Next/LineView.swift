@@ -120,16 +120,33 @@ struct LineView: View {
                             // Sur iPhone : le départ ne passe pas à l'arrêt d'où la course a été
                             // ouverte. Sur grand écran, la moitié droite le dit déjà.
                             .safeAreaInset(edge: .bottom) {
-                                if !layout.showsSecondaryPane, stopEvent.cancelled, let currentStop,
-                                   let alternative = nearestServedStop(skipping: currentStop.sloid, in: lineEvents, now: now) {
-                                    ServedAlternativeCard(alternative: alternative, transportType: stopEvent.transportType) {
-                                        openRoute(.stop(name: alternative.stop.stopPointName, sloid: alternative.stop.sloid,
-                                                        highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: alternative.stop.timetabledTime)))
+                                VStack(alignment: .trailing, spacing: 8) {
+                                    if !layout.showsSecondaryPane, stopEvent.cancelled, let currentStop,
+                                       let alternative = nearestServedStop(skipping: currentStop.sloid, in: lineEvents, now: now) {
+                                        ServedAlternativeCard(alternative: alternative, transportType: stopEvent.transportType) {
+                                            openRoute(.stop(name: alternative.stop.stopPointName, sloid: alternative.stop.sloid,
+                                                            highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: alternative.stop.timetabledTime)))
+                                        }
+                                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                                     }
-                                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-                                    .padding(.horizontal)
-                                    .padding(.bottom, 8)
+                                    // En bas à droite, sous le pouce, comme sur la page d'un itinéraire.
+                                    // Course déjà suivie : le même bouton l'arrête.
+                                    let trackedKey = TripLiveActivities.shared.trackedKey(forJourney: stopEvent.journeyRef)
+                                    if trackedKey != nil || (TripLiveActivities.shared.areEnabled && !stopEvent.journeyRef.isEmpty) {
+                                        HStack {
+                                            Spacer()
+                                            LiveTrackingButton(isTracking: trackedKey != nil) {
+                                                if let trackedKey {
+                                                    TripLiveActivities.shared.stop(trackedKey)
+                                                } else {
+                                                    openRoute(.trackJourney(event: stopEvent, stopSloid: currentStop?.sloid ?? stopEvent.stopId))
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
+                                .padding(.horizontal)
+                                .padding(.bottom, 8)
                             }
                         }
                     }
@@ -175,16 +192,8 @@ struct LineView: View {
 //                    .padding(.horizontal, 5)
 //                    .padding(.vertical, 2)
 //            }
-            TrailingBarButtons {
-                ShowTimeButton(showTime: $showTime)
-
-                if TripLiveActivities.shared.areEnabled, !stopEvent.journeyRef.isEmpty {
-                    Button {
-                        openRoute(.trackJourney(event: stopEvent, stopSloid: currentStop?.sloid ?? stopEvent.stopId))
-                    } label: {
-                        Label("Suivre en direct", systemImage: "inset.filled.circle")
-                    }
-                }
+            // Le suivi en direct est en bas à droite de la liste (`LiveTrackingButton`).
+            TrailingBarButtons(showTime: $showTime) {
                 // Sur grand écran, la carte est déjà là : son plein écran est sur elle.
                 if !layout.showsSecondaryPane {
                     Button {
@@ -197,9 +206,13 @@ struct LineView: View {
         }
         .navigationTitle("Ligne \(currentLine)") // Set back button text
         .navigationBarTitleDisplayMode(.inline)
+        // Le titre de la barre ne sert qu'au bouton retour : la page a le sien. Un titre vide
+        // plutôt que `.toolbar(removing: .title)` : le décalage vers le haut d'`AdaptiveSplit`
+        // (`topGapReduction`) est réglé sur cette barre ; sans titre, elle compte moins haut sur
+        // iPad, et le titre flottant et la carte passaient sous les onglets.
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("") // Visible title
+                Text("")
             }
         }
     }
@@ -208,7 +221,7 @@ struct LineView: View {
     private func stopRow(_ event: LineEvent, scroll: ScrollViewProxy) -> some View {
         let skipped = event.isCancelled == true
         return stopLink(event) {
-            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid || event.id == selectedStop?.id, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime, skipped: skipped)
+            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid, selected: event.id == selectedStop?.id, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime, skipped: skipped)
         }
         .foregroundStyle(.primary)
         .onAppear {
@@ -277,7 +290,8 @@ struct LineView: View {
     /// Sur iPhone, un arrêt ouvre sa page ; sur grand écran, ses passages s'affichent à droite.
     @ViewBuilder private func stopLink<Label: View>(_ event: LineEvent, @ViewBuilder label: () -> Label) -> some View {
         if layout.showsSecondaryPane {
-            Button(action: { withAnimation { selectedStop = event } }, label: label)
+            // Retoucher l'arrêt détaillé le désélectionne.
+            Button(action: { withAnimation { selectedStop = selectedStop?.id == event.id ? nil : event } }, label: label)
         } else {
             NavigationLink(value: AppRoute.stop(name: event.stopPointName, sloid: event.sloid,
                                                 highlight: DepartureHighlight(journeyRef: stopEvent.journeyRef, lineName: currentLine, time: event.timetabledTime)),
@@ -346,6 +360,7 @@ struct LineEventElementView: View {
     var operatorName: String
     var transportType: String
     var currentStop: Bool = false
+    var selected: Bool = false
     var eventName: String
     var estimatedTime: String
     var timetabledTime: String
@@ -364,7 +379,7 @@ struct LineEventElementView: View {
 //            .fill(.thinMaterial)
 //            .fill(.color1)
                 HStack {
-                    StopIcon(color: LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true))
+                    StopIcon(color: LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true), currentStop: currentStop)
                     if geoPositionDisplay {
                         Text(eventName)
                     } else {
@@ -386,7 +401,7 @@ struct LineEventElementView: View {
                     // Même règle que le trait de la ligne : sans temps réel, l'heure prévue.
                     .opacity(skipped ? 0.5 : pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false, now: now) ? 0.3 : 1)
                 .padding(.horizontal)
-                .basicElementBackground(minHeight: 45, highlighted: currentStop)
+                .basicElementBackground(minHeight: 45, highlighted: currentStop, selected: selected)
                 .padding(5)
     }
 

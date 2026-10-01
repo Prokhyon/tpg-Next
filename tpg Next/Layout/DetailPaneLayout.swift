@@ -31,8 +31,8 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
     private let spacing: CGFloat = 10
     /// Carte, titre et détails partagent ces bords : les rangées glissent derrière la carte
     /// sans dépasser d'un côté ni de l'autre.
-    private let sideInset: CGFloat = 16
-    private let corner: CGFloat = 30
+    private let sideInset = PaneMetrics.sideInset
+    private let corner = PaneMetrics.corner
 
     var body: some View {
         GeometryReader { geometry in
@@ -122,8 +122,19 @@ struct DetailPaneLayout<MapContent: View, Title: View, Actions: View, Details: V
                 .padding([.horizontal, .bottom])
             }
         }
-        .padding(.top, 8)
+        .padding(.top, PaneMetrics.topInset)
     }
+}
+
+/// Les mesures de la carte de la moitié droite : la colonne de gauche s'y aligne (titre
+/// flottant de la page arrêt, qui sort de sous la carte).
+enum PaneMetrics {
+    /// Du haut de la moitié droite au haut de la carte.
+    static let topInset: CGFloat = 8
+    /// Du bord de la moitié droite au bord de la carte.
+    static let sideInset: CGFloat = 16
+    /// Rayon des coins de la carte.
+    static let corner: CGFloat = 30
 }
 
 extension DetailPaneLayout where Actions == EmptyView {

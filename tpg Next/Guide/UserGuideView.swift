@@ -9,62 +9,51 @@
 import SwiftUI
 import tpgNextFunc
 
-/// Les rubriques du guide, par groupe, et une recherche dans tous les points.
+/// Les rubriques du guide, par groupe, en cartes comme le reste de l'app, et une recherche
+/// dans tous les points.
 struct UserGuideView: View {
-    @AppStorage(SettingKey.showWelcome) private var showWelcome = true
     @State private var query = ""
     @State private var showsTour = false
 
     var body: some View {
-        List {
-            if query.isEmpty {
-                Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                if query.isEmpty {
                     Text("Tout ce que l'app sait faire, page par page. Les encadrés à la main se touchent : essayez-les !")
                         .foregroundStyle(.secondary)
-                        .listRowBackground(Color.clear)
-                }
-                Section {
-                    Button {
-                        showsTour = true
-                    } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "hand.tap.fill")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 34, height: 34)
-                                .background(Color.orange.gradient, in: RoundedRectangle(cornerRadius: 8.5, style: .continuous))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Visite guidée").foregroundStyle(.primary)
-                                Text("Sept gestes à essayer du doigt, en deux minutes.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                    CardSection {
+                        Button {
+                            showsTour = true
+                        } label: {
+                            SettingsRow("Visite guidée", subtitle: "Sept gestes à essayer du doigt, en deux minutes.",
+                                        systemImage: "hand.tap.fill", color: .orange, showsChevron: true)
+                                .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    ForEach(UserGuide.groups) { group in
+                        CardSection(group.title) {
+                            ForEach(Array(group.topics.enumerated()), id: \.element.id) { index, topic in
+                                if index > 0 {
+                                    CardDivider(inset: 48)
+                                }
+                                NavigationLink(value: AppRoute.userGuideTopic(id: topic.id)) {
+                                    GuideTopicRow(topic: topic)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .padding(.vertical, 2)
                     }
+                } else {
+                    searchResults
                 }
-                ForEach(UserGuide.groups) { group in
-                    Section {
-                        ForEach(group.topics) { topic in
-                            NavigationLink(value: AppRoute.userGuideTopic(id: topic.id)) {
-                                GuideTopicRow(topic: topic)
-                            }
-                        }
-                    } header: {
-                        Text(group.title)
-                    }
-                }
-                Section {
-                    Button {
-                        showWelcome = true
-                    } label: {
-                        Label("Revoir le message de démarrage", systemImage: "text.page.fill")
-                    }
-                }
-            } else {
-                searchResults
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 30)
         }
+        .readableScrollContent()
         .navigationTitle("Guide d'utilisation")
         .searchable(text: $query, prompt: "Rechercher dans le guide")
         .sheet(isPresented: $showsTour) {
@@ -79,20 +68,31 @@ struct UserGuideView: View {
             ContentUnavailableView.search(text: query)
         } else {
             ForEach(results, id: \.topic.id) { result in
-                Section {
-                    ForEach(result.entries) { entry in
-                        NavigationLink(value: AppRoute.userGuideTopic(id: result.topic.id, entry: entry.id)) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(entry.title).font(.headline)
-                                Text(entry.text)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                            }
+                CardSection(result.topic.title) {
+                    ForEach(Array(result.entries.enumerated()), id: \.element.id) { index, entry in
+                        if index > 0 {
+                            CardDivider(inset: 0)
                         }
+                        NavigationLink(value: AppRoute.userGuideTopic(id: result.topic.id, entry: entry.id)) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(entry.title).font(.headline)
+                                    Text(entry.text)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                                .multilineTextAlignment(.leading)
+                                Spacer(minLength: 4)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.bold())
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                } header: {
-                    Text(result.topic.title)
                 }
             }
         }
@@ -111,8 +111,14 @@ private struct GuideTopicRow: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            .multilineTextAlignment(.leading)
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.right")
+                .font(.footnote.bold())
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 }
 
@@ -141,7 +147,7 @@ struct UserGuideTopicView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 14) {
                         GuideTopicIcon(topic: topic, size: 48)
                         Text(topic.summary)
@@ -149,14 +155,12 @@ struct UserGuideTopicView: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    // Chaque point dans sa carte ; celui cherché prend un instant la bordure orange.
                     ForEach(topic.entries) { item in
                         GuideEntryRow(entry: item, tint: topic.color)
-                            .padding(10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(topic.color.opacity(highlighted == item.id ? 0.15 : 0))
-                            )
-                            .padding(-10)
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(BasicCard(cornerRadius: 26, highlighted: highlighted == item.id))
                             .id(item.id)
                     }
                 }

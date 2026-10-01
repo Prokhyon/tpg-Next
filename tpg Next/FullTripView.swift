@@ -41,6 +41,25 @@ struct FullTripView: View {
                     .contentMargins(.top, 80.0, for: .automatic)
                     .contentMargins(.bottom, 40, for: .automatic)
                     .readableScrollContent()
+                    // En bas à droite, sous le pouce, comme sur la page d'une ligne.
+                    .safeAreaInset(edge: .bottom) {
+                        let key = TripLiveActivities.key(for: fullTrip)
+                        let isTracking = liveActivities.isTracking(key)
+                        if isTracking || (liveActivities.areEnabled && !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now)) {
+                            HStack {
+                                Spacer()
+                                LiveTrackingButton(isTracking: isTracking) {
+                                    if isTracking {
+                                        liveActivities.stop(key)
+                                    } else {
+                                        liveActivities.start(trip: fullTrip)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom, 8)
+                        }
+                    }
                     .onAppear {
                         showTime = timeDefault
                     }
@@ -75,8 +94,7 @@ struct FullTripView: View {
                 .padding(.top, 8)
         }
             .toolbar {
-                TrailingBarButtons {
-                    ShowTimeButton(showTime: $showTime)
+                TrailingBarButtons(showTime: $showTime) {
                     Menu {
                         if savedTripsModel.tripIsSaved(fullTrip) {
                             Button(action: {
@@ -91,19 +109,7 @@ struct FullTripView: View {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
                             }
                         }
-                        if liveActivities.isTracking(TripLiveActivities.key(for: fullTrip)) {
-                            Button {
-                                liveActivities.stop(TripLiveActivities.key(for: fullTrip))
-                            } label: {
-                                Label("Arrêter le suivi en direct", systemImage: "stop.circle")
-                            }
-                        } else if liveActivities.areEnabled, !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now) {
-                            Button {
-                                liveActivities.start(trip: fullTrip)
-                            } label: {
-                                Label("Suivre en direct", systemImage: "inset.filled.circle")
-                            }
-                        }
+                        // Le suivi en direct est en bas à droite de la liste (`LiveTrackingButton`).
                         Button {
                             repeating = fullTrip
                         } label: {
@@ -133,11 +139,8 @@ struct FullTripView: View {
         // Barre transparente pour cet écran seulement : l'ancien réglage UIKit s'appliquait à toute l'app.
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("") // Visible title
-            }
-        }
+        // Le titre de la barre ne sert qu'au bouton retour : la page a le sien.
+        .toolbar(removing: .title)
     }
 
     /// Toucher l'étape déjà cadrée revient au trajet entier.

@@ -82,6 +82,18 @@ extension View {
         }
     }
 
+    /// Le dégradé doux d'iOS 26 en haut des listes, sous la barre de navigation, comme sur la
+    /// page Itinéraire. Posé sur la pile de chaque onglet : il vaut pour toutes les listes qu'elle
+    /// contient. Sans lui, l'accueil et les Trajets n'en avaient aucun (leur liste n'est pas reliée
+    /// à la barre, qui ne réduit pas non plus leur grand titre).
+    @ViewBuilder func softTopScrollEdge() -> some View {
+        if #available(iOS 26, *) {
+            scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self
+        }
+    }
+
     /// Couleur du contenu posé sur du verre ; avant iOS 26 le contenu garde la sienne.
     @ViewBuilder func glassForegroundStyle(_ color: Color) -> some View {
         if TPGSurface.isGlass {
@@ -161,8 +173,8 @@ extension View {
     /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
     /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
     /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
-    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, button: Bool = false) -> some View {
-        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, button: button))
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, selected: Bool = false, button: Bool = false) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, selected: selected, button: button))
     }
 }
 
@@ -201,6 +213,7 @@ private struct BasicElementBackground: ViewModifier {
     let minHeight: CGFloat
     let transparent: Bool
     let highlighted: Bool
+    let selected: Bool
     let button: Bool
 
     func body(content: Content) -> some View {
@@ -209,7 +222,7 @@ private struct BasicElementBackground: ViewModifier {
             .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
             .frame(minHeight: minHeight)
             .background {
-                BasicElement(transparent: transparent, highlighted: highlighted, button: button,
+                BasicElement(transparent: transparent, highlighted: highlighted, selected: selected, button: button,
                              cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
             }
     }
@@ -218,6 +231,7 @@ private struct BasicElementBackground: ViewModifier {
 struct BasicElement: View {
     var transparent = false
     var highlighted = false
+    var selected = false
     var button = false
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
     var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
@@ -232,7 +246,7 @@ struct BasicElement: View {
     var body: some View {
         shape
             .fill(button ? .accent : .color1.opacity(transparent ? 0.5 : 1))
-            .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
+            .stroke(AngularGradient(gradient: selected ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
             .shadow(color: .customShadows.opacity(0.2), radius: 7)
     }
 }
@@ -322,7 +336,7 @@ struct StopIcon: View {
 //                        self.isAnimating = true
 //                    }
                 Circle()
-                    .stroke(.accent, lineWidth: size/4)//current stop highlight
+                    .stroke(.accent, lineWidth: size/2.5)//current stop highlight
 //                Circle()
 //                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                
@@ -332,6 +346,7 @@ struct StopIcon: View {
                     .fill(color)
                     .strokeBorder(Color.primary, lineWidth: size/4)
 //            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+            
 
         }
             .frame(width: size, height: size)
@@ -340,58 +355,89 @@ struct StopIcon: View {
 
 /// Les boutons à droite de la barre de navigation. Depuis iOS 26, chacun devient un élément de
 /// barre à part : le système peut les poser à la verticale sur le côté (iPhone Duo) ou replier les
-/// moins utiles dans un menu. Avant, ils partagent une capsule posée sur le contenu.
+/// moins utiles dans un menu. Le sablier (`showTime`), réglage de l'affichage, a sa propre bulle,
+/// séparée des actions comme sur la page d'un arrêt. Avant iOS 26, tous partagent une capsule
+/// posée sur le contenu.
 struct TrailingBarButtons<Content: View>: ToolbarContent {
+    var showTime: Binding<Bool>?
     @ViewBuilder var content: Content
 
+    init(showTime: Binding<Bool>? = nil, @ViewBuilder content: () -> Content) {
+        self.showTime = showTime
+        self.content = content()
+    }
+
     var body: some ToolbarContent {
-        if TPGSurface.isGlass {
+        if #available(iOS 26, *) {
+            if let showTime {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShowTimeButton(showTime: showTime)
+                }
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 content
             }
         } else {
             ToolbarItem(placement: .topBarTrailing) {
-                HStack { content }
-                    .legacySurface()
+                HStack {
+                    if let showTime {
+                        ShowTimeButton(showTime: showTime)
+                    }
+                    content
+                }
+                .legacySurface()
             }
         }
     }
 }
 
+/// L'heure de passage (« 12:34 ») ou le temps restant (« 14' »). Actif quand le temps restant
+/// est affiché : depuis iOS 26, en verre teinté (le rond orange du système) ; avant, une capsule
+/// de la couleur de l'app. Le sablier se retourne ou tremble à chaque changement.
 struct ShowTimeButton: View {
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @Binding var showTime: Bool
     @State private var rotation: Double = 0
     @State private var imageName: String = "hourglass"
     @State private var wiggle: Bool = false
-    
+
     var body: some View {
-        Button(action: {
-            withAnimation {
-                showTime.toggle()
-            }
-        }) {
+        Group {
             if #available(iOS 26, *) {
-                Image(systemName: imageName)
-                    .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
-                    .foregroundColor(showTime ? .text : .white)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 5)
-                    .rotationEffect(.degrees(rotation))
-                    .background {
-                        Capsule()
-                            .foregroundStyle(showTime ? .clear : .accent)
-                    }
+                // Une seule vue, quel que soit l'état : changer de style de bouton la recréait, et
+                // une animation déclenchée sur une vue qui vient d'apparaître ne se joue pas (le
+                // retournement une fois sur deux, le tremblement jamais). Le rond orange est donc
+                // dessiné ici, derrière le sablier, et apparaît en fondu.
+                Button {
+                    withAnimation { showTime.toggle() }
+                } label: {
+                    hourglass
+                        .foregroundStyle(showTime ? AnyShapeStyle(.primary) : AnyShapeStyle(.white))
+                        .frame(width: 34, height: 34)
+                        .background {
+                            Circle()
+                                .fill(.tint)
+                                .opacity(showTime ? 0 : 1)
+                        }
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Temps restant")
+                .accessibilityAddTraits(showTime ? [] : .isSelected)
             } else {
-                Image(systemName: imageName)
-                    .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
-                    .foregroundColor(showTime ? .accent : .white)
-                    .padding(.horizontal, 5)
-                    .rotationEffect(.degrees(rotation))
-                    .background {
-                        Capsule()
-                            .foregroundStyle(showTime ? .clear : .accent)
+                Button(action: {
+                    withAnimation {
+                        showTime.toggle()
                     }
+                }) {
+                    hourglass
+                        .foregroundColor(showTime ? .accent : .white)
+                        .padding(.horizontal, 5)
+                        .background {
+                            Capsule()
+                                .foregroundStyle(showTime ? .clear : .accent)
+                        }
+                }
             }
         }
         .onAppear {
@@ -406,13 +452,18 @@ struct ShowTimeButton: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         imageName = "hourglass"
                     }
-//                    imageName = "hourglass.bottomhalf.filled"
                 }
-                    } else {
-                        wiggle.toggle()
-                        imageName = "hourglass.tophalf.filled"
-                    }
-                }
+            } else {
+                wiggle.toggle()
+                imageName = "hourglass.tophalf.filled"
+            }
+        }
+    }
+
+    private var hourglass: some View {
+        Image(systemName: imageName)
+            .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
+            .rotationEffect(.degrees(rotation))
     }
 }
 
@@ -543,6 +594,8 @@ struct BackdropBlurView: View {
         BasicElement()
             .frame(height: 50)
         BasicElement(highlighted: true)
+            .frame(height: 50)
+        BasicElement(selected: true)
             .frame(height: 50)
         Text(verbatim: "basicElementBackground")
             .padding(.horizontal)
