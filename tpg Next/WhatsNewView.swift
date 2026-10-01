@@ -74,21 +74,12 @@ struct WhatsNewView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
 
-            if #available(iOS 26, *) {
-                Button { dismiss() } label: {
-                    Text("Continuer").foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
-                }
-                .buttonStyle(.glassProminent)
-            } else {
-                Button { dismiss() } label: {
-                    Text("Continuer").foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
-                }
-                .buttonStyle(.borderedProminent)
+            Button { dismiss() } label: {
+                Text("Continuer").foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 30)
             }
+            .prominentButtonStyle()
         }
         .padding()
     }

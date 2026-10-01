@@ -46,6 +46,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653679",
         "legAlightEstimatedTime" : "2026-09-13T16:08:24Z",
@@ -367,6 +368,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35915930",
         "legAlightEstimatedTime" : "2026-09-13T16:11:24Z",

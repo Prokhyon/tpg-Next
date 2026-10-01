@@ -90,21 +90,28 @@ struct NextTripCard: View {
             }
         } actions: {
             HStack {
-                if !isTracking, liveActivities.areEnabled, trip.plannedDeparture.timeIntervalSince(now) < 6 * 3600 {
+                let canStartLive = !isTracking && liveActivities.areEnabled && TripLiveActivities.canTrack(displayed)
+                    && trip.plannedDeparture.timeIntervalSince(now) < 6 * 3600
+                if canStartLive {
                     Button {
                         startLive(displayed)
                     } label: {
                         Label("Suivre en direct", systemImage: "inset.filled.circle")
                     }
-                    .buttonStyle(.bordered)
+                    .prominentButtonStyle()
                 }
-                Button {
+                let alternatives = Button {
                     showsAlternatives = true
                 } label: {
                     Label(isSaved ? "Autres horaires…" as LocalizedStringKey : "Autre trajet…",
                           systemImage: "clock.arrow.2.circlepath")
                 }
-                .buttonStyle(.bordered)
+                // Seul, il est l'action principale ; à côté du suivi, la secondaire.
+                if canStartLive {
+                    alternatives.secondaryButtonStyle()
+                } else {
+                    alternatives.prominentButtonStyle()
+                }
             }
         }
         .sheet(isPresented: $showsAlternatives) { alternatives }

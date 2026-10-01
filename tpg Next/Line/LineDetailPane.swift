@@ -287,7 +287,7 @@ struct LineStopDeparturesPanel: View {
                 Label("Ouvrir l'arrêt", systemImage: "signpost.right")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .prominentButtonStyle()
         }
         .periodicRefresh(id: stop.id) { _ in
             stopManager.selectStop(stopName: stop.stopPointName, stopSloid: stop.sloid, stopEventNumber: 40, timeRequest: Date())

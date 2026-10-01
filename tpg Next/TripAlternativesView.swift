@@ -56,32 +56,38 @@ struct TripAlternativesView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Text(route: origin.name, to: destination.name)
-                    Text(dayText)
-                        .foregroundStyle(.secondary)
-                }
-
-                switch search {
-                case .loading:
-                    HStack {
-                        ProgressView()
-                        Text("Recherche des itinéraires…")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(route: origin.name, to: destination.name)
+                            .font(.headline.weight(.regular))
+                        Text(dayText)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                case .noTrip:
-                    Text("Aucun itinéraire à cette heure-là.")
-                        .foregroundStyle(.secondary)
-                    moveButtons
-                case .failed:
-                    Text("Impossible de charger les itinéraires.")
-                        .foregroundStyle(.secondary)
-                    Button("Réessayer") {
-                        Task { await load() }
-                    }
-                case .results(let trips):
-                    Section {
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+
+                    switch search {
+                    case .loading:
+                        VStack(spacing: 10) {
+                            ProgressView()
+                            Text("Recherche des itinéraires…")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 30)
+                    case .noTrip:
+                        message("Aucun itinéraire à cette heure-là.", systemImage: "clock.badge.questionmark")
+                        moveButton(earlier: true)
+                        moveButton(earlier: false)
+                    case .failed:
+                        message("Impossible de charger les itinéraires.", systemImage: "wifi.exclamationmark")
+                        capsuleButton("Réessayer", systemImage: "arrow.clockwise") {
+                            Task { await load() }
+                        }
+                    case .results(let trips):
                         moveButton(earlier: true)
                         ForEach(trips) { trip in
                             Button {
@@ -90,14 +96,21 @@ struct TripAlternativesView: View {
                             } label: {
                                 row(trip)
                             }
-                            .foregroundStyle(.primary)
+                            .buttonStyle(.plain)
                         }
                         moveButton(earlier: false)
-                    } footer: {
                         Text(footer)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 30)
             }
+            .readableScrollContent()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -109,43 +122,65 @@ struct TripAlternativesView: View {
         }
     }
 
+    /// Un itinéraire en carte ; l'actuel est cerclé d'orange.
     private func row(_ trip: TripEvent) -> some View {
         let status = RegularTripStatus(trip: trip)
-        return VStack(alignment: .leading, spacing: 6) {
+        let isCurrent = current.map { trip.isSameCourse(as: $0) } ?? false
+        return VStack(alignment: .leading, spacing: 8) {
             SavedTripView(event: trip)
-            HStack(spacing: 10) {
-                if let current, trip.isSameCourse(as: current) {
-                    Label("Itinéraire actuel", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.tint)
+            if isCurrent || status.departureDelay >= 1 || !status.disruptedLines.isEmpty {
+                HStack(spacing: 10) {
+                    if isCurrent {
+                        Label("Itinéraire actuel", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                    if status.departureDelay >= 1 {
+                        Label("Départ +\(status.departureDelay) min", systemImage: "clock.fill")
+                            .foregroundStyle(status.departureDelay >= 5 ? .red : .orange)
+                    }
+                    if !status.disruptedLines.isEmpty {
+                        Label("Perturbé", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
                 }
-                if status.departureDelay >= 1 {
-                    Label("Départ +\(status.departureDelay) min", systemImage: "clock.fill")
-                        .foregroundStyle(status.departureDelay >= 5 ? .red : .orange)
-                }
-                if !status.disruptedLines.isEmpty {
-                    Label("Perturbé", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                }
+                .font(.caption.bold())
             }
-            .font(.caption.bold())
         }
-        .padding(.vertical, 6)
+        .padding(15)
+        .background(BasicCard(cornerRadius: 30, highlighted: isCurrent))
+        .contentShape(RoundedRectangle(cornerRadius: 30))
+        .padding(.vertical, 2)
     }
 
-    @ViewBuilder private var moveButtons: some View {
-        moveButton(earlier: true)
-        moveButton(earlier: false)
+    private func message(_ text: LocalizedStringKey, systemImage: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.title2)
+            Text(text)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+        }
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
     }
 
     /// Une demi-heure plus tôt ou plus tard.
     private func moveButton(earlier: Bool) -> some View {
-        Button {
+        capsuleButton(earlier ? "Plus tôt" : "Plus tard", systemImage: earlier ? "chevron.up" : "chevron.down") {
             time = time.addingTimeInterval(earlier ? -30 * 60 : 30 * 60)
-        } label: {
-            Label(earlier ? "Plus tôt" as LocalizedStringKey : "Plus tard",
-                  systemImage: earlier ? "chevron.up" : "chevron.down")
-                .font(.subheadline)
         }
+    }
+
+    private func capsuleButton(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .basicElementBackground(minHeight: 40)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 40)
     }
 
     /// « Mercredi 23 septembre, vers 17:45 » : l'heure voulue, pas celle demandée à OJP.

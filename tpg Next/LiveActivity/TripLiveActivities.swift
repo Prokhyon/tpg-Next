@@ -188,8 +188,15 @@ final class TripLiveActivities {
 
     // MARK: Lancer et arrêter
 
+    /// Un itinéraire avec un bus à la demande (tpg flex) ne se suit pas : sans horaire fixe, ni
+    /// le décompte ni les alertes de montée ne voudraient rien dire.
+    static func canTrack(_ trip: TripEvent) -> Bool {
+        !trip.hasOnDemandLeg
+    }
+
     /// Suit un itinéraire quelconque : il devient la recette d'un jour, redemandée à OJP.
     func start(trip: TripEvent) {
+        guard Self.canTrack(trip) else { return }
         let recipe = RegularTrip(trip: trip, weekdays: Set(Weekday.allCases), reminderMinutes: nil, alertsEnabled: false)
         guard let target = trip.anchorDate(.departure, timetabled: true) else { return }
         let occurrence = RegularTripOccurrence(trip: recipe, day: Calendar.swissTransit.dayKey(for: target), target: target)
@@ -201,6 +208,7 @@ final class TripLiveActivities {
 
     /// Suit le trajet régulier du jour, avec l'itinéraire connu (du jour, ou prévu).
     func start(occurrence: RegularTripOccurrence, of recipe: RegularTrip, trip: TripEvent, match: RegularTripMatch?) {
+        guard Self.canTrack(trip) else { return }
         let alert = match.flatMap { RegularTripAlerts.changes(in: $0).first }
         start(key: occurrence.id,
               tracked: .trip(.init(recipe: recipe, day: occurrence.day, target: occurrence.target, trip: trip, isRegular: true)),

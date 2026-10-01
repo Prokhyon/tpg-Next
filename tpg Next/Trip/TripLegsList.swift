@@ -50,10 +50,13 @@ struct TripLegsList: View {
                     let alightRoute = AppRoute.stop(name: leg.legAlightStopName, sloid: leg.legAlightStopId, //Arrival stop for the leg
                                                     highlight: DepartureHighlight(journeyRef: leg.journeyRef, lineName: leg.publishedLineName, time: leg.legAlightTimetableTime))
                     let notice = incidentNotice(leg)
+                    // Une ligne de plus sous la ligne de transport par avertissement (et l'air
+                    // au-dessus de celui du bus à la demande).
+                    let notices = CGFloat(notice == nil ? 0 : 1) + (leg.isOnDemand ? 1.3 : 0)
                     ZStack {
                             HStack { //Colored line background for the leg
                                 RoundedRectangle(cornerRadius: 5)
-                                    .frame(width: 8, height: notice == nil ? 108 : 128)
+                                    .frame(width: 8, height: 108 + notices * 20)
                                     .foregroundStyle(LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator))
                                 Spacer()
                             }
@@ -66,7 +69,8 @@ struct TripLegsList: View {
                             .contentShape(.contextMenuPreview, Capsule())
                             .contextMenu {
                                 openItem(boardRoute, title: "Ouvrir l'arrêt", systemImage: "signpost.right")
-                                if !hasPassed(leg.boardDate, includingCurrentMinute: false, now: now) {
+                                // Bus à la demande : ni rappel ni suivi, l'heure n'est qu'une proposition.
+                                if !leg.isOnDemand, !hasPassed(leg.boardDate, includingCurrentMinute: false, now: now) {
                                     NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef), stopID: leg.legBoardStopId)
                                 }
                             }
@@ -75,17 +79,31 @@ struct TripLegsList: View {
                                 Rectangle()
                                     .fill(.clear)
                                     .frame(width: 50)
-                                step(lineRoute, focusing: legFocus) {
+                                // Un bus à la demande n'a pas de course à afficher : pas de lien vers la ligne.
+                                step(lineRoute, focusing: legFocus, disabled: leg.isOnDemand) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack {
                                             BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
                                             Image(systemName: "arrow.right")
-                                            SmallStopTitleView(stopName: leg.legDestination)
+                                            // Sur une ligne, à la taille du texte : sur deux, la
+                                            // destination rapetissait pour tenir dans la rangée.
+                                            Text(stopName: leg.legDestination)
+                                                .font(.callout)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
+                                            Spacer(minLength: 0)
                                         }
                                         if let notice {
                                             Label(notice, systemImage: "exclamationmark.triangle.fill")
                                                 .font(.caption)
                                                 .foregroundStyle(.orange)
+                                        }
+                                        // Les heures de montée et de descente ne sont qu'une proposition.
+                                        if leg.isOnDemand {
+                                            Label("Sur réservation, pas d'horaire fixe", systemImage: "phone.fill")
+                                                .font(.caption)
+                                                .foregroundStyle(.tint)
+                                                .padding(.top, 6)
                                         }
                                     }
                                     .padding(.horizontal, 8)
@@ -96,10 +114,14 @@ struct TripLegsList: View {
                                         }
                                     }
                                 }
-                                .contextMenu { openItem(lineRoute, title: "Voir la ligne", systemImage: "point.topleft.down.to.point.bottomright.curvepath") }
+                                .contextMenu {
+                                    if !leg.isOnDemand {
+                                        openItem(lineRoute, title: "Voir la ligne", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                                    }
+                                }
                                 Spacer()
                             }
-                            .frame(height: notice == nil ? 30 : 50)
+                            .frame(height: 30 + notices * 20)
                             .foregroundStyle(.primary)
 
                             step(alightRoute, focusing: alightFocus) {
@@ -109,7 +131,7 @@ struct TripLegsList: View {
                             .contentShape(.contextMenuPreview, Capsule())
                             .contextMenu {
                                 openItem(alightRoute, title: "Ouvrir l'arrêt", systemImage: "signpost.right")
-                                if !hasPassed(leg.alightDate, includingCurrentMinute: false, now: now) {
+                                if !leg.isOnDemand, !hasPassed(leg.alightDate, includingCurrentMinute: false, now: now) {
                                     NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
                                 }
                             }
@@ -196,8 +218,12 @@ struct TripLegsList: View {
     }
 
     /// Une étape qui a sa page : l'ouvre sur iPhone, la cadre sur la carte sur grand écran.
-    @ViewBuilder private func step<Label: View>(_ route: AppRoute, focusing target: TripMapFocus, @ViewBuilder label: () -> Label) -> some View {
-        if let onFocus {
+    /// `disabled` : la page n'existe pas (bus à la demande) ; l'étape se cadre encore sur la carte.
+    @ViewBuilder private func step<Label: View>(_ route: AppRoute, focusing target: TripMapFocus, disabled: Bool = false,
+                                                @ViewBuilder label: () -> Label) -> some View {
+        if disabled {
+            focusable(target, content: label)
+        } else if let onFocus {
             Button(action: { onFocus(target) }, label: label)
         } else {
             NavigationLink(value: route, label: label)

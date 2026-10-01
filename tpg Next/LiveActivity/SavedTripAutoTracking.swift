@@ -32,6 +32,8 @@ enum SavedTripAutoTracking {
         var requests: [UNNotificationRequest] = []
         if minutes > 0 {
             let upcoming = trips
+                // Un bus à la demande ne se suit pas (`TripLiveActivities.canTrack`).
+                .filter(TripLiveActivities.canTrack)
                 .compactMap { trip in (trip.leavingDate ?? trip.startDate).map { (trip, $0) } }
                 .filter { $0.1.addingTimeInterval(-TimeInterval(minutes * 60)) > now }
                 .sorted { $0.1 < $1.1 }

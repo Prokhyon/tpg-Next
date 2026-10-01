@@ -66,12 +66,30 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
     public var legOperator: String
     /// Codes des services du véhicule. Optionnel : les itinéraires enregistrés avant n'en ont pas.
     public var attributeCodes: [String]? = nil
+    /// Le sous-mode d'un bus (`BusSubmode`) : `demandAndResponseBus` pour un bus à la demande.
+    public var busSubmode: String? = nil
 //    var legTrack: [CLLocationCoordinate2D]
 
     /// Course touchée par un incident : des arrêts sont sautés (voir `LegIntermediate.notServiced`).
     public var hasIncident: Bool { attributeCodes?.contains(where: isIncidentAttribute) == true }
     /// Les arrêts intermédiaires où le véhicule ne s'arrête pas.
     public var skippedIntermediates: [LegIntermediate] { legIntermediates.filter(\.skipped) }
+
+    /// Réservation obligatoire (attribut `RR`, « Platzreservierung obligatorisch »).
+    public var requiresReservation: Bool { attributeCodes?.contains("RR") == true }
+
+    /// Un bus à la demande, comme tpg flex : il ne passe que sur réservation, et l'heure donnée
+    /// par OJP n'est qu'une proposition (une toutes les 5 minutes), pas un horaire. Les
+    /// itinéraires enregistrés avant la lecture du sous-mode se reconnaissent à la réservation.
+    public var isOnDemand: Bool {
+        busSubmode == "demandAndResponseBus"
+            || (busSubmode == nil && requiresReservation && transportTypeName.localizedCaseInsensitiveCompare("Bus") == .orderedSame)
+    }
+}
+
+extension TripEvent {
+    /// Au moins une étape en bus à la demande.
+    public var hasOnDemandLeg: Bool { legs.contains(where: \.isOnDemand) }
 }
 
 public struct LegIntermediate: Codable, Identifiable, Hashable {

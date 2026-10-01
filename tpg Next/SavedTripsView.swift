@@ -312,8 +312,7 @@ struct SavedTripsAgenda: View {
             Label("Afficher les itinéraires passés", systemImage: "clock.arrow.circlepath")
                 .font(.subheadline)
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
+        .prominentButtonStyle()
         .frame(maxWidth: .infinity)
         .padding(.top, 6)
     }
@@ -434,8 +433,7 @@ struct SavedTripsAgenda: View {
                 Label("Nouveau trajet régulier", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
+            .prominentButtonStyle()
             .padding(.top, 4)
         }
     }
@@ -517,8 +515,9 @@ struct SavedTripsAgenda: View {
                     Button("Remplacer") {
                         withAnimation { savedTripsModel.replaceTrip(trip, with: match.trip) }
                     }
-                    .buttonStyle(.borderedProminent)
-                    alternativesButton { alternatives = .saved(trip) }
+                    .prominentButtonStyle()
+                    // À côté de « Remplacer », l'action secondaire.
+                    alternativesButton(prominent: false) { alternatives = .saved(trip) }
                 }
             }
         case .notFound:
@@ -548,11 +547,16 @@ struct SavedTripsAgenda: View {
         }
     }
 
-    private func alternativesButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    @ViewBuilder
+    private func alternativesButton(prominent: Bool = true, _ action: @escaping () -> Void) -> some View {
+        let button = Button(action: action) {
             Label("Autres horaires…", systemImage: "clock.arrow.2.circlepath")
         }
-        .buttonStyle(.bordered)
+        if prominent {
+            button.prominentButtonStyle()
+        } else {
+            button.secondaryButtonStyle()
+        }
     }
 
     @ViewBuilder
@@ -575,7 +579,7 @@ struct SavedTripsAgenda: View {
                     } label: {
                         Label("Choisir un autre trajet…", systemImage: "arrow.triangle.swap")
                     }
-                    .buttonStyle(.bordered)
+                    .prominentButtonStyle()
                 }
             }
             .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 30))
@@ -586,7 +590,8 @@ struct SavedTripsAgenda: View {
                     } label: {
                         Label("Arrêter le suivi en direct", systemImage: "stop.circle")
                     }
-                } else if liveActivities.areEnabled, occurrence.plannedDeparture.timeIntervalSince(now) < 6 * 3600 {
+                } else if liveActivities.areEnabled, TripLiveActivities.canTrack(displayed),
+                          occurrence.plannedDeparture.timeIntervalSince(now) < 6 * 3600 {
                     Button {
                         var match: RegularTripMatch?
                         if case .found(let found, _) = state { match = found }
@@ -745,8 +750,7 @@ struct AgendaEmptyView: View {
                 Button(action: onCreate) {
                     Label("Nouveau trajet régulier", systemImage: "calendar.badge.plus")
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
+                .prominentButtonStyle()
                 .padding(.top, 4)
             }
         }
@@ -786,6 +790,7 @@ struct SavedTripView: View {
                 StopNameView(event.endName, style: .row, alignment: .trailing)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
+            OnDemandNotice(event: event)
         }
     }
 }

@@ -213,6 +213,7 @@ struct FavoritePlacesOrderView: View {
                 .contentMargins(.horizontal, 5.0, for: .automatic)
                 .listStyle(.plain)
                 .environment(\.editMode, .constant(.active))
+                .readableList()
             }
         }
         .navigationTitle("Lieux favoris")

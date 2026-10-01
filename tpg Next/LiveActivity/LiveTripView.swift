@@ -153,8 +153,7 @@ struct LiveTripView: View {
                     Label("Arrêter le suivi", systemImage: "stop.circle")
                         .frame(maxWidth: .infinity, minHeight: 50)
                 }
-                .tpgSurface(interactive: true)
-                .buttonStyle(.bordered)
+                .prominentButtonStyle()
                 .padding()
             }
         }
@@ -427,11 +426,11 @@ struct DoubtfulTransferCard: View {
                 Button(action: boarded) {
                     Text("Je suis monté").frame(maxWidth: .infinity, minHeight: 40)
                 }
-                .buttonStyle(.borderedProminent)
+                .prominentButtonStyle()
                 Button(action: missed) {
                     Text("Je l'ai manqué").frame(maxWidth: .infinity, minHeight: 40)
                 }
-                .buttonStyle(.bordered)
+                .secondaryButtonStyle()
             }
         }
         .padding(15)

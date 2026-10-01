@@ -355,6 +355,8 @@ final class TripEventParser: OJPParser {
         case "Code" where isInside("Attribute") && isInside("Service"):
             let codes = leg?.attributeCodes ?? []
             leg?.attributeCodes = codes + [value]
+        case "BusSubmode" where isInside("Service"):
+            leg?.busSubmode = value
         case "WalkDuration": leg?.transferWalkDuration = value
         case "BufferTime": leg?.transferBuffer = value
         default: break

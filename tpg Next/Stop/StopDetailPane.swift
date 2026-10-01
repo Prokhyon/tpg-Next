@@ -269,7 +269,7 @@ struct DepartureDetailPanel: View {
                                   systemImage: showsPreviousStops ? "chevron.down" : "chevron.up")
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .secondaryButtonStyle()
                         .padding(.bottom, 8)
                     }
                     ForEach(visibleStops) { stop in
@@ -300,7 +300,7 @@ struct DepartureDetailPanel: View {
                 Label("Voir toute la course", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .prominentButtonStyle()
         }
         // Autre départ : le parcours repart replié.
         .onChange(of: event.journeyRef) {

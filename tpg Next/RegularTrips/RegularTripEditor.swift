@@ -86,7 +86,23 @@ struct RegularTripEditor: View {
                     }
                 }
 
-                notificationsSection
+                if trip.snapshot.hasOnDemandLeg {
+                    // Ni rappel, ni alertes, ni activité en direct : voir `TripLiveActivities.canTrack`.
+                    CardSection("Notifications") {
+                        Label {
+                            Text("Ce trajet passe par un bus à la demande, sans horaire fixe : pas de rappel ni de suivi en direct. Pensez à le réserver.")
+                                .fixedSize(horizontal: false, vertical: true)
+                        } icon: {
+                            Image(systemName: "phone.fill")
+                                .foregroundStyle(.tint)
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 12)
+                    }
+                } else {
+                    notificationsSection
+                }
 
                 CardSection {
                     Toggle(isOn: hasLastDay.animation()) {
