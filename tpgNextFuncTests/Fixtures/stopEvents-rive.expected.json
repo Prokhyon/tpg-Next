@@ -5,6 +5,7 @@
         "A__NF"
       ],
       "destination" : "Veigy-Douane",
+      "destinationRef" : "ch:1:sloid:1401326:0:826365",
       "estimatedTime" : "2026-09-17T09:30:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079237",
       "lineName" : "G",
@@ -24,6 +25,7 @@
         "A__NF"
       ],
       "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
       "estimatedTime" : "2026-09-17T09:29:54Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988695",
       "lineName" : "7",
@@ -43,6 +45,7 @@
         "A__NF"
       ],
       "destination" : "Thônex-Vallard",
+      "destinationRef" : "ch:1:sloid:93124:0:615990",
       "estimatedTime" : "2026-09-17T09:29:12Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914041",
       "lineName" : "25",
@@ -62,6 +65,7 @@
         "A__NF"
       ],
       "destination" : "Lancy-Pont-Rouge-Gare",
+      "destinationRef" : "ch:1:sloid:89098:0:158679",
       "estimatedTime" : "2026-09-17T09:31:42Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444190",
       "lineName" : "17",
@@ -81,6 +85,7 @@
         "A__NF"
       ],
       "destination" : "Veyrier-Douane",
+      "destinationRef" : "ch:1:sloid:87905:0:511932",
       "estimatedTime" : "2026-09-17T09:33:18Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205790",
       "lineName" : "8",
@@ -100,6 +105,7 @@
         "A__NF"
       ],
       "destination" : "Belle-Terre-Place-de-l'Araire",
+      "destinationRef" : "ch:1:sloid:9321:0:714096",
       "estimatedTime" : "2026-09-17T09:29:30Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914531",
       "lineName" : "9",
@@ -119,6 +125,7 @@
         "A__NF"
       ],
       "destination" : "Moillesulaz",
+      "destinationRef" : "ch:1:sloid:93118:0:11534",
       "estimatedTime" : "2026-09-17T09:28:24Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444567",
       "lineName" : "12",
@@ -138,6 +145,7 @@
         "A__NF"
       ],
       "destination" : "Lancy-Bachet-Gare",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
       "estimatedTime" : "2026-09-17T09:32:12Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444489",
       "lineName" : "12",
@@ -157,6 +165,7 @@
         "A__NF"
       ],
       "destination" : "Puplinge, Pré-Marquis",
+      "destinationRef" : "ch:1:sloid:93087:0:261939",
       "estimatedTime" : "2026-09-17T09:31:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-31-33-0-Lun-Ven-34066277",
       "lineName" : "33",
@@ -176,6 +185,7 @@
         "A__NF"
       ],
       "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
       "estimatedTime" : "2026-09-17T09:34:42Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988694",
       "lineName" : "7",
@@ -195,6 +205,7 @@
         "A__NF"
       ],
       "destination" : "Lignon-Tours",
+      "destinationRef" : "ch:1:sloid:93173:0:613495",
       "estimatedTime" : "2026-09-17T09:36:24Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988667",
       "lineName" : "7",
@@ -215,6 +226,7 @@
         "ojp92008IR_IncidentTrip414_1"
       ],
       "destination" : "Palexpo",
+      "destinationRef" : "ch:1:sloid:92950:0:289497",
       "estimatedTime" : "2026-09-17T09:33:00Z",
       "isCancelled" : true,
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205857",
@@ -235,6 +247,7 @@
         "A__NF"
       ],
       "destination" : "Place de Neuve",
+      "destinationRef" : "ch:1:sloid:92885:0:296556",
       "estimatedTime" : "2026-09-17T09:35:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-92-0-Lun-Ven-33882147",
       "lineName" : "92",
@@ -254,6 +267,7 @@
         "A__NF"
       ],
       "destination" : "Hermance-Village",
+      "destinationRef" : "ch:1:sloid:87067:0:106033",
       "estimatedTime" : "2026-09-17T09:36:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079177",
       "lineName" : "E",
@@ -273,6 +287,7 @@
         "A__NF"
       ],
       "destination" : "Genève-Plage",
+      "destinationRef" : "ch:1:sloid:87059:0:357051",
       "estimatedTime" : "2026-09-17T09:36:54Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Lun-Ven-34652192",
       "lineName" : "6",
@@ -292,6 +307,7 @@
         "A__NF"
       ],
       "destination" : "Moillesulaz",
+      "destinationRef" : "ch:1:sloid:93118:0:1850",
       "estimatedTime" : "2026-09-17T09:33:54Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444566",
       "lineName" : "12",
@@ -311,6 +327,7 @@
         "A__NF"
       ],
       "destination" : "Lancy-Bachet-Gare",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
       "estimatedTime" : "2026-09-17T09:37:24Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444381",
       "lineName" : "12",
@@ -330,6 +347,7 @@
         "A__NF"
       ],
       "destination" : "Genève-Aéroport-Terminal",
+      "destinationRef" : "ch:1:sloid:92775:0:533072",
       "estimatedTime" : "2026-09-17T09:37:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-10-0-Lun-Ven-33808910",
       "lineName" : "10",
@@ -349,6 +367,7 @@
         "A__NF"
       ],
       "destination" : "Thônex-Vallard",
+      "destinationRef" : "ch:1:sloid:93124:0:615990",
       "estimatedTime" : "2026-09-17T09:37:24Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914039",
       "lineName" : "25",
@@ -368,6 +387,7 @@
         "A__NF"
       ],
       "destination" : "Genève-Plage",
+      "destinationRef" : "ch:1:sloid:87059:0:357051",
       "estimatedTime" : "2026-09-17T09:43:18Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Lun-Ven-34652370",
       "lineName" : "2",
@@ -387,6 +407,7 @@
         "A__NF"
       ],
       "destination" : "Annemasse-Parc Montessuit",
+      "destinationRef" : "ch:1:sloid:1400021:0:27404",
       "estimatedTime" : "2026-09-17T09:37:12Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444149",
       "lineName" : "17",
@@ -406,6 +427,7 @@
         "A__NF"
       ],
       "destination" : "Lancy-Pont-Rouge-Gare",
+      "destinationRef" : "ch:1:sloid:89098:0:158679",
       "estimatedTime" : "2026-09-17T09:39:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444189",
       "lineName" : "17",
@@ -425,6 +447,7 @@
         "A__NF"
       ],
       "destination" : "Belle-Terre-Place-de-l'Araire",
+      "destinationRef" : "ch:1:sloid:9321:0:714096",
       "estimatedTime" : "2026-09-17T09:40:24Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914534",
       "lineName" : "9",
@@ -444,6 +467,7 @@
         "A__NF"
       ],
       "destination" : "Gy-Temple",
+      "destinationRef" : "ch:1:sloid:87066:0:54554",
       "estimatedTime" : "2026-09-17T09:47:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791917",
       "lineName" : "A",
@@ -463,6 +487,7 @@
         "A__NF"
       ],
       "destination" : "Moillesulaz",
+      "destinationRef" : "ch:1:sloid:93118:0:11534",
       "estimatedTime" : "2026-09-17T09:41:42Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444565",
       "lineName" : "12",
@@ -482,6 +507,7 @@
         "A__NF"
       ],
       "destination" : "Lancy-Bachet-Gare",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
       "estimatedTime" : "2026-09-17T09:43:18Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444440",
       "lineName" : "12",
@@ -501,6 +527,7 @@
         "A__NF"
       ],
       "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
       "estimatedTime" : "2026-09-17T09:44:42Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988693",
       "lineName" : "7",
@@ -520,6 +547,7 @@
         "A__NF"
       ],
       "destination" : "Lignon-Tours",
+      "destinationRef" : "ch:1:sloid:93173:0:613495",
       "estimatedTime" : "2026-09-17T09:43:30Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988666",
       "lineName" : "7",
@@ -539,6 +567,7 @@
         "A__NF"
       ],
       "destination" : "Veigy-Douane",
+      "destinationRef" : "ch:1:sloid:1401326:0:826365",
       "estimatedTime" : "2026-09-17T09:45:00Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079262",
       "lineName" : "G",
@@ -558,6 +587,7 @@
         "A__NF"
       ],
       "destination" : "Veyrier-Douane",
+      "destinationRef" : "ch:1:sloid:87905:0:511932",
       "estimatedTime" : "2026-09-17T09:47:48Z",
       "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205789",
       "lineName" : "8",

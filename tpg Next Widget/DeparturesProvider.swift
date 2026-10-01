@@ -167,6 +167,10 @@ struct DeparturesProvider: AppIntentTimelineProvider {
     /// `nil` en cas d'échec réseau, vide si l'arrêt n'a pas de départ. La requête a son
     /// propre délai d'attente et se termine toujours : plus besoin de la borner ici.
     private func fetchDepartures(for stop: Stop) async -> [StopEvent]? {
+        // Sans la base des arrêts, les noms officiels des destinations viennent de l'index.
+        if StopNames.resolve == nil, let reader = StopIndexReader() {
+            StopNames.resolve = { reader.stop(sloid: $0)?.name }
+        }
         do {
             return try await fetchStopEvents(stopName: stop.name, stopSloid: stop.sloid, count: requestedDepartures).events
         } catch is ParserError {

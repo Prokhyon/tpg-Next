@@ -10,7 +10,7 @@ import CoreLocation
 import Combine
 import tpgNextFunc
 
-/// L'accueil : ce qui me concerne maintenant. Le prochain trajet, les favoris, les départs à
+/// L'accueil : ce qui me concerne maintenant. Le prochain trajet, les favoris, les lieux favoris, les départs à
 /// proximité (ou des favoris) et la carte, dans l'ordre choisi par l'utilisateur (`HomeSection`).
 /// Sur grand écran, les départs passent dans une seconde colonne ; les autres sections restent
 /// à gauche, et la carte y prend la place restante.
@@ -119,7 +119,12 @@ struct HomeView: View {
 //            ToolbarItem(placement: .principal) {
 //                Text("")
 //            }
-            // Un élément de barre, que le système peut poser à la verticale (iPhone Duo).
+            // Des éléments de barre, que le système peut poser à la verticale (iPhone Duo).
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(value: AppRoute.scheduledNotifications) {
+                    Label("Rappels prévus", systemImage: "bell")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(value: AppRoute.settings) {
                     Label("Paramètres", systemImage: "gear")
@@ -154,6 +159,8 @@ struct HomeView: View {
                         HomeSectionTitle("Favoris")
                         FavoriteView(isExpanded: $isExpanded, maxRows: maxRows)
                     }
+                case .places:
+                    FavoritePlacesSection()
                 case .departures:
                     HomeDepartures(testing: testing)
                 case .map:
@@ -209,5 +216,17 @@ struct HomeView: View {
 #Preview("Accueil — iPad", traits: .iPadLandscape) {
     HomeView(testing: false)
         .previewSettings([SettingKey.homeShowsFavorites: true])
+        .previewEnvironment()
+}
+
+#Preview("Accueil — départs et carte masqués") {
+    HomeView(testing: true)
+        .previewSettings([SettingKey.homeHiddenSections: HomeSection.stored([.departures, .map])])
+        .previewEnvironment()
+}
+
+#Preview("Accueil — iPad, départs masqués", traits: .iPadLandscape) {
+    HomeView(testing: true)
+        .previewSettings([SettingKey.homeHiddenSections: HomeSection.stored([.departures])])
         .previewEnvironment()
 }

@@ -23,6 +23,8 @@ enum AppRoute: Hashable {
     case tripMap(TripEvent)
     case settings
     case favoritesOrder
+    /// L'ordre et le nom des lieux favoris.
+    case favoritePlacesOrder
     /// L'ordre des sections de l'accueil.
     case homeLayout
     case scheduledNotifications
@@ -85,7 +87,9 @@ struct AppRouteDestination: View {
             SettingsView()
         case .favoritesOrder:
             FavoritesOrderView()
-                .navigationTitle("Ordre des favoris")
+                .navigationTitle("Arrêts favoris")
+        case .favoritePlacesOrder:
+            FavoritePlacesOrderView()
         case .homeLayout:
             HomeLayoutView()
         case .userGuide:

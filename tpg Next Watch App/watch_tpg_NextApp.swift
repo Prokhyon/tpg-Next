@@ -12,7 +12,7 @@ import Combine
 
 @main
 struct watch_tpg_Next_Watch_AppApp: App {
-    @State private var stopStore = StopStore()
+    @State private var stopStore = StopStore(publishesNames: true)
     @State private var watchFavorites = WatchFavoritesViewModel()
     
     var body: some Scene {

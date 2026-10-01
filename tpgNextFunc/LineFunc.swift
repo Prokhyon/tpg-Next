@@ -203,17 +203,21 @@ public struct BusLineIcon: View {
     
     var width: CGFloat = 35
     var height: CGFloat = 25
+    /// Un anneau de la couleur de l'app autour du badge : la course d'où l'on vient (lien entre
+    /// pages), à ne pas confondre avec la sélection, bordure orange de la rangée.
+    var highlighted = false
     /// Plafond de hauteur et largeur minimale du badge : identiques à la taille de texte
     /// normale, ils grandissent avec elle (le numéro était écrasé à grande taille).
     @ScaledMetric private var maxHeight: CGFloat = 25
     @ScaledMetric private var minWidth: CGFloat = 35
     
-    public init(lineName: String, operatorName: String, width: CGFloat = 35, height: CGFloat = 25) {
+    public init(lineName: String, operatorName: String, width: CGFloat = 35, height: CGFloat = 25,
+                highlighted: Bool = false) {
         self.lineName = lineName
         self.operatorName = operatorName
         self.height = height
         self.width = width
-        
+        self.highlighted = highlighted
     }
 
     public var body: some View {
@@ -228,6 +232,15 @@ public struct BusLineIcon: View {
                     Capsule()
                         .stroke(LineColors.lineColor(for: lineName, operatorName: operatorName), lineWidth: 4)
                    )
+                   .background {
+                       if highlighted {
+                           // Hors du trait de la ligne (qui déborde de 2 points), comme l'anneau
+                           // d'un arrêt sur la page d'une ligne.
+                           Capsule()
+                               .stroke(Color.accentColor, lineWidth: 3)
+                               .padding(-4.5)
+                       }
+                   }
            }
        }
    }

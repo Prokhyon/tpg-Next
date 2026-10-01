@@ -39,6 +39,9 @@ public struct StopEvent: Codable, Identifiable, Hashable {
     /// La course ne circule qu'un seul jour de l'horaire (`OperatingDays`) : déviation intégrée
     /// à l'horaire du jour, course spéciale… L'API ne dit pas laquelle. `nil` sinon.
     public var isExceptional: Bool?
+    /// L'arrêt de destination (`DestinationStopPointRef`, un sloid, souvent de quai) : son nom
+    /// officiel remplace le texte d'OJP (voir `StopNames`).
+    public var destinationRef: String?
 
     public var id: String { journeyRef + timetabledTime }
 
@@ -148,7 +151,9 @@ public func fetchStopEvents(stopName: String, stopSloid: String, count: Int, at 
     if let error = result.error {
         throw error
     }
-    return (result.events, result.quays)
+    // Les noms officiels des destinations : ici et dans `StopManager`, là où l'app charge les
+    // départs, et non dans le décodage, que les tests comparent octet pour octet.
+    return (result.events.map(StopNames.withOfficialDestination), result.quays)
 }
 
 /// Les départs et les quais d'une réponse `OJPStopEventRequest`, décodés hors du thread

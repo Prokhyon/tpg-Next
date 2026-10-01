@@ -264,8 +264,7 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         if followsLines, !legs.isEmpty {
             let usual = trips.filter(isUsual).min { gap($0) < gap($1) }
             if let usual, gap(usual) <= 30 * 60 {
-                let minutes = Int(((usual.anchorDate(anchor, timetabled: true) ?? target).timeIntervalSince(target) / 60).rounded())
-                return RegularTripMatch(trip: usual, kind: abs(minutes) <= 1 ? .usual : .shifted(minutes: minutes))
+                return usualMatch(usual, for: occurrence)
             }
         }
 
@@ -284,6 +283,25 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         // arrivent trop tard), le plus proche de l'heure voulue vaut mieux que rien.
         guard let best = best ?? trips.min(by: { gap($0) < gap($1) }) else { return nil }
         return RegularTripMatch(trip: best, kind: followsLines && !legs.isEmpty ? .alternative : .usual)
+    }
+
+    /// Le trajet habituel, à son heure ou décalé (horaire modifié).
+    public func usualMatch(_ trip: TripEvent, for occurrence: RegularTripOccurrence) -> RegularTripMatch {
+        let target = occurrence.target
+        let minutes = Int(((trip.anchorDate(anchor, timetabled: true) ?? target).timeIntervalSince(target) / 60).rounded())
+        return RegularTripMatch(trip: trip, kind: abs(minutes) <= 1 ? .usual : .shifted(minutes: minutes))
+    }
+
+    /// `trip`, s'il peut servir à vérifier le trajet habituel de ce jour-là course par course :
+    /// mêmes lignes et mêmes arrêts, des courses datées (`journeyRef`), et bien de ce jour-là.
+    /// `nil` sinon — l'itinéraire enregistré (`snapshot`), par exemple, date d'un autre jour.
+    public func knownUsual(_ trip: TripEvent?, for occurrence: RegularTripOccurrence) -> TripEvent? {
+        let recipe = recipe(for: occurrence.day)
+        guard recipe.followsLines, !recipe.legs.isEmpty, let trip, recipe.isUsual(trip),
+              trip.vehicleLegs.allSatisfy({ !$0.journeyRef.isEmpty }),
+              let anchorDate = trip.anchorDate(anchor, timetabled: true),
+              abs(anchorDate.timeIntervalSince(occurrence.target)) <= 30 * 60 else { return nil }
+        return trip
     }
 
     /// L'itinéraire enregistré, recalé sur ce jour : ce qu'on affiche tant qu'OJP n'a pas été
@@ -462,10 +480,34 @@ public enum RegularTripResolver {
 
     /// Demande les itinéraires du jour et y cherche le trajet habituel. Lève `Failure.request`
     /// si l'API ne répond pas, `Failure.noTrip` si aucun itinéraire ne convient.
-    public static func resolve(_ trip: RegularTrip, on occurrence: RegularTripOccurrence) async throws -> RegularTripMatch {
+    ///
+    /// `known` : le trajet habituel déjà reconnu ce jour-là (courses datées). Absent de la
+    /// réponse, ou remplacé par une autre course des mêmes lignes, il n'est pas perdu pour
+    /// autant : OJP ne propose que quelques itinéraires. Il est alors vérifié course par course
+    /// (`TripVerifier`), et gardé tant que ses courses passent et que ses correspondances tiennent.
+    public static func resolve(_ trip: RegularTrip, on occurrence: RegularTripOccurrence,
+                               known: TripEvent? = nil) async throws -> RegularTripMatch {
+        let known = trip.knownUsual(known, for: occurrence)
         let (time, isArrivalTime) = trip.request(for: occurrence)
-        let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime)
-        guard let match = trip.match(in: trips, for: occurrence) else { throw Failure.noTrip }
+        var match: RegularTripMatch?
+        var failure: Error = Failure.noTrip
+        do {
+            let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime)
+            match = trip.match(in: trips, for: occurrence)
+        } catch {
+            failure = error
+        }
+        if let match {
+            if case .usual = match.kind { return match }
+            // La course déjà reconnue, simplement décalée : OJP a raison, rien à vérifier.
+            if let known, match.trip.vehicleLegs.map(\.journeyRef) == known.vehicleLegs.map(\.journeyRef) {
+                return match
+            }
+        }
+        if let known, case .feasible(let verified) = await TripVerifier.verify(known) {
+            return trip.usualMatch(verified, for: occurrence)
+        }
+        guard let match else { throw failure }
         return match
     }
 
@@ -504,10 +546,11 @@ public enum SavedTripResolver {
         return recipe.match(in: trips, for: occurrence)
     }
 
-    /// Demande les itinéraires à l'heure de l'itinéraire enregistré et l'y retrouve.
+    /// Demande les itinéraires à l'heure de l'itinéraire enregistré et l'y retrouve. Absent de
+    /// la réponse, il est vérifié course par course : ses courses sont celles du jour.
     public static func resolve(_ saved: TripEvent) async throws -> RegularTripMatch {
         guard let (recipe, occurrence) = recipe(for: saved) else { throw RegularTripResolver.Failure.noTrip }
-        return try await RegularTripResolver.resolve(recipe, on: occurrence)
+        return try await RegularTripResolver.resolve(recipe, on: occurrence, known: saved)
     }
 
     private static func recipe(for saved: TripEvent) -> (RegularTrip, RegularTripOccurrence)? {

@@ -2,8 +2,8 @@
 //  NextTripCard.swift
 //  tpg Next
 //
-//  L'accueil commence par le prochain trajet, régulier ou enregistré : quand partir, d'où, et
-//  ce qui a changé.
+//  L'accueil commence par le prochain trajet, régulier ou enregistré : quand partir, l'itinéraire
+//  et ce qui a changé.
 //
 
 import SwiftUI
@@ -59,7 +59,8 @@ enum NextTrip {
     }
 }
 
-/// Quand partir, la montée (ligne, direction, quai), l'état en direct et les actions.
+/// Quand partir, puis l'itinéraire comme dans les résultats (heures, frise, départ et
+/// arrivée), l'état en direct et les actions.
 struct NextTripCard: View {
     @Environment(RegularTripsModel.self) private var regularTripsModel
     @Environment(SavedTripsModel.self) private var savedTripsModel
@@ -86,22 +87,9 @@ struct NextTripCard: View {
                     Spacer()
                     RegularTripStatusBadge(state: state, isSavedTrip: isSaved)
                 }
-                let countdown = TripCountdown(trip: displayed)
-                if let leg = displayed.vehicleLegs.first, let countdown, countdown.phase(at: now) != .onTheWay {
-                    vehicle(leg, countdown: countdown)
-                } else if isTracking {
-                    Label("Suivi en direct", systemImage: "inset.filled.circle")
-                        .font(.title2.bold())
-                        .foregroundStyle(.tint)
-                } else {
-                    // À pied, ou déjà dans le véhicule : une phrase suffit.
-                    Text(verbatim: countdown?.headline(at: now) ?? dateToString(with: trip.plannedDeparture))
-                        .font(.title2.bold())
-                }
-                Text(verbatim: "\(displayed.startName) → \(displayed.endName)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                departure(displayed)
+                // Comme un itinéraire : heures, frise, puis le départ et l'arrivée.
+                SavedTripView(event: displayed)
                 changes
             }
         } actions: {
@@ -137,40 +125,35 @@ struct NextTripCard: View {
         }
     }
 
-    /// Le véhicule d'abord, en gros : ligne, direction, heure de montée et « dans 8 min ». La
-    /// marche jusqu'à l'arrêt n'y est pas comprise : elle est rappelée à part, avec l'heure où
-    /// partir (« Partir dans 3 min · 5 min à pied jusqu'à Rive »).
-    private func vehicle(_ leg: TripLeg, countdown: TripCountdown) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
-                Text(verbatim: "→ \(leg.legDestination)")
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                if let board = leg.boardDate {
-                    Text(dateToString(with: board))
-                        .monospacedDigit()
-                }
+    /// Quand partir, en gros (« Départ dans 8 min », « Partir dans 3 min »), puis la marche
+    /// jusqu'à l'arrêt et le quai. La ligne, elle, est sur la frise.
+    @ViewBuilder
+    private func departure(_ displayed: TripEvent) -> some View {
+        let countdown = TripCountdown(trip: displayed)
+        let isBefore = countdown.map { $0.phase(at: now) != .onTheWay } ?? false
+        let quay = displayed.vehicleLegs.first?.legBoardQuay ?? ""
+        VStack(alignment: .leading, spacing: 4) {
+            if isTracking {
+                Label("Suivi en direct", systemImage: "inset.filled.circle")
+                    .foregroundStyle(.tint)
+                    .font(.title2.bold())
+            } else {
+                Text(verbatim: countdown?.headline(at: now) ?? dateToString(with: trip.plannedDeparture))
+                    .font(.title2.bold())
             }
-            .font(.title3.bold())
-            HStack(spacing: 8) {
-                if !leg.legBoardQuay.isEmpty {
-                    Text("Quai \(leg.legBoardQuay)")
+            if isBefore, countdown?.walkDescription != nil || !quay.isEmpty {
+                HStack(spacing: 8) {
+                    if let walk = countdown?.walkDescription {
+                        Label(walk, systemImage: "figure.walk")
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    if !quay.isEmpty {
+                        Text("Quai \(quay)")
+                    }
                 }
-                Spacer(minLength: 4)
-                if isTracking {
-                    Label("Suivi en direct", systemImage: "inset.filled.circle")
-                        .foregroundStyle(.tint)
-                } else if let relative = countdown.departureRelative(at: now) {
-                    Text(verbatim: relative)
-                }
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            if let walk = countdown.walkReminder(at: now) {
-                Label(walk, systemImage: "figure.walk")
-                    .font(.subheadline.weight(countdown.phase(at: now) == .walkToStop ? .semibold : .regular))
-                    .foregroundStyle(countdown.phase(at: now) == .walkToStop ? .primary : .secondary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
         }
     }

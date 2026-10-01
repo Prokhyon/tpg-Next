@@ -14,8 +14,11 @@ struct StopEventView: View  {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var event: StopEvent
     var showTime: Bool
+    /// La course d'où l'on vient (lien entre pages) : un anneau autour de sa ligne.
     var previousLineRef: String?
     var mapVersion = false
+    /// Le départ détaillé à côté, sur grand écran : la bordure orange de la rangée.
+    var isSelected = false
 
     var body: some View {
         let transportTime = departureDisplay(for: event, showTime: showTime, at: now)
@@ -25,7 +28,7 @@ struct StopEventView: View  {
                 // que quelques lettres de large. Elle passe dessous, en pleine largeur.
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
+                        BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, highlighted: isLinked)
                         Spacer()
                         DepartureTimeView(transportTime, transportType: event.transportType, iconWidth: 10)
                         QuayIcon(quay: event.plannedQuay)
@@ -39,7 +42,7 @@ struct StopEventView: View  {
                 }
             } else {
                 HStack {
-                    BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
+                    BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, highlighted: isLinked)
                     Image(systemName: "arrow.right").font(.caption)
                     SmallStopTitleView(stopName: event.destination)
                     .strikethrough(event.cancelled)
@@ -52,8 +55,12 @@ struct StopEventView: View  {
             }
         }
         .padding(.horizontal)
-        .basicElementBackground(minHeight: 50, transparent: mapVersion, highlighted: event.journeyRef == (previousLineRef ?? ""))
+        .basicElementBackground(minHeight: 50, transparent: mapVersion, selected: isSelected)
         .padding(5)
+    }
+
+    private var isLinked: Bool {
+        event.journeyRef == (previousLineRef ?? "")
     }
 }
 

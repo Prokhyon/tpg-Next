@@ -15,10 +15,11 @@ import WidgetKit
 
 @main
 struct TPG4App: App {
-    @State private var stopStore = StopStore()
+    @State private var stopStore = StopStore(publishesNames: true)
     // Doit être l'instance partagée : l'AppDelegate passe par FavoritesViewModel.shared
     // pour la synchronisation avec la montre.
     @State private var favoritesViewModel = FavoritesViewModel.shared
+    @State private var favoritePlaces = FavoritePlacesModel.shared
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
@@ -49,6 +50,7 @@ struct TPG4App: App {
                 .tickingClock()
                 .environment(stopStore)
                 .environment(favoritesViewModel)
+                .environment(favoritePlaces)
                 .task {
                     // La base se charge en arrière-plan : on l'attend avant de s'en servir.
                     await stopStore.waitUntilLoaded()
@@ -75,6 +77,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         RegularTripsModel.registerBackgroundTask()
         // Ici plutôt que dans une vue : une tâche de fond lance l'app sans interface.
         FavoritesViewModel.shared.startCloudSync()
+        FavoritePlacesModel.shared.startCloudSync()
         RegularTripsModel.shared.startCloudSync()
         
         // Initialize WCSession

@@ -202,6 +202,16 @@ horaires (`estimatedVehiclePosition`).
   heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` 1.0 est redemandée et le
   trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
   notifications : `tpg Next/RegularTrips/`.
+- **Absent de la réponse ne veut pas dire perdu** : OJP ne propose que ~5 itinéraires, choisis
+  d'après le temps réel. Quand le trajet habituel n'y est plus (ou n'y est qu'à une autre
+  heure), celui déjà reconnu ce jour-là (`RegularTrip.knownUsual` : courses datées, même jour)
+  est vérifié course par course par `TripVerifier` (`OJPTripInfoRequest`) : il reste `.usual`
+  tant que ses courses s'arrêtent à la montée et à la descente et qu'aucun véhicule suivant ne
+  part avant l'arrivée du précédent (plus serré que la marche : gardé, signalé « compromise »).
+  Le trajet connu vient de `RegularTripsModel` (gardé d'un lancement à l'autre,
+  `regularTripsKnownUsual`), de l'activité en direct, de l'itinéraire enregistré lui-même, ou
+  de l'autre trajet choisi pour ce jour. Une première reconnaissance sans trajet connu (app
+  relancée tout près du départ) reste exposée au problème.
 - « Mes itinéraires » (`SavedTripsAgenda`, dans `SavedTripsView.swift`) mélange jour par jour les
   itinéraires enregistrés et les prochains trajets réguliers, avec un filtre Tous / Enregistrés /
   Réguliers. Tout va du plus ancien (en haut) au plus récent. Les passés, au-dessus, sont
@@ -228,6 +238,10 @@ horaires (`estimatedVehiclePosition`).
   une fois dans la semaine qui précède, puis au rythme des trajets réguliers dans les trois
   heures, tant que l'agenda est affiché ; l'état n'est pas enregistré. « Autres horaires » et
   « Choisir un autre trajet » passent par `TripAlternativesView`.
+- **Le suivi exige la localisation** (`TripLiveActivities.hasLocation`) : sans elle, rien ne
+  garde l'app éveillée et l'activité se figerait. Le bouton reste visible et explique
+  (`askForLocation`) ; les lancements automatiques se taisent, et n'ont lieu qu'au premier plan
+  (ActivityKit) — un trajet n'est marqué lancé que si l'activité existe vraiment.
 - L'activité en direct suit soit un **itinéraire** (redemandé par `OJPTripRequest`), soit une
   **course** choisie depuis un départ (`TrackJourneyView`, route `.trackJourney`) et redemandée
   par `OJPTripInfoRequest` : on reste sur ce véhicule-là même s'il prend du retard.
@@ -273,8 +287,25 @@ horaires (`estimatedVehiclePosition`).
     page du trajet. Les boutons de l'écran verrouillé passent par `TripBoardingIntent`
     (`LiveActivityIntent`, compilé aussi dans le widget) : il poste une notification que l'app
     reçoit, faute de pouvoir appeler `TripLiveActivities` depuis le widget.
-- Alertes de montée, de descente et d'arrivée : `TripStepAlerts`, posées à l'avance comme les
-  rappels, et reposées à chaque mise à jour du trajet — donc avec la correction de position.
+- Alertes d'un trajet suivi : `TripStepAlerts`, posées à l'avance comme les rappels, et
+  reposées à chaque mise à jour du trajet — donc avec la correction de position. Par véhicule :
+  « Votre véhicule arrive » (1 min avant la montée, omise si le « Descendez ici » précédent
+  tombe moins de 3 min avant : il l'annonce), « Préparez-vous à descendre · Prochain arrêt : X »
+  (au départ de l'arrêt d'avant, lu dans les passages embarqués ; sinon 2 min avant), puis
+  « Descendez ici · C'est votre arrêt : X. Ensuite : le 19 à 16:03, quai B. » (30 s avant).
+  « Arrivée » seulement si le trajet finit à pied.
+  Chacune ne part qu'une fois (`liveStepAlertDates`) : reposer une alerte déjà partie quand
+  l'heure reculait la faisait sonner deux fois.
+- L'activité s'allume et sonne (`AlertConfiguration`) quand une correspondance serrée pose sa
+  question, ou quand son texte de changement change : en route, et avant le départ des
+  itinéraires qui ne sont pas des trajets réguliers (ceux-là ont leurs notifications). En route,
+  les alertes de trajet régulier se taisent (`TripLiveActivities.isUnderway`) : l'itinéraire
+  redemandé depuis le départ n'a plus rien à dire.
+- Rappels posés depuis un départ (`BusNotificationManager`) : recalés sur l'heure estimée à
+  chaque réveil de l'app (`refreshPending`, appelé par `RegularTripsModel.refresh`), et la
+  tâche de fond est demandée une heure avant le prochain. En avance, seule la notification à
+  l'heure estimée part. Les rappels des trajets réguliers ne prennent que la place laissée
+  sous 60 notifications en attente (iOS n'en garde que les 64 plus proches).
 - Une notification dont le moment est passé quitte le centre de notifications :
   `NotificationExpiry.mark(_:after:)` à la pose, `clearExpired()` au ménage (premier plan chaque
   minute, réveils en arrière-plan). iOS ne sait pas le faire seul, donc celles reçues app éteinte
@@ -282,9 +313,13 @@ horaires (`estimatedVehiclePosition`).
 - Dynamic Island dépliée : le nom du trajet (ou, à bord, l'arrêt du véhicule) à gauche de la
   caméra, l'heure d'arrivée à droite, et dessous la frise sans son en-tête
   (`showsHeader: false`), avec ses traits de lignes — ou la question et ses boutons.
-- Dans la Dynamic Island compacte, le décompte est celui du système (`Text(timerInterval:)`,
-  « 4:32 ») : les formats en toutes lettres n'y tiennent pas. Le marqueur dit ce qu'il y a à
-  faire — badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, véhicule à l'arrivée.
+- Dans la Dynamic Island compacte, les minutes du système (« 4 minutes », réduites pour tenir),
+  comme sur l'écran verrouillé : le décompte à la seconde (« 4:32 ») promettait une précision
+  que les heures estimées n'ont pas, et aucun format système ne donne « 4' » (vérifié : même le
+  minuteur réglé à la minute écrit « 2 minutes »). Le marqueur dit ce qu'il y a à faire —
+  badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, puis l'icône du véhicule
+  une minute avant la montée estimée (`TripActivityState.approachLead`, échéance ajoutée à
+  `nextTransition` pour que le système redessine seul), et le véhicule à l'arrivée.
 - Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
   utiliser les aperçus de `TripLiveActivity.swift`.
 

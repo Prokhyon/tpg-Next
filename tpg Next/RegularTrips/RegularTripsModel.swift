@@ -16,6 +16,10 @@ final class RegularTripsModel {
     static let shared = RegularTripsModel()
     static let backgroundTaskID = "com.loristhomas.tpgNext.regularTrips"
     private static let store = CodableStore<[RegularTrip]>(key: "regularTrips")
+    /// Le trajet habituel reconnu chaque jour, par `RegularTripOccurrence.id` : ses courses
+    /// datées servent à le vérifier quand OJP cesse de le proposer. Gardé d'un lancement à
+    /// l'autre : c'est souvent tout près du départ qu'il disparaît de la réponse.
+    private static let knownStore = CodableStore<[String: TripEvent]>(key: "regularTripsKnownUsual")
     @ObservationIgnored private let cloud = CloudCollection<RegularTrip>(key: "cloud.regularTrips") { $0.id.uuidString }
 
     /// Un trajet est redemandé à OJP quand son départ approche : avant, le temps réel est vide.
@@ -77,12 +81,19 @@ final class RegularTripsModel {
             regularTrips.append(trip)
         }
         // Heure, jours ou lignes ont pu changer : l'état du jour ne vaut plus.
-        live = live.filter { !$0.key.hasPrefix(trip.id.uuidString) }
+        forgetDay(of: trip)
     }
 
     func remove(_ trip: RegularTrip) {
         regularTrips.removeAll { $0.id == trip.id }
+        forgetDay(of: trip)
+    }
+
+    private func forgetDay(of trip: RegularTrip) {
         live = live.filter { !$0.key.hasPrefix(trip.id.uuidString) }
+        if let known = Self.knownStore.load() {
+            Self.knownStore.save(known.filter { !$0.key.hasPrefix(trip.id.uuidString) })
+        }
     }
 
     /// Ce jour-là, le trajet n'est pas fait (congé, télétravail).
@@ -159,13 +170,17 @@ final class RegularTripsModel {
         RegularTripAlerts.scheduleReminders(for: self)
         TripLiveActivities.shared.startSoonDepartingTrips(of: self, now: now)
         await TripLiveActivities.shared.refresh(model: self, now: now)
+        // Les rappels posés depuis un départ : c'est aussi le seul moment où l'app les recale.
+        await BusNotificationManager.shared.refreshPending(now: now)
         // Le ménage des notifications dont le moment est passé : c'est ici que l'app est réveillée.
         NotificationExpiry.clearExpired(now: now)
     }
 
-    /// Retrouve le trajet du jour auprès d'OJP. Rend le trajet trouvé, `nil` sinon.
+    /// Retrouve le trajet du jour auprès d'OJP. Rend le trajet trouvé, `nil` sinon. `known` :
+    /// le trajet habituel du jour tel que le connaît l'appelant (l'activité en direct), à défaut
+    /// de celui gardé ici.
     @MainActor @discardableResult
-    func resolve(_ occurrence: RegularTripOccurrence, force: Bool = false) async -> RegularTripMatch? {
+    func resolve(_ occurrence: RegularTripOccurrence, force: Bool = false, known: TripEvent? = nil) async -> RegularTripMatch? {
         guard let trip = trip(for: occurrence) else { return nil }
         if !force, let last = lastRequest[occurrence.id], Date().timeIntervalSince(last) < Self.minimumInterval(before: occurrence.plannedDeparture) {
             if case .found(let match, _) = live[occurrence.id] { return match }
@@ -175,10 +190,24 @@ final class RegularTripsModel {
         if live[occurrence.id] == nil {
             live[occurrence.id] = .loading
         }
+        var knownTrips = Self.knownStore.load() ?? [:]
+        let known = trip.knownUsual(known, for: occurrence)
+            ?? trip.knownUsual(knownTrips[occurrence.id], for: occurrence)
+            ?? trip.knownUsual(trip.dayOverrides?[occurrence.day], for: occurrence)
         do {
-            let match = try await RegularTripResolver.resolve(trip, on: occurrence)
+            let match = try await RegularTripResolver.resolve(trip, on: occurrence, known: known)
             live[occurrence.id] = .found(match, updated: Date())
-            RegularTripAlerts.notifyChanges(of: trip, occurrence: occurrence, match: match)
+            if let usual = trip.knownUsual(match.trip, for: occurrence) {
+                knownTrips[occurrence.id] = usual
+                // Les jours passés ne servent plus.
+                let today = Calendar.swissTransit.dayKey(for: Date())
+                Self.knownStore.save(knownTrips.filter { String($0.key.suffix(10)) >= today })
+            }
+            // En route, l'activité en direct suit le trajet de plus près (correspondances,
+            // suite recalculée) : l'itinéraire redemandé depuis le départ n'a plus rien à dire.
+            if !TripLiveActivities.shared.isUnderway(occurrence.id) {
+                RegularTripAlerts.notifyChanges(of: trip, occurrence: occurrence, match: match)
+            }
             await TripLiveActivities.shared.didResolve(occurrence.id, match: match)
             return match
         } catch RegularTripResolver.Failure.noTrip {
@@ -204,6 +233,9 @@ final class RegularTripsModel {
                 || (RegularTripAlerts.remindersEnabledOnThisDevice && trip.reminderMinutes != nil)
         }
         let request = BGAppRefreshTaskRequest(identifier: Self.backgroundTaskID)
+        // Un rappel posé depuis un départ : relire son heure estimée avant qu'il ne parte.
+        let reminderCheck = BusNotificationManager.shared.nextReminderDeparture
+            .map { max($0.addingTimeInterval(-3600), now.addingTimeInterval(15 * 60)) }
         if let arrival = TripLiveActivities.shared.nextActivityArrival {
             // Un trajet suivi en direct : au plus tôt pour suivre les retards, puis juste après
             // l'arrivée, pour terminer l'activité. iOS décide du rythme réel.
@@ -213,7 +245,10 @@ final class RegularTripsModel {
                 : now.addingTimeInterval(5 * 60)
         } else if let next = watched.first {
             // Une heure avant le départ, et pas plus d'une fois par quart d'heure.
-            request.earliestBeginDate = max(next.plannedDeparture.addingTimeInterval(-3600), now.addingTimeInterval(15 * 60))
+            let tripCheck = max(next.plannedDeparture.addingTimeInterval(-3600), now.addingTimeInterval(15 * 60))
+            request.earliestBeginDate = min(tripCheck, reminderCheck ?? tripCheck)
+        } else if let reminderCheck {
+            request.earliestBeginDate = reminderCheck
         } else {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.backgroundTaskID)
             return

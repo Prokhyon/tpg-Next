@@ -64,26 +64,24 @@ struct LineDetailPane: View {
     }
 }
 
-/// Carte de la course : tracé, arrêts, arrêt sélectionné et position estimée du véhicule.
+/// La carte d'une course : tracé, arrêts (celui sélectionné, plus gros) et position estimée du véhicule.
+/// La même dans la moitié droite de la page ligne et en plein écran (`LineMapView`), qui
+/// n'ajoute que le titre et les départs de l'arrêt touché.
 struct LineMapPanel: View {
     @Environment(\.displayTime) private var now
     let stopEvent: StopEvent
     let currentStopSloid: String?
     let journey: JourneyTrackModel
     let selectedStop: LineEvent?
+    /// Toucher un arrêt (plein écran) ; sans, les arrêts ne réagissent pas.
+    var selectStop: ((LineEvent) -> Void)? = nil
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
         Map(position: $position) {
             JourneyMapContent(events: journey.events, segments: journey.segments, lineName: stopEvent.lineName,
-                              operatorName: journey.operatorName, currentStopSloid: currentStopSloid, now: now)
-            if let selectedStop {
-                Annotation("", coordinate: selectedStop.coordinate, anchor: .center) {
-                    Circle()
-                        .strokeBorder(Color.accent, lineWidth: 4)
-                        .frame(width: 28, height: 28)
-                }
-            }
+                              operatorName: journey.operatorName, currentStopSloid: currentStopSloid, now: now,
+                              selectStop: selectStop, selectedStop: selectedStop)
             if let vehicle = estimatedVehiclePosition(events: journey.events, segments: journey.segments, at: now) {
                 Annotation(String(localized: "Position estimée"), coordinate: vehicle, anchor: .center) {
                     transportIcon(with: stopEvent.transportType)

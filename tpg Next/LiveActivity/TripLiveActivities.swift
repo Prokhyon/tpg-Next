@@ -8,6 +8,7 @@
 import Foundation
 import ActivityKit
 import CoreLocation
+import UIKit
 import Observation
 import tpgNextFunc
 
@@ -144,12 +145,45 @@ final class TripLiveActivities {
 
     var areEnabled: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
 
+    /// Le suivi exige la localisation : sans elle, rien ne garde l'app éveillée une fois
+    /// quittée (`TripBackgroundLocation`), et l'activité se figerait sur des heures fausses.
+    var hasLocation: Bool {
+        let status = CLLocationManager().authorizationStatus
+        return status == .authorizedWhenInUse || status == .authorizedAlways
+    }
+
+    /// Dit pourquoi le suivi ne démarre pas, et demande la localisation si elle ne l'a jamais été.
+    func askForLocation() {
+        if CLLocationManager().authorizationStatus == .notDetermined {
+            locationManager.requestLocationAuthorization()
+            NotificationConfirmationViewModel.shared.show(
+                message: String(localized: "Le suivi en direct a besoin de votre position. Autorisez-la, puis relancez le suivi."),
+                error: true)
+        } else {
+            NotificationConfirmationViewModel.shared.show(
+                message: String(localized: "Le suivi en direct a besoin de votre position pour rester à jour, app fermée.\nAutorisez-la dans les réglages du téléphone"),
+                error: true)
+        }
+    }
+
+    /// Vrai si ce trajet est suivi et que le voyageur est déjà parti : l'activité s'en occupe.
+    func isUnderway(_ key: String, now: Date = Date()) -> Bool {
+        activity(for: key) != nil && hasLeft(key, now: now)
+    }
+
     func isTracking(_ key: String) -> Bool { activeKeys.contains(key) }
 
     static func key(for trip: TripEvent) -> String { "trip_" + trip.id }
 
     static func key(forJourney event: StopEvent, boardSloid: String) -> String {
         "journey_" + event.journeyRef + "_" + sloidHarmonizer(code: boardSloid)
+    }
+
+    /// La course suivie en ce moment, quel que soit l'arrêt où l'on y monte : la page d'une
+    /// ligne ne sait pas lequel a été choisi. `nil` si elle n'est pas suivie.
+    func trackedKey(forJourney journeyRef: String) -> String? {
+        guard !journeyRef.isEmpty else { return nil }
+        return activeKeys.first { $0.hasPrefix("journey_" + journeyRef + "_") }
     }
 
     // MARK: Lancer et arrêter
@@ -188,6 +222,10 @@ final class TripLiveActivities {
     private func start(key: String, tracked entry: Tracked, title: String,
                        state: TripActivityState?, origin: String, destination: String) {
         guard areEnabled, activity(for: key) == nil, let state, state.arrival > Date() else { return }
+        guard hasLocation else {
+            askForLocation()
+            return
+        }
         let attributes = TripActivityAttributes(key: key, title: title, origin: origin, destination: destination)
         do {
             let activity = try Activity.request(attributes: attributes, content: content(for: state), pushType: nil)
@@ -291,8 +329,30 @@ final class TripLiveActivities {
         let key = activity.attributes.key
         baseStates[key] = state
         let corrected = await adjusted(state, key: key, now: now)
-        await activity.update(content(for: corrected))
+        let alert = alertConfiguration(for: corrected, previous: live[key]?.state, key: key,
+                                       title: activity.attributes.title, now: now)
+        await activity.update(content(for: corrected), alertConfiguration: alert)
         record(attributes: activity.attributes, state: corrected)
+    }
+
+    /// Ce qui mérite d'allumer l'écran : une correspondance à trancher, ou un changement annoncé
+    /// par l'activité (retard, correspondance perdue, suite recalculée). Avant le départ d'un
+    /// trajet régulier, ses propres notifications préviennent déjà (`RegularTripAlerts`).
+    private func alertConfiguration(for state: TripActivityState, previous: TripActivityState?,
+                                    key: String, title: String, now: Date) -> AlertConfiguration? {
+        guard let previous else { return nil }
+        let body: String
+        if let question = state.question, previous.question == nil {
+            body = String(localized: "Correspondance serrée à \(question.stop) · Êtes-vous monté dans le \(question.line) ?")
+        } else if let change = state.alert, change != previous.alert {
+            if case .trip(let entry) = tracked[key], entry.isRegular, !state.hasLeft(at: now) { return nil }
+            body = change
+        } else {
+            return nil
+        }
+        return AlertConfiguration(title: LocalizedStringResource(stringLiteral: title),
+                                  body: LocalizedStringResource(stringLiteral: body),
+                                  sound: .named("tpgNextNotificationSound.caf"))
     }
 
     /// L'état corrigé par la position du voyageur, quand il est dans le véhicule en cours.
@@ -344,7 +404,10 @@ final class TripLiveActivities {
     /// Lance l'activité des trajets réguliers qui partent bientôt. Une seule fois par trajet :
     /// fermée par l'utilisateur, elle ne revient pas.
     func startSoonDepartingTrips(of model: RegularTripsModel, now: Date = Date()) {
-        guard areEnabled, RegularTripAlerts.isEnabledOnThisDevice else { return }
+        // Une activité ne démarre qu'app au premier plan : essayer en arrière-plan échouerait,
+        // et marquerait le trajet comme lancé.
+        guard areEnabled, hasLocation, UIApplication.shared.applicationState == .active,
+              RegularTripAlerts.isEnabledOnThisDevice else { return }
         var started = Set(Self.autoStartedStore.load() ?? [])
         for occurrence in model.upcoming(after: now, days: 1) {
             guard occurrence.plannedDeparture.timeIntervalSince(now) < Self.autoStartLead,
@@ -354,7 +417,7 @@ final class TripLiveActivities {
             var match: RegularTripMatch?
             if case .found(let found, _) = model.state(of: occurrence) { match = found }
             start(occurrence: occurrence, of: recipe, trip: trip, match: match)
-            started.insert(occurrence.id)
+            if isTracking(occurrence.id) { started.insert(occurrence.id) }
         }
         // Les jours passés ne servent plus.
         let today = Calendar.swissTransit.dayKey(for: now)
@@ -365,7 +428,7 @@ final class TripLiveActivities {
     /// (`SavedTripAutoTracking`). Une seule fois par itinéraire : fermé, il ne revient pas.
     func startSoonDepartingSavedTrips(of model: SavedTripsModel, now: Date = Date()) {
         let minutes = SavedTripAutoTracking.leadMinutes
-        guard areEnabled, minutes > 0 else { return }
+        guard areEnabled, hasLocation, minutes > 0, UIApplication.shared.applicationState == .active else { return }
         var started = Set(Self.autoStartedStore.load() ?? [])
         for saved in model.savedTrips {
             let trip = model.displayedTrip(for: saved)
@@ -376,7 +439,7 @@ final class TripLiveActivities {
             let startedKey = "saved_\(saved.id)_\(Calendar.swissTransit.dayKey(for: departure))"
             guard !started.contains(startedKey) else { continue }
             start(trip: trip)
-            started.insert(startedKey)
+            if isTracking(Self.key(for: trip)) { started.insert(startedKey) }
         }
         let today = Calendar.swissTransit.dayKey(for: now)
         Self.autoStartedStore.save(started.filter { String($0.suffix(10)) >= today })
@@ -437,14 +500,14 @@ final class TripLiveActivities {
             switch tracked[key] {
             case .trip(let entry) where entry.isRegular:
                 // Le modèle limite les requêtes, et rend le dernier trajet connu entre-temps.
-                if let match = await model.resolve(entry.occurrence) {
+                if let match = await model.resolve(entry.occurrence, known: entry.trip) {
                     await didResolve(key, match: match)
                     continue
                 }
             case .trip(let entry):
                 if mayRequest {
                     lastRequest[key] = now
-                    if let match = try? await RegularTripResolver.resolve(entry.recipe, on: entry.occurrence) {
+                    if let match = try? await RegularTripResolver.resolve(entry.recipe, on: entry.occurrence, known: entry.trip) {
                         await didResolve(key, match: match)
                         continue
                     }

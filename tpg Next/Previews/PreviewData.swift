@@ -35,6 +35,20 @@ enum PreviewData {
     /// Favoris de démonstration, dans l'ordre de la grille.
     static let favorites = [rive, cornavin, plainpalais, belAir, eauxVives, rondeau, meinier, airport]
 
+    /// Lieux favoris : un renommé (« Maison »), deux sous leur nom de Plans.
+    static let places: [FavoritePlace] = {
+        var home = FavoritePlace(name: "Rue de Carouge 50", address: "1205 Genève",
+                                 coordinate: CLLocationCoordinate2D(latitude: 46.19512, longitude: 6.14199))
+        home.name = "Maison"
+        return [
+            home,
+            FavoritePlace(name: "Université de Genève – Uni Mail", address: "Boulevard du Pont-d'Arve 40, 1205 Genève",
+                          coordinate: CLLocationCoordinate2D(latitude: 46.19517, longitude: 6.14046)),
+            FavoritePlace(name: "Bains des Pâquis", address: "Quai du Mont-Blanc 30, 1201 Genève",
+                          coordinate: CLLocationCoordinate2D(latitude: 46.21087, longitude: 6.15205)),
+        ]
+    }()
+
     // MARK: - Départs (Genève, Rive)
 
     /// Une trentaine de départs, du plus proche au plus lointain. Le premier (G) est parti

@@ -18,6 +18,7 @@ struct SearchView: View {
     @Environment(\.displayTime) private var now
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
+    @Environment(FavoritePlacesModel.self) private var favoritePlaces
     @Environment(ItineraryViewModel.self) var itinerary
     @Environment(NavigationModel.self) var navigationModel
     @Environment(RecentSearch.self) var recentSearchModel
@@ -95,8 +96,13 @@ struct SearchView: View {
                     stopRow(stop)
                 } else if let coordinates = item.geoCoordinates {
                     let title = item.placeTitle
-                    placeRow(title: title.name, subtitle: title.subtitle) {
-                        place = PlaceSheetItem(name: title.name, subtitle: title.subtitle, coordinate: coordinates.toCLLocationCoordinate2D)
+                    let coordinate = coordinates.toCLLocationCoordinate2D
+                    placeRow(title: title.name, subtitle: title.subtitle,
+                             isFavorite: favoritePlaces.isFavorite(coordinate),
+                             toggleFavorite: {
+                                 favoritePlaces.toggle(name: title.name, address: title.subtitle, coordinate: coordinate)
+                             }) {
+                        place = PlaceSheetItem(name: title.name, subtitle: title.subtitle, coordinate: coordinate)
                     }
                 }
             }
@@ -154,7 +160,9 @@ struct SearchView: View {
         if !places.isEmpty {
             sectionTitle("Lieux")
             ForEach(places, id: \.self) { completion in
-                placeRow(title: completion.title, subtitle: completion.subtitle) {
+                placeRow(title: completion.title, subtitle: completion.subtitle,
+                         isFavorite: favoritePlace(for: completion) != nil,
+                         toggleFavorite: { toggleFavorite(completion) }) {
                     open(completion)
                 }
             }
@@ -289,9 +297,13 @@ struct SearchView: View {
         .padding(.horizontal)
     }
 
-    private func placeRow(title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+    /// Un lieu : sa fiche au toucher ; l'étoile le garde parmi les lieux favoris.
+    private func placeRow(title: String, subtitle: String, isFavorite: Bool, toggleFavorite: @escaping () -> Void,
+                          action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            BasicLocationView(name: title, subtitle: subtitle, isGeoPosition: true)
+            BasicLocationView(name: title, subtitle: subtitle, isGeoPosition: true,
+                              isFavorite: isFavorite, showFavorite: true,
+                              favoriteAction: { withAnimation { toggleFavorite() } })
         }
         .foregroundStyle(.primary)
         .padding(5)
@@ -372,6 +384,27 @@ struct SearchView: View {
     private func distance(from location: CLLocation, to stop: Stop) -> String {
         let meters = CLLocation(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon).distance(from: location)
         return Measurement(value: meters, unit: UnitLength.meters).formatted(.measurement(width: .abbreviated, usage: .road))
+    }
+
+    /// Le lieu favori d'une suggestion de Plans, reconnu à son nom et son adresse : ses
+    /// coordonnées ne sont connues qu'une fois la suggestion ouverte.
+    private func favoritePlace(for completion: MKLocalSearchCompletion) -> FavoritePlace? {
+        favoritePlaces.places.first { $0.placeName == completion.title && ($0.address ?? "") == completion.subtitle }
+    }
+
+    private func toggleFavorite(_ completion: MKLocalSearchCompletion) {
+        if let existing = favoritePlace(for: completion) {
+            favoritePlaces.remove(existing)
+            return
+        }
+        locationSearch.getCoordinate(for: completion) { coordinate in
+            guard let coordinate else { return }
+            DispatchQueue.main.async {
+                withAnimation {
+                    favoritePlaces.add(name: completion.title, address: completion.subtitle, coordinate: coordinate)
+                }
+            }
+        }
     }
 
     private func toggleFavorite(stop: Stop) {

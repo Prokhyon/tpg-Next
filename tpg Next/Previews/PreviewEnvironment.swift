@@ -24,15 +24,17 @@ extension View {
     ///   - navigation: enveloppe la vue dans une pile qui ouvre les routes (liens, `openRoute`).
     ///     `false` pour un composant, ou un écran qui a déjà sa pile (`ContentView`).
     ///   - favorites: favoris posés au lancement de l'aperçu ; `[]` pour l'état sans favori.
+    ///   - places: lieux favoris ; `[]` pour l'état sans lieu.
     ///   - savedTrips: itinéraires enregistrés.
     ///   - itinerary: départ et arrivée déjà choisis dans l'itinéraire (recherche faite).
     ///   - background: le dégradé de l'app derrière la vue.
     func previewEnvironment(navigation: Bool = true,
                             favorites: [Stop] = PreviewData.favorites,
+                            places: [FavoritePlace] = PreviewData.places,
                             savedTrips: [TripEvent] = [],
                             itinerary: (from: Stop, to: Stop)? = nil,
                             background: Bool = true) -> some View {
-        modifier(PreviewEnvironment(navigation: navigation, favorites: favorites, savedTrips: savedTrips,
+        modifier(PreviewEnvironment(navigation: navigation, favorites: favorites, places: places, savedTrips: savedTrips,
                                     itinerary: itinerary, background: background))
     }
 }
@@ -63,6 +65,7 @@ private struct PreviewEnvironment: ViewModifier {
 
     @State private var stopStore = StopStore()
     @State private var favoritesViewModel = FavoritesViewModel()
+    @State private var favoritePlaces: FavoritePlacesModel
     @State private var navigationModel = NavigationModel()
     @State private var itineraryViewModel: ItineraryViewModel
     @State private var savedTripsModel = SavedTripsModel()
@@ -70,7 +73,9 @@ private struct PreviewEnvironment: ViewModifier {
     @State private var recentSearch = RecentSearch()
     @State private var path: [AppRoute] = []
 
-    init(navigation: Bool, favorites: [Stop], savedTrips: [TripEvent], itinerary: (from: Stop, to: Stop)?, background: Bool) {
+    init(navigation: Bool, favorites: [Stop], places: [FavoritePlace], savedTrips: [TripEvent],
+         itinerary: (from: Stop, to: Stop)?, background: Bool) {
+        _favoritePlaces = State(initialValue: FavoritePlacesModel(previewPlaces: places))
         self.navigation = navigation
         self.favorites = favorites
         self.savedTrips = savedTrips
@@ -98,6 +103,7 @@ private struct PreviewEnvironment: ViewModifier {
         }
         .environment(stopStore)
         .environment(favoritesViewModel)
+        .environment(favoritePlaces)
         .environment(navigationModel)
         .environment(itineraryViewModel)
         .environment(savedTripsModel)

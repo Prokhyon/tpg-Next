@@ -93,49 +93,81 @@ struct StopDetailPane: View {
     }
 }
 
-/// Carte de l'arrêt : ses quais, et le parcours du départ sélectionné.
+/// La carte d'un arrêt : ses quais, et le parcours du départ sélectionné. La même dans la
+/// moitié droite de la page arrêt et en plein écran (`StopMapView`), qui n'ajoute que le titre,
+/// ses boutons et les départs du quai touché.
 struct StopMapPanel: View {
     @Environment(\.displayTime) private var now
     let stopSloid: String
     let quays: [Quay]
     let selected: StopEvent?
     let journey: JourneyTrackModel
-    /// Sans départ sélectionné, les quais filtrés.
+    /// Sans départ sélectionné, les quais mis en avant (filtrés, ou touché en plein écran).
     var highlightedQuays: Set<String> = []
+    /// Toucher un quai, sans départ sélectionné : le filtre de la liste (moitié droite).
     var toggleQuay: ((String) -> Void)?
+    /// Toucher un quai, en plein écran : ses départs. Prend le pas sur `toggleQuay`.
+    var tapQuay: ((Quay) -> Void)?
+    /// Le quai sur lequel zoomer ; `nil` : tout l'arrêt.
+    var zoomedQuay: Quay?
+    /// Les boutons de la carte (position, boussole) sont posés par la vue qui la contient,
+    /// dans cette portée ; sans elle, en haut à droite de la carte.
+    var controlsScope: Namespace.ID?
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
-        Map(position: $position) {
-            if let selected, !journey.events.isEmpty {
-                JourneyMapContent(events: journey.events, segments: journey.segments, lineName: selected.lineName,
-                                  operatorName: selected.operatorName, currentStopSloid: sloidHarmonizer(code: stopSloid), now: now)
+        Group {
+            if let controlsScope {
+                Map(position: $position, scope: controlsScope) { content }
+                    .mapControls {}
+            } else {
+                Map(position: $position) { content }
+                    .mapControls {
+                        MapUserLocationButton()
+                        MapCompass()
+                    }
             }
-            ForEach(stopQuays) { quay in
-                let isSelected = selected.map { quay.quayName == $0.plannedQuay } ?? highlightedQuays.contains(quay.quayName)
-                Annotation(String(localized: "quai \(quay.quayName)"), coordinate: quay.coordinate, anchor: .center) {
-                    Circle()
-                        .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2)
-                        .background(Circle().fill(isSelected ? .accent : .color1))
-                        .frame(width: isSelected ? 22 : 15, height: isSelected ? 22 : 15)
-                        // Zone de toucher plus large que le point.
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
-                        .onTapGesture {
-                            if selected == nil { toggleQuay?(quay.quayName) }
-                        }
-                }
-            }
-            UserAnnotation()
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
-        }
         // Recadre sur les quais, ou sur tout le parcours quand il arrive.
         .onChange(of: selected?.journeyRef) { withAnimation { position = .automatic } }
         .onChange(of: journey.events.count) { withAnimation { position = .automatic } }
+        .onChange(of: zoomedQuay?.id) {
+            withAnimation {
+                position = zoomedQuay.map {
+                    .region(MKCoordinateRegion(center: $0.coordinate,
+                                               span: MKCoordinateSpan(latitudeDelta: 0.001, longitudeDelta: 0.001)))
+                } ?? .automatic
+            }
+        }
+    }
+
+    @MapContentBuilder private var content: some MapContent {
+        if let selected, !journey.events.isEmpty {
+            JourneyMapContent(events: journey.events, segments: journey.segments, lineName: selected.lineName,
+                              operatorName: selected.operatorName, currentStopSloid: sloidHarmonizer(code: stopSloid), now: now)
+        }
+        ForEach(stopQuays) { quay in
+            let isSelected = selected.map { quay.quayName == $0.plannedQuay } ?? highlightedQuays.contains(quay.quayName)
+            Annotation(String(localized: "quai \(quay.quayName)"), coordinate: quay.coordinate, anchor: .center) {
+                Circle()
+                    .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2)
+                    .background(Circle().fill(isSelected ? .accent : .color1))
+                    .frame(width: isSelected ? 22 : 15, height: isSelected ? 22 : 15)
+                    .animation(.bouncy, value: isSelected)
+                    // Zone de toucher plus large que le point.
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
+                    .onTapGesture {
+                        if let tapQuay {
+                            tapQuay(quay)
+                        } else if selected == nil {
+                            toggleQuay?(quay.quayName)
+                        }
+                    }
+            }
+        }
+        UserAnnotation()
     }
 
     private var stopQuays: [Quay] {

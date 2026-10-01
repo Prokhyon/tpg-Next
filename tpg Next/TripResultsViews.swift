@@ -2,7 +2,7 @@
 //  TripResultsViews.swift
 //  tpg Next
 //
-//  Listes affichées sous les champs de l'itinéraire : favoris, recherche, arrêts proches, résultats.
+//  Listes affichées sous les champs de l'itinéraire : favoris (arrêts et lieux), recherche, arrêts proches, résultats.
 //
 
 import SwiftUI
@@ -14,6 +14,7 @@ extension TripView {
         @Environment(\.layout) private var layout
         @Environment(StopStore.self) var stopStore
         @Environment(FavoritesViewModel.self) var favoritesViewModel
+        @Environment(FavoritePlacesModel.self) private var favoritePlaces
         @Bindable var viewModel: ItineraryViewModel
         @Environment(RecentSearch.self) var recentSearchModel
         @Binding var results: Results
@@ -36,24 +37,28 @@ extension TripView {
                 }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: favoriteColumns), spacing: 10) {
                     ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
-                        Button(action: {
-                            withAnimation {
-                                if viewModel.selectedField == .departure {
-                                    viewModel.departure.select(.stop(stop))
-                                    viewModel.selectedField = .arrival
-                                    results = Results.favorites
-                                    viewModel.tripDone = false
-                                } else if viewModel.selectedField == .arrival {
-                                    viewModel.arrival.select(.stop(stop))
-                                    viewModel.selectedField = .departure
-                                    results = Results.favorites
-                                    viewModel.tripDone = false
-                                }
-                            }
-                        }){
+                        Button(action: { choose(.stop(stop)) }) {
                             BasicLocationView(name: stop.name, transportType: stop.meansOfTransport)
                         }
                         .foregroundStyle(.primary)
+                    }
+                }
+                if !favoritePlaces.places.isEmpty {
+                    HStack {
+                        Text("Lieux favoris")
+                            .font(.title3).bold()
+                        Spacer()
+                    }
+                    .padding(.top, 10)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: favoriteColumns), spacing: 10) {
+                        ForEach(favoritePlaces.places) { place in
+                            Button(action: { choose(place.endpoint) }) {
+                                FavoritePlaceLabel(place: place)
+                                    .padding(.horizontal, 15)
+                                    .basicElementBackground(minHeight: 45)
+                            }
+                            .foregroundStyle(.primary)
+                        }
                     }
                 }
                 if !recentSearchModel.searchItems.isEmpty {
@@ -61,6 +66,23 @@ extension TripView {
                 }
             }
             .padding(.horizontal, 30)
+        }
+
+        /// Un favori remplit le champ choisi, puis passe à l'autre.
+        private func choose(_ endpoint: TripEndpoint) {
+            withAnimation {
+                if viewModel.selectedField == .departure {
+                    viewModel.departure.select(endpoint)
+                    viewModel.selectedField = .arrival
+                    results = Results.favorites
+                    viewModel.tripDone = false
+                } else if viewModel.selectedField == .arrival {
+                    viewModel.arrival.select(endpoint)
+                    viewModel.selectedField = .departure
+                    results = Results.favorites
+                    viewModel.tripDone = false
+                }
+            }
         }
     }
     
@@ -403,8 +425,26 @@ extension TripView {
         @State var locationManager = LocationManager()
         @Environment(StopStore.self) var stopStore
         
+        /// La bulle n'a rien à montrer hors de ces deux cas : elle disparaît, et le champ s'élargit.
+        static func isVisible(field: TripField, focus: TripField?, text: String, selected: TripField?) -> Bool {
+            focus == field || (text.isEmpty && selected == field)
+        }
+
         var body: some View {
-            if searchText.isEmpty && viewModel.selectedField == field {
+            if focusField.wrappedValue == field {
+                // Le champ a le focus : la croix le lui retire et range le clavier. Effacer le
+                // texte se fait dans le champ lui-même.
+                Button {
+                    withAnimation {
+                        focusField.wrappedValue = nil
+                    }
+                } label: {
+                    Image(systemName: "xmark").font(.title3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Fermer la recherche")
+            } else if searchText.isEmpty && viewModel.selectedField == field {
                 Button(action: {
                     if !showCloseStops {
                         withAnimation {
@@ -438,21 +478,6 @@ extension TripView {
                 }) {
                     Image(systemName: (showCloseStops ? "location.fill" :  "location")).font(.title3)
                 }
-            } else if !searchText.isEmpty {
-                Button(action: {
-                    withAnimation {
-                        searchText = ""
-                        viewModel.selectedField = field
-                        viewModel.tripDone = false
-                        if field == .departure {
-                            viewModel.departure.endpoint = nil
-                        } else if field == .arrival {
-                            viewModel.arrival.endpoint = nil
-                        }
-                    }
-                }) {
-                    Image(systemName: "xmark").font(.title2)
-                }
             }
         }
     }
@@ -466,6 +491,7 @@ extension TripView {
         var body: some View {
             let selected = viewModel.selectedField == field
             let hasSelection = (field == .departure && viewModel.departure.endpoint != nil) || (field == .arrival && viewModel.arrival.endpoint != nil)
+            let text = field == .departure ? viewModel.departure.text : viewModel.arrival.text
             ZStack {
                 HStack {
                     HStack {
@@ -532,6 +558,31 @@ extension TripView {
                                 ScrollMask(leading: false, vertical: false, gradientLength: 40)
                             }
                             .padding(.trailing, 20)
+                    }
+                    if !text.isEmpty {
+                        // Efface le texte et l'arrêt choisi, et laisse le champ prêt à la saisie.
+                        Button {
+                            withAnimation {
+                                if field == .departure {
+                                    viewModel.departure.text = ""
+                                    viewModel.departure.endpoint = nil
+                                } else {
+                                    viewModel.arrival.text = ""
+                                    viewModel.arrival.endpoint = nil
+                                }
+                                viewModel.selectedField = field
+                                viewModel.tripDone = false
+                                focusField.wrappedValue = field
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 30, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Effacer")
+                        .transition(.opacity)
                     }
                     if selected {
                         Image(systemName: "record.circle.fill")

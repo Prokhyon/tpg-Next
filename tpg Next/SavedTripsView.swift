@@ -46,6 +46,10 @@ struct SavedTripsView: View {
             }
         }
         .onAppear { showTime = timeDefault }
+        // Carte retouchée dans l'agenda : le détail se ferme.
+        .onChange(of: selectedItemID) {
+            if selectedItemID == nil { withAnimation { selectedTrip = nil } }
+        }
         // Sur iPhone, rien n'est détaillé à côté : aucune carte ne reste entourée.
         .onChange(of: layout.showsSecondaryPane) {
             if !layout.showsSecondaryPane {
@@ -140,6 +144,7 @@ private enum AgendaItem: Identifiable {
 
 /// Les itinéraires jour par jour, filtrés par genre.
 struct SavedTripsAgenda: View {
+    @Environment(\.layout) private var layout
     @Environment(SavedTripsModel.self) private var savedTripsModel
     @Environment(RegularTripsModel.self) private var regularTripsModel
     @Environment(\.displayTime) private var now
@@ -173,8 +178,10 @@ struct SavedTripsAgenda: View {
         }
     }
 
-    /// Le haut des prochains, où revenir en changeant de filtre.
+    /// Le haut des prochains.
     private static let upcomingAnchor = "upcoming"
+    /// Le sélecteur, en haut de la liste : où revenir en changeant de filtre.
+    private static let filterAnchor = "filter"
     /// La fin des itinéraires passés, juste au-dessus des prochains.
     private static let pastEnd = "pastEnd"
 
@@ -193,6 +200,16 @@ struct SavedTripsAgenda: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
+                    // Dans la liste et non posé au-dessus : tirée vers le bas, la liste étire le
+                    // grand titre, qui passait sur un sélecteur resté immobile. Ils bougent ensemble.
+                    Picker("Afficher", selection: $filter) {
+                        ForEach(SavedTripsFilter.allCases) { filter in
+                            Text(filter.title).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.bottom, 8)
+                    .id(Self.filterAnchor)
                     // Repliés : l'écran s'ouvre sur les prochains sans avoir à défiler, ce qui
                     // n'a pas lieu pendant l'animation de la feuille ou de la pile.
                     if !past.isEmpty {
@@ -216,21 +233,11 @@ struct SavedTripsAgenda: View {
             }
             .onChange(of: filter) {
                 showsPast = false
-                proxy.scrollTo(Self.upcomingAnchor, anchor: .top)
+                // En haut, sélecteur compris : il vient d'être touché, il ne doit pas disparaître.
+                proxy.scrollTo(Self.filterAnchor, anchor: .top)
             }
         }
         .readableScrollContent()
-        .filterBar {
-            Picker("Afficher", selection: $filter) {
-                ForEach(SavedTripsFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.bottom, 8)
-            .readableWidth()
-        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -435,6 +442,16 @@ struct SavedTripsAgenda: View {
 
     // MARK: Cartes
 
+    /// Sur grand écran, retoucher la carte détaillée à côté la désélectionne ; sinon elle s'ouvre.
+    private func choose(_ itemID: String, open: () -> Void) {
+        if layout.showsSecondaryPane && selectedItemID == itemID {
+            withAnimation { selectedItemID = nil }
+        } else {
+            selectedItemID = itemID
+            open()
+        }
+    }
+
     /// Un itinéraire enregistré. À venir, il est redemandé à OJP : retard, horaire modifié, ou
     /// plus proposé, avec ce qui le remplacerait.
     private func savedCard(_ trip: TripEvent, isPast: Bool) -> some View {
@@ -442,8 +459,7 @@ struct SavedTripsAgenda: View {
         let displayed = isPast ? trip : savedTripsModel.displayedTrip(for: trip)
         let itemID = AgendaItem.saved(trip).id
         return AgendaCard(highlighted: selectedItemID == itemID, open: {
-            selectedItemID = itemID
-            onSelect(displayed)
+            choose(itemID) { onSelect(displayed) }
         }) {
             VStack(alignment: .leading, spacing: 8) {
                 if Self.showsBadge(state) {
@@ -545,8 +561,7 @@ struct SavedTripsAgenda: View {
             let isChosen = trip.isOverridden(on: occurrence.day)
             let itemID = AgendaItem.regular(occurrence).id
             AgendaCard(highlighted: selectedItemID == itemID, open: {
-                selectedItemID = itemID
-                open(occurrence, displayed: displayed)
+                choose(itemID) { open(occurrence, displayed: displayed) }
             }) {
                 UpcomingRegularTripCard(occurrence: occurrence, trip: trip, displayed: displayed,
                                         state: state, isOpening: opening == occurrence.id,

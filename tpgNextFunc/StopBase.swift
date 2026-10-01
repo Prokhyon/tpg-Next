@@ -166,7 +166,9 @@ public class StopStore {
     /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
     private(set) var searchIndex: [(key: String, stop: Stop)] = []
 
-    public init() {
+    /// - Parameter publishesNames: donne les noms officiels à `StopNames` une fois la base
+    ///   chargée. Pour l'app et la montre ; les tests ne touchent pas à ce réglage global.
+    public init(publishesNames: Bool = false) {
         // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
         // (et bien plus longtemps sur la montre).
         DispatchQueue.global(qos: .userInitiated).async {
@@ -183,6 +185,11 @@ public class StopStore {
                 self.activeStops = active
                 self.searchIndex = index
                 self.isLoaded = true
+                // Une copie de l'index, qui ne change plus : lue sans risque pendant le décodage
+                // des départs, hors du thread principal.
+                if publishesNames {
+                    StopNames.resolve = { unique[$0]?.name }
+                }
                 self.loadWaiters.forEach { $0.resume() }
                 self.loadWaiters = []
             }
@@ -580,6 +587,44 @@ public struct splitStopName: View {
 
 /// Ramène un sloid de quai (`ch:1:sloid:87061:0:450545`) au sloid de l'arrêt parent (`ch:1:sloid:87061`).
 /// Un sloid déjà au niveau de l'arrêt (4 composants) est retourné tel quel.
+/// Les noms officiels des arrêts (« Commune, Nom »), par sloid, une fois la base chargée.
+///
+/// Le texte de destination d'OJP (`DestinationText`) est celui que l'exploitant affiche sur le
+/// véhicule, et il varie d'une course à l'autre pour le même terminus : « Moillesulaz » ou
+/// « Genève, Moillesulaz ». Le sloid de destination, lui, est stable : son nom officiel s'affiche
+/// sur deux lignes, avec la commune, et regroupe les départs d'une même direction.
+public enum StopNames {
+    /// Le nom d'un arrêt par son sloid (d'arrêt, pas de quai). Posé par la `StopStore` de l'app
+    /// et de la montre à la fin du chargement, par l'index des arrêts dans le widget ; sans rien,
+    /// le texte d'OJP reste.
+    public static var resolve: ((String) -> String?)?
+
+    /// Le départ, avec le nom officiel de sa destination quand la base le connaît.
+    public static func withOfficialDestination(_ event: StopEvent) -> StopEvent {
+        withOfficialDestination(event, resolve: resolve)
+    }
+
+    /// L'itinéraire, avec le nom officiel de la destination de chaque véhicule.
+    public static func withOfficialDestinations(_ trip: TripEvent) -> TripEvent {
+        guard let resolve else { return trip }
+        var trip = trip
+        trip.legs = trip.legs.map { leg in
+            guard let ref = leg.legDestinationRef, let name = resolve(sloidHarmonizer(code: ref)), !name.isEmpty else { return leg }
+            var leg = leg
+            leg.legDestination = name
+            return leg
+        }
+        return trip
+    }
+
+    static func withOfficialDestination(_ event: StopEvent, resolve: ((String) -> String?)?) -> StopEvent {
+        guard let ref = event.destinationRef, let name = resolve?(sloidHarmonizer(code: ref)), !name.isEmpty else { return event }
+        var event = event
+        event.destination = name
+        return event
+    }
+}
+
 public func sloidHarmonizer(code: String) -> String {
     let components = code.split(separator: ":")
     guard components.count > 4 else { return code }

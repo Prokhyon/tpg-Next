@@ -50,6 +50,9 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
     public var legIntermediates: [LegIntermediate]
     
     public var legDestination: String
+    /// L'arrêt de destination du véhicule (`DestinationStopPointRef`) : son nom officiel remplace
+    /// le texte d'OJP (voir `StopNames`).
+    public var legDestinationRef: String? = nil
     public var journeyRef: String
     /// Optionnel : les itinéraires enregistrés avant qu'il soit lu n'en ont pas (voir `resolvedOperatingDayRef`).
     public var operatingDayRef: String? = nil
@@ -150,7 +153,7 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
     if let error = parser.error {
         throw error
     }
-    return parser.trips
+    return parser.trips.map(StopNames.withOfficialDestinations)
 }
 
 /// `<ojp:PlaceRef>` d'un départ ou d'une arrivée : l'arrêt, ou les coordonnées d'un lieu.

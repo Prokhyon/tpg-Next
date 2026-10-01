@@ -89,7 +89,7 @@ struct TripLegsList: View {
                                         }
                                     }
                                     .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
+                                    .padding(.vertical, 8)
                                     .background {
                                         if isFocused(legFocus) {
                                             Capsule().strokeBorder(Color.accent, lineWidth: 1.5)

@@ -216,10 +216,11 @@ class BusNotificationManager {
         // Schedule notifications
         scheduleNotification(at: timetableNotificationTime, for: stopEvent, delay: delay, identifier: timetableIdentifier, isTimetabled: true, notificationInterval: notificationInterval)
         scheduleNotification(at: estimatedNotificationTime, for: stopEvent, delay: delay, identifier: estimatedIdentifier, isTimetabled: false, notificationInterval: notificationInterval)
-        
-        // Schedule update check
-        scheduleUpdateCheck(at: estimatedDate ?? timetableDate, stopEvent: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-        
+        // Le recalage sur le temps réel se fait à chaque réveil de l'app (`refreshPending`).
+        let departure = estimatedDate ?? timetableDate
+        if departure > Date() {
+            nextReminderDeparture = min(nextReminderDeparture ?? departure, departure)
+        }
         completionHandler(true)
     }
 
@@ -232,46 +233,68 @@ class BusNotificationManager {
         }
     }
 
-    // Update logic: Reschedule notifications if estimatedTime changes
-    func scheduleUpdateCheck(at estimatedDate: Date, stopEvent: StopEvent, stopID: String, notificationInterval: Double) {
-        let now = Date()
-        let halfInterval = (estimatedDate.timeIntervalSince(now)) / 2
-        let nextCheckTime = now.addingTimeInterval(halfInterval)
-        
-        if halfInterval > 60 { // Only schedule if more than 1 minute to check
-            Log.notifications.debug("Vérification du retard prévue à \(nextCheckTime)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + halfInterval) {
-                self.updateNotifications(for: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-            }
+    /// Les rappels relus à l'instant, par clé : au plus une requête par minute près du départ.
+    @ObservationIgnored private var lastCheck: [String: Date] = [:]
+
+    /// Recale les rappels en attente sur la dernière heure estimée.
+    ///
+    /// Appelé à chaque réveil de l'app (premier plan chaque minute, tâche de fond, suivi en
+    /// direct), avec les trajets réguliers : une vérification tenue seulement en mémoire
+    /// s'arrêtait dès qu'iOS suspendait l'app. Un rappel dont la notification estimée est déjà
+    /// partie n'est plus relu : reposé, il sonnerait une seconde fois.
+    @MainActor
+    func refreshPending(now: Date = Date()) async {
+        let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        var reminders: [String: (event: StopEvent, stopID: String, interval: Double)] = [:]
+        for request in pending where request.identifier.hasPrefix("estimated_") || request.identifier.hasPrefix("timetable_") {
+            let key = String(request.identifier.dropFirst(10))
+            guard reminders[key] == nil,
+                  let data = request.content.userInfo[NotificationManager.stopEventKey] as? Data,
+                  let event = try? JSONDecoder().decode(StopEvent.self, from: data),
+                  let info = parseIdentifier(key) else { continue }
+            reminders[key] = (event, info.stopID, info.notificationInterval)
+        }
+        lastCheck = lastCheck.filter { reminders[$0.key] != nil }
+        nextReminderDeparture = reminders.values
+            .compactMap { dateFromString($0.event.estimatedTime) ?? dateFromString($0.event.timetabledTime) }
+            .filter { $0 > now }
+            .min()
+        for (key, reminder) in reminders {
+            guard let departure = dateFromString(reminder.event.estimatedTime) ?? dateFromString(reminder.event.timetabledTime) else { continue }
+            let untilDeparture = departure.timeIntervalSince(now)
+            // Avant, le temps réel est vide ; ensuite, une relecture par minute tout près du départ.
+            guard untilDeparture < RegularTripsModel.liveWindow else { continue }
+            let interval: TimeInterval = untilDeparture < 30 * 60 ? 60 : 5 * 60
+            if let last = lastCheck[key], now.timeIntervalSince(last) < interval { continue }
+            lastCheck[key] = now
+            guard let estimated = await estimatedTime(of: reminder.event, at: reminder.stopID),
+                  estimated != reminder.event.estimatedTime else { continue }
+            Log.notifications.info("Heure estimée modifiée, rappels recalés")
+            var updated = reminder.event
+            updated.estimatedTime = estimated
+            scheduleNotifications(for: updated, lineEvent: nil, stopID: reminder.stopID,
+                                  notificationInterval: reminder.interval) { _ in }
         }
     }
 
-    /// Recale les rappels sur la dernière heure estimée.
-    ///
-    /// La course est redemandée à l'API et lue une fois la réponse arrivée : l'ancienne
-    /// version lisait le résultat avant la réponse, et ne recalait donc jamais rien.
-    /// Tant que l'heure ne bouge pas, une nouvelle vérification est prévue à mi-chemin.
-    /// Ne fonctionne que tant que l'app reste en mémoire.
-    func updateNotifications(for stopEvent: StopEvent, stopID: String, notificationInterval: Double) {
-        let lineManager = LineManager()
-        lineManager.selectJourney(stopEvent) { [self] in
-            let stopSloid = sloidHarmonizer(code: stopID)
-            let candidates = lineManager.lineEvents.filter { $0.stopPlaceRef == stopID || $0.sloid == stopSloid }
-            // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
-            guard let updatedEvent = candidates.first(where: { $0.timetabledTime == stopEvent.timetabledTime }) ?? candidates.first else {
-                Log.notifications.info("Arrêt introuvable dans la course, rappel laissé tel quel")
-                return
-            }
-            guard !updatedEvent.estimatedTime.isEmpty, updatedEvent.estimatedTime != stopEvent.estimatedTime else {
-                scheduleUpdateCheck(at: dateFromString(stopEvent.estimatedTime) ?? Date(), stopEvent: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-                return
-            }
-            Log.notifications.info("Heure estimée modifiée, rappels recalés")
-            var updatedStopEvent = stopEvent
-            updatedStopEvent.estimatedTime = updatedEvent.estimatedTime
-            scheduleNotifications(for: updatedStopEvent, lineEvent: nil, stopID: stopID, notificationInterval: notificationInterval) { _ in }
+    /// L'heure estimée du passage à cet arrêt, relue dans la course (`OJPTripInfoRequest`).
+    private func estimatedTime(of stopEvent: StopEvent, at stopID: String) async -> String? {
+        let data: Data? = await withCheckedContinuation { continuation in
+            fetchTransportJourney(with: stopEvent) { continuation.resume(returning: $0) }
         }
+        guard let data else { return nil }
+        let stopSloid = sloidHarmonizer(code: stopID)
+        let candidates = parseJourneyEventsSync(from: data).events
+            .filter { $0.stopPlaceRef == stopID || sloidHarmonizer(code: $0.sloid) == stopSloid }
+        // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
+        let event = candidates.first { $0.timetabledTime == stopEvent.timetabledTime } ?? candidates.first
+        guard let estimated = event?.estimatedTime, !estimated.isEmpty else { return nil }
+        return estimated
     }
+
+    /// Le prochain départ qui a un rappel : la tâche de fond doit se réveiller avant. Tenu à
+    /// jour à la pose et à chaque relecture.
+    @ObservationIgnored private(set) var nextReminderDeparture: Date?
 
     /// Reconstruit la liste des rappels prévus à partir de ceux que le système garde en attente.
     ///
@@ -317,8 +340,9 @@ class BusNotificationManager {
                     message = String(localized: "\(transport) est estimé dans \(intNotificationInterval) minutes à l'arrêt")
                 }
             }
-        } else if (delay < 0) {
-            if isTimetabled {
+        } else if (delay < -60) {
+            // En avance : seule l'heure estimée compte, l'heure prévue serait trop tard.
+            if !isTimetabled {
                 let intDelay = max(1, Int(abs(delay) / 60))
                 let intNotificationInterval = Int(notificationInterval)
                 let delayMessage = String(localized: "avec \(intDelay) minutes d'avance")

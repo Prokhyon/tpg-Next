@@ -75,6 +75,7 @@ private struct WelcomePermissionsPage: View {
     @State private var location = LocationManager()
     @State private var notificationStatus: UNAuthorizationStatus?
     @AppStorage(SettingKey.notificationAsked) private var notificationAsked = false
+    @AppStorage(SettingKey.iCloudSync) private var iCloudSync = true
     @Environment(\.scenePhase) private var scenePhase
 
     private var locationState: PermissionState {
@@ -117,6 +118,15 @@ private struct WelcomePermissionsPage: View {
                         requestNotifications()
                     }
                     Text("Répondez à chacune pour continuer. Vous pourrez changer d'avis à tout moment dans les Réglages de l'iPhone.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Vos données")
+                        .font(.headline)
+                    SyncCard(isOn: $iCloudSync)
+                    Text("Rien n'est envoyé ailleurs que dans votre compte iCloud. Ce choix se change dans les paramètres de l'app.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
@@ -239,6 +249,35 @@ private struct PermissionCard: View {
             }
             .frame(minHeight: 34)
         }
+    }
+}
+
+/// Le partage par iCloud, activé par défaut : la synchro ne commence qu'une fois la bienvenue
+/// passée (`CloudSync.isEnabled`), le choix est donc respecté dès le premier lancement.
+private struct SyncCard: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 42, height: 42)
+                .background(Color.cyan.gradient, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .accessibilityHidden(true)
+            Toggle(isOn: $isOn) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Synchronisation iCloud").font(.headline)
+                    Text("Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color(.secondarySystemBackground)))
+        .sensoryFeedback(.selection, trigger: isOn)
     }
 }
 

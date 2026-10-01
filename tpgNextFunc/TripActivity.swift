@@ -182,10 +182,22 @@ public struct TripActivityState: Codable, Hashable {
         return .arrived
     }
 
-    /// L'heure du prochain changement d'étape : montée ou descente à venir, sinon l'arrivée.
-    /// Sert d'échéance (`staleDate`) : le système redessine l'activité à ce moment-là.
+    /// Le véhicule est annoncé à l'arrêt cette durée avant la montée : son icône remplace
+    /// alors l'horloge (l'heure estimée ne permet pas mieux).
+    public static let approachLead: TimeInterval = 60
+
+    /// Vrai quand le véhicule de l'étape attendue arrive à l'arrêt.
+    public func isVehicleApproaching(at date: Date) -> Bool {
+        guard case .waiting(let index) = phase(at: date) else { return false }
+        return date >= legs[index].board.addingTimeInterval(-Self.approachLead)
+    }
+
+    /// L'heure du prochain changement à l'écran : approche du véhicule, montée ou descente à
+    /// venir, sinon l'arrivée. Sert d'échéance (`staleDate`) : le système redessine l'activité
+    /// à ce moment-là, même app endormie.
     public func nextTransition(after date: Date) -> Date? {
-        (legs.flatMap { [$0.board, $0.alight] } + [arrival]).filter { $0 > date }.min()
+        (legs.flatMap { [$0.board.addingTimeInterval(-Self.approachLead), $0.board, $0.alight] } + [arrival])
+            .filter { $0 > date }.min()
     }
 
     /// L'étape d'après, en petit sous l'étape en cours.

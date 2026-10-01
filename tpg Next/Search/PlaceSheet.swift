@@ -3,7 +3,7 @@
 //  tpg Next
 //
 //  Un lieu ou un arrêt trouvé par la recherche : sa carte, « Y aller », « Partir d'ici », et
-//  pour un lieu les arrêts les plus proches.
+//  pour un lieu l'étoile des lieux favoris et les arrêts les plus proches.
 //
 
 import SwiftUI
@@ -41,6 +41,7 @@ struct PlaceSheet: View {
     @Environment(ItineraryViewModel.self) private var itinerary
     @Environment(NavigationModel.self) private var navigationModel
     @Environment(StopStore.self) private var stopStore
+    @Environment(FavoritePlacesModel.self) private var favoritePlaces
     let place: PlaceSheetItem
 
     @State private var position: MapCameraPosition
@@ -128,6 +129,21 @@ struct PlaceSheet: View {
                     Label("Départs", systemImage: "clock")
                 }
                 .buttonStyle(.bordered)
+            } else {
+                // Un lieu : le garder parmi les lieux favoris (accueil, itinéraire).
+                let isFavorite = favoritePlaces.isFavorite(place.coordinate)
+                Button {
+                    withAnimation {
+                        favoritePlaces.toggle(name: place.name, address: place.subtitle, coordinate: place.coordinate)
+                    }
+                } label: {
+                    Label(isFavorite ? "Retirer des lieux favoris" : "Ajouter aux lieux favoris",
+                          systemImage: isFavorite ? "star.fill" : "star")
+                        .labelStyle(.iconOnly)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.bordered)
+                .sensoryFeedback(.selection, trigger: isFavorite)
             }
         }
         .buttonBorderShape(.capsule)

@@ -44,9 +44,6 @@
     "« Suivre en direct » depuis un itinéraire, le prochain trajet de l'accueil, un itinéraire enregistré ou un départ (appui long, puis choix de la montée et de la descente)." : {
 
     },
-    "%@" : {
-      "shouldTranslate" : false
-    },
     "%@ · %@" : {
       "localizations" : {
         "fr" : {
@@ -373,6 +370,12 @@
     "+%lld'" : {
 
     },
+    "12:31 (+3')" : {
+
+    },
+    "12:34" : {
+
+    },
     "À choisir" : {
 
     },
@@ -447,7 +450,7 @@
     "Accueil" : {
 
     },
-    "Accueil : prochain trajet, favoris, départs et carte. Itinéraire : aller d'un point à un autre. Trajets : vos itinéraires enregistrés et trajets réguliers. La loupe (Explorer) : chercher un arrêt, un lieu ou une ligne." : {
+    "Accueil : prochain trajet, favoris, lieux favoris, départs et carte. Itinéraire : aller d'un point à un autre. Trajets : vos itinéraires enregistrés et trajets réguliers. La loupe (Explorer) : chercher un arrêt, un lieu ou une ligne." : {
 
     },
     "Accueil sans défilement" : {
@@ -457,6 +460,9 @@
 
     },
     "Activé, l'app retrouve chaque jour vos lignes et vous prévient si elles ne sont pas proposées, avec une alternative. Désactivé, elle propose le meilleur itinéraire du moment." : {
+
+    },
+    "Activer ou couper" : {
 
     },
     "Activité en direct" : {
@@ -497,6 +503,9 @@
     "Afficher les %lld arrêts précédents" : {
 
     },
+    "Afficher les départs à cette heure" : {
+
+    },
     "Afficher les itinéraires passés" : {
 
     },
@@ -521,6 +530,9 @@
         }
       }
     },
+    "Aide" : {
+
+    },
     "Ajouter" : {
 
     },
@@ -534,7 +546,16 @@
         }
       }
     },
+    "Ajouter aux lieux favoris" : {
+
+    },
     "Ajouter l'arrêt aux favoris, afficher la carte des quais, ou lancer un itinéraire : Partir d'ici, Aller ici, ou Trajet rapide (depuis votre position, tout de suite)." : {
+
+    },
+    "Ajouter un arrêt" : {
+
+    },
+    "Ajouter un lieu" : {
 
     },
     "Ajouter un widget" : {
@@ -552,6 +573,7 @@
       }
     },
     "Ajoutez un arrêt aux favoris en cliquant sur l'étoile depuis la recherche ou le menu d'une page arrêt" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -565,9 +587,6 @@
 
     },
     "Ajusté d'après votre position : %lld' de retard" : {
-
-    },
-    "Alertes de retard et suivi en direct" : {
 
     },
     "Aller et retour" : {
@@ -635,7 +654,7 @@
     "Appuyez longuement sur un départ pour être prévenu à son arrivée, ou quelques minutes avant. Vous l'êtes aussi s'il prend de l'avance ou du retard." : {
 
     },
-    "Appuyez longuement sur un départ, sur la page d'un arrêt, puis choisissez quand être prévenu. Retrouvez et annulez vos rappels dans les paramètres." : {
+    "Appuyez longuement sur un départ, sur la page d'un arrêt, puis choisissez quand être prévenu. Retrouvez et annulez vos rappels depuis la cloche, en haut de l'accueil." : {
 
     },
     "Appuyez longuement sur un horaire pour programmer un rappel. Vous pourrez voir les rappels prévus depuis les paramètres." : {
@@ -680,6 +699,12 @@
           }
         }
       }
+    },
+    "Arrêts et lieux favoris" : {
+
+    },
+    "Arrêts favoris" : {
+
     },
     "Arrêts principaux. Touchez un départ pour voir tous les arrêts de la course." : {
 
@@ -898,13 +923,13 @@
     "Bien ! Changez maintenant le tri avec le bouton de gauche." : {
 
     },
-    "Bien ! Essayez aussi les flèches en bas à droite." : {
+    "Bien ! Essayez aussi les flèches, de part et d'autre de l'horloge." : {
 
     },
     "Bien ! Essayez maintenant l'autre flèche." : {
 
     },
-    "Bien ! Pour une heure précise, touchez maintenant l'horloge en haut." : {
+    "Bien ! Pour une heure précise, touchez maintenant l'horloge entre les flèches." : {
 
     },
     "Bien ! Touchez maintenant l'icône à droite pour voir où se trouve l'arrêt." : {
@@ -947,6 +972,16 @@
     },
     "C'est tout ! (Ici, rien n'est vraiment programmé.)" : {
 
+    },
+    "C'est votre arrêt : %@. %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "C'est votre arrêt : %1$@. %2$@"
+          }
+        }
+      }
     },
     "Calculée à partir des horaires en temps réel, sans suivi GPS." : {
 
@@ -1066,6 +1101,12 @@
         }
       }
     },
+    "Choisir l'heure" : {
+
+    },
+    "Choisir la direction" : {
+
+    },
     "Choisir un autre trajet" : {
 
     },
@@ -1118,6 +1159,16 @@
     "Correspondance serrée à %@" : {
 
     },
+    "Correspondance serrée à %@ · Êtes-vous monté dans le %@ ?" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Correspondance serrée à %1$@ · Êtes-vous monté dans le %2$@ ?"
+          }
+        }
+      }
+    },
     "Course %@" : {
 
     },
@@ -1139,7 +1190,7 @@
     "Dans Explorer, « Lignes » les range par genre : tram, bus, train, bateau… Touchez un numéro pour ouvrir la ligne : ses terminus, ses prochains départs et son parcours." : {
 
     },
-    "Dans l'onglet Itinéraire, touchez un champ et cherchez un arrêt, une adresse ou un lieu. Vos favoris sont proposés d'un toucher, et « Utiliser la position actuelle » part de là où vous êtes. Le bouton ⇅ échange départ et arrivée." : {
+    "Dans l'onglet Itinéraire, touchez un champ et cherchez un arrêt, une adresse ou un lieu. Vos arrêts et lieux favoris sont proposés d'un toucher, et « Utiliser la position actuelle » part de là où vous êtes. Le bouton ⇅ échange départ et arrivée." : {
 
     },
     "Dans le 12 · descendez à Moillesulaz dans 14 min" : {
@@ -1246,16 +1297,23 @@
         }
       }
     },
+    "Départs affichés" : {
+
+    },
+    "Départs affichés sur l'accueil" : {
+
+    },
     "Départs en temps réel, filtres, rappels et courses." : {
+
+    },
+    "Départs précédents" : {
 
     },
     "Départs suivants" : {
 
     },
-    "Départs sur la page d'accueil" : {
-
-    },
     "Départs sur la page d'accueil:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1292,7 +1350,10 @@
     "Désactivé" : {
 
     },
-    "Descendez à %@" : {
+    "Descendez ici" : {
+
+    },
+    "Descendre" : {
 
     },
     "Descente" : {
@@ -1324,13 +1385,19 @@
     "Du lundi au vendredi" : {
 
     },
+    "Effacer" : {
+
+    },
     "Elle affiche les arrêts proches sur l'accueil et votre position sur la carte, et permet de partir de là où vous êtes. Pendant un suivi en direct, elle garde l'activité à jour. Vous pouvez la changer à tout moment dans les réglages d'iOS." : {
 
     },
     "Elles servent aux rappels de départ, aux alertes de retard des trajets réguliers et aux alertes pendant un suivi en direct : monter, descendre, arriver." : {
 
     },
-    "En bas de la page d'un arrêt, rangez les départs par ligne plutôt que par heure, et ne gardez que les lignes qui vous intéressent." : {
+    "En bas de la page d'un arrêt, rangez les départs par ligne plutôt que par heure. Le filtre ouvre les lignes de l'arrêt : touchez-en une, puis sa direction, pour ne garder qu'elle." : {
+
+    },
+    "En partie gardée" : {
 
     },
     "En plein écran" : {
@@ -1357,6 +1424,19 @@
     },
     "Enregistrez un itinéraire depuis les résultats d'une recherche, ou créez un trajet régulier : il reviendra ici chaque jour choisi." : {
 
+    },
+    "Ensuite : %lld min à pied jusqu'à destination." : {
+
+    },
+    "Ensuite : le %@ à %@%@." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Ensuite : le %1$@ à %2$@%3$@."
+          }
+        }
+      }
     },
     "Erreur, pas d'itinéraires trouvés" : {
       "localizations" : {
@@ -1417,13 +1497,16 @@
         }
       }
     },
-    "Favoris, itinéraires enregistrés et trajets réguliers, sur tous vos appareils connectés au même compte iCloud." : {
+    "Favoris, lieux favoris, itinéraires enregistrés et trajets réguliers, sur tous vos appareils connectés au même compte iCloud." : {
 
     },
     "Fermer" : {
 
     },
     "Fermer la carte" : {
+
+    },
+    "Fermer la recherche" : {
 
     },
     "Filtrer" : {
@@ -1457,7 +1540,11 @@
         }
       }
     },
+    "Format du retard" : {
+
+    },
     "Format du retard:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1470,10 +1557,14 @@
     "Funiculaires et remontées" : {
 
     },
+    "Gardée" : {
+
+    },
     "Garder un itinéraire" : {
 
     },
     "Général" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1492,7 +1583,11 @@
     "Heure" : {
 
     },
+    "Heure affichée par défaut" : {
+
+    },
     "Heure d'arrivée par défaut:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1509,6 +1604,9 @@
 
     },
     "Heure retenue" : {
+
+    },
+    "Heure, 12:34" : {
 
     },
     "Hier" : {
@@ -1613,6 +1711,9 @@
     "Itinéraires passés" : {
 
     },
+    "Itinéraires précédents" : {
+
+    },
     "Itinéraires sauvegardés" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1623,6 +1724,9 @@
           }
         }
       }
+    },
+    "Itinéraires suivants" : {
+
     },
     "Je l'ai manqué" : {
 
@@ -1663,10 +1767,13 @@
     "L'onglet Itinéraire s'ouvrirait, prêt à chercher." : {
 
     },
-    "L'ordre des sections de l'accueil." : {
+    "L'ordre des sections de l'accueil, et celles à masquer." : {
 
     },
     "La carte des arrêts affichés. Celui dont vous voyez les départs y est mis en évidence : touchez-en un autre pour afficher ses départs. Touchez ailleurs sur la carte, ou le bouton d'agrandissement, pour l'ouvrir en plein écran." : {
+
+    },
+    "La cloche, en haut à droite, liste les rappels de départ programmés : touchez la croix pour en annuler un." : {
 
     },
     "La course commence à cet arrêt." : {
@@ -1678,7 +1785,13 @@
     "La suite du trajet s'adapte à votre réponse." : {
 
     },
+    "La synchronisation se choisit au premier lancement, puis dans les paramètres (Vos données). Coupée, vos favoris et trajets restent sur cet appareil ; ce qui est déjà dans iCloud n'est pas effacé." : {
+
+    },
     "La visite et le guide restent disponibles dans Paramètres → Guide d'utilisation." : {
+
+    },
+    "Laissez vide pour reprendre « %@ »." : {
 
     },
     "Lancer le suivi" : {
@@ -1734,6 +1847,9 @@
     "Le 12 partait au moment où vous descendiez à Rive. Êtes-vous monté dedans ?" : {
 
     },
+    "Le bouton de filtre, en bas, ouvre les lignes de l'arrêt : touchez-en une pour ne garder qu'elle. Si elle a plusieurs directions, une bulle au-dessus permet de choisir la bonne. La liste se filtre aussitôt ; ↺ remet toutes les lignes, ✓ ou un toucher ailleurs referme les lignes." : {
+
+    },
     "Le délai du rappel se choisit dans chaque trajet ; les rappels, et les alertes de retard, s'activent pour cet appareil dans les paramètres." : {
 
     },
@@ -1749,7 +1865,7 @@
     "Le menu « … »" : {
 
     },
-    "Le prochain trajet, les favoris et la carte à gauche, les départs à droite. Les paramètres sont en haut à droite." : {
+    "Le prochain trajet, les favoris, les lieux favoris et la carte à gauche, les départs à droite. Les rappels prévus et les paramètres sont en haut à droite." : {
 
     },
     "Le rappel compte depuis l'heure de partir, marche jusqu'à l'arrêt comprise. L'activité en direct démarre d'elle-même avant le départ ; iOS ne la laisse démarrer que l'app ouverte : une notification vous invite à l'ouvrir au bon moment. Réglages propres à cet appareil." : {
@@ -1768,6 +1884,12 @@
 
     },
     "Le suivi en direct" : {
+
+    },
+    "Le suivi en direct a besoin de votre position pour rester à jour, app fermée.\nAutorisez-la dans les réglages du téléphone" : {
+
+    },
+    "Le suivi en direct a besoin de votre position. Autorisez-la, puis relancez le suivi." : {
 
     },
     "Le suivi en direct n'a pas pu être lancé" : {
@@ -1800,9 +1922,6 @@
     "Les arrêts autour de vous, leurs quais et leurs départs." : {
 
     },
-    "Les autorisations et les premières astuces, comme au premier lancement." : {
-
-    },
     "Les départs" : {
 
     },
@@ -1815,7 +1934,7 @@
     "Les départs proches et vos favoris au poignet." : {
 
     },
-    "Les deux flèches en bas à droite de la page d'un arrêt affichent les départs précédents ou suivants. Pour une heure précise, touchez l'horloge en haut de la page." : {
+    "Les deux flèches en bas à droite de la page d'un arrêt affichent les départs précédents ou suivants. Entre elles, l'horloge choisit un jour et une heure précis, ou revient à maintenant." : {
 
     },
     "Les étapes, arrêts de montée et de descente, quais et correspondances, avec la carte du trajet. Une correspondance serrée est signalée." : {
@@ -1824,7 +1943,10 @@
     "Les favoris" : {
 
     },
-    "Les flèches en bas à droite affichent les départs précédents ou suivants. Pour une heure précise, touchez l'horloge en haut de la page." : {
+    "Les flèches en bas à droite affichent les départs précédents ou suivants. Pour une heure précise, touchez l'horloge entre elles : choisissez le jour, puis l'heure, et validez avec ✓. « Maintenant » revient à l'heure actuelle ; l'horloge reste orange tant que la liste n'y est pas." : {
+
+    },
+    "Les lieux favoris" : {
 
     },
     "Les lignes et quais de l'arrêt. Touchez une ligne ou un quai pour filtrer les départs, un départ pour voir son parcours." : {
@@ -1865,6 +1987,9 @@
         }
       }
     },
+    "Leur ordre, glissé du doigt ; balayez pour en retirer un. Le crayon renomme un lieu." : {
+
+    },
     "Lieux" : {
       "localizations" : {
         "en" : {
@@ -1875,7 +2000,11 @@
         }
       }
     },
+    "Lieux favoris" : {
+
+    },
     "Ligne" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1974,6 +2103,15 @@
     "maintenant" : {
 
     },
+    "Maintenant" : {
+
+    },
+    "Maintenez une section puis faites-la glisser pour changer l'ordre. L'œil la masque ou l'affiche à nouveau." : {
+
+    },
+    "Maintenez une section puis faites-la glisser pour changer l'ordre. L'œil la masque ou l'affiche à nouveau. Sur grand écran, les départs restent dans la colonne de droite ; l'ordre s'applique aux autres sections." : {
+
+    },
     "Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi" : {
       "localizations" : {
         "en" : {
@@ -2043,13 +2181,13 @@
     "Montée à bord" : {
 
     },
+    "Monter" : {
+
+    },
     "Monter avant, descendre ici" : {
 
     },
     "Monter ici, descendre plus loin" : {
-
-    },
-    "Ne gardez que certaines lignes. « Supprimer les filtres » les remet toutes." : {
 
     },
     "Ne passe pas à cet arrêt" : {
@@ -2138,6 +2276,7 @@
 
     },
     "Ordre des favoris" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2185,6 +2324,12 @@
 
     },
     "Pages en deux moitiés" : {
+
+    },
+    "Par horaire" : {
+
+    },
+    "Par ligne" : {
 
     },
     "Paramètres" : {
@@ -2317,6 +2462,9 @@
     "Plus aucun itinéraire à cette heure-là." : {
 
     },
+    "Plus d'actions" : {
+
+    },
     "Plus proposé" : {
 
     },
@@ -2367,6 +2515,9 @@
 
     },
     "Premiers pas" : {
+
+    },
+    "Préparez-vous à descendre" : {
 
     },
     "Prévenir %lld' avant" : {
@@ -2428,10 +2579,13 @@
     "Prochain arrêt" : {
 
     },
+    "Prochain arrêt : %@" : {
+
+    },
     "Prochain trajet" : {
 
     },
-    "Prochain trajet, favoris, départs et carte des environs." : {
+    "Prochain trajet, favoris, lieux favoris, départs et carte des environs." : {
 
     },
     "Prochains départs" : {
@@ -2449,6 +2603,7 @@
       }
     },
     "Proches" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2665,7 +2820,19 @@
     "Réguliers" : {
 
     },
+    "Réinitialiser le filtre" : {
+
+    },
     "Remplacer" : {
+
+    },
+    "Renommer" : {
+
+    },
+    "Renommer le lieu" : {
+
+    },
+    "Renommer…" : {
 
     },
     "Répéter chaque semaine" : {
@@ -2695,6 +2862,9 @@
     "Retards et changements" : {
 
     },
+    "Retards et suivi en direct" : {
+
+    },
     "Retenez l'heure de montée à bord, ou l'heure où vous voulez être arrivé." : {
 
     },
@@ -2707,6 +2877,9 @@
           }
         }
       }
+    },
+    "Retirer des lieux favoris" : {
+
     },
     "Retour" : {
       "extractionState" : "stale",
@@ -2729,6 +2902,7 @@
 
     },
     "Revoir le message de démarrage" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2737,6 +2911,9 @@
           }
         }
       }
+    },
+    "Rien n'est envoyé ailleurs que dans votre compte iCloud. Ce choix se change dans les paramètres de l'app." : {
+
     },
     "S'il faut marcher jusqu'à l'arrêt, le rappel dit « Partir dans 10 min · 5 min à pied ». Sans marche : « Départ dans 10 min ». Le temps de marche n'est jamais caché dans l'heure du départ." : {
 
@@ -2842,9 +3019,6 @@
         }
       }
     },
-    "Sur grand écran, les départs restent dans la colonne de droite ; l'ordre s'applique aux autres sections." : {
-
-    },
     "Sur iPad" : {
 
     },
@@ -2854,6 +3028,9 @@
     "Sur un arrêt ou un favori, le bouton d'itinéraire prépare la recherche : partir de là, y aller, ou y aller tout de suite depuis votre position." : {
 
     },
+    "Synchronisation iCloud" : {
+
+    },
     "Synchronisé" : {
 
     },
@@ -2861,6 +3038,12 @@
 
     },
     "Temps réel" : {
+
+    },
+    "Temps restant" : {
+
+    },
+    "Temps restant, 14'" : {
 
     },
     "Terminer" : {
@@ -2890,16 +3073,16 @@
     "Touchez encore pour revenir à l'autre affichage." : {
 
     },
+    "Touchez l'étoile d'un lieu dans Explorer pour le retrouver ici, sur l'accueil et dans l'itinéraire." : {
+
+    },
     "Touchez l'étoile d'un résultat de recherche, ou passez par le menu « … » d'une page d'arrêt. Vos favoris apparaissent sur l'accueil et dans l'onglet Itinéraire, dans l'ordre que vous choisissez." : {
 
     },
     "Touchez l'étoile, puis l'icône à droite" : {
 
     },
-    "Touchez l'icône à droite d'un résultat pour voir sa position sur une carte, puis Y aller ou Partir d'ici. L'étoile ajoute un arrêt à vos favoris." : {
-
-    },
-    "Touchez l'œil pour masquer une section ou l'afficher à nouveau." : {
+    "Touchez l'icône à droite d'un résultat pour voir sa position sur une carte, puis Y aller ou Partir d'ici. L'étoile ajoute un arrêt à vos favoris, ou un lieu à vos lieux favoris." : {
 
     },
     "Touchez le bouton d'itinéraire" : {
@@ -2911,13 +3094,16 @@
     "Touchez le sablier" : {
 
     },
-    "Touchez les flèches en bas à droite, puis l'horloge" : {
+    "Touchez les flèches en bas à droite, puis l'horloge entre elles" : {
 
     },
     "Touchez un départ pour voir tous les arrêts de sa course, où se trouve le véhicule et le tracé de la ligne sur la carte." : {
 
     },
-    "Touchez un favori pour ouvrir ses départs ; appuyez longuement pour partir de là ou y aller." : {
+    "Touchez un favori pour ouvrir ses départs ; appuyez longuement pour partir de là ou y aller. Sans favori, la case en pointillés ouvre Explorer." : {
+
+    },
+    "Touchez un lieu pour chercher tout de suite l'itinéraire depuis votre position. Appuyez longuement pour en partir, le voir sur la carte, le renommer ou le retirer." : {
 
     },
     "Touchez une ligne ou un quai pour filtrer les départs, un départ pour voir son parcours." : {
@@ -2936,6 +3122,9 @@
 
     },
     "Tout à l'écran, en deux colonnes." : {
+
+    },
+    "Tout ce que l'app sait faire, à essayer du doigt." : {
 
     },
     "Tout ce que l'app sait faire, page par page." : {
@@ -3039,7 +3228,11 @@
     "Transporteurs" : {
 
     },
+    "Tri par défaut" : {
+
+    },
     "Tri par défaut:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3053,6 +3246,9 @@
 
     },
     "Trier et filtrer" : {
+
+    },
+    "Trier par ligne" : {
 
     },
     "Un itinéraire depuis la carte" : {
@@ -3092,6 +3288,9 @@
     "Un trajet précis, gardé sous la main et suivi en temps réel." : {
 
     },
+    "Une adresse ou un lieu que vous rejoignez souvent : touchez son étoile dans Explorer, ou dans sa fiche. Il apparaît sur l'accueil et dans l'onglet Itinéraire. Donnez-lui un nom (« Maison », « Travail ») d'un appui long." : {
+
+    },
     "Une minute avant l'arrivée du véhicule, deux minutes avant l'arrêt où descendre, et à l'arrivée. Elles suivent les retards." : {
 
     },
@@ -3114,6 +3313,9 @@
           }
         }
       }
+    },
+    "Valider le filtre" : {
+
     },
     "Véhicule" : {
 
@@ -3161,7 +3363,16 @@
     "Vos arrêts favoris" : {
 
     },
+    "Vos données" : {
+
+    },
     "Vos favoris arrivent de l'iPhone : modifiez-les sur l'iPhone, la montre suit." : {
+
+    },
+    "Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils." : {
+
+    },
+    "Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils. Désactivée, ils restent sur cet appareil ; ce qui est déjà dans iCloud n'est pas effacé." : {
 
     },
     "Vos recherches récentes, vos trajets réguliers et enregistrés, les arrêts proches et la liste des lignes." : {
@@ -3188,7 +3399,16 @@
     "Votre trajet sur l'écran verrouillé, étape par étape." : {
 
     },
+    "Votre véhicule arrive" : {
+
+    },
     "Vous arrivez à destination" : {
+
+    },
+    "Vous descendez à %@ dans 2 min" : {
+
+    },
+    "Vous êtes arrivé." : {
 
     },
     "Vous êtes prêt" : {

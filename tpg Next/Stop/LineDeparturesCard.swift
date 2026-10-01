@@ -15,7 +15,10 @@ struct SortedStopEventsView: View {
     var filteredStopEvents: [String: [StopEvent]]
     var groupedStopEvents: [String: [StopEvent]]
     @Binding var showTime: Bool
+    /// La course d'où l'on vient : un anneau autour de la ligne du groupe qui la contient.
     @Binding var previousLineRef: String?
+    /// Le départ détaillé à côté, sur grand écran : la bordure orange de sa pastille.
+    var selectedJourneyRef: String? = nil
     var stopName: String
     var stopSloid: String
     /// Sur grand écran : un départ se sélectionne au lieu d'ouvrir sa course.
@@ -41,7 +44,8 @@ struct SortedStopEventsView: View {
                         Spacer()
                         HStack {
                             let quay = groupedStopEvents[key]!.first!.plannedQuay
-                            BusLineIcon(lineName: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName)
+                            BusLineIcon(lineName: splitLine.0, operatorName: filteredStopEvents[key]![0].operatorName,
+                                        highlighted: previousLineRef.map { ref in groupedStopEvents[key]?.contains { $0.journeyRef == ref } == true } ?? false)
                             Image(systemName: "arrow.right")
                             SmallStopTitleView(stopName: splitLine.1)
                             Spacer()
@@ -62,7 +66,7 @@ struct SortedStopEventsView: View {
                                         .padding(.horizontal, 17)
                                         .padding(.vertical, 5)
                                         .background(
-                                            BasicElement(highlighted: stopEvent.journeyRef == (previousLineRef ?? ""))
+                                            BasicElement(selected: stopEvent.journeyRef == (selectedJourneyRef ?? ""))
 //                                                .padding(2)
                                         )
                                         
