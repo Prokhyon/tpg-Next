@@ -36,6 +36,9 @@ struct DeparturesEntry: TimelineEntry {
     let status: Status
     /// Distance à l'arrêt en mode automatique, `nil` si l'arrêt a été choisi à la main.
     let distance: CLLocationDistance?
+    /// Aperçu du sélecteur de widgets : les départs sont des exemples, ce qui compte est de
+    /// reconnaître le réglage (sur la montre, l'arrêt le plus proche ou tel favori).
+    var isGalleryPreview = false
 
     static func message(_ status: Status, at date: Date = Date()) -> DeparturesEntry {
         DeparturesEntry(date: date, stop: nil, events: [], status: status, distance: nil)
@@ -69,9 +72,11 @@ struct DeparturesProvider: AppIntentTimelineProvider {
     /// chaque favori y est proposé ; avec le même arrêt d'exemple, ils semblaient tous identiques.
     private func preview(for configuration: SelectStopIntent) -> DeparturesEntry {
         guard let stop = configuration.selection.stop else {
-            return DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120)
+            return DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120,
+                                   isGalleryPreview: true)
         }
-        return DeparturesEntry(date: Date(), stop: stop, events: PreviewData.events, status: .ok, distance: nil)
+        return DeparturesEntry(date: Date(), stop: stop, events: PreviewData.events, status: .ok, distance: nil,
+                               isGalleryPreview: true)
     }
 
     /// Vrai quand le code tourne dans l'agent d'aperçu de Xcode, où ni la
@@ -82,14 +87,16 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     #if os(watchOS)
     /// La montre ne propose pas de régler un widget : elle offre ces configurations toutes faites,
-    /// l'arrêt le plus proche puis les favoris reçus de l'iPhone.
+    /// l'arrêt le plus proche puis les quatre premiers favoris. Chacune apparaît une fois par
+    /// format : au-delà, le sélecteur en compte des dizaines. Leur aperçu (`isGalleryPreview`)
+    /// montre de quel arrêt il s'agit.
     func recommendations() -> [AppIntentRecommendation<SelectStopIntent>] {
-        let stops = [StopEntity.automatic] + FavoritesStorage.load().prefix(8).map { StopEntity(stop: $0.fallbackStop) }
+        let stops = [StopEntity.automatic] + FavoritesStorage.load().prefix(4).map { StopEntity(stop: $0.fallbackStop) }
         return stops.map { entity in
             let intent = SelectStopIntent()
             intent.stop = entity
-            let description = entity.isAutomatic ? String(localized: "Arrêt le plus proche") : entity.name
-            return AppIntentRecommendation(intent: intent, description: LocalizedStringResource(stringLiteral: description))
+            let description: LocalizedStringResource = entity.isAutomatic ? "Arrêt le plus proche" : "Favori : \(entity.name)"
+            return AppIntentRecommendation(intent: intent, description: description)
         }
     }
     #endif

@@ -53,7 +53,11 @@ L'info trafic tpg n'existe dans aucune source ouverte (voir la mémoire « Sourc
 Notes sur 3.1 (cible `tpg Next Watch Widget`) :
 - Formats : rectangulaire (arrêt + deux départs), rond (ligne + minutes), coin, en ligne.
 - Même fournisseur que le widget iPhone (`DeparturesProvider`, `SelectStopIntent`, partagés).
-  La montre propose une configuration par favori + « Arrêt le plus proche » (`recommendations()`).
+  Le sélecteur propose « Arrêt le plus proche » et les quatre premiers favoris (`recommendations()`),
+  chacun une fois par format. Leur aperçu montre la flèche et « Proche », ou l'étoile et le nom du
+  favori ; la rectangulaire garde ce repère devant le nom de l'arrêt.
+- Rectangulaire : nom entier de l'arrêt (commune en régulier, arrêt en gras, commune retirée s'il
+  est trop long), icônes de ligne de l'app, temps restant au format de l'app dans une seule police.
 - L'app montre alimente l'extension par le groupe d'app : index binaire des arrêts, favoris,
   dernière position.
 - Toucher la complication ouvre l'arrêt (`tpgnext://stop?sloid=…&name=…`).
