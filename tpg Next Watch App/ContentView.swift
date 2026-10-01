@@ -149,12 +149,19 @@ struct ContentView: View {
         }
     }
 
-    /// `tpgnext://stop?sloid=…&name=…`, envoyé par une complication : ouvre cet arrêt, à la place
-    /// du plus proche.
+    /// Envoyé par une complication, à la place de l'arrêt le plus proche :
+    /// `tpgnext://stop?sloid=…&name=…` ouvre cet arrêt, `tpgnext://trip?id=…` ce trajet.
     private func open(_ url: URL) {
-        guard url.scheme == "tpgnext", url.host == "stop",
-              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
-              let sloid = items.first(where: { $0.name == "sloid" })?.value else { return }
+        guard url.scheme == "tpgnext",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return }
+        if url.host == "trip" {
+            guard let id = items.first(where: { $0.name == "id" })?.value,
+                  let trip = watchTrips.trips.first(where: { $0.id == id }) else { return }
+            opensNearestStop = false
+            path = [.trip(trip)]
+            return
+        }
+        guard url.host == "stop", let sloid = items.first(where: { $0.name == "sloid" })?.value else { return }
         let name = items.first(where: { $0.name == "name" })?.value ?? stopStore.findStop(id: sloid)?.name ?? ""
         opensNearestStop = false
         path = [.stop(name: name, sloid: sloid, isNearby: sloidHarmonizer(code: sloid) == closeStop.map { sloidHarmonizer(code: $0.sloid) })]

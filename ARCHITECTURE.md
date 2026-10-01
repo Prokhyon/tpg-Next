@@ -447,6 +447,9 @@ le construit (`.navigationDestination(for: WatchRoute.self)`).
   seules les vues sont propres (`WatchDeparturesWidget.swift`). L'app montre écrit pour elles
   l'index des arrêts, les favoris (`FavoritesStorage.save`) et la dernière position dans le
   groupe d'app. Toucher une complication ouvre `tpgnext://stop?sloid=…&name=…`.
+- Complication « Prochain trajet » : mêmes trajets que le widget iPhone, reçus par `WatchContext`
+  puis recopiés par l'app montre dans `UpcomingTripsStorage` ; moments d'affichage communs
+  (`NextTripTimeline`). Toucher ouvre `tpgnext://trip?id=…`.
 - Plan et état d'avancement : `ROADMAP-Montre.md`.
 - Pas de toucher sur le simulateur : pour voir un écran poussé, un banc d'essai temporaire
   (vue racine choisie par variable d'environnement, `SIMCTL_CHILD_…`), retiré avant le commit.

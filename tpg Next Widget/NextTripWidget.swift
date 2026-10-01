@@ -18,9 +18,6 @@ struct NextTripEntry: TimelineEntry {
 }
 
 struct NextTripProvider: TimelineProvider {
-    /// Le décompte n'est affiché à la minute que dans l'heure qui précède le départ.
-    private static let countdownWindow: TimeInterval = 3600
-
     func placeholder(in context: Context) -> NextTripEntry {
         NextTripEntry(date: Date(), trips: [Self.sample])
     }
@@ -32,27 +29,12 @@ struct NextTripProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NextTripEntry>) -> Void) {
-        let now = Date()
         let trips = UpcomingTripsStorage.load()
-        var dates: Set<Date> = [now]
-        // Chaque minute pleine de l'heure qui précède le départ du prochain trajet.
-        if let next = trips.first(where: { $0.arrival > now }) {
-            var minute = Calendar.current.dateInterval(of: .minute, for: max(now, next.leaving.addingTimeInterval(-Self.countdownWindow)))?.end ?? now
-            while minute < next.leaving {
-                dates.insert(minute)
-                minute.addTimeInterval(60)
-            }
-        }
-        // Puis chaque changement d'étape : partir, monter, arriver (le trajet suivant prend la place).
-        for trip in trips {
-            dates.formUnion([trip.leaving, trip.boarding, trip.arrival].compactMap { $0 })
-        }
-        let entries = dates.filter { $0 >= now }.sorted().prefix(150).map { date in
+        let timeline = NextTripTimeline.dates(for: trips)
+        let entries = timeline.dates.map { date in
             NextTripEntry(date: date, trips: trips.filter { $0.arrival > date })
         }
-        // L'app recharge le widget quand ses trajets changent ; sinon, de quoi ne pas rester figé.
-        let refresh = entries.last.map { max($0.date, now).addingTimeInterval(60) } ?? now.addingTimeInterval(3600)
-        completion(Timeline(entries: Array(entries), policy: .after(refresh)))
+        completion(Timeline(entries: entries, policy: .after(timeline.refresh)))
     }
 
     /// Un trajet avec une correspondance, qui part dans 8 min.
