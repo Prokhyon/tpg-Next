@@ -171,6 +171,10 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
     if let error = parser.error {
         throw error
     }
+    if parser.isUnreadable {
+        OJPUsage.shared.recordUnreadable("itinéraires")
+        throw ParserError.xmlParsingFailed
+    }
     return parser.trips.map(StopNames.withOfficialDestinations)
 }
 
@@ -204,13 +208,13 @@ private func placeRefXML(stop: Stop?, geoPosition: GeoPosition?, useGeoPosition:
 }
 
 /// Les itinéraires entre deux points (OJP 1.0). `completion` reçoit la réponse brute,
-/// `nil` en cas d'échec, sur le thread principal.
-public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Data?) -> Void) {
+/// ou la raison de l'échec, sur le thread principal.
+public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Result<Data, OJPClient.Failure>) -> Void) {
     // Sans déballage forcé : un lieu attendu mais absent faisait planter l'app.
     guard let origin = placeRefXML(stop: departureStop, geoPosition: departureGeoPosition, useGeoPosition: geoDeparture),
           let destination = placeRefXML(stop: arrivalStop, geoPosition: arrivalGeoPosition, useGeoPosition: geoArrival) else {
         Log.network.error("Itinéraires : départ ou arrivée manquant")
-        completion(nil)
+        completion(.failure(.badRequest(status: 0)))
         return
     }
     let requestTimestamp = OJPDate.string(from: Date())
@@ -243,7 +247,7 @@ public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: Geo
         </OJPRequest>
     </OJP>
     """
-    OJPClient.post(xmlString, to: .v1) { completion(try? $0.get()) }
+    OJPClient.post(xmlString, to: .v1, completion: completion)
 }
 
 @Observable

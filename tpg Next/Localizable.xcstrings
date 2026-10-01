@@ -338,7 +338,6 @@
 
     },
     "%lld' avant" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -405,6 +404,9 @@
           }
         }
       }
+    },
+    "à l'arrivée" : {
+
     },
     "À l'arrivée" : {
 
@@ -1409,6 +1411,9 @@
         }
       }
     },
+    "départ %@" : {
+
+    },
     "Départ %@" : {
 
     },
@@ -2297,6 +2302,16 @@
         }
       }
     },
+    "Ligne %@ vers %@, %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Ligne %1$@ vers %2$@, %3$@"
+          }
+        }
+      }
+    },
     "Ligne %@, %lld parcours" : {
       "localizations" : {
         "fr" : {
@@ -2995,6 +3010,7 @@
       "shouldTranslate" : false
     },
     "Rappel %lld' avant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3018,6 +3034,7 @@
 
     },
     "Rappel à l'arrivée" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

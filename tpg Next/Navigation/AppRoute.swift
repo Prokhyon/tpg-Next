@@ -42,6 +42,8 @@ enum AppRoute: Hashable {
     case liveTrip(key: String)
     /// Le guide d'utilisation.
     case userGuide
+    /// L'usage des clés OJP et les échecs vus par cet appareil.
+    case apiDiagnostics
     /// Une rubrique du guide ; `entry` : le point à montrer (depuis la recherche du guide).
     case userGuideTopic(id: String, entry: String? = nil)
 }
@@ -96,6 +98,8 @@ struct AppRouteDestination: View {
             AppIconSettingsView()
         case .userGuide:
             UserGuideView()
+        case .apiDiagnostics:
+            APIDiagnosticsView()
         case let .userGuideTopic(id, entry):
             if let topic = UserGuide.topic(id: id) {
                 UserGuideTopicView(topic: topic, entry: entry)

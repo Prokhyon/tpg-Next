@@ -161,7 +161,7 @@ struct StopView: View {
                             } else {
                                 VStack {
                                     Spacer()
-                                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage)
+                                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage, failure: stopManager.failure)
                                         .padding()
                                     Spacer()
                                 }

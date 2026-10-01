@@ -128,7 +128,7 @@ public enum TripReplanner {
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTrips(with: origin.stop, with: origin.place, with: origin.isPlace,
                        with: arrival.stop, with: arrival.place, with: arrival.isPlace,
-                       with: time, with: false) { continuation.resume(returning: $0) }
+                       with: time, with: false) { continuation.resume(returning: try? $0.get()) }
         }
         guard let data else { return [] }
         let trips = try? parseTripEvents(from: data, startCoordinate: stop.coordinates,

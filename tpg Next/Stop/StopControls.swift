@@ -707,9 +707,13 @@ struct LineFilterSheet: View {
 struct DeparturesUnavailableText: View {
     /// Code d'erreur OJP renvoyé par `StopManager`.
     let errorMessage: String
+    /// La requête elle-même a échoué : ce n'est pas qu'il n'y a aucun départ.
+    var failure: OJPClient.Failure?
 
     var body: some View {
-        if errorMessage == "STOPEVENT_LOCATIONUNSERVED" {
+        if let failure {
+            Text(failure.userMessage)
+        } else if errorMessage == "STOPEVENT_LOCATIONUNSERVED" {
             Text("Malheureusement, cet arrêt n'est pas disponible depuis l'application, ou n'est pas desservi")
         } else {
             Text("Pas de départs trouvés")

@@ -520,7 +520,7 @@ public enum RegularTripResolver {
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTrips(with: start.stop, with: start.place, with: start.isPlace,
                        with: end.stop, with: end.place, with: end.isPlace,
-                       with: time, with: isArrivalTime) { continuation.resume(returning: $0) }
+                       with: time, with: isArrivalTime) { continuation.resume(returning: try? $0.get()) }
         }
         guard let data else { throw Failure.request }
         do {

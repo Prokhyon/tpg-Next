@@ -81,7 +81,7 @@ struct TripView: View {
                                 .opacity(0)
                                 .frame(height: 50)
                         
-                                Text("Erreur, pas d'itinéraires trouvés")
+                                Text(tripManager.failure?.userMessage ?? "Aucun itinéraire trouvé")
                         }
                     }
                     if #available(iOS 26, *) {

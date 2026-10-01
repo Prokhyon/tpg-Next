@@ -120,7 +120,9 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
     let delegate = JourneyParserDelegate()
     let parser = XMLParser(data: data)
     parser.delegate = delegate
-    parser.parse()
+    if !parser.parse() {
+        OJPUsage.shared.recordUnreadable("course")
+    }
 
     // Le contexte (lieux) peut suivre les appels : les coordonnées sont résolues à la fin.
     var events = delegate.events

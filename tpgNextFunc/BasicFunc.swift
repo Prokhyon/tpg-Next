@@ -8,12 +8,6 @@
 import Foundation
 import SwiftUI
 
-/// Une des clés d'API OJP, tirée au hasard pour répartir la charge entre elles.
-/// Les clés vivent dans `Secrets.swift`, généré par `ci_scripts/ci_post_clone.sh` et jamais versionné.
-public func keySelect() -> String {
-    Secrets.ojpAPIKeys.randomElement() ?? ""
-}
-
 /// Minutes d'une durée ISO 8601 telle que renvoyée par OJP (`PT20M`, `PT1H5M`, `P1DT2H`).
 ///
 /// Découper la chaîne à la main (`dropFirst(2).dropLast(1)`) affichait « 2' » pour `PT2H`

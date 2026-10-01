@@ -18,6 +18,8 @@ public final class StopManager {
     public private(set) var stopError = false
     /// Le code d'erreur OJP, par exemple `STOPEVENT_LOCATIONUNSERVED`.
     public private(set) var stopErrorMessage = ""
+    /// Pourquoi la requête a échoué (réseau, service, quota), `nil` si l'API a répondu.
+    public private(set) var failure: OJPClient.Failure?
     public private(set) var quays: [Quay] = []
 
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
@@ -31,13 +33,22 @@ public final class StopManager {
     public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
         stopError = false
         stopErrorMessage = ""
+        failure = nil
         latestRequest += 1
         let request = latestRequest
 
-        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { data in
+        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { result in
             guard request == self.latestRequest else { return }
-            guard let data else {
+            let data: Data
+            switch result {
+            case .success(let received):
+                data = received
+            case .failure(.cancelled):
+                completion()
+                return
+            case .failure(let failure):
                 self.stopError = true
+                self.failure = failure
                 completion()
                 return
             }
@@ -49,6 +60,7 @@ public final class StopManager {
                         self.stopErrorMessage = message
                         Log.network.info("Aucun départ : \(message)")
                     } else {
+                        self.failure = .unreadable
                         Log.network.error("Départs : réponse illisible")
                     }
                     return

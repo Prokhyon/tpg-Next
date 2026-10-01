@@ -138,9 +138,9 @@ func stopEventRequestXML(stopName: String, stopSloid: String, count: Int, at dat
     """
 }
 
-public func fetchTransportDepartures(with stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping (Data?) -> Void) {
+public func fetchTransportDepartures(with stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping (Result<Data, OJPClient.Failure>) -> Void) {
     let xml = stopEventRequestXML(stopName: stopName, stopSloid: stopSloid, count: stopEventNumber, at: timeRequest)
-    OJPClient.post(xml, to: .v2) { completion(try? $0.get()) }
+    OJPClient.post(xml, to: .v2, completion: completion)
 }
 
 /// Les prochains départs d'un arrêt et ses quais, en `async`.
@@ -172,6 +172,10 @@ public func parseStopEvents(from data: Data, stopCode: String, completion: @esca
 public func parseStopEventsSync(from data: Data, stopCode: String) -> (events: [StopEvent], quays: [Quay], error: ParserError?) {
     let parser = StopEventParser(stopCode: stopCode)
     parser.parse(data)
+    if parser.isUnreadable, parser.error == nil {
+        OJPUsage.shared.recordUnreadable("départs")
+        return ([], [], .xmlParsingFailed)
+    }
     return (parser.events, parser.quays, parser.error)
 }
 

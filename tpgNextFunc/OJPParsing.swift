@@ -20,11 +20,15 @@ func ojpLocalName(_ name: String) -> String {
 class OJPParser: NSObject, XMLParserDelegate {
     private(set) var path: [String] = []
     private var text = ""
+    /// La réponse n'est pas un document OJP lisible : XML cassé ou tronqué, page HTML d'une
+    /// passerelle. Sans ce drapeau, elle donnait une liste vide, comme s'il n'y avait aucun départ.
+    private(set) var isUnreadable = false
+    private var root: String?
 
     func parse(_ data: Data) {
         let parser = XMLParser(data: data)
         parser.delegate = self
-        parser.parse()
+        isUnreadable = !parser.parse() || root != "OJP"
     }
 
     /// À l'ouverture d'un élément, déjà sur la pile.
@@ -41,6 +45,7 @@ class OJPParser: NSObject, XMLParserDelegate {
     final func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
                       qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         let name = ojpLocalName(elementName)
+        if path.isEmpty, root == nil { root = name }
         path.append(name)
         text = ""
         didStart(name)
