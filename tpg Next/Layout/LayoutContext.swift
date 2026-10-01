@@ -101,17 +101,13 @@ private struct ReadableScrollContent: ViewModifier {
     @State private var width: CGFloat = 0
 
     func body(content: Content) -> some View {
-        let inset = max(0, (width - maxWidth) / 2)
-        Group {
-            // Aucune marge ajoutée tant que la vue tient dans la colonne (iPhone) :
-            // les marges déjà posées par l'écran restent seules en jeu.
-            if inset > 0 {
-                content.contentMargins(.horizontal, inset, for: .scrollContent)
-            } else {
-                content
-            }
-        }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        // Une zone sûre élargie plutôt qu'une marge de contenu : une marge posée ici pour
+        // `.scrollContent` l'emportait sur celles de l'écran (`.automatic`), y compris en haut.
+        // La liste d'un arrêt ou d'une ligne remontait alors sous son titre, dès que la colonne
+        // dépassait la largeur de lecture (iPad en paysage). Sans effet tant qu'elle tient (iPhone).
+        content
+            .safeAreaPadding(.horizontal, max(0, (width - maxWidth) / 2))
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 }
 

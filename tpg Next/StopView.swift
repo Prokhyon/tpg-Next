@@ -25,6 +25,10 @@ struct StopView: View {
     @State private var refreshGeneration = 0
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
     @State private var titleHeight: CGFloat = 0
+    /// Bas du titre flottant et haut de la liste, dans le repère de la colonne : la liste
+    /// commence sous le titre, quels que soient les décalages de la barre (grand écran).
+    @State private var titleBottom: CGFloat = 0
+    @State private var listTop: CGFloat = 0
     let stopName: String
     let stopSloid: String
     @State var previousLineRef: String?
@@ -164,7 +168,8 @@ struct StopView: View {
                             }
                         }
                         // Sous le titre flottant ; avant iOS 26, au-dessus des boutons posés sur la liste.
-                        .contentMargins(.top, max(90.0, titleHeight + 10 + (layout.showsSecondaryPane ? PaneMetrics.topInset : 0)), for: .automatic)
+                        .contentMargins(.top, max(90.0, titleBottom - listTop + 14), for: .automatic)
+                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).minY + $0.safeAreaInsets.top } action: { listTop = $0 }
                         .contentMargins(.bottom, TPGSurface.isGlass ? 0 : 125, for: .automatic)
                         // Sous la barre du bas, iOS 26 assombrit le bord de la liste, sur toute la
                         // hauteur de la barre, et plus encore avec le filtre ouvert.
@@ -190,18 +195,22 @@ struct StopView: View {
                             HStack {
                                 StopTitleView(stopName: stopName)
                                     .glassForegroundStyle(Color.text)
+                                // La partie cachée de la capsule (hors de l'écran, ou sous la carte).
                                 Rectangle()
                                     .fill(.clear)
-                                    .frame(width: 100, height: 0)
+                                    .frame(width: titleIsDetached ? 0 : 100, height: 0)
                             }
                             .padding(.horizontal)
                             .padding(.vertical, TPGSurface.isGlass ? 5 : 0)
                             .tpgSurface(interactive: true)
                             .offset(x: titleOverhang)
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
+                            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).maxY } action: { titleBottom = $0 }
                         }
                         // Sur grand écran, le haut de la capsule s'aligne sur celui de la carte.
                         .padding(.top, layout.showsSecondaryPane ? PaneMetrics.topInset : 0)
+                        // Détachée de la carte : aussi loin du bord que les départs.
+                        .padding(.trailing, titleIsDetached ? 20 : 0)
                         Spacer()
 
                         // Depuis iOS 26, la barre du bas de la liste (`StopBottomBarModifier`).
@@ -216,6 +225,7 @@ struct StopView: View {
                     .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
             }
+                .coordinateSpace(.named(Self.columnSpace))
                 // Depuis iOS 26, les capsules du filtre et de l'heure restent ouvertes jusqu'à un
                 // toucher ailleurs (qui annule l'heure non validée).
                 .overlay {
@@ -296,8 +306,20 @@ struct StopView: View {
     /// coin de la carte, et que la capsule semble sortir de son bord.
     private var titleOverhang: CGFloat {
         guard layout.showsSecondaryPane else { return 50 }
+        guard !titleIsDetached else { return 0 }
         return PaneMetrics.sideInset + PaneMetrics.corner + titleHeight / 2 + 6
     }
+
+    /// Essai : sur grand écran, la capsule du titre reste entière dans la moitié gauche, séparée
+    /// de la carte. `false` revient à la capsule qui sort de sous la carte.
+    private static let detachesTitleOnWideScreens = true
+
+    private var titleIsDetached: Bool {
+        layout.showsSecondaryPane && Self.detachesTitleOnWideScreens
+    }
+
+    /// Le repère de la colonne de gauche : titre et liste s'y mesurent.
+    private static let columnSpace = "stopColumn"
 
     /// Le départ détaillé à droite, sur grand écran : sa rangée prend la bordure orange. La
     /// course d'où l'on vient (`previousLineRef`) a, elle, un anneau autour de sa ligne.
