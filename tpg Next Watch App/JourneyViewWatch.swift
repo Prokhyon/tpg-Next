@@ -16,6 +16,8 @@ enum WatchRoute: Hashable {
     /// Les départs d'un arrêt. Ouvert depuis une course (`passage`), à partir de l'heure de
     /// passage du véhicule.
     case stop(name: String, sloid: String, isNearby: Bool = false, passage: JourneyPassage? = nil)
+    /// Le détail d'un trajet de « Mes trajets ».
+    case trip(UpcomingTrip)
 
     @ViewBuilder var destination: some View {
         switch self {
@@ -24,6 +26,8 @@ enum WatchRoute: Hashable {
         case .stop(let name, let sloid, let isNearby, let passage):
             StopView(stopName: name, stopSloid: sloid, previousLineRef: passage?.journeyRef, previousLineTime: passage?.time,
                      isCloseStop: isNearby)
+        case .trip(let trip):
+            TripDetailView(trip: trip)
         }
     }
 }
