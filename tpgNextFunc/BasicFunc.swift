@@ -143,15 +143,35 @@ public struct eventStopName: View {
     }
     
     public var body: some View {
-        let splitStopName = splitString(stopName, separator: ",")
-        
-        HStack {
-            Group {
-                Text(splitStopName.0) +
-                Text(" ") +
-                Text(splitStopName.1).bold()
-            }
+        Text(stopName: stopName)
             .multilineTextAlignment(.leading)
+    }
+}
+
+extension Text {
+    /// Un nom d'arrêt sur une seule ligne, comme la direction dans le titre d'une ligne :
+    /// « Genève **Rive** », la commune en normal et l'arrêt en gras. Sans commune, tout en gras.
+    public init(stopName: String) {
+        let parts = splitString(stopName, separator: ",")
+        if parts.1.isEmpty {
+            self = Text(verbatim: parts.0).bold()
+        } else {
+            self = Text(verbatim: parts.0 + " ").fontWeight(.regular) + Text(verbatim: parts.1).bold()
+        }
+    }
+
+    /// « Genève **Rive** → Genève **gare Cornavin** ».
+    public init(route origin: String, to destination: String) {
+        self = Text(stopName: origin) + Text(verbatim: " → ").fontWeight(.regular) + Text(stopName: destination)
+    }
+
+    /// Un titre de trajet tel quel, ou « départ → arrivée » mis en forme comme des arrêts.
+    public init(tripTitle title: String) {
+        let parts = title.components(separatedBy: " → ")
+        if parts.count == 2 {
+            self = Text(route: parts[0], to: parts[1])
+        } else {
+            self = Text(verbatim: title)
         }
     }
 }

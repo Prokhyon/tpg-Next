@@ -17,7 +17,7 @@ import tpgNextFunc
 ///   habituel absent, parcours modifié, correspondance compromise). Elle dépend du temps réel,
 ///   donc d'un passage de l'app au premier plan ou d'un réveil en arrière-plan.
 enum RegularTripAlerts {
-    private static let reminderPrefix = "regular_reminder_"
+    static let reminderPrefix = "regular_reminder_"
     private static let alertPrefix = "regular_alert_"
     /// Clé du `userInfo` : le toucher ouvre la liste des trajets réguliers.
     static let occurrenceKey = "regularTripOccurrence"

@@ -57,6 +57,7 @@ struct HomeMapCard: View {
                     .appRouteDestinations()
             }
             .environment(\.openRoute, OpenRouteAction { fullMapPath.append($0) })
+            .departureActionSheets()
             // Mesurée à nouveau : sur grand écran, l'accueil passe à la carte le `\.layout` de sa
             // colonne, et les pages arrêt et ligne s'ouvraient alors dans leur version iPhone.
             .providingLayoutContext()

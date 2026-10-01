@@ -442,6 +442,12 @@ struct SavedTripsAgenda: View {
 
     // MARK: Cartes
 
+    /// Le contour orange dit quelle carte est détaillée à côté : sans moitié droite (iPhone),
+    /// il n'a rien à montrer.
+    private func isHighlighted(_ itemID: String) -> Bool {
+        layout.showsSecondaryPane && selectedItemID == itemID
+    }
+
     /// Sur grand écran, retoucher la carte détaillée à côté la désélectionne ; sinon elle s'ouvre.
     private func choose(_ itemID: String, open: () -> Void) {
         if layout.showsSecondaryPane && selectedItemID == itemID {
@@ -458,16 +464,11 @@ struct SavedTripsAgenda: View {
         let state = isPast ? nil : savedTripsModel.state(of: trip)
         let displayed = isPast ? trip : savedTripsModel.displayedTrip(for: trip)
         let itemID = AgendaItem.saved(trip).id
-        return AgendaCard(highlighted: selectedItemID == itemID, open: {
+        let badge = Self.showsBadge(state) ? RegularTripStatusBadge.badge(for: state, isSavedTrip: true) : nil
+        return AgendaCard(highlighted: isHighlighted(itemID), badge: badge, open: {
             choose(itemID) { onSelect(displayed) }
         }) {
             VStack(alignment: .leading, spacing: 8) {
-                if Self.showsBadge(state) {
-                    HStack {
-                        Spacer()
-                        RegularTripStatusBadge(state: state, isSavedTrip: true)
-                    }
-                }
                 SavedTripView(event: displayed)
                 if case .found(let match, _) = state, match.kind != .alternative {
                     RegularTripChanges(changes: RegularTripAlerts.changes(in: match))
@@ -560,7 +561,8 @@ struct SavedTripsAgenda: View {
             let state = regularTripsModel.state(of: occurrence)
             let isChosen = trip.isOverridden(on: occurrence.day)
             let itemID = AgendaItem.regular(occurrence).id
-            AgendaCard(highlighted: selectedItemID == itemID, open: {
+            AgendaCard(highlighted: isHighlighted(itemID),
+                       badge: RegularTripStatusBadge.badge(for: state, isSavedTrip: false), open: {
                 choose(itemID) { open(occurrence, displayed: displayed) }
             }) {
                 UpcomingRegularTripCard(occurrence: occurrence, trip: trip, displayed: displayed,
@@ -663,13 +665,17 @@ struct SavedTripsAgenda: View {
 /// boutons à part (un bouton dans un autre ne répond pas toujours).
 struct AgendaCard<Content: View, Actions: View>: View {
     var highlighted = false
+    /// L'état du trajet, en languette qui dépasse du haut de la carte.
+    var badge: UpcomingTrip.Badge?
+    @ScaledMetric private var tabHeight: CGFloat = 24
     let open: () -> Void
     let content: Content
     let actions: Actions
 
-    init(highlighted: Bool = false, open: @escaping () -> Void,
+    init(highlighted: Bool = false, badge: UpcomingTrip.Badge? = nil, open: @escaping () -> Void,
          @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
         self.highlighted = highlighted
+        self.badge = badge
         self.open = open
         self.content = content()
         self.actions = actions()
@@ -688,7 +694,19 @@ struct AgendaCard<Content: View, Actions: View>: View {
         }
         .padding(15)
         .background(BasicCard(cornerRadius: 30, highlighted: highlighted))
-        .padding(.vertical, 2)
+        // Derrière la carte, comme un marque-page glissé dessous : seul le haut dépasse.
+        .background(alignment: .topTrailing) {
+            if let badge {
+                BookmarkTab(badge: badge, visibleHeight: tabHeight)
+                    .offset(y: -tabHeight)
+                    .padding(.trailing, 28)
+                    .transition(.opacity)
+            }
+        }
+        // La place de la languette au-dessus, et de l'air entre les cartes.
+        .padding(.top, badge == nil ? 6 : tabHeight + 6)
+        .padding(.bottom, 6)
+        .animation(.snappy, value: badge)
     }
 }
 

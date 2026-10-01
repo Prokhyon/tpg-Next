@@ -23,6 +23,8 @@ struct HomeView: View {
     @Environment(\.displayTime) private var now
 
     @State private var isExpanded: Bool = false
+    /// Les rappels prévus, dans une fenêtre au-dessus de l'accueil.
+    @State private var showsReminders = false
     /// Partagés par la liste des départs et la carte.
     @State private var nearby = NearbyStops()
     var testing: Bool
@@ -121,8 +123,14 @@ struct HomeView: View {
 //            }
             // Des éléments de barre, que le système peut poser à la verticale (iPhone Duo).
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(value: AppRoute.scheduledNotifications) {
+                Button {
+                    showsReminders = true
+                } label: {
                     Label("Rappels prévus", systemImage: "bell")
+                }
+                // Une bulle sous la cloche sur iPad, une feuille à mi-hauteur sur iPhone.
+                .popover(isPresented: $showsReminders) {
+                    ScheduledNotificationsSheet()
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {

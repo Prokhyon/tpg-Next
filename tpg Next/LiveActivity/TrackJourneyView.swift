@@ -8,7 +8,8 @@
 import SwiftUI
 import tpgNextFunc
 
-/// Deux questions : l'arrêt touché est-il la montée ou la descente, puis quel est l'autre.
+/// L'autre arrêt de la course : la descente si l'on monte à l'arrêt touché, la montée si l'on
+/// y descend. Le sens vient du menu du départ ; il se change en haut de la feuille.
 struct TrackJourneyView: View {
     /// Le départ touché (la course, la ligne, la destination).
     let event: StopEvent
@@ -19,13 +20,26 @@ struct TrackJourneyView: View {
     @Environment(\.displayTime) private var now
     @State private var manager = LineManager()
     @State private var loaded = false
-    /// `true` : on part de cet arrêt ; `false` : on y descend ; `nil` : la question est posée.
-    @State private var departsFromStop: Bool?
+    /// `true` : on part de cet arrêt ; `false` : on y descend.
+    @State private var departsFromStop: Bool
     private var liveActivities = TripLiveActivities.shared
+
+    init(event: StopEvent, stopSloid: String, departsFromStop: Bool = true) {
+        self.event = event
+        self.stopSloid = stopSloid
+        _departsFromStop = State(initialValue: departsFromStop)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                let stopName = shortStopName(event.stopPointName)
+                Picker("Sens", selection: $departsFromStop.animation()) {
+                    Text("À partir de \(stopName)").tag(true)
+                    Text("Jusqu'à \(stopName)").tag(false)
+                }
+                .pickerStyle(.segmented)
+                .padding(.bottom, 6)
                 if !loaded {
                     ProgressView()
                         .frame(maxWidth: .infinity)
@@ -35,10 +49,13 @@ struct TrackJourneyView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 40)
-                } else if let departsFromStop {
-                    Text(departsFromStop ? "Jusqu'à quel arrêt ?" as LocalizedStringKey : "Depuis quel arrêt ?")
-                        .font(.title3).bold()
-                        .padding(.horizontal, 10)
+                } else {
+                    HStack(spacing: 8) {
+                        BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
+                        Text(departsFromStop ? "Jusqu'à quel arrêt ?" as LocalizedStringKey : "Depuis quel arrêt ?")
+                            .font(.title3).bold()
+                    }
+                    .padding(.horizontal, 10)
                     ForEach(otherStops) { stop in
                         Button {
                             start(other: stop)
@@ -54,14 +71,6 @@ struct TrackJourneyView: View {
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 10)
                     }
-                } else {
-                    Text("Que suivez-vous ?")
-                        .font(.title3).bold()
-                        .padding(.horizontal, 10)
-                    choice(departs: true, title: "À partir de \(shortStopName(event.stopPointName))",
-                           subtitle: "Monter ici, descendre plus loin", symbol: "arrow.up.forward")
-                    choice(departs: false, title: "Jusqu'à \(shortStopName(event.stopPointName))",
-                           subtitle: "Monter avant, descendre ici", symbol: "arrow.down.forward")
                 }
             }
             .padding(.horizontal, 15)
@@ -78,30 +87,6 @@ struct TrackJourneyView: View {
     }
 
     // MARK: Morceaux
-
-    private func choice(departs: Bool, title: String, subtitle: LocalizedStringKey, symbol: String) -> some View {
-        Button {
-            withAnimation { departsFromStop = departs }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.title3)
-                    .foregroundStyle(lineColor)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.headline)
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(15)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(BasicCard(cornerRadius: 25))
-        }
-        .buttonStyle(.plain)
-    }
 
     private func stopRow(_ stop: LineEvent) -> some View {
         HStack {
@@ -120,10 +105,6 @@ struct TrackJourneyView: View {
 
     // MARK: Course
 
-    private var lineColor: Color {
-        LineColors.lineColor(for: event.lineName, operatorName: manager.operatorName.isEmpty ? event.operatorName : manager.operatorName)
-    }
-
     /// L'arrêt touché, retrouvé sur la course.
     private var currentStop: LineEvent? {
         let sloid = sloidHarmonizer(code: stopSloid)
@@ -135,7 +116,7 @@ struct TrackJourneyView: View {
     private var otherStops: [LineEvent] {
         guard let current = currentStop,
               let index = manager.lineEvents.firstIndex(where: { $0.id == current.id }) else { return [] }
-        if departsFromStop == true {
+        if departsFromStop {
             return manager.lineEvents.suffix(from: min(index + 1, manager.lineEvents.count))
                 .filter { $0.isCancelled != true }
         }
@@ -145,8 +126,8 @@ struct TrackJourneyView: View {
 
     private func start(other stop: LineEvent) {
         guard let current = currentStop else { return }
-        let board = departsFromStop == true ? current : stop
-        let alight = departsFromStop == true ? stop : current
+        let board = departsFromStop ? current : stop
+        let alight = departsFromStop ? stop : current
         guard liveActivities.areEnabled else {
             NotificationConfirmationViewModel.shared.show(
                 message: String(localized: "Les activités en direct sont désactivées pour tpg Next.\nChangez-le dans les réglages du téléphone"),
@@ -171,7 +152,7 @@ struct TrackJourneyView: View {
 
 #Preview("Suivre une course — (API)") {
     LiveDeparturePreview(stop: PreviewData.rive) { departures in
-        TrackJourneyView(event: departures.event, stopSloid: PreviewData.rive.sloid)
+        TrackJourneySheet(event: departures.event, stopSloid: PreviewData.rive.sloid, departsFromStop: true)
     }
     .previewEnvironment()
 }

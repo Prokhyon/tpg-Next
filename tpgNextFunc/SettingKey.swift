@@ -38,6 +38,8 @@ public enum SettingKey {
     public static let homeHiddenSections = "HomeHiddenSections"
     /// Minutes avant le départ d'un itinéraire enregistré où son suivi en direct démarre ; 0 : jamais.
     public static let savedTripAutoTrackMinutes = "SavedTripAutoTrackMinutes"
+    /// Le dernier délai choisi pour le rappel d'un départ, en minutes : proposé la fois suivante.
+    public static let lastReminderMinutes = "LastReminderMinutes"
     /// Le transporteur affiché dans la liste des lignes.
     public static let selectedLineOperator = "SelectedLineOperator"
 }

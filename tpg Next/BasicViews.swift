@@ -322,6 +322,8 @@ struct BasicLocationView: View {
 struct StopIcon: View {
     var color: Color
     var currentStop: Bool = false
+    /// Le dernier arrêt (terminus d'une ligne, arrivée d'un itinéraire) : un point au centre.
+    var terminus: Bool = false
     var size: CGFloat = 18
     @State var isAnimating = false
     
@@ -346,7 +348,11 @@ struct StopIcon: View {
                     .fill(color)
                     .strokeBorder(Color.primary, lineWidth: size/4)
 //            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-            
+            if terminus {
+                Circle()
+                    .fill(Color.primary)
+                    .frame(width: max(4, size * 0.22), height: max(4, size * 0.22))
+            }
 
         }
             .frame(width: size, height: size)
@@ -622,6 +628,8 @@ struct BackdropBlurView: View {
             StopIcon(color: .orange)
             StopIcon(color: .orange, currentStop: true)
             StopIcon(color: .blue, size: 28)
+            StopIcon(color: .orange, terminus: true)
+            StopIcon(color: .blue, terminus: true, size: 28)
         }
     }
     .padding()

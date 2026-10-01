@@ -87,8 +87,8 @@ struct LineInfoView: View {
     private func terminusCard(_ stop: Stop) -> some View {
         let events = departures[stop.sloid] ?? []
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Depuis \(stop.name)")
-                .font(.headline)
+            Text("Depuis \(Text(stopName: stop.name))")
+                .font(.headline.weight(.regular))
             if events.isEmpty {
                 Text(isLoading ? "Chargement…" as LocalizedStringKey : "Aucun départ dans l'heure.")
                     .font(.subheadline)
@@ -100,7 +100,7 @@ struct LineInfoView: View {
                         DepartureTimeView(departureDisplay(for: event, showTime: false, at: now),
                                           transportType: event.transportType, iconWidth: 40)
                             .frame(width: 60, alignment: .leading)
-                        Text(verbatim: "→ \(event.destination)")
+                        Text("→ \(Text(stopName: event.destination))")
                             .lineLimit(1)
                         Spacer()
                         Image(systemName: "chevron.right")

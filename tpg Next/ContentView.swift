@@ -104,6 +104,7 @@ private struct TabStack<Root: View>: View {
             root.appRouteDestinations()
         }
         .environment(\.openRoute, OpenRouteAction { navigationModel.open($0, in: tab) })
+        .departureActionSheets()
         // Toutes les pages qui défilent, et leurs feuilles : le dégradé doux sous la barre.
         .softTopScrollEdge()
         .id(navigationModel.stackID(tab))
@@ -133,6 +134,10 @@ struct ContentView: View {
     @AppStorage(SettingKey.showWelcome) var showWelcome = true
     @AppStorage(WhatsNew.lastSeenKey) var lastSeenWhatsNew = ""
     @State private var showWhatsNew = false
+    #if DEBUG
+    /// Une feuille ouverte par `tpgnext://sheet?name=…` pour les captures.
+    @State private var debugSheet: DebugSheet?
+    #endif
     @State var autoRefresh = true
     
     var testingNewDock: Bool = false
@@ -318,9 +323,24 @@ struct ContentView: View {
         .sheet(isPresented: Bindable(liveTrip).isOpen) {
             if let key = liveTrip.openedKey {
                 LiveTripView(key: key)
+                    .departureActionSheets()
                     .presentationDragIndicator(.visible)
             }
         }
+        #if DEBUG
+        .sheet(item: $debugSheet) { sheet in
+            switch sheet {
+            case .reminder:
+                ReminderSheet(event: PreviewData.departure(inMinutes: 12), stopID: PreviewData.rive.sloid)
+            case .newRegular:
+                NewRegularTripView()
+                    .environment(regularTripsModel)
+            case .editRegular:
+                RegularTripEditor(trip: RegularTrip(trip: PreviewData.tripWithTransfer, weekdays: Weekday.workdays))
+                    .environment(regularTripsModel)
+            }
+        }
+        #endif
         .onOpenURL { handleOpenURL($0) }
         // Au premier plan, chaque minute : temps réel des trajets réguliers proches, rappels,
         // alertes et activités en direct (qui ne sont mises à jour que par l'app).
@@ -436,7 +456,7 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
-    ///   tpgnext://homelayout   tpgnext://places   tpgnext://firstline?sloid=…&name=…
+    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -446,21 +466,14 @@ struct ContentView: View {
                 navigationModel.selectedTab = [Tabs.home, .trip, .trips, .search].first { "\($0)" == name } ?? .home
             case "settings":
                 navigationModel.open(.settings, in: navigationModel.selectedTab)
-            case "firstline":
-                // tpgnext://firstline?sloid=…&name=… : la course du prochain départ de l'arrêt.
-                let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
-                let sloid = items?.first { $0.name == "sloid" }?.value ?? ""
-                let name = items?.first { $0.name == "name" }?.value ?? ""
-                Task {
-                    guard let event = try? await fetchStopEvents(stopName: name, stopSloid: sloid, count: 10)
-                        .events.first(where: { !$0.cancelled }) else { return }
-                    navigationModel.open(.line(event: event, currentStop: ShortStop(name: name, sloid: sloidHarmonizer(code: sloid))),
-                                         in: navigationModel.selectedTab)
-                }
             case "homelayout":
                 navigationModel.open(.homeLayout, in: navigationModel.selectedTab)
             case "places":
                 navigationModel.open(.favoritePlacesOrder, in: navigationModel.selectedTab)
+            case "sheet":
+                // tpgnext://sheet?name=reminder|newRegular|editRegular
+                let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
+                debugSheet = DebugSheet(rawValue: name)
             case "map":
                 navigationModel.selectedTab = .home
                 navigationModel.showsFullMap = true
@@ -478,6 +491,13 @@ struct ContentView: View {
     }
     #endif
 }
+
+#if DEBUG
+private enum DebugSheet: String, Identifiable {
+    case reminder, newRegular, editRegular
+    var id: String { rawValue }
+}
+#endif
 
 
 @Observable

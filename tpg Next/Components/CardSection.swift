@@ -21,6 +21,13 @@ struct CardSection<Content: View>: View {
         self.content = content()
     }
 
+    /// Un texte d'explication calculé (« Du lundi au vendredi »).
+    init(_ title: LocalizedStringKey? = nil, footer: Text?, @ViewBuilder content: () -> Content) {
+        self.title = title.map { Text($0) }
+        self.footer = footer
+        self.content = content()
+    }
+
     /// Les titres du guide (`LocalizedStringResource`).
     init(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) {
         self.title = Text(title)
@@ -82,8 +89,8 @@ struct SettingsIcon: View {
 /// Une ligne de carte : l'icône, le titre (et un sous-titre), puis à droite un nombre et le
 /// chevron d'une ligne qui ouvre une page.
 struct SettingsRow: View {
-    let title: LocalizedStringKey
-    var subtitle: LocalizedStringKey?
+    let title: Text
+    var subtitle: Text?
     let systemImage: String
     let color: Color
     var value: Int?
@@ -91,11 +98,30 @@ struct SettingsRow: View {
 
     init(_ title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, systemImage: String, color: Color,
          value: Int? = nil, showsChevron: Bool = false) {
-        self.title = title
-        self.subtitle = subtitle
+        self.title = Text(title)
+        self.subtitle = subtitle.map { Text($0) }
         self.systemImage = systemImage
         self.color = color
         self.value = value
+        self.showsChevron = showsChevron
+    }
+
+    /// Un titre déjà mis en forme (« Genève **Rive** → … »).
+    init(_ title: Text, subtitle: String? = nil, systemImage: String, color: Color, showsChevron: Bool = false) {
+        self.title = title
+        self.subtitle = subtitle.map { Text(verbatim: $0) }
+        self.systemImage = systemImage
+        self.color = color
+        self.showsChevron = showsChevron
+    }
+
+    /// Un titre et un sous-titre venus des données (nom d'un trajet), tels quels.
+    init(verbatim title: String, subtitle: String? = nil, systemImage: String, color: Color,
+         showsChevron: Bool = false) {
+        self.title = Text(verbatim: title)
+        self.subtitle = subtitle.map { Text(verbatim: $0) }
+        self.systemImage = systemImage
+        self.color = color
         self.showsChevron = showsChevron
     }
 
@@ -103,10 +129,10 @@ struct SettingsRow: View {
         HStack(spacing: 14) {
             SettingsIcon(systemImage: systemImage, color: color)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                title
                     .foregroundStyle(.primary)
                 if let subtitle {
-                    Text(subtitle)
+                    subtitle
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

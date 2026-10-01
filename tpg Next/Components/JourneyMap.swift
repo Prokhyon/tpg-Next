@@ -120,15 +120,9 @@ struct JourneyMapContent: MapContent {
             Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: event.coordinate, anchor: .center) {
                 StopIcon(color: LineColors.lineColor(for: lineName, operatorName: operatorName, inverted: true),
                          currentStop: event.sloid == currentStopSloid && event.sloid != "",
+                         // Le terminus : un point au centre, comme l'arrivée d'un itinéraire.
+                         terminus: event == events.last,
                          size: event == selectedStop ? 26 : isEnd ? 18 : 12)
-                    .overlay {
-                        // Le terminus : un point au centre, comme l'arrivée d'un itinéraire.
-                        if event == events.last {
-                            Circle()
-                                .fill(Color.primary)
-                                .frame(width: event == selectedStop ? 6 : 4, height: event == selectedStop ? 6 : 4)
-                        }
-                    }
                     .animation(.bouncy, value: event == selectedStop)
                     .opacity(event.isCancelled == true || hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 0.4 : 1)
                     .if(selectStop != nil) { icon in

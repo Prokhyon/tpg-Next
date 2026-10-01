@@ -257,65 +257,6 @@ struct FavoritesOrderView: View {
     }
 }
 
-struct ScheduledNotifications: View {
-    var transportNotificationManager = BusNotificationManager.shared
-    
-    let notificationManager = NotificationManager.shared
-    
-//    @Binding var manageNotifications: Bool
-    
-    var body: some View {
-            VStack {
-                if transportNotificationManager.scheduledNotificationIdentifiers.isEmpty {
-                    Text("Aucun rappel programmé")
-                        .frame(height: 50)
-                } else {
-                    ScrollView {
-                        ForEach(Array(transportNotificationManager.scheduledNotificationIdentifiers.keys), id: \.self) { key in
-                            let stopEvent = transportNotificationManager.scheduledNotificationIdentifiers[key]!
-                            
-                                    HStack {
-                                        VStack(spacing: 0) {
-                                            HStack {
-                                                SmallStopTitleView(stopName: stopEvent.stopPointName)
-                                                Spacer()
-                                                let notificationInterval = Int(parseIdentifier(key)?.notificationInterval ?? 0)
-                                                Text(notificationInterval == 0 ? "Rappel à l'arrivée" : "Rappel \(notificationInterval)' avant")
-                                            }
-                                            .padding(5)
-                                            StopEventView(event: stopEvent, showTime: true)
-                                        }
-                                        
-                                        Button(action: {
-                                                let timeId = "timetable_\(key)"
-                                                let estId = "estimated_\(key)"
-                                            withAnimation(.easeInOut) {
-                                                transportNotificationManager.cancelScheduledNotifications(timetableIdentifier: timeId, estimatedIdentifier: estId, completeCancel: true)
-                                            }
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill").font(.title2)
-                                        }
-                                        .padding(5)
-                                    }
-                            .padding(.horizontal, 15)
-                            .frame(minHeight: 120)
-                            .background(BasicCard())
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
-                        }
-                            
-                    }
-//                    .contentMargins(.top, 60.0, for: .automatic)
-                }
-        }
-        // La liste ne survit pas à une relance : on la relit auprès du système.
-        .onAppear {
-            transportNotificationManager.refreshScheduledNotifications()
-        }
-    }
-}
-
 //struct SettingsMainView: View {
 //    @State var orderfavorites: Bool = false
 //    @State var manageNotifications: Bool = false
@@ -391,4 +332,12 @@ struct MailComposerViewController: UIViewControllerRepresentable {
     ScheduledNotifications()
         .navigationTitle("Rappels prévus" as String)
         .previewEnvironment()
+}
+
+#Preview("Rappels prévus — feuille") {
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            ScheduledNotificationsSheet()
+        }
+        .previewEnvironment(navigation: false)
 }

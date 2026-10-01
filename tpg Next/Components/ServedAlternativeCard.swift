@@ -22,8 +22,8 @@ struct ServedAlternativeCard: View {
                     .font(.title3)
                     .foregroundStyle(.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Passe à \(alternative.stop.stopPointName)")
-                        .font(.subheadline.bold())
+                    Text("Passe à \(Text(stopName: alternative.stop.stopPointName))")
+                        .font(.subheadline)
                         .multilineTextAlignment(.leading)
                     Text("\(Measurement(value: alternative.distance.rounded(), unit: UnitLength.meters), format: .measurement(width: .abbreviated, usage: .road)) · ≈ \(alternative.walkingMinutes) min à pied")
                         .font(.caption)

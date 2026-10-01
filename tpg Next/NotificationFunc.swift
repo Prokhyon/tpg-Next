@@ -11,72 +11,46 @@ import Combine
 import Foundation
 import tpgNextFunc
 
+/// L'appui long sur un départ : un rappel (le délai se choisit dans une feuille), le suivi en
+/// direct (montée ou descente ici, l'autre arrêt dans une feuille), et depuis une ligne les
+/// itinéraires vers ou depuis cet arrêt.
 struct NotificationContextMenu: View {
-    @Environment(ItineraryViewModel.self) var tripModel
-    @Environment(NavigationModel.self) var navigationModel
-    @Environment(\.openRoute) private var openRoute
-    let transportNotificationManager = BusNotificationManager.shared
-    let notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
+    @Environment(\.departureActions) private var departureActions
     let event: StopEvent
     let stopID: String
-//    var path: ViewStateStack
     var itinerary = false
-    
+
     var body: some View {
         Group {
-            ForEach([0.0, 1.0, 5.0, 10.0, 30.0], id: \.self) { notificationInterval in
-                Button(action: {
-                    if transportNotificationManager.notificationManager.isNotificationAuthorized {
-                        transportNotificationManager.scheduleNotifications(for: event, lineEvent: nil, stopID: stopID, notificationInterval: notificationInterval) { success in
-                            if success {
-                                let intNotificationInterval = Int(notificationInterval)
-                                if notificationInterval == 0.0 {
-                                    notificationConfirmationViewModel.show(message: String(localized:"Rappel à l'arrivée prévu avec succès"), error: false)
-                                } else {
-                                    notificationConfirmationViewModel.show(message: String(localized:"Rappel \(intNotificationInterval)' avant prévu avec succès"), error: false)
-                                }
-                            } else {
-                                notificationConfirmationViewModel.show(message: String(localized:"Erreur: Le rappel n'a pas pu être prévu"), error: true)
-                            }
-                        }
-                    } else {
-                        notificationConfirmationViewModel.show(message: String(localized:"Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les paramètres du téléphone"), error: true)
-                    }
-                }) {
-                    Text(notificationLabel(for: notificationInterval))
-                }
+            Button {
+                departureActions.remind(event, stopID)
+            } label: {
+                Label("Programmer un rappel…", systemImage: "bell")
             }
             if !event.journeyRef.isEmpty, TripLiveActivities.shared.areEnabled {
-                Divider()
-
-                Button {
-                    openRoute(.trackJourney(event: event, stopSloid: stopID))
+                let stopName = shortStopName(event.stopPointName)
+                Menu {
+                    Button {
+                        departureActions.track(event, stopID, true)
+                    } label: {
+                        Label("À partir de \(stopName)", systemImage: "arrow.up.forward")
+                        Text("Monter ici, descendre plus loin")
+                    }
+                    Button {
+                        departureActions.track(event, stopID, false)
+                    } label: {
+                        Label("Jusqu'à \(stopName)", systemImage: "arrow.down.forward")
+                        Text("Monter avant, descendre ici")
+                    }
                 } label: {
                     Label("Suivre en direct", systemImage: "inset.filled.circle")
                 }
             }
             if itinerary {
                 Divider()
-                
+
                 TripActionsMenu(stop: createStop(nomarret: event.stopPointName, sloid: sloidHarmonizer(code: stopID)), includesQuickTrip: false)
             }
-        }
-    }
-    
-    private func notificationLabel(for notificationInterval: Double) -> String {
-        switch notificationInterval {
-        case 0.0:
-            return String(localized:"Prévenir à l'arrivée")
-        case 1.0:
-            return String(localized:"Prévenir 1' avant")
-        case 5.0:
-            return String(localized:"Prévenir 5' avant")
-        case 10.0:
-            return String(localized:"Prévenir 10' avant")
-        case 30.0:
-            return String(localized:"Prévenir 30' avant")
-        default:
-            return ""
         }
     }
 }

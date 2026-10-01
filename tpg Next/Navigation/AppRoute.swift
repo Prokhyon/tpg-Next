@@ -36,8 +36,6 @@ enum AppRoute: Hashable {
     case lines
     /// Une ligne, sans course choisie : terminus, prochains départs, parcours.
     case lineInfo(TransitLine)
-    /// Suivre une course en direct : choix de la montée et de la descente.
-    case trackJourney(event: StopEvent, stopSloid: String)
     /// Le trajet suivi en direct, en entier.
     case liveTrip(key: String)
     /// Le guide d'utilisation.
@@ -109,8 +107,6 @@ struct AppRouteDestination: View {
             LinesView()
         case let .lineInfo(line):
             LineInfoView(line: line)
-        case let .trackJourney(event, stopSloid):
-            TrackJourneyView(event: event, stopSloid: stopSloid)
         case let .liveTrip(key):
             LiveTripView(key: key)
         }

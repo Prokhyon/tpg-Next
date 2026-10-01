@@ -149,12 +149,7 @@ private struct CappedTripTimeline: View {
                     }
                 }
             }
-            StopIcon(color: .customBackground, size: endpointSize)
-                .overlay {
-                    Circle()
-                        .fill(Color.primary)
-                        .frame(width: 4, height: 4)
-                }
+            StopIcon(color: .customBackground, terminus: true, size: endpointSize)
                 .zIndex(1)
         }
     }

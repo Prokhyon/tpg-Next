@@ -114,16 +114,16 @@ struct SearchView: View {
             }
         }
         sectionTitle("Réseau")
-        row(title: String(localized: "Toutes les lignes"),
+        row(title: Text("Toutes les lignes").bold(),
             subtitle: LineOperatorChoice.operators(from: lineOperators).map(\.shortName).formatted(.list(type: .and)),
             systemImage: "list.number") {
             openRoute(.lines)
         }
     }
 
-    /// « Rive → gare Cornavin », « Ma position → Jet d'eau ».
-    private func recentTripTitle(_ trip: RecentTrips.RecentTrip) -> String {
-        "\(trip.origin?.name ?? String(localized: "Ma position")) → \(trip.destination.name)"
+    /// « Genève **Rive** → Genève **gare Cornavin** », « Ma position → Jet d'eau ».
+    private func recentTripTitle(_ trip: RecentTrips.RecentTrip) -> Text {
+        Text(route: trip.origin?.name ?? String(localized: "Ma position"), to: trip.destination.name)
     }
 
     // MARK: Résultats
@@ -204,7 +204,7 @@ struct SearchView: View {
         switch myTrip {
         case .regular(let trip):
             let next = regularTripsModel.upcoming(after: now).first { $0.tripID == trip.id }
-            row(title: trip.displayName, subtitle: regularSubtitle(trip, next: next), systemImage: "repeat") {
+            row(title: trip.displayTitle, subtitle: regularSubtitle(trip, next: next), systemImage: "repeat") {
                 // Le trajet du jour s'il y en a un dans la semaine, sinon la liste des trajets réguliers.
                 if let next, let displayed = regularTripsModel.displayedTrip(for: next) {
                     openRoute(.trip(displayed))
@@ -225,7 +225,7 @@ struct SearchView: View {
                 }
             }
         case .saved(let trip):
-            row(title: "\(trip.startName) → \(trip.endName)", subtitle: savedSubtitle(trip), image: "scurvepath.stack.fill") {
+            row(title: Text(route: trip.startName, to: trip.endName), subtitle: savedSubtitle(trip), image: "scurvepath.stack.fill") {
                 openRoute(.trip(savedTripsModel.displayedTrip(for: trip)))
             }
         }
@@ -310,7 +310,7 @@ struct SearchView: View {
         .padding(.horizontal)
     }
 
-    private func row(title: String, subtitle: String?, systemImage: String? = nil, image: String? = nil,
+    private func row(title: Text, subtitle: String?, systemImage: String? = nil, image: String? = nil,
                      action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
@@ -325,8 +325,8 @@ struct SearchView: View {
                 .foregroundStyle(.accent)
                 .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.callout.bold())
+                    title
+                        .font(.callout)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                     if let subtitle {

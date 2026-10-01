@@ -338,7 +338,7 @@ struct LiveTripView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("→ \(leg.destination)")
+                        Text("→ \(Text(stopName: leg.destination))")
                             .font(.subheadline.weight(.medium))
                             .lineLimit(1)
                         if let vehicleStop {

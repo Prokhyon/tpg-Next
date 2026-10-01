@@ -77,16 +77,12 @@ struct NextTripCard: View {
 
     var body: some View {
         let displayed = self.displayed
-        AgendaCard(open: { open(displayed) }) {
+        AgendaCard(badge: RegularTripStatusBadge.badge(for: state, isSavedTrip: isSaved), open: { open(displayed) }) {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    title
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Spacer()
-                    RegularTripStatusBadge(state: state, isSavedTrip: isSaved)
-                }
+                title
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 departure(displayed)
                 // Comme un itinéraire : heures, frise, puis le départ et l'arrivée.
                 SavedTripView(event: displayed)
