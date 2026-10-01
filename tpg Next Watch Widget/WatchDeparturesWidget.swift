@@ -61,6 +61,16 @@ struct WatchDeparturesView: View {
     }
 
     @ViewBuilder private var content: some View {
+        if entry.isGalleryPreview && family != .accessoryRectangular {
+            // Le sélecteur propose un réglage par favori : sans place pour le nom de l'arrêt,
+            // des départs d'exemple les rendaient tous identiques.
+            galleryIdentity
+        } else {
+            familyContent
+        }
+    }
+
+    @ViewBuilder private var familyContent: some View {
         switch family {
         case .accessoryCircular:
             circular
@@ -75,30 +85,65 @@ struct WatchDeparturesView: View {
 
     // MARK: - Formats
 
-    /// L'arrêt en titre, puis ses deux prochains départs en colonnes : ligne, direction, minutes.
+    /// Le réglage d'une complication : la flèche pour l'arrêt le plus proche, l'étoile pour un favori.
+    private var settingSymbol: String {
+        entry.distance != nil ? "location.fill" : "star.fill"
+    }
+
+    /// « Proche » ou le nom du favori, à la place des départs, dans le sélecteur.
+    private var settingName: String {
+        entry.distance != nil ? String(localized: "Proche") : shortName(entry.stop?.name ?? "")
+    }
+
+    @ViewBuilder private var galleryIdentity: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                VStack(spacing: 1) {
+                    Image(systemName: settingSymbol)
+                        .font(.system(size: 12, weight: .bold))
+                        .widgetAccentable()
+                    Text(settingName)
+                        .font(.system(size: 11, weight: .semibold))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.6)
+                }
+                .padding(4)
+            }
+        case .accessoryCorner:
+            Image(systemName: settingSymbol)
+                .font(.title3.bold())
+                .widgetCurvesContent()
+                .widgetLabel { Text(settingName) }
+        default:
+            Text("\(Image(systemName: settingSymbol)) \(settingName)")
+        }
+    }
+
+    /// L'arrêt en titre, puis ses deux prochains départs en colonnes : ligne, direction, temps.
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 3) {
-                if entry.distance != nil {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 9, weight: .bold))
+                if entry.stop != nil {
+                    Image(systemName: settingSymbol)
+                        .font(.system(size: 10, weight: .semibold))
                 }
-                Text(shortName(entry.stop?.name ?? "tpg Next"))
-                    .font(.system(.footnote, weight: .semibold))
-                    .lineLimit(1)
+                StopTitle(name: entry.stop?.name ?? "tpg Next")
             }
-            .foregroundStyle(Self.accent)
-            .widgetAccentable()
             if entry.status == .ok {
-                Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 2) {
+                Grid(alignment: .leading, horizontalSpacing: 5, verticalSpacing: 3) {
                     ForEach(shownEvents.prefix(2), id: \.id) { event in
                         GridRow {
-                            LineBadge(event: event)
+                            BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, width: 30, height: 21)
+                                .font(.system(.caption, weight: .bold))
+                                .gridColumnAlignment(.center)
                             Text(shortName(event.destination))
-                                .font(.system(.footnote, weight: .medium))
+                                .font(.footnote)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            RemainingTime(event: event, date: entry.date)
+                            DepartureTime(event: event, date: entry.date)
                                 .gridColumnAlignment(.trailing)
                         }
                     }
@@ -176,9 +221,6 @@ struct WatchDeparturesView: View {
         return Text(display.text)
     }
 
-    /// La couleur d'accent de l'app montre (`AccentColor`), que l'extension n'embarque pas.
-    static let accent = Color(.displayP3, red: 0.896, green: 0.539, blue: 0)
-
     /// « Rive » pour « Genève, Rive » : la commune ne tient pas dans une complication.
     private func shortName(_ name: String) -> String {
         let parts = splitString(name, separator: ",")
@@ -222,39 +264,34 @@ struct WatchDeparturesView: View {
 
 // MARK: - Morceaux
 
-/// Le numéro de ligne sur sa couleur, comme sur les arrêts. Sur un cadran teinté, les couleurs
-/// disparaissent : un fond discret le remplace.
-private struct LineBadge: View {
-    @Environment(\.widgetRenderingMode) private var renderingMode
-    @Environment(\.self) private var environment
-    let event: StopEvent
+/// Le nom entier de l'arrêt sur une ligne, la commune en régulier et l'arrêt en gras :
+/// « Genève **Rive** ». Trop long, la commune disparaît.
+private struct StopTitle: View {
+    let name: String
 
     var body: some View {
-        let color = LineColors.lineColor(for: event.lineName, operatorName: event.operatorName)
-        let fullColor = renderingMode == .fullColor
-        Text(event.lineName)
-            .font(.system(size: 12, weight: .bold, design: .rounded))
-            .lineLimit(1)
-            .minimumScaleFactor(0.6)
-            .foregroundStyle(fullColor ? textColor(on: color) : .primary)
-            .padding(.horizontal, 3)
-            .frame(minWidth: 24, minHeight: 17)
-            .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(fullColor ? color : Color.primary.opacity(0.25)))
-    }
-
-    /// Noir ou blanc, selon ce qui contraste le plus avec la couleur de la ligne (WCAG) :
-    /// le jaune de la ligne 2 demande du noir, le bleu de la 12 du blanc.
-    private func textColor(on color: Color) -> Color {
-        let resolved = color.resolve(in: environment)
-        let luminance = 0.2126 * Double(resolved.linearRed) + 0.7152 * Double(resolved.linearGreen)
-            + 0.0722 * Double(resolved.linearBlue)
-        return (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? .black : .white
+        let parts = splitString(name, separator: ",")
+        Group {
+            if parts.1.isEmpty {
+                Text(parts.0).bold()
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 4) {
+                        Text(parts.0)
+                        Text(parts.1).bold()
+                    }
+                    Text(parts.1).bold()
+                }
+            }
+        }
+        .font(.body)
+        .lineLimit(1)
     }
 }
 
-/// « 4 min » avec le chiffre en grand ; l'heure au-delà d'une heure, le véhicule quand il est là.
-private struct RemainingTime: View {
+/// Le temps restant comme dans l'app (« 4' », « < 1' », « 14:05 »), toujours dans la même
+/// police : pas de rétrécissement d'une ligne à l'autre selon ce qui est affiché.
+private struct DepartureTime: View {
     let event: StopEvent
     let date: Date
 
@@ -262,31 +299,20 @@ private struct RemainingTime: View {
         let display = departureDisplay(for: event, showTime: false, at: date)
         Group {
             switch display {
-            case .minutes(let minutes, let delayed):
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(minutes, format: .number)
-                        .font(.system(.body, design: .rounded, weight: .semibold))
-                    Text("min")
-                        .font(.system(.caption2, weight: .medium))
-                }
-                .foregroundStyle(delayed ? .orange : .primary)
-            case .lessThanAMinute:
-                Text("< 1 min")
-                    .font(.system(.caption, design: .rounded, weight: .semibold))
             case .atStop:
-                transportIcon(with: event.transportType)
-                    .font(.system(.footnote, weight: .semibold))
+                Text(transportIcon(with: event.transportType))
             case .cancelled:
                 Text(display.text)
-                    .font(.system(.caption2, weight: .semibold))
                     .foregroundStyle(.red)
             default:
                 Text(display.text)
-                    .font(.system(.footnote, design: .rounded, weight: .semibold))
+                    .foregroundStyle(display.isHighlighted ? .orange : .primary)
             }
         }
+        .font(.system(.body, design: .rounded, weight: .semibold))
         .monospacedDigit()
         .lineLimit(1)
+        .fixedSize()
     }
 }
 
@@ -326,6 +352,12 @@ enum PreviewData {
     WatchDeparturesWidget()
 } timeline: {
     PreviewData.entry()
+}
+
+#Preview("Sélecteur — favori", as: .accessoryCircular) {
+    WatchDeparturesWidget()
+} timeline: {
+    DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: nil, isGalleryPreview: true)
 }
 
 #Preview("Coin", as: .accessoryCorner) {
