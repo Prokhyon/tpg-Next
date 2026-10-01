@@ -81,6 +81,7 @@ struct RegularTripEditor: View {
                                 Text("Toujours ces lignes")
                                 RegularTripLines(snapshot: trip.snapshot)
                             }
+                            .padding(.vertical, 8)
                             .frame(minHeight: 56)
                         }
                     }

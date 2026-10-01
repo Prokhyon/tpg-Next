@@ -112,7 +112,7 @@ private struct PreviewEnvironment: ViewModifier {
         .environment(recentSearch)
         .providingLayoutContext()
         .tickingClock()
-        .background(background ? AnyShapeStyle(Gradient(colors: [.accent, .color1, .color1]).opacity(0.7))
+        .background(background ? AnyShapeStyle(Gradient(colors: [Color.accentColor, .color1, .color1]).opacity(0.7))
                                 : AnyShapeStyle(.clear))
         .task {
             // Les favoris et itinéraires sont enregistrés dans le bac à sable des aperçus :

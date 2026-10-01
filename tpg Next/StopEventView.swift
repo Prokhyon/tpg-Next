@@ -55,7 +55,8 @@ struct StopEventView: View  {
             }
         }
         .padding(.horizontal)
-        .basicElementBackground(minHeight: 50, transparent: mapVersion, selected: isSelected)
+        .basicElementBackground(minHeight: 50, transparent: mapVersion, selected: isSelected,
+                                lineColors: [LineColors.lineColor(for: event.lineName, operatorName: event.operatorName)])
         .padding(5)
     }
 

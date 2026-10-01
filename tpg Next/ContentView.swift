@@ -470,7 +470,7 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
-    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders
+    ///   tpgnext://homelayout   tpgnext://places   tpgnext://appicon   tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -484,6 +484,8 @@ struct ContentView: View {
                 navigationModel.open(.homeLayout, in: navigationModel.selectedTab)
             case "places":
                 navigationModel.open(.favoritePlacesOrder, in: navigationModel.selectedTab)
+            case "appicon":
+                navigationModel.open(.appIcon, in: navigationModel.selectedTab)
             case "sheet":
                 // tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders|reminders
                 let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
@@ -553,7 +555,7 @@ struct DockView: View {
                                 if navigationModel.selectedTab == .home {
                                     Capsule()
                                         .fill(.gray.opacity(0.1))
-                                        .stroke(Color.accent.opacity(0.4), lineWidth: 2)
+                                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 2)
                                         .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
                                         .matchedGeometryEffect(id: "activeTab", in: animationNamespace)
                                 }
@@ -567,7 +569,7 @@ struct DockView: View {
                             if navigationModel.selectedTab == .trip {
                                 Capsule()
                                     .fill(.gray.opacity(0.1))
-                                    .stroke(Color.accent.opacity(0.4), lineWidth: 2)
+                                    .stroke(Color.accentColor.opacity(0.4), lineWidth: 2)
                                     .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
                                     .matchedGeometryEffect(id: "activeTab", in: animationNamespace)
                             }
@@ -580,7 +582,7 @@ struct DockView: View {
                                 if navigationModel.selectedTab == .trips {
                                     Capsule()
                                         .fill(.gray.opacity(0.1))
-                                        .stroke(Color.accent.opacity(0.4), lineWidth: 2)
+                                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 2)
                                         .shadow(color: Color.customShadows2, radius: 2, y: 1.5)
                                         .matchedGeometryEffect(id: "activeTab", in: animationNamespace)
                                 }
@@ -681,7 +683,7 @@ struct DockView: View {
                         }
                     }
 //                    .symbolEffect(.bounce, value: navigationModel.selectedTab == tab)
-                    .foregroundStyle(navigationModel.selectedTab == tab ? .accent : .primary)
+                    .foregroundStyle(navigationModel.selectedTab == tab ? Color.accentColor : .primary)
 //                    .matchedGeometryEffect(id: "icon-\(systemImage)", in: animationNamespace)
 //                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: navigationModel.selectedTab)
             }

@@ -190,7 +190,7 @@ struct RegularTripRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(15)
-        .background(BasicCard(cornerRadius: 30))
+        .background(BasicCard(cornerRadius: 30, lineColors: trip.snapshot.lineColors))
         .padding(.vertical, 2)
     }
 }

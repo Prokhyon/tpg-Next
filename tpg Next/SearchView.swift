@@ -322,7 +322,7 @@ struct SearchView: View {
                     }
                 }
                 .font(.title3)
-                .foregroundStyle(.accent)
+                .foregroundStyle(Color.accentColor)
                 .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     title

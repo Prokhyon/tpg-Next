@@ -186,7 +186,7 @@ struct FavoritePlacesOrderView: View {
                                 renaming = place
                             } label: {
                                 Image(systemName: "pencil")
-                                    .foregroundStyle(.accent)
+                                    .foregroundStyle(Color.accentColor)
                                     .frame(width: 30, height: 30)
                                     .contentShape(Rectangle())
                             }

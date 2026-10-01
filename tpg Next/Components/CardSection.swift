@@ -87,7 +87,7 @@ struct SettingsIcon: View {
 }
 
 /// Une ligne de carte : l'icône, le titre (et un sous-titre), puis à droite un nombre et le
-/// chevron d'une ligne qui ouvre une page.
+/// chevron d'une ligne qui ouvre une page. L'icône prend la couleur d'accent, sauf exception.
 struct SettingsRow: View {
     let title: Text
     var subtitle: Text?
@@ -96,7 +96,7 @@ struct SettingsRow: View {
     var value: Int?
     var showsChevron = false
 
-    init(_ title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, systemImage: String, color: Color,
+    init(_ title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, systemImage: String, color: Color = .accentColor,
          value: Int? = nil, showsChevron: Bool = false) {
         self.title = Text(title)
         self.subtitle = subtitle.map { Text($0) }
@@ -107,7 +107,7 @@ struct SettingsRow: View {
     }
 
     /// Un titre déjà mis en forme (« Genève **Rive** → … »).
-    init(_ title: Text, subtitle: String? = nil, systemImage: String, color: Color, showsChevron: Bool = false) {
+    init(_ title: Text, subtitle: String? = nil, systemImage: String, color: Color = .accentColor, showsChevron: Bool = false) {
         self.title = title
         self.subtitle = subtitle.map { Text(verbatim: $0) }
         self.systemImage = systemImage
@@ -116,7 +116,7 @@ struct SettingsRow: View {
     }
 
     /// Un titre et un sous-titre venus des données (nom d'un trajet), tels quels.
-    init(verbatim title: String, subtitle: String? = nil, systemImage: String, color: Color,
+    init(verbatim title: String, subtitle: String? = nil, systemImage: String, color: Color = .accentColor,
          showsChevron: Bool = false) {
         self.title = Text(verbatim: title)
         self.subtitle = subtitle.map { Text(verbatim: $0) }
@@ -149,6 +149,8 @@ struct SettingsRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
+        // Une ligne sur deux ou trois lignes de texte touchait sinon les traits voisins.
+        .padding(.vertical, 8)
         .frame(minHeight: 50)
         .contentShape(Rectangle())
     }

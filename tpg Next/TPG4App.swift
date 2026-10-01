@@ -20,6 +20,8 @@ struct TPG4App: App {
     // pour la synchronisation avec la montre.
     @State private var favoritesViewModel = FavoritesViewModel.shared
     @State private var favoritePlaces = FavoritePlacesModel.shared
+    @AppStorage(SettingKey.appIcon) private var appIcon = AppIconChoice.classique.rawValue
+    @AppStorage(SettingKey.lineColoredShadows) private var lineColoredShadows = false
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
@@ -60,8 +62,13 @@ struct TPG4App: App {
                     prepareWidgetData()
                 }
                 .background (
-                    Gradient(colors: [.accent, .color1, .color1]).opacity(0.7)
+                    Gradient(colors: [.accentColor, .color1, .color1]).opacity(0.7)
                 )
+                // La couleur de l'icône choisie : `tint` pour les contrôles, `accentColor`
+                // pour `Color.accentColor`, que `tint` ne change pas.
+                .tint(AppIconChoice(stored: appIcon).accent)
+                .accentColor(AppIconChoice(stored: appIcon).accent)
+                .environment(\.lineColoredShadows, lineColoredShadows)
         }
     }
 }

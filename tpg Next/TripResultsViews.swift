@@ -254,7 +254,7 @@ extension TripView {
                                         HStack {
                                             Text("Utiliser la position actuelle")
                                             Spacer()
-                                            Image(systemName: "location.circle").font(.title2).foregroundStyle(.accent)
+                                            Image(systemName: "location.circle").font(.title2).foregroundStyle(Color.accentColor)
                                         }
                                             .padding(.horizontal, 20)
                                             .basicElementBackground(minHeight: 45)
@@ -295,7 +295,7 @@ extension TripView {
                                             resultDetail = searchResultItem(title: stop.name, coordinates: stop.coordinate)
                                             resultTitle = stop.name
                                         } label: {
-                                            Image(systemName: "figure.wave.circle").font(.title2).foregroundStyle(.accent)
+                                            Image(systemName: "figure.wave.circle").font(.title2).foregroundStyle(Color.accentColor)
                                         }
                                     }
                                     .padding(.horizontal, 20)
@@ -344,7 +344,7 @@ extension TripView {
 
                 ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
                         tripLink(event) {
-                            TripResultBackground(selected: event.id == selectedID) {
+                            TripResultBackground(selected: event.id == selectedID, lineColors: event.lineColors) {
                                 TripElementView(event: event, showTime: showTime)
                             }
                             
@@ -521,15 +521,15 @@ extension TripView {
                             if field == .departure {
                                 Image(systemName: viewModel.departure.endpoint?.isPlace == true ? "mappin.and.ellipse.circle" : "figure.wave.circle")
                                     .font(.title2)
-                                    .foregroundStyle(selected ? .accent : .primary)
+                                    .foregroundStyle(selected ? Color.accentColor : .primary)
                             } else if field == .arrival {
                                 Image(systemName: viewModel.arrival.endpoint?.isPlace == true ? "mappin.and.ellipse.circle" : "figure.wave.circle")
                                     .font(.title2)
-                                    .foregroundStyle(selected ? .accent : .primary)
+                                    .foregroundStyle(selected ? Color.accentColor : .primary)
                             }
                         } else {
                             Image(systemName: "magnifyingglass")
-                                .foregroundStyle(selected ? .accent : .primary.opacity(0.2))
+                                .foregroundStyle(selected ? Color.accentColor : .primary.opacity(0.2))
                         }
                         if field == .arrival {
                             TextField("Destination", text: $viewModel.arrival.text)
@@ -609,7 +609,7 @@ extension TripView {
                     }
                     if selected {
                         Image(systemName: "record.circle.fill")
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
                 .onTapGesture {

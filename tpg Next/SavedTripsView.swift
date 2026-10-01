@@ -463,7 +463,7 @@ struct SavedTripsAgenda: View {
         let displayed = isPast ? trip : savedTripsModel.displayedTrip(for: trip)
         let itemID = AgendaItem.saved(trip).id
         let badge = Self.showsBadge(state) ? RegularTripStatusBadge.badge(for: state, isSavedTrip: true) : nil
-        return AgendaCard(highlighted: isHighlighted(itemID), badge: badge, open: {
+        return AgendaCard(highlighted: isHighlighted(itemID), lineColors: displayed.lineColors, badge: badge, open: {
             choose(itemID) { onSelect(displayed) }
         }) {
             VStack(alignment: .leading, spacing: 8) {
@@ -565,7 +565,7 @@ struct SavedTripsAgenda: View {
             let state = regularTripsModel.state(of: occurrence)
             let isChosen = trip.isOverridden(on: occurrence.day)
             let itemID = AgendaItem.regular(occurrence).id
-            AgendaCard(highlighted: isHighlighted(itemID),
+            AgendaCard(highlighted: isHighlighted(itemID), lineColors: displayed.lineColors,
                        badge: RegularTripStatusBadge.badge(for: state, isSavedTrip: false), open: {
                 choose(itemID) { open(occurrence, displayed: displayed) }
             }) {
@@ -670,6 +670,8 @@ struct SavedTripsAgenda: View {
 /// boutons à part (un bouton dans un autre ne répond pas toujours).
 struct AgendaCard<Content: View, Actions: View>: View {
     var highlighted = false
+    /// Les couleurs des lignes du trajet, pour l'ombre (réglage d'apparence).
+    var lineColors: [Color]?
     /// L'état du trajet, en languette qui dépasse du haut de la carte.
     var badge: UpcomingTrip.Badge?
     @ScaledMetric private var tabHeight: CGFloat = 24
@@ -677,9 +679,10 @@ struct AgendaCard<Content: View, Actions: View>: View {
     let content: Content
     let actions: Actions
 
-    init(highlighted: Bool = false, badge: UpcomingTrip.Badge? = nil, open: @escaping () -> Void,
-         @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
+    init(highlighted: Bool = false, lineColors: [Color]? = nil, badge: UpcomingTrip.Badge? = nil,
+         open: @escaping () -> Void, @ViewBuilder content: () -> Content, @ViewBuilder actions: () -> Actions) {
         self.highlighted = highlighted
+        self.lineColors = lineColors
         self.badge = badge
         self.open = open
         self.content = content()
@@ -698,7 +701,7 @@ struct AgendaCard<Content: View, Actions: View>: View {
                 .buttonBorderShape(.capsule)
         }
         .padding(15)
-        .background(BasicCard(cornerRadius: 30, highlighted: highlighted))
+        .background(BasicCard(cornerRadius: 30, highlighted: highlighted, lineColors: lineColors))
         // Derrière la carte, comme un marque-page glissé dessous : seul le haut dépasse.
         .background(alignment: .topTrailing) {
             if let badge {

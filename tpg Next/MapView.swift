@@ -22,7 +22,7 @@ struct StopMapMarker: View {
     var body: some View {
         Circle()
             .strokeBorder(Color.primary, lineWidth: isSelected ? 5 : 3)
-            .background(Circle().fill(isSelected ? .accent : .color1))
+            .background(Circle().fill(isSelected ? Color.accentColor : .color1))
             .frame(width: isSelected ? 30 : 18, height: isSelected ? 25 : 18)
             .animation(.bouncy, value: isSelected)
     }
@@ -67,7 +67,7 @@ struct MapView: View {
                                                 .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2).animation(.bouncy, value: selectedResult)
                                                 .background(
                                                     Circle()
-                                                        .fill(isSelected ? .accent : .color1).animation(.bouncy, value: selectedResult)
+                                                        .fill(isSelected ? Color.accentColor : .color1).animation(.bouncy, value: selectedResult)
                                                 )
                                                 .frame(width: 15, height: 15)
                                         }

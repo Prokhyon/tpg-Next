@@ -64,9 +64,17 @@ struct TripElementView: View {
     }
 }
 
+extension TripEvent {
+    /// Les couleurs des lignes empruntées, dans l'ordre : l'ombre en dégradé de l'itinéraire.
+    var lineColors: [Color] {
+        vehicleLegs.map { LineColors.lineColor(for: $0.publishedLineName, operatorName: $0.legOperator) }
+    }
+}
+
 /// Le fond d'un résultat d'itinéraire : une capsule.
 struct TripResultBackground<Content: View>: View {
     var selected = false
+    var lineColors: [Color]? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -75,7 +83,7 @@ struct TripResultBackground<Content: View>: View {
             // La capsule prend la largeur disponible, pas celle du contenu : plus large que
             // l'écran, il la faisait déborder sur les côtés.
             .frame(maxWidth: .infinity)
-            .basicElementBackground(minHeight: 72, selected: selected)
+            .basicElementBackground(minHeight: 72, selected: selected, lineColors: lineColors)
             .padding(4)
     }
 }
@@ -193,7 +201,7 @@ struct CustomPicker: View {
         Toggle("Heure affichée" as String, isOn: $showTime)
             .padding(.horizontal, 30)
         ForEach(PreviewData.trips) { trip in
-            TripResultBackground {
+            TripResultBackground(lineColors: trip.lineColors) {
                 TripElementView(event: trip, showTime: showTime)
             }
             .padding(.horizontal, 10)

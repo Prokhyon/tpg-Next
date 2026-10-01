@@ -27,6 +27,8 @@ enum AppRoute: Hashable {
     case favoritePlacesOrder
     /// L'ordre des sections de l'accueil.
     case homeLayout
+    /// Le choix de l'icône, et avec elle de la couleur de l'app.
+    case appIcon
     case scheduledNotifications
     /// Mes itinéraires : enregistrés et réguliers.
     case savedTrips
@@ -90,6 +92,8 @@ struct AppRouteDestination: View {
             FavoritePlacesOrderView()
         case .homeLayout:
             HomeLayoutView()
+        case .appIcon:
+            AppIconSettingsView()
         case .userGuide:
             UserGuideView()
         case let .userGuideTopic(id, entry):

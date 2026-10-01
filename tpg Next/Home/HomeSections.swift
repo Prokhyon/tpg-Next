@@ -104,7 +104,7 @@ struct HomeLayoutView: View {
                             storedHidden = ""
                         }
                     } label: {
-                        SettingsRow("Rétablir l'accueil par défaut", systemImage: "arrow.counterclockwise", color: .gray)
+                        SettingsRow("Rétablir l'accueil par défaut", systemImage: "arrow.counterclockwise")
                     }
                     .buttonStyle(.plain)
                     .disabled(order == HomeSection.defaultOrder && hidden.isEmpty)
@@ -150,6 +150,7 @@ extension HomeLayoutView {
             .opacity(isLastVisible ? 0.4 : 1)
             .accessibilityLabel(Text(isHidden ? "Afficher" : "Masquer") + Text(verbatim: " ") + Text(section.title))
         }
+        .padding(.vertical, 8)
         .frame(minHeight: 50)
         .sensoryFeedback(.selection, trigger: isHidden)
     }

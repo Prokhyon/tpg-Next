@@ -58,7 +58,7 @@ struct PlaceSheet: View {
             VStack(alignment: .leading, spacing: 16) {
                 Map(position: $position) {
                     Marker(place.name, coordinate: place.coordinate)
-                        .tint(.accent)
+                        .tint(Color.accentColor)
                     UserAnnotation()
                 }
                 .frame(height: 240)

@@ -20,7 +20,7 @@ struct ServedAlternativeCard: View {
             HStack(spacing: 12) {
                 Image(systemName: "figure.walk")
                     .font(.title3)
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Passe à \(Text(stopName: alternative.stop.stopPointName))")
                         .font(.subheadline)

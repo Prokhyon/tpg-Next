@@ -42,4 +42,8 @@ public enum SettingKey {
     public static let lastReminderMinutes = "LastReminderMinutes"
     /// Le transporteur affiché dans la liste des lignes.
     public static let selectedLineOperator = "SelectedLineOperator"
+    /// L'icône choisie (`AppIconChoice`), dont l'app reprend la couleur d'accent.
+    public static let appIcon = "AppIcon"
+    /// Ombres des départs et des itinéraires aux couleurs de leurs lignes.
+    public static let lineColoredShadows = "LineColoredShadows"
 }

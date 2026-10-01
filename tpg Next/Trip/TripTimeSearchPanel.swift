@@ -96,7 +96,7 @@ struct TripTimeSearchPanel: View {
                             .frame(minWidth: 110, minHeight: 45)
                             .background {
                                 Capsule()
-                                    .fill(viewModel.canSearch ? .accent : .gray)
+                                    .fill(viewModel.canSearch ? Color.accentColor : .gray)
                                     .shadow(color: Color.customShadows, radius: 1, y: 0.8)
                             }
                     }

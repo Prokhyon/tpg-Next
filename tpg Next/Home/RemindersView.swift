@@ -167,7 +167,7 @@ struct ScheduledNotifications: View {
         } label: {
             capsuleRow(title: Text(tripTitle: trip.attributes.title),
                        subtitle: String(localized: "Arrivée à \(dateToString(with: trip.state.arrival)) · alertes de montée et de descente"),
-                       systemImage: "inset.filled.circle", color: .accent)
+                       systemImage: "inset.filled.circle", color: Color.accentColor)
         }
         .buttonStyle(.plain)
         .contextMenu {

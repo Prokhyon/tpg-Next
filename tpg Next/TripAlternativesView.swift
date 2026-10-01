@@ -147,7 +147,7 @@ struct TripAlternativesView: View {
             }
         }
         .padding(15)
-        .background(BasicCard(cornerRadius: 30, highlighted: isCurrent))
+        .background(BasicCard(cornerRadius: 30, highlighted: isCurrent, lineColors: trip.lineColors))
         .contentShape(RoundedRectangle(cornerRadius: 30))
         .padding(.vertical, 2)
     }
