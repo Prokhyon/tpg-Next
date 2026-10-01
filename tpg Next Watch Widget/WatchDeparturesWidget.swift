@@ -75,45 +75,42 @@ struct WatchDeparturesView: View {
 
     // MARK: - Formats
 
-    /// L'arrêt, puis ses deux prochains départs.
+    /// L'arrêt en titre, puis ses deux prochains départs en colonnes : ligne, direction, minutes.
     private var rectangular: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 3) {
                 if entry.distance != nil {
                     Image(systemName: "location.fill")
-                        .font(.system(size: 10))
+                        .font(.system(size: 9, weight: .bold))
                 }
                 Text(shortName(entry.stop?.name ?? "tpg Next"))
-                    .font(.headline)
+                    .font(.system(.footnote, weight: .semibold))
                     .lineLimit(1)
-                    .widgetAccentable()
             }
+            .foregroundStyle(Self.accent)
+            .widgetAccentable()
             if entry.status == .ok {
-                ForEach(shownEvents.prefix(2), id: \.id) { event in
-                    row(event)
+                Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 2) {
+                    ForEach(shownEvents.prefix(2), id: \.id) { event in
+                        GridRow {
+                            LineBadge(event: event)
+                            Text(shortName(event.destination))
+                                .font(.system(.footnote, weight: .medium))
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            RemainingTime(event: event, date: entry.date)
+                                .gridColumnAlignment(.trailing)
+                        }
+                    }
                 }
             } else {
                 Label(message, systemImage: statusSymbol)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func row(_ event: StopEvent) -> some View {
-        HStack(spacing: 4) {
-            BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, width: 24, height: 17)
-                .font(.caption2.bold())
-            Text(shortName(event.destination))
-                .font(.caption)
-                .lineLimit(1)
-            Spacer(minLength: 2)
-            DepartureTimeView(departureDisplay(for: event, showTime: false, at: entry.date), transportType: event.transportType,
-                              layout: .inline(spacing: 2), iconWidth: 12)
-                .font(.caption.bold())
-        }
     }
 
     /// La ligne au-dessus des minutes.
@@ -179,6 +176,9 @@ struct WatchDeparturesView: View {
         return Text(display.text)
     }
 
+    /// La couleur d'accent de l'app montre (`AccentColor`), que l'extension n'embarque pas.
+    static let accent = Color(.displayP3, red: 0.896, green: 0.539, blue: 0)
+
     /// « Rive » pour « Genève, Rive » : la commune ne tient pas dans une complication.
     private func shortName(_ name: String) -> String {
         let parts = splitString(name, separator: ",")
@@ -217,6 +217,76 @@ struct WatchDeparturesView: View {
         case .networkError: "wifi.slash"
         case .ok: "bus"
         }
+    }
+}
+
+// MARK: - Morceaux
+
+/// Le numéro de ligne sur sa couleur, comme sur les arrêts. Sur un cadran teinté, les couleurs
+/// disparaissent : un fond discret le remplace.
+private struct LineBadge: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.self) private var environment
+    let event: StopEvent
+
+    var body: some View {
+        let color = LineColors.lineColor(for: event.lineName, operatorName: event.operatorName)
+        let fullColor = renderingMode == .fullColor
+        Text(event.lineName)
+            .font(.system(size: 12, weight: .bold, design: .rounded))
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .foregroundStyle(fullColor ? textColor(on: color) : .primary)
+            .padding(.horizontal, 3)
+            .frame(minWidth: 24, minHeight: 17)
+            .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(fullColor ? color : Color.primary.opacity(0.25)))
+    }
+
+    /// Noir ou blanc, selon ce qui contraste le plus avec la couleur de la ligne (WCAG) :
+    /// le jaune de la ligne 2 demande du noir, le bleu de la 12 du blanc.
+    private func textColor(on color: Color) -> Color {
+        let resolved = color.resolve(in: environment)
+        let luminance = 0.2126 * Double(resolved.linearRed) + 0.7152 * Double(resolved.linearGreen)
+            + 0.0722 * Double(resolved.linearBlue)
+        return (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? .black : .white
+    }
+}
+
+/// « 4 min » avec le chiffre en grand ; l'heure au-delà d'une heure, le véhicule quand il est là.
+private struct RemainingTime: View {
+    let event: StopEvent
+    let date: Date
+
+    var body: some View {
+        let display = departureDisplay(for: event, showTime: false, at: date)
+        Group {
+            switch display {
+            case .minutes(let minutes, let delayed):
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text(minutes, format: .number)
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                    Text("min")
+                        .font(.system(.caption2, weight: .medium))
+                }
+                .foregroundStyle(delayed ? .orange : .primary)
+            case .lessThanAMinute:
+                Text("< 1 min")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+            case .atStop:
+                transportIcon(with: event.transportType)
+                    .font(.system(.footnote, weight: .semibold))
+            case .cancelled:
+                Text(display.text)
+                    .font(.system(.caption2, weight: .semibold))
+                    .foregroundStyle(.red)
+            default:
+                Text(display.text)
+                    .font(.system(.footnote, design: .rounded, weight: .semibold))
+            }
+        }
+        .monospacedDigit()
+        .lineLimit(1)
     }
 }
 
