@@ -144,7 +144,7 @@ private struct WelcomePermissionsPage: View {
                 Text("Continuer")
                     .frame(maxWidth: .infinity, minHeight: 34)
             }
-            .welcomeProminentStyle()
+            .prominentButtonStyle()
             .disabled(!canContinue)
             .animation(.snappy, value: canContinue)
             .padding(.horizontal, 24)
@@ -231,7 +231,7 @@ private struct PermissionCard: View {
                     .padding(.horizontal, 10)
                     .frame(minHeight: 26)
             }
-            .welcomeProminentStyle()
+            .prominentButtonStyle()
         case .granted:
             Label("Autorisée", systemImage: "checkmark.circle.fill")
                 .font(.subheadline.weight(.semibold))
@@ -331,7 +331,7 @@ private struct WelcomeReadyPage: View {
                 Text("Commencer")
                     .frame(maxWidth: .infinity, minHeight: 34)
             }
-            .welcomeProminentStyle()
+            .prominentButtonStyle()
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .frame(maxWidth: 560)

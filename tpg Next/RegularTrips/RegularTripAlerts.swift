@@ -61,6 +61,8 @@ enum RegularTripAlerts {
                   let trip = model.trip(for: occurrence), let minutes = trip.reminderMinutes else { continue }
             var match: RegularTripMatch?
             if case .found(let found, _) = model.state(of: occurrence) { match = found }
+            // Sans horaire fixe (bus à la demande), l'heure de partir n'existe pas.
+            guard !(match?.trip ?? trip.plannedTrip(for: occurrence)).hasOnDemandLeg else { continue }
             let departure = leavingTime(occurrence: occurrence, match: match)
             let fireDate = departure.addingTimeInterval(-TimeInterval(minutes * 60))
             guard fireDate > now else { continue }

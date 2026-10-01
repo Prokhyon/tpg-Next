@@ -46,6 +46,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35916007",
         "legAlightEstimatedTime" : "2026-09-13T16:10:36Z",
@@ -188,6 +189,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "3",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653679",
         "legAlightEstimatedTime" : "2026-09-13T16:08:24Z",
@@ -252,6 +254,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "1",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-29-16-Dimanche-35283399",
         "legAlightEstimatedTime" : "2026-09-13T16:01:24Z",
@@ -318,6 +321,7 @@
           "ojp92008IR_IncidentTrip488_1",
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "3",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Dimanche-35206466",
         "legAlightEstimatedTime" : "2026-09-13T16:13:36Z",
@@ -412,6 +416,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653660",
         "legAlightEstimatedTime" : "2026-09-13T16:16:18Z",
@@ -483,6 +488,7 @@
         "attributeCodes" : [
           "A__NF"
         ],
+        "busSubmode" : "localBusService",
         "id" : "1",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-10-0-Dimanche-33793883",
         "legAlightEstimatedTime" : "2026-09-13T16:16:00Z",

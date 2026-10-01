@@ -600,26 +600,12 @@ struct DepartureTimeSheet: View {
                         .symbolEffect(.rotate, value: resetAnimation)
                 }
             }
-            if #available(iOS 26, *) {
-                Button(action: confirm) {
-                    HStack {
-                        Spacer()
-                        Text("Selectionner")
-                        Spacer()
-                    }
+            Button(action: confirm) {
+                Text("Selectionner")
+                    .frame(maxWidth: .infinity)
                     .frame(height: 40)
-                }
-                .buttonStyle(.borderedProminent)
-            } else {
-                Button(action: confirm) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.accent)
-                        .frame(height: 50)
-                        .shadow(color: Color.customShadows, radius: 1.5, y: 1)
-                        .overlay(Text("Selectionner").foregroundStyle(.white))
-                }
-                .padding(.bottom)
             }
+            .prominentButtonStyle()
         }
         .padding()
         .presentationDetents([.fraction(0.4)])
@@ -696,7 +682,8 @@ struct LineFilterSheet: View {
                     }
                     .frame(height: 40)
                 }
-                .buttonStyle(.borderedProminent)
+                .prominentButtonStyle()
+                .tint(.red)
                 .padding(.horizontal)
             }
 
@@ -708,7 +695,7 @@ struct LineFilterSheet: View {
                 .padding()
                 .frame(height: 40)
             }
-            .buttonStyle(.borderedProminent)
+            .prominentButtonStyle()
             .padding(.horizontal)
         }
         .padding(.top)

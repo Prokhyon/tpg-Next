@@ -247,6 +247,7 @@ struct FavoritesOrderView: View {
                 .contentMargins(.horizontal, 5.0, for: .automatic)
                 .listStyle(.plain)
                 .environment(\.editMode, .constant(.active))
+                .readableList()
 //                .mask {
 //                    Rectangle()
 //                        .overlay(alignment: .leading) {

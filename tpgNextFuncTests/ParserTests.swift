@@ -190,6 +190,35 @@ struct TripParserTests {
 
     /// Rive → Meinier, église (19.09.2026, incident sur la ligne A) : le calculateur passe par
     /// Route de Corsinge, car le A saute seize arrêts, dont Meinier, église.
+    /// Avully → Laconnex (02.10.2026) : tpg flex, bus à la demande. OJP le donne comme un bus
+    /// ordinaire, avec une heure toutes les 5 minutes ; seuls le sous-mode et l'attribut `RR`
+    /// disent qu'il n'a pas d'horaire et qu'il faut le réserver.
+    @Test func onDemandBusIsRecognized() throws {
+        let trips = try parseTripEvents(from: Fixture.data("trip-avully-laconnex-flex"),
+                                        startCoordinate: Coordinates(lon: 6.0039, lat: 46.1697),
+                                        endCoordinates: Coordinates(lon: 6.0335, lat: 46.1570),
+                                        startName: "Avully", endName: "Laconnex",
+                                        startCode: nil, endCode: nil,
+                                        geoDeparture: true, geoArrival: true)
+        let trip = try #require(trips.first)
+        let leg = try #require(trip.legs.first { !$0.publishedLineName.isEmpty })
+        #expect(leg.publishedLineName == "tpg flex")
+        #expect(leg.busSubmode == "demandAndResponseBus")
+        #expect(leg.requiresReservation)
+        #expect(leg.isOnDemand)
+        #expect(trip.hasOnDemandLeg)
+    }
+
+    /// Un itinéraire enregistré avant la lecture du sous-mode : la réservation suffit.
+    @Test func savedOnDemandLegWithoutSubmode() throws {
+        var leg = FullTripTest().Trip.legs[1]
+        #expect(!leg.isOnDemand)
+        leg.attributeCodes = ["RR"]
+        #expect(leg.isOnDemand)
+        leg.busSubmode = "localBus"
+        #expect(!leg.isOnDemand)
+    }
+
     @Test func skippedIntermediatesAreFlagged() throws {
         let trips = try parseTripEvents(from: Fixture.data("trip-rive-meinier-incident"),
                                         startCoordinate: Coordinates(lon: 6.1508, lat: 46.2025),

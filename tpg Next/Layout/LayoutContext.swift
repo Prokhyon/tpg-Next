@@ -96,6 +96,54 @@ extension View {
     }
 }
 
+extension View {
+    /// Pour une `List` (ordre des favoris) : une colonne d'au plus `maxWidth`, centrée, plutôt
+    /// que des lignes d'un bord à l'autre de l'iPad. Sur un écran à moitié plié d'un pli
+    /// vertical (iPhone Duo), la colonne reste du côté gauche du pli au lieu d'être à cheval
+    /// dessus. Sans effet sur iPhone, plus étroit que la borne.
+    func readableList(_ maxWidth: CGFloat = 560) -> some View {
+        modifier(ReadableList(maxWidth: maxWidth))
+    }
+}
+
+private struct ReadableList: ViewModifier {
+    let maxWidth: CGFloat
+    @State private var measure = Measure()
+
+    struct Measure: Equatable {
+        var width: CGFloat = 0
+        /// Le pli actif, s'il est vertical.
+        var fold: CGRect?
+    }
+
+    func body(content: Content) -> some View {
+        let column = column
+        content
+            .padding(.leading, column.minX)
+            .padding(.trailing, max(0, measure.width - column.maxX))
+            .onGeometryChange(for: Measure.self) { proxy in
+                Measure(width: proxy.size.width, fold: Self.verticalFold(in: proxy))
+            } action: { measure = $0 }
+    }
+
+    /// La colonne, dans le repère de la vue : centrée, ou au milieu de la partie gauche du pli.
+    private var column: CGRect {
+        var area = CGRect(x: 0, y: 0, width: measure.width, height: 1)
+        if let fold = measure.fold, fold.minX > 0 {
+            area.size.width = fold.minX
+        }
+        guard area.width > maxWidth else { return area }
+        return CGRect(x: area.minX + (area.width - maxWidth) / 2, y: 0, width: maxWidth, height: 1)
+    }
+
+    private static func verticalFold(in proxy: GeometryProxy) -> CGRect? {
+        guard #available(iOS 27.1, *),
+              let fold = proxy.reservedRegions(kind: .division).first(where: { $0.isActive })?.frame,
+              fold.height > fold.width else { return nil }
+        return fold
+    }
+}
+
 private struct ReadableScrollContent: ViewModifier {
     let maxWidth: CGFloat
     @State private var width: CGFloat = 0

@@ -22,6 +22,20 @@ struct TripElementView: View {
                     .minimumScaleFactor(0.5)
                 Spacer()
                 HStack {
+                    // Bus à la demande (tpg flex) : sans horaire fixe, sur réservation. Dans la
+                    // ligne plutôt qu'en dessous : la capsule garde sa taille.
+                    if event.hasOnDemandLeg {
+                        HStack(spacing: 2) {
+                            // Pas d'horaire fixe, puis réservation obligatoire.
+                            Image(systemName: "clock.badge.questionmark")
+                                .foregroundStyle(.orange)
+                            Image(systemName: "phone.fill")
+                                .foregroundStyle(.tint)
+                        }
+                        .padding(.trailing, 4)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Bus à la demande : sur réservation, pas d'horaire fixe")
+                    }
                     Image(systemName: "arrowshape.bounce.forward")
                     Text(": \(event.transfers)")
                         .padding(.trailing)
@@ -46,6 +60,45 @@ struct TripElementView: View {
             }
             TripTimeline(event: event)
                 .padding(.horizontal)
+        }
+    }
+}
+
+/// Le fond d'un résultat d'itinéraire : une capsule.
+struct TripResultBackground<Content: View>: View {
+    var selected = false
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .padding(.horizontal, 20)
+            // La capsule prend la largeur disponible, pas celle du contenu : plus large que
+            // l'écran, il la faisait déborder sur les côtés.
+            .frame(maxWidth: .infinity)
+            .basicElementBackground(minHeight: 72, selected: selected)
+            .padding(4)
+    }
+}
+
+/// Un bus à la demande dans l'itinéraire (tpg flex) : OJP lui donne une heure comme à un bus
+/// ordinaire, mais il ne passe que sur réservation et n'a pas d'horaire fixe.
+struct OnDemandNotice: View {
+    var event: TripEvent? = nil
+    var leg: TripLeg? = nil
+
+    var body: some View {
+        if let line = leg.flatMap({ $0.isOnDemand ? $0 : nil })?.publishedLineName
+            ?? event?.legs.first(where: \.isOnDemand)?.publishedLineName {
+            Label {
+                Text("\(line) : sur réservation, pas d'horaire fixe")
+            } icon: {
+                Image(systemName: "phone.fill")
+            }
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.tint)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 6)
         }
     }
 }
@@ -140,12 +193,10 @@ struct CustomPicker: View {
         Toggle("Heure affichée" as String, isOn: $showTime)
             .padding(.horizontal, 30)
         ForEach(PreviewData.trips) { trip in
-            TripElementView(event: trip, showTime: showTime)
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity)
-                .basicElementBackground(minHeight: 72)
-                .padding(4)
-                .padding(.horizontal, 10)
+            TripResultBackground {
+                TripElementView(event: trip, showTime: showTime)
+            }
+            .padding(.horizontal, 10)
         }
     }
     .previewEnvironment(navigation: false)

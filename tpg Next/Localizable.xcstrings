@@ -44,6 +44,9 @@
     "« Suivre en direct » depuis un itinéraire, le prochain trajet de l'accueil, un itinéraire enregistré ou un départ (appui long, « Suivre en direct », puis l'autre arrêt)." : {
 
     },
+    "%@ : sur réservation, pas d'horaire fixe" : {
+
+    },
     "%@ · %@" : {
       "localizations" : {
         "fr" : {
@@ -54,22 +57,22 @@
         }
       }
     },
-    "%@ · %lld lignes" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · %2$lld lignes"
-          }
-        }
-      }
-    },
     "%@ · %lld' de trajet" : {
       "localizations" : {
         "fr" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$lld' de trajet"
+          }
+        }
+      }
+    },
+    "%@ · ^[%lld ligne](inflect: true)" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · ^[%2$lld ligne](inflect: true)"
           }
         }
       }
@@ -768,6 +771,9 @@
     "Arriver avant" : {
 
     },
+    "Au moins un transporteur reste choisi." : {
+
+    },
     "Au-delà de l'app" : {
 
     },
@@ -810,6 +816,9 @@
 
     },
     "Aucun trajet régulier" : {
+
+    },
+    "Aucun transporteur ne correspond." : {
 
     },
     "Aujourd'hui" : {
@@ -985,6 +994,9 @@
     "Bus à la demande" : {
 
     },
+    "Bus à la demande : sur réservation, pas d'horaire fixe" : {
+
+    },
     "Bus de nuit" : {
 
     },
@@ -1050,6 +1062,9 @@
 
     },
     "Ce trajet n'est plus suivi" : {
+
+    },
+    "Ce trajet passe par un bus à la demande, sans horaire fixe : pas de rappel ni de suivi en direct. Pensez à le réserver." : {
 
     },
     "Cet appareil ne prévient pas : les rappels, alertes et activités en direct arrivent sur vos autres appareils. Pour changer, allez dans Paramètres." : {
@@ -3079,6 +3094,9 @@
 
     },
     "Sur l'écran verrouillé" : {
+
+    },
+    "Sur réservation, pas d'horaire fixe" : {
 
     },
     "Sur un arrêt ou un favori, le bouton d'itinéraire prépare la recherche : partir de là, y aller, ou y aller tout de suite depuis votre position." : {

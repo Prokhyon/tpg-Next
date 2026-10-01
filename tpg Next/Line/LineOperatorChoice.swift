@@ -63,16 +63,27 @@ struct LineOperatorPicker: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if query.isEmpty {
-                    Section("Mes transporteurs") {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    if query.isEmpty {
+                        header("Mes transporteurs")
                         ForEach(chosen) { row($0) }
                     }
-                }
-                Section(query.isEmpty ? "Tous les transporteurs" : "Résultats") {
+                    header(query.isEmpty ? "Tous les transporteurs" : "Résultats")
                     ForEach(matching) { row($0) }
+                    if matching.isEmpty {
+                        Text("Aucun transporteur ne correspond.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 20)
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.bottom, 30)
             }
+            .readableScrollContent()
+            .scrollDismissesKeyboard(.interactively)
             .searchable(text: $query, prompt: "Nom ou abréviation")
             .navigationTitle("Transporteurs")
             .navigationBarTitleDisplayMode(.inline)
@@ -84,31 +95,48 @@ struct LineOperatorPicker: View {
         }
     }
 
+    private func header(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.headline)
+            .padding(.leading, 8)
+            .padding(.top, 14)
+    }
+
+    /// Une capsule de l'app, cerclée d'orange quand le transporteur est choisi.
     private func row(_ transitOperator: TransitOperator) -> some View {
         let isChosen = chosen.contains(transitOperator)
+        // Le dernier ne se retire pas : la liste des lignes resterait vide.
+        let isLocked = isChosen && chosen.count == 1
         return Button {
-            toggle(transitOperator)
+            withAnimation(.snappy) { toggle(transitOperator) }
         } label: {
-            HStack {
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: transitOperator.name)
-                        .foregroundStyle(.primary)
-                    Text("\(transitOperator.shortName) · \(LineDirectory.lineCount(of: transitOperator.id)) lignes")
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(2)
+                    Text("\(transitOperator.shortName) · ^[\(LineDirectory.lineCount(of: transitOperator.id)) ligne](inflect: true)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
-                if isChosen {
-                    Image(systemName: "checkmark")
-                        .font(.body.bold())
-                        .foregroundStyle(.tint)
-                }
+                .multilineTextAlignment(.leading)
+                Spacer(minLength: 4)
+                Image(systemName: isChosen ? "checkmark.circle.fill" : "plus.circle")
+                    .font(.title3)
+                    .foregroundStyle(isChosen ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
             }
-            .contentShape(Rectangle())
+            .padding(.horizontal, 18)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .basicElementBackground(minHeight: 56, selected: isChosen)
+            .contentShape(Capsule())
         }
-        // Le dernier ne se retire pas : la liste des lignes resterait vide.
-        .disabled(isChosen && chosen.count == 1)
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4)
+        .disabled(isLocked)
+        .opacity(isLocked ? 0.6 : 1)
         .accessibilityAddTraits(isChosen ? .isSelected : [])
+        .accessibilityHint(isLocked ? Text("Au moins un transporteur reste choisi.") : Text(""))
     }
 
     private func toggle(_ transitOperator: TransitOperator) {
@@ -126,4 +154,5 @@ struct LineOperatorPicker: View {
 
 #Preview("Transporteurs") {
     LineOperatorPicker()
+        .previewEnvironment(navigation: false)
 }

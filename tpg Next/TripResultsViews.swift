@@ -335,13 +335,9 @@ extension TripView {
 
                 ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
                         tripLink(event) {
-                            TripElementView(event: event, showTime: showTime)
-                                .padding(.horizontal, 20)
-                                // La capsule prend la largeur disponible, pas celle du contenu : plus
-                                // large que l'écran, il la faisait déborder sur les côtés.
-                                .frame(maxWidth: .infinity)
-                                .basicElementBackground(minHeight: 72, highlighted: event.id == selectedID)
-                                .padding(4)
+                            TripResultBackground(selected: event.id == selectedID) {
+                                TripElementView(event: event, showTime: showTime)
+                            }
                             
 //                            TripElementView(event: event, showTime: showTime)
 //                                .padding(.horizontal)

@@ -338,6 +338,17 @@ struct ContentView: View {
             case .editRegular:
                 RegularTripEditor(trip: RegularTrip(trip: PreviewData.tripWithTransfer, weekdays: Weekday.workdays))
                     .environment(regularTripsModel)
+            case .operators:
+                LineOperatorPicker()
+            case .flex:
+                // Un bus à la demande (tpg flex), demain matin.
+                TripAlternativesView(title: "Autres horaires", footer: "L'itinéraire choisi remplace l'actuel.",
+                                     origin: RegularTripPlace(name: "Avully, village", sloid: "ch:1:sloid:87031",
+                                                              coordinates: Coordinates(lon: 6.0039, lat: 46.1697)),
+                                     destination: RegularTripPlace(name: "Laconnex, Mollaz", sloid: "ch:1:sloid:92972",
+                                                                   coordinates: Coordinates(lon: 6.0335, lat: 46.1570)),
+                                     around: Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: Date()) ?? Date()) ?? Date(),
+                                     current: nil) { _ in }
             }
         }
         #endif
@@ -456,7 +467,7 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
-    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular
+    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -471,7 +482,7 @@ struct ContentView: View {
             case "places":
                 navigationModel.open(.favoritePlacesOrder, in: navigationModel.selectedTab)
             case "sheet":
-                // tpgnext://sheet?name=reminder|newRegular|editRegular
+                // tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex
                 let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
                 debugSheet = DebugSheet(rawValue: name)
             case "map":
@@ -494,7 +505,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular
+    case reminder, newRegular, editRegular, operators, flex
     var id: String { rawValue }
 }
 #endif

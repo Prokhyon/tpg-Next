@@ -167,7 +167,7 @@ struct GuideTourView: View {
                         .font(.headline)
                         .frame(width: 30, height: 34)
                 }
-                .buttonStyle(.bordered)
+                .secondaryButtonStyle()
                 .buttonBorderShape(.circle)
                 .accessibilityLabel("Précédent")
             }
@@ -179,8 +179,7 @@ struct GuideTourView: View {
                         Text("Guide complet")
                             .frame(maxWidth: .infinity, minHeight: 34)
                     }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
+                    .secondaryButtonStyle()
                 }
                 Button {
                     onClose()
@@ -188,7 +187,7 @@ struct GuideTourView: View {
                     Text("Terminer")
                         .frame(maxWidth: .infinity, minHeight: 34)
                 }
-                .welcomeProminentStyle()
+                .prominentButtonStyle()
             } else {
                 Button {
                     index += 1
@@ -196,25 +195,13 @@ struct GuideTourView: View {
                     Text(index == steps.count - 1 ? "Terminer la visite" : "Suivant")
                         .frame(maxWidth: .infinity, minHeight: 34)
                 }
-                .welcomeProminentStyle()
+                .prominentButtonStyle()
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .frame(maxWidth: 600)
         .animation(.snappy, value: index)
-    }
-}
-
-extension View {
-    /// Le bouton principal : en verre à partir d'iOS 26.
-    @ViewBuilder func welcomeProminentStyle() -> some View {
-        if #available(iOS 26, *) {
-            buttonStyle(.glassProminent)
-        } else {
-            buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-        }
     }
 }
 

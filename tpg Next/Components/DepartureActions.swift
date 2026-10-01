@@ -171,12 +171,10 @@ struct ReminderSheet: View {
                 }
             }
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .basicElementBackground(minHeight: 56, button: true)
+            .frame(maxWidth: .infinity, minHeight: 46)
         }
-        .buttonStyle(.plain)
+        .prominentButtonStyle()
         .disabled(!isPossible(minutes))
-        .opacity(isPossible(minutes) ? 1 : 0.5)
     }
 
     // MARK: Heures

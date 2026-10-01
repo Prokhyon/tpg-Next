@@ -43,8 +43,9 @@ struct LineInfoView: View {
 
     private var header: some View {
         HStack(spacing: 14) {
+            // La capsule ne grandit pas au-delà de sa hauteur : en `.title`, le numéro débordait.
             BusLineIcon(lineName: line.number, operatorName: operatorName)
-                .font(.title.bold())
+                .font(.title3.weight(.medium))
             VStack(alignment: .leading, spacing: 2) {
                 Group {
                     if let transitOperator = line.transitOperator {
@@ -56,8 +57,8 @@ struct LineInfoView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 if let termini = line.termini {
-                    Text(verbatim: "\(termini.from) ↔ \(termini.to)")
-                        .font(.headline)
+                    (Text(stopName: termini.from) + Text(verbatim: " ↔ ").fontWeight(.regular) + Text(stopName: termini.to))
+                        .font(.headline.weight(.regular))
                 }
             }
         }

@@ -115,20 +115,20 @@ struct PlaceSheet: View {
             } label: {
                 Label("Y aller", systemImage: "figure.walk.departure")
             }
-            .buttonStyle(.borderedProminent)
+            .prominentButtonStyle()
             Button {
                 close { itinerary.start(from: place.endpoint, tab: navigationModel) }
             } label: {
                 Label("Partir d'ici", systemImage: "point.bottomleft.forward.to.point.topright.filled.scurvepath")
             }
-            .buttonStyle(.bordered)
+            .secondaryButtonStyle()
             if let stop = place.stop {
                 Button {
                     close { openRoute(.stop(stop)) }
                 } label: {
                     Label("Départs", systemImage: "clock")
                 }
-                .buttonStyle(.bordered)
+                .secondaryButtonStyle()
             } else {
                 // Un lieu : le garder parmi les lieux favoris (accueil, itinéraire).
                 let isFavorite = favoritePlaces.isFavorite(place.coordinate)
@@ -142,7 +142,7 @@ struct PlaceSheet: View {
                         .labelStyle(.iconOnly)
                         .contentTransition(.symbolEffect(.replace))
                 }
-                .buttonStyle(.bordered)
+                .secondaryButtonStyle()
                 .sensoryFeedback(.selection, trigger: isFavorite)
             }
         }

@@ -45,7 +45,8 @@ struct FullTripView: View {
                     .safeAreaInset(edge: .bottom) {
                         let key = TripLiveActivities.key(for: fullTrip)
                         let isTracking = liveActivities.isTracking(key)
-                        if isTracking || (liveActivities.areEnabled && !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now)) {
+                        if isTracking || (liveActivities.areEnabled && TripLiveActivities.canTrack(fullTrip)
+                                          && !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now)) {
                             HStack {
                                 Spacer()
                                 LiveTrackingButton(isTracking: isTracking) {

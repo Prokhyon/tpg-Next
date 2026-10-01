@@ -42,6 +42,8 @@ enum SavedTripReminders {
             let lead = TimeInterval(minutes * 60)
             let upcoming = trips
                 .map { (saved: $0, trip: displayed($0)) }
+                // Sans horaire fixe (bus à la demande), l'heure de partir n'existe pas.
+                .filter { !$0.trip.hasOnDemandLeg }
                 .compactMap { pair in (pair.trip.leavingDate ?? pair.trip.startDate).map { (pair.saved, pair.trip, $0) } }
                 .filter { $0.2.addingTimeInterval(-lead) > now }
                 .sorted { $0.2 < $1.2 }

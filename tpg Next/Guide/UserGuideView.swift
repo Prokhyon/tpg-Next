@@ -210,8 +210,7 @@ private struct GuideEntryRow: View {
                         }
                         .font(.subheadline.weight(.semibold))
                     }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
+                    .prominentButtonStyle()
                     .tint(tint)
                     .padding(.top, 4)
                 }
