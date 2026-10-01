@@ -147,14 +147,17 @@ final class TripLiveActivities {
 
     /// Le suivi exige la localisation : sans elle, rien ne garde l'app éveillée une fois
     /// quittée (`TripBackgroundLocation`), et l'activité se figerait sur des heures fausses.
+    /// Le statut vient du délégué de `locationManager`, pas d'un `CLLocationManager()` neuf :
+    /// sa lecture attend le service de localisation sur le fil principal, et l'app restait figée
+    /// (chaque minute, depuis `startSoonDepartingSavedTrips`) quand il ne répondait pas.
     var hasLocation: Bool {
-        let status = CLLocationManager().authorizationStatus
+        let status = locationManager.locationStatus
         return status == .authorizedWhenInUse || status == .authorizedAlways
     }
 
     /// Dit pourquoi le suivi ne démarre pas, et demande la localisation si elle ne l'a jamais été.
     func askForLocation() {
-        if CLLocationManager().authorizationStatus == .notDetermined {
+        if locationManager.locationStatus == .notDetermined {
             locationManager.requestLocationAuthorization()
             NotificationConfirmationViewModel.shared.show(
                 message: String(localized: "Le suivi en direct a besoin de votre position. Autorisez-la, puis relancez le suivi."),
@@ -760,12 +763,38 @@ final class TripLiveActivities {
             stale.forEach { tracked[$0] = nil }
             save()
         }
-        // L'app doit tourner pour mettre les activités à jour : tant qu'un trajet est suivi,
-        // la session d'arrière-plan l'y aide.
-        if keys.isEmpty {
+        syncBackgroundLocation()
+    }
+
+    /// Vrai une fois `locationStatus` observé, pour ne pas empiler les observations.
+    @ObservationIgnored private var observesLocationStatus = false
+
+    /// L'app doit tourner pour mettre les activités à jour : tant qu'un trajet est suivi,
+    /// la session d'arrière-plan l'y aide.
+    private func syncBackgroundLocation() {
+        if activeKeys.isEmpty {
             TripBackgroundLocation.shared.stop()
         } else {
-            TripBackgroundLocation.shared.start()
+            observeLocationStatus()
+            TripBackgroundLocation.shared.start(locationAuthorized: hasLocation)
+        }
+    }
+
+    /// Au lancement, le délégué ne donne l'autorisation qu'un instant après le premier passage
+    /// dans `syncBackgroundLocation` : on y revient à chaque changement, sans quoi la session
+    /// d'un trajet suivi avant la fermeture de l'app ne se rouvrirait pas.
+    private func observeLocationStatus() {
+        guard !observesLocationStatus else { return }
+        observesLocationStatus = true
+        withObservationTracking {
+            _ = locationManager.locationStatus
+        } onChange: { [weak self] in
+            // Appelé avant le changement : la nouvelle valeur se lit au tour suivant.
+            Task { @MainActor in
+                guard let self else { return }
+                self.observesLocationStatus = false
+                self.syncBackgroundLocation()
+            }
         }
     }
 
