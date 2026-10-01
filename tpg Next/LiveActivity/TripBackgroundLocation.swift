@@ -36,11 +36,12 @@ final class TripBackgroundLocation {
 
     private init() {}
 
-    /// Ouvre la session, si la localisation est déjà autorisée.
-    func start() {
-        guard !isRunning else { return }
-        let status = CLLocationManager().authorizationStatus
-        guard status == .authorizedWhenInUse || status == .authorizedAlways else { return }
+    /// Ouvre la session, si la localisation est déjà autorisée. L'autorisation vient de
+    /// l'appelant (`TripLiveActivities.hasLocation`, tirée d'un délégué) : celle d'un
+    /// `CLLocationManager()` neuf attend le service de localisation sur le fil principal, et
+    /// l'app restait figée quand il ne répondait pas.
+    func start(locationAuthorized: Bool) {
+        guard !isRunning, locationAuthorized else { return }
         isRunning = true
         session = CLBackgroundActivitySession()
         Log.location.info("Suivi de trajet : session d'arrière-plan ouverte")
