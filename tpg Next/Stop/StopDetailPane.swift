@@ -152,7 +152,7 @@ struct StopMapPanel: View {
             Annotation(String(localized: "quai \(quay.quayName)"), coordinate: quay.coordinate, anchor: .center) {
                 Circle()
                     .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2)
-                    .background(Circle().fill(isSelected ? .accent : .color1))
+                    .background(Circle().fill(isSelected ? Color.accentColor : .color1))
                     .frame(width: isSelected ? 22 : 15, height: isSelected ? 22 : 15)
                     .animation(.bouncy, value: isSelected)
                     // Zone de toucher plus large que le point.
@@ -455,8 +455,8 @@ struct StopInfoPanel: View {
 
     private func filterBackground(isOn: Bool) -> some View {
         RoundedRectangle(cornerRadius: 14)
-            .fill(isOn ? Color.accent.opacity(0.15) : Color.primary.opacity(0.04))
-            .strokeBorder(isOn ? Color.accent : .clear, lineWidth: 1.5)
+            .fill(isOn ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.04))
+            .strokeBorder(isOn ? Color.accentColor : .clear, lineWidth: 1.5)
     }
 
     private var lineGroups: [(key: String, event: StopEvent)] {

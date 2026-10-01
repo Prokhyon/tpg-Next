@@ -975,7 +975,7 @@
 		78D5C4122C2094F20083C4C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc AppIcon-Lagon AppIcon-Menthe AppIcon-Aurore AppIcon-Minuit AppIcon-Ambre AppIcon-Terracotta AppIcon-Ardoise";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -1013,7 +1013,7 @@
 		78D5C4132C2094F20083C4C6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc AppIcon-Lagon AppIcon-Menthe AppIcon-Aurore AppIcon-Minuit AppIcon-Ambre AppIcon-Terracotta AppIcon-Ardoise";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;

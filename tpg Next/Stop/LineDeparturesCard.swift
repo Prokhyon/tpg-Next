@@ -36,7 +36,8 @@ struct SortedStopEventsView: View {
 
     var body: some View {
             let splitLine = splitString(key, separator: ";")
-        BasicCard(cornerRadius: 30)
+        BasicCard(cornerRadius: 30,
+                  lineColors: [LineColors.lineColor(for: splitLine.0, operatorName: filteredStopEvents[key]?.first?.operatorName ?? "")])
                 .padding(.vertical, 5)
                 .frame(height: 110)
                 .overlay(

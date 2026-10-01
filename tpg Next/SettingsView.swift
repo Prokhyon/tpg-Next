@@ -11,7 +11,7 @@ import tpgNextFunc
 import WidgetKit
 
 /// Les paramètres, en cartes comme le reste de l'app : l'accueil et ses favoris, l'affichage
-/// des départs, les notifications des trajets, puis l'aide. Les rappels prévus sont sur
+/// des départs, les notifications des trajets, l'icône, puis l'aide. Les rappels prévus sont sur
 /// l'accueil (cloche) ; le message de démarrage n'a plus d'entrée : le guide reprend tout.
 struct SettingsView: View {
     @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
@@ -23,6 +23,8 @@ struct SettingsView: View {
     @AppStorage(SettingKey.savedTripAutoTrackMinutes) var savedTripAutoTrack = 0
     @AppStorage(SettingKey.savedTripReminderMinutes) var savedTripReminder = SavedTripReminders.off
     @AppStorage(SettingKey.iCloudSync) private var iCloudSync = true
+    @AppStorage(SettingKey.appIcon) private var storedAppIcon = AppIconChoice.classique.rawValue
+    @AppStorage(SettingKey.lineColoredShadows) private var lineColoredShadows = false
     @Environment(SavedTripsModel.self) private var savedTripsModel
     @Environment(FavoritesViewModel.self) private var favoritesViewModel
     @Environment(FavoritePlacesModel.self) private var favoritePlaces
@@ -37,6 +39,7 @@ struct SettingsView: View {
                 regularTripsSection
                 savedTripsSection
                 syncSection
+                appearanceSection
                 helpSection
                 Text(verbatim: Self.version)
                     .font(.footnote)
@@ -63,16 +66,16 @@ struct SettingsView: View {
             choice("Départs affichés", selection: $homeFavorites, first: "Arrêts proches", second: "Favoris")
             CardDivider(inset: 0)
             CardLink(.homeLayout) {
-                SettingsRow("Organiser l'accueil", systemImage: "rectangle.3.group.fill", color: .blue, showsChevron: true)
+                SettingsRow("Organiser l'accueil", systemImage: "rectangle.3.group.fill", showsChevron: true)
             }
             CardDivider()
             CardLink(.favoritesOrder) {
-                SettingsRow("Arrêts favoris", systemImage: "star.fill", color: .yellow,
+                SettingsRow("Arrêts favoris", systemImage: "star.fill",
                             value: favoritesViewModel.favoriteStops.count, showsChevron: true)
             }
             CardDivider()
             CardLink(.favoritePlacesOrder) {
-                SettingsRow("Lieux favoris", systemImage: "mappin", color: .red,
+                SettingsRow("Lieux favoris", systemImage: "mappin",
                             value: favoritePlaces.places.count, showsChevron: true)
             }
         }
@@ -97,7 +100,7 @@ struct SettingsView: View {
         CardSection("Trajets réguliers",
                     footer: "Le délai du rappel se choisit dans chaque trajet. Vos trajets réguliers sont partagés entre vos appareils via iCloud : activez ces notifications sur un seul pour ne pas être prévenu en double.") {
             Toggle(isOn: $regularTripReminders) {
-                SettingsRow("Rappels avant le départ", systemImage: "bell.fill", color: .red)
+                SettingsRow("Rappels avant le départ", systemImage: "bell.fill")
             }
             .onChange(of: regularTripReminders) {
                 if regularTripReminders { NotificationManager.shared.requestAuthorization() }
@@ -106,7 +109,7 @@ struct SettingsView: View {
             }
             CardDivider()
             Toggle(isOn: $regularTripAlerts) {
-                SettingsRow("Retards et suivi en direct", systemImage: "exclamationmark.triangle.fill", color: .orange)
+                SettingsRow("Retards et suivi en direct", systemImage: "exclamationmark.triangle.fill")
             }
             .onChange(of: regularTripAlerts) {
                 if regularTripAlerts { NotificationManager.shared.requestAuthorization() }
@@ -119,7 +122,7 @@ struct SettingsView: View {
         CardSection("Itinéraires enregistrés",
                     footer: "Le rappel compte depuis l'heure de partir, marche jusqu'à l'arrêt comprise. L'activité en direct démarre d'elle-même avant le départ ; iOS ne la laisse démarrer que l'app ouverte : une notification vous invite à l'ouvrir au bon moment. Réglages propres à cet appareil.") {
             HStack {
-                SettingsRow("Rappel avant le départ", systemImage: "bell.fill", color: .red)
+                SettingsRow("Rappel avant le départ", systemImage: "bell.fill")
                 Picker("Rappel avant le départ", selection: $savedTripReminder) {
                     ForEach(SavedTripReminders.choices, id: \.self) { minutes in
                         Text(SavedTripReminders.label(for: minutes))
@@ -138,7 +141,7 @@ struct SettingsView: View {
             }
             CardDivider()
             HStack {
-                SettingsRow("Suivi en direct automatique", systemImage: "inset.filled.circle", color: .green)
+                SettingsRow("Suivi en direct automatique", systemImage: "inset.filled.circle")
                 Picker("Suivi en direct automatique", selection: $savedTripAutoTrack) {
                     ForEach(SavedTripAutoTracking.choices, id: \.self) { minutes in
                         Text(minutes == 0 ? "Désactivé" : "\(minutes) min avant")
@@ -160,10 +163,24 @@ struct SettingsView: View {
         CardSection("Vos données",
                     footer: "Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils. Désactivée, ils restent sur cet appareil ; ce qui est déjà dans iCloud n'est pas effacé.") {
             Toggle(isOn: $iCloudSync) {
-                SettingsRow("Synchronisation iCloud", systemImage: "icloud.fill", color: .cyan)
+                SettingsRow("Synchronisation iCloud", systemImage: "icloud.fill")
             }
             .onChange(of: iCloudSync) {
                 CloudSync.settingChanged()
+            }
+        }
+    }
+
+    private var appearanceSection: some View {
+        CardSection("Apparence",
+                    footer: "Les départs et les itinéraires prennent une ombre aux couleurs de leurs lignes, en dégradé quand il y en a plusieurs.") {
+            CardLink(.appIcon) {
+                SettingsRow(Text("Icône de l'app"), subtitle: String(localized: appIcon.title),
+                            systemImage: "app.badge.fill", showsChevron: true)
+            }
+            CardDivider()
+            Toggle(isOn: $lineColoredShadows) {
+                SettingsRow("Ombres aux couleurs des lignes", systemImage: "shadow")
             }
         }
     }
@@ -172,7 +189,7 @@ struct SettingsView: View {
         CardSection("Aide") {
             CardLink(.userGuide) {
                 SettingsRow("Guide d'utilisation", subtitle: "Tout ce que l'app sait faire, à essayer du doigt.",
-                            systemImage: "book.pages.fill", color: .accent, showsChevron: true)
+                            systemImage: "book.pages.fill", showsChevron: true)
             }
             CardDivider()
             Button {
@@ -184,7 +201,7 @@ struct SettingsView: View {
                     openURL(url)
                 }
             } label: {
-                SettingsRow("Un problème, une question, une envie ?", systemImage: "envelope.fill", color: .indigo)
+                SettingsRow("Un problème, une question, une envie ?", systemImage: "envelope.fill")
             }
             .buttonStyle(.plain)
         }
@@ -207,6 +224,8 @@ struct SettingsView: View {
         .padding(.vertical, 12)
         .sensoryFeedback(.selection, trigger: selection.wrappedValue)
     }
+
+    private var appIcon: AppIconChoice { AppIconChoice(stored: storedAppIcon) }
 
     /// « tpg Next 3.2 (145) ».
     private static var version: String {

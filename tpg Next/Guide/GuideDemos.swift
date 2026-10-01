@@ -187,7 +187,7 @@ private struct FavoriteDemo: View {
                     .contentTransition(.symbolEffect(.replace))
                     .symbolEffect(.pulse, isActive: !starred)
             }
-            .foregroundStyle(.accent)
+            .foregroundStyle(Color.accentColor)
             .accessibilityLabel(isFavorite ? "Retirer des favoris" : "Ajouter aux favoris")
             SmallStopTitleView(stopName: Self.stop.name)
             Button {
@@ -199,7 +199,7 @@ private struct FavoriteDemo: View {
                     .font(.title2)
                     .symbolEffect(.pulse, isActive: starred && !sawMap)
             }
-            .foregroundStyle(.accent)
+            .foregroundStyle(Color.accentColor)
             .accessibilityLabel("Voir sur la carte")
         }
         .padding(.horizontal)

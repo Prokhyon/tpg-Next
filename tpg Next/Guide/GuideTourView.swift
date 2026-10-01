@@ -94,7 +94,7 @@ struct GuideTourView: View {
             VStack(alignment: .leading, spacing: 14) {
                 Image(systemName: step.symbol)
                     .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
                     .symbolEffect(.bounce, value: tried.contains(step.demo))
                     .padding(.top, 10)
                 Text(step.title)

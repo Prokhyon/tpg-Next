@@ -173,8 +173,9 @@ extension View {
     /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
     /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
     /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
-    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, selected: Bool = false, button: Bool = false) -> some View {
-        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, selected: selected, button: button))
+    /// `lineColors` : les couleurs des lignes, pour l'ombre (réglage d'apparence).
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, selected: Bool = false, button: Bool = false, lineColors: [Color]? = nil) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, selected: selected, button: button, lineColors: lineColors))
     }
 }
 
@@ -215,6 +216,7 @@ private struct BasicElementBackground: ViewModifier {
     let highlighted: Bool
     let selected: Bool
     let button: Bool
+    let lineColors: [Color]?
 
     func body(content: Content) -> some View {
         content
@@ -223,7 +225,7 @@ private struct BasicElementBackground: ViewModifier {
             .frame(minHeight: minHeight)
             .background {
                 BasicElement(transparent: transparent, highlighted: highlighted, selected: selected, button: button,
-                             cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
+                             lineColors: lineColors, cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
             }
     }
 }
@@ -233,8 +235,10 @@ struct BasicElement: View {
     var highlighted = false
     var selected = false
     var button = false
+    /// Les couleurs des lignes du départ ou de l'itinéraire, pour l'ombre (réglage d'apparence).
+    var lineColors: [Color]? = nil
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
-    var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
+    var accentBorder = Gradient(colors: [.accentColor, .accentColor.opacity(0.5), .accentColor, .accentColor.opacity(0.5), .accentColor])
     /// Rectangle arrondi plutôt que capsule : les extrémités en demi-cercle d'une ligne très
     /// haute (texte agrandi) mordaient sur son contenu.
     var cornerRadius: CGFloat? = nil
@@ -245,9 +249,9 @@ struct BasicElement: View {
 
     var body: some View {
         shape
-            .fill(button ? .accent : .color1.opacity(transparent ? 0.5 : 1))
+            .fill(button ? Color.accentColor : .color1.opacity(transparent ? 0.5 : 1))
             .stroke(AngularGradient(gradient: selected ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
-            .shadow(color: .customShadows.opacity(0.2), radius: 7)
+            .modifier(ElementShadow(shape: shape, lineColors: lineColors, radius: 7))
     }
 }
 
@@ -255,14 +259,49 @@ struct BasicCard: View {
     var cornerRadius: CGFloat = 30
     /// Bordure orange, comme `BasicElement` : la carte détaillée à côté, sur grand écran.
     var highlighted = false
+    /// Les couleurs des lignes, pour l'ombre (réglage d'apparence).
+    var lineColors: [Color]? = nil
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
-    var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
+    var accentBorder = Gradient(colors: [.accentColor, .accentColor.opacity(0.5), .accentColor, .accentColor.opacity(0.5), .accentColor])
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
             .fill(.color1)
             .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
-            .shadow(color: .customShadows.opacity(0.2), radius: 10)
+            .modifier(ElementShadow(shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius)),
+                                    lineColors: lineColors, radius: 10))
+    }
+}
+
+extension EnvironmentValues {
+    /// Ombres des départs et des itinéraires aux couleurs de leurs lignes (réglage d'apparence).
+    @Entry var lineColoredShadows = false
+}
+
+/// L'ombre d'une capsule ou d'une carte : grise, ou, si le réglage est activé, un halo aux
+/// couleurs des lignes, en dégradé dans l'ordre du trajet quand il y en a plusieurs (comme le
+/// trait du widget « Prochain trajet »).
+private struct ElementShadow: ViewModifier {
+    @Environment(\.lineColoredShadows) private var lineColoredShadows
+    @Environment(\.colorScheme) private var colorScheme
+    let shape: AnyShape
+    let lineColors: [Color]?
+    let radius: CGFloat
+
+    func body(content: Content) -> some View {
+        if lineColoredShadows, let colors = lineColors, !colors.isEmpty {
+            content
+                .background {
+                    shape
+                        .fill(LinearGradient(colors: colors.count == 1 ? colors + colors : colors,
+                                             startPoint: .leading, endPoint: .trailing))
+                        .blur(radius: radius * 0.55)
+                        .opacity(colorScheme == .dark ? 0.6 : 0.45)
+                }
+        } else {
+            content
+                .shadow(color: .customShadows.opacity(0.2), radius: radius)
+        }
     }
 }
 
@@ -286,7 +325,7 @@ struct BasicLocationView: View {
                 HStack {
                     if showFavorite, let favoriteAction = favoriteAction {
                         Button(action: favoriteAction) {
-                            Image(systemName: isFavorite ? "star.fill" : "star").foregroundColor(.accent)
+                            Image(systemName: isFavorite ? "star.fill" : "star").foregroundColor(Color.accentColor)
                         }
                     }
                     if isGeoPosition {
@@ -310,7 +349,7 @@ struct BasicLocationView: View {
                         Spacer()
                     if showButton, let buttonAction = buttonAction {
                         Button(action: buttonAction) {
-                            Image(systemName: isGeoPosition ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2).foregroundStyle(.accent)
+                            Image(systemName: isGeoPosition ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2).foregroundStyle(Color.accentColor)
                         }
                     }
                 }
@@ -338,7 +377,7 @@ struct StopIcon: View {
 //                        self.isAnimating = true
 //                    }
                 Circle()
-                    .stroke(.accent, lineWidth: size/2.5)//current stop highlight
+                    .stroke(Color.accentColor, lineWidth: size/2.5)//current stop highlight
 //                Circle()
 //                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                
@@ -437,11 +476,11 @@ struct ShowTimeButton: View {
                     }
                 }) {
                     hourglass
-                        .foregroundColor(showTime ? .accent : .white)
+                        .foregroundColor(showTime ? Color.accentColor : .white)
                         .padding(.horizontal, 5)
                         .background {
                             Capsule()
-                                .foregroundStyle(showTime ? .clear : .accent)
+                                .foregroundStyle(showTime ? .clear : Color.accentColor)
                         }
                 }
             }
@@ -499,19 +538,19 @@ struct Filterbutton: View {
                     .padding(.vertical, 9)
                     .background {
                         Capsule()
-                            .foregroundStyle(viewLineFiltered ? .accent : .clear)
+                            .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
             } else {
                 Image(systemName: "line.3.horizontal.decrease")
                     .symbolEffect(.bounce.up.byLayer, value: trueAnimation)
                     .symbolEffect(.wiggle, value: falseAnimation)
-                    .foregroundColor(viewLineFiltered ? .white : .accent)
+                    .foregroundColor(viewLineFiltered ? .white : Color.accentColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 11)
 
                     .background {
                         Capsule()
-                            .foregroundStyle(viewLineFiltered ? .accent : .clear)
+                            .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
             }
         }

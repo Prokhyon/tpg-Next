@@ -59,7 +59,7 @@ struct WhatsNewView: View {
 //                                .resizable()
 //                                .aspectRatio(contentMode: .fit)
                                 .font(.title)
-                                .foregroundStyle(.accent)
+                                .foregroundStyle(Color.accentColor)
                                 .frame(width: 45)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(item.title).font(.headline)

@@ -110,7 +110,7 @@ struct TripLegsList: View {
                                     .padding(.vertical, 8)
                                     .background {
                                         if isFocused(legFocus) {
-                                            Capsule().strokeBorder(Color.accent, lineWidth: 1.5)
+                                            Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5)
                                         }
                                     }
                                 }
@@ -169,7 +169,7 @@ struct TripLegsList: View {
                         .padding(.vertical, 10)
                         .background {
                             if isFocused(walkFocus) {
-                                Capsule().strokeBorder(Color.accent, lineWidth: 1.5)
+                                Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5)
                                     .padding(.horizontal, 15)
                             }
                         }

@@ -639,6 +639,16 @@
         }
       }
     },
+    "Ambre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amber"
+          }
+        }
+      }
+    },
     "Annuler" : {
 
     },
@@ -654,6 +664,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trip previews"
+          }
+        }
+      }
+    },
+    "Apparence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
           }
         }
       }
@@ -701,6 +721,16 @@
     },
     "Appuyez longuement sur un trajet régulier : Chercher maintenant, ou Retour maintenant pour le trajet inverse." : {
 
+    },
+    "Ardoise" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slate"
+          }
+        }
+      }
     },
     "Arrêter" : {
 
@@ -858,6 +888,16 @@
     "Aujourd'hui" : {
 
     },
+    "Aurore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aurora"
+          }
+        }
+      }
+    },
     "Automatiques" : {
 
     },
@@ -978,6 +1018,16 @@
     "Avec votre position" : {
 
     },
+    "Barbe à papa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cotton Candy"
+          }
+        }
+      }
+    },
     "Bateau" : {
 
     },
@@ -1018,6 +1068,16 @@
     },
     "Bienvenue dans tpg Next" : {
 
+    },
+    "Braise" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ember"
+          }
+        }
+      }
     },
     "Bravo ! Les départs déjà passés s'affichent en gris." : {
 
@@ -1198,6 +1258,16 @@
     "Choisissez un itinéraire pour voir son trajet et sa carte." : {
 
     },
+    "Classique" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic"
+          }
+        }
+      }
+    },
     "Commencer" : {
 
     },
@@ -1250,6 +1320,16 @@
     },
     "Créez-en un ici, ou touchez longuement un itinéraire puis « Répéter chaque semaine » : le trajet reviendra chaque jour choisi, avec les retards en direct et un rappel avant de partir." : {
 
+    },
+    "Crépuscule" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twilight"
+          }
+        }
+      }
     },
     "d'aujourd'hui" : {
 
@@ -1610,6 +1690,26 @@
         }
       }
     },
+    "Flamme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flame"
+          }
+        }
+      }
+    },
+    "Forêt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forest"
+          }
+        }
+      }
+    },
     "Format du retard" : {
 
     },
@@ -1620,6 +1720,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delay format:"
+          }
+        }
+      }
+    },
+    "Fuchsia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuchsia"
           }
         }
       }
@@ -1640,6 +1750,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "General"
+          }
+        }
+      }
+    },
+    "Grenadine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grenadine"
           }
         }
       }
@@ -1726,6 +1846,16 @@
     },
     "iCloud et appareils" : {
 
+    },
+    "Icône de l'app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Icon"
+          }
+        }
+      }
     },
     "Il ne reste qu'à choisir l'autre extrémité." : {
 
@@ -1849,6 +1979,16 @@
     "La cloche, en haut à droite, montre tout ce qui va vous prévenir : le trajet suivi en direct, vos rappels de départ (la croix en annule un), et les rappels automatiques de vos trajets réguliers et itinéraires enregistrés. Touchez un trajet pour l'ouvrir ; appuyez longuement sur un trajet régulier pour le sauter ce jour-là." : {
 
     },
+    "La couleur de l'app suit l'icône choisie." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app's color follows the chosen icon."
+          }
+        }
+      }
+    },
     "La course commence à cet arrêt." : {
 
     },
@@ -1863,6 +2003,16 @@
     },
     "La visite et le guide restent disponibles dans Paramètres → Guide d'utilisation." : {
 
+    },
+    "Lagon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagoon"
+          }
+        }
+      }
     },
     "Laissez vide pour reprendre « %@ »." : {
 
@@ -2000,6 +2150,16 @@
     },
     "Les départs des arrêts proches de vous, ou de vos favoris (au choix dans les paramètres). Sur iPhone, balayez pour passer d'un arrêt à l'autre. Sur iPad, les arrêts sont les uns sous les autres : touchez un nom pour le déplier, puis touchez-le à nouveau pour ouvrir l'arrêt. Le bouton à droite du nom lance un itinéraire depuis cet arrêt." : {
 
+    },
+    "Les départs et les itinéraires prennent une ombre aux couleurs de leurs lignes, en dégradé quand il y en a plusieurs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departures and trips get a shadow in their line colors, as a gradient when there are several."
+          }
+        }
+      }
     },
     "Les départs et votre prochain trajet, sans ouvrir l'app." : {
 
@@ -2207,6 +2367,16 @@
     "Masquer les arrêts précédents" : {
 
     },
+    "Menthe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mint"
+          }
+        }
+      }
+    },
     "Merci d'avoir téléchargé tpg Next" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2232,6 +2402,16 @@
     },
     "Métro" : {
 
+    },
+    "Minuit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midnight"
+          }
+        }
+      }
     },
     "Minutes avant" : {
 
@@ -2281,6 +2461,26 @@
     },
     "Ne plus rater un départ, sans être prévenu deux fois." : {
 
+    },
+    "Néon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neon"
+          }
+        }
+      }
+    },
+    "Noir et blanc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monochrome"
+          }
+        }
+      }
     },
     "Nom" : {
 
@@ -2351,8 +2551,28 @@
     "OK" : {
 
     },
+    "Ombres aux couleurs des lignes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line-colored shadows"
+          }
+        }
+      }
+    },
     "Onglet Trajets → Nouveau trajet régulier : départ, arrivée, jours et heure. Ou depuis un itinéraire : Répéter chaque semaine…" : {
 
+    },
+    "Orchidée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orchid"
+          }
+        }
+      }
     },
     "Ordre des favoris" : {
       "extractionState" : "stale",
@@ -3017,6 +3237,16 @@
     "Sans rien taper" : {
 
     },
+    "Saphir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sapphire"
+          }
+        }
+      }
+    },
     "Se déplacer" : {
 
     },
@@ -3166,6 +3396,16 @@
     },
     "Terminer la visite" : {
 
+    },
+    "Terracotta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terracotta"
+          }
+        }
+      }
     },
     "Testez-les !" : {
       "extractionState" : "stale",
@@ -3364,6 +3604,16 @@
     },
     "Trop tard : le départ est trop proche" : {
 
+    },
+    "Tropique" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tropical"
+          }
+        }
+      }
     },
     "Un itinéraire depuis la carte" : {
 
