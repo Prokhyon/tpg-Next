@@ -86,7 +86,11 @@ struct LineView: View {
     /// Blocs d'arrêts sautés dont l'utilisateur a inversé l'état (replié ou déplié).
     @State private var expandedSkippedBlocks: Set<String> = []
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
-    @State private var titleHeight: CGFloat = 0
+    /// Bas du titre flottant et haut de la liste, dans le repère de la colonne : la liste
+    /// commence sous le titre, quels que soient les décalages de la barre (grand écran).
+    @State private var titleBottom: CGFloat = 0
+    @State private var listTop: CGFloat = 0
+    private static let columnSpace = "lineColumn"
 
     var body: some View {
         AdaptiveSplit(topGapReduction: 48) {
@@ -111,7 +115,8 @@ struct LineView: View {
                                     }
                                 }
                             }
-                            .contentMargins(.top, max(95.0, titleHeight + 10), for: .automatic)
+                            .contentMargins(.top, max(95.0, titleBottom - listTop + 14), for: .automatic)
+                            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).minY + $0.safeAreaInsets.top } action: { listTop = $0 }
                             .contentMargins(.bottom, TPGSurface.isGlass ? 0.0 : 60, for: .automatic)
                             .readableScrollContent()
                             .refreshable {
@@ -160,13 +165,14 @@ struct LineView: View {
                         HStack {
                         FloatingLineTitle(destination: stopEvent.destination, currentLine: currentLine, operatorName: operatorName)
                             .offset(x: -50)
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
+                            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).maxY } action: { titleBottom = $0 }
                             Spacer()
                         }
                         Spacer()
                     }
                     
                 }
+                .coordinateSpace(.named(Self.columnSpace))
             }
         } secondary: {
             LineDetailPane(stopEvent: stopEvent, currentStopSloid: currentStop?.sloid, journey: journey, selectedStop: selectedStop) {
