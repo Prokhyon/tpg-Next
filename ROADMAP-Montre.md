@@ -69,10 +69,20 @@ Notes sur 3.1 (cible `tpg Next Watch Widget`) :
 
 | | Point | État |
 |---|---|---|
-| 4.1 | L'iPhone envoie le prochain trajet, les trajets réguliers et les itinéraires enregistrés (`updateApplicationContext`) ; écran « Mes trajets » | ⏳ |
+| 4.1 | L'iPhone envoie le prochain trajet, les trajets réguliers et les itinéraires enregistrés (`updateApplicationContext`) ; écran « Mes trajets » | ✅ |
 | 4.2 | Détail d'un itinéraire : étapes, quai, correspondances, heure où partir | ⏳ |
 | 4.3 | Suivi en direct : vérifier son rendu sur la montre et la vibration des alertes « Descendez ici » | ⏳ |
 | 4.4 | « Rentrer à la maison » : itinéraire vers un lieu favori depuis la montre | ⏳ |
+
+Notes sur 4.1 :
+- L'iPhone envoie les 4 prochains trajets (36 h), les mêmes que le widget « Prochain trajet »
+  (`UpcomingTripsPublisher`), à chaque calcul : premier plan, tâche de fond, modification.
+- `WatchContext` (tpgNextFunc) tient le contexte : `updateApplicationContext` remplace tout le
+  dictionnaire, chaque envoi reprend donc favoris et trajets.
+- Montre : section « Mes trajets » en tête de l'accueil (`MyTripsWatch.swift`) ; toucher un trajet
+  ouvre les départs de l'arrêt de montée, à l'heure du véhicule, entouré.
+- Limite : les heures sont celles du dernier calcul de l'iPhone ; la montre ne redemande pas le
+  temps réel. **À vérifier sur appareils jumelés** (le simulateur n'envoie pas le contexte).
 
 ## Étape 5 — Finitions
 

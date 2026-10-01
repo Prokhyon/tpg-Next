@@ -69,13 +69,20 @@ extension UserDefaults {
 
 extension View {
     /// La base des arrêts et les favoris de la montre, comme au lancement de l'app.
-    func watchPreviewEnvironment(favorites: [Stop] = WatchPreviewData.favorites) -> some View {
-        modifier(WatchPreviewEnvironment(favorites: favorites))
+    func watchPreviewEnvironment(favorites: [Stop] = WatchPreviewData.favorites,
+                                 trips: [UpcomingTrip] = [.sample()]) -> some View {
+        modifier(WatchPreviewEnvironment(favorites: favorites, trips: trips))
     }
 }
 
 private struct WatchPreviewEnvironment: ViewModifier {
+    init(favorites: [Stop], trips: [UpcomingTrip]) {
+        self.favorites = favorites
+        _watchTrips = State(initialValue: WatchTripsModel(trips: trips))
+    }
+
     let favorites: [Stop]
+    @State private var watchTrips: WatchTripsModel
     @State private var stopStore = StopStore()
     @State private var watchFavorites = WatchFavoritesViewModel()
 
@@ -83,6 +90,7 @@ private struct WatchPreviewEnvironment: ViewModifier {
         content
             .environment(stopStore)
             .environment(watchFavorites)
+            .environment(watchTrips)
             .tickingClock()
             .task { watchFavorites.favoriteStops = favorites }
     }
