@@ -340,6 +340,9 @@ struct ContentView: View {
                     .environment(regularTripsModel)
             case .operators:
                 LineOperatorPicker()
+            case .reminders:
+                ScheduledNotificationsSheet(previewAutomatic: AutomaticReminders.preview)
+                    .previewEnvironment(navigation: false)
             case .flex:
                 // Un bus à la demande (tpg flex), demain matin.
                 TripAlternativesView(title: "Autres horaires", footer: "L'itinéraire choisi remplace l'actuel.",
@@ -467,7 +470,7 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|search   tpgnext://settings   tpgnext://map   tpgnext://lines   tpgnext://guide[?topic=…]
-    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex
+    ///   tpgnext://homelayout   tpgnext://places   tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -482,7 +485,7 @@ struct ContentView: View {
             case "places":
                 navigationModel.open(.favoritePlacesOrder, in: navigationModel.selectedTab)
             case "sheet":
-                // tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex
+                // tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders|reminders
                 let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
                 debugSheet = DebugSheet(rawValue: name)
             case "map":
@@ -505,7 +508,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, operators, flex
+    case reminder, newRegular, editRegular, operators, flex, reminders
     var id: String { rawValue }
 }
 #endif

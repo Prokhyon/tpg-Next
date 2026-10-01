@@ -287,10 +287,19 @@ extension TripView {
                                         }
                                     }
                                 }) {
-                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, buttonAction: {
-                                        resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
-                                        resultTitle = stop.name
-                                    })
+                                    // Comme `BasicLocationView`, avec la distance et la direction de l'arrêt.
+                                    HStack {
+                                        SmallStopTitleView(stopName: stop.name, transportType: stop.meansOfTransport)
+                                        StopDistanceLabel(coordinate: stop.coordinate)
+                                        Button {
+                                            resultDetail = searchResultItem(title: stop.name, coordinates: stop.coordinate)
+                                            resultTitle = stop.name
+                                        } label: {
+                                            Image(systemName: "figure.wave.circle").font(.title2).foregroundStyle(.accent)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .basicElementBackground(minHeight: 45)
                                 }
                                 .padding(.horizontal, 30)
                                 .foregroundStyle(.primary)

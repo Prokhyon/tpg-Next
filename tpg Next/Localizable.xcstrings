@@ -379,6 +379,16 @@
     "12:34" : {
 
     },
+    "À %@, %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "À %1$@, %2$@"
+          }
+        }
+      }
+    },
     "À choisir" : {
 
     },
@@ -399,10 +409,16 @@
     "À l'arrivée" : {
 
     },
+    "à l'est" : {
+
+    },
     "À l'heure" : {
 
     },
     "À l'heure de partir" : {
+
+    },
+    "à l'ouest" : {
 
     },
     "À partir de %@" : {
@@ -772,6 +788,24 @@
 
     },
     "Au moins un transporteur reste choisi." : {
+
+    },
+    "au nord" : {
+
+    },
+    "au nord-est" : {
+
+    },
+    "au nord-ouest" : {
+
+    },
+    "au sud" : {
+
+    },
+    "au sud-est" : {
+
+    },
+    "au sud-ouest" : {
 
     },
     "Au-delà de l'app" : {
