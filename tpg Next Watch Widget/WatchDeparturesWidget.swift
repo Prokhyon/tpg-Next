@@ -15,6 +15,7 @@ import tpgNextFunc
 struct tpgNextWatchWidgetBundle: WidgetBundle {
     var body: some Widget {
         WatchDeparturesWidget()
+        WatchNextTripWidget()
     }
 }
 

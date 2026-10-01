@@ -47,7 +47,7 @@ L'info trafic tpg n'existe dans aucune source ouverte (voir la mémoire « Sourc
 | | Point | État |
 |---|---|---|
 | 3.1 | Complications et pile intelligente : prochains départs de l'arrêt le plus proche ou d'un favori | ✅ |
-| 3.2 | Complication « Prochain trajet » (`TripCountdown`) | ⏳ dépend de 4.1 |
+| 3.2 | Complication « Prochain trajet » (`TripCountdown`) | ✅ |
 | 3.3 | Pertinence dans la pile intelligente (widget remonté à l'approche d'un départ, API de watchOS 26) | ⏳ idée |
 
 Notes sur 3.1 (cible `tpg Next Watch Widget`) :
@@ -64,6 +64,15 @@ Notes sur 3.1 (cible `tpg Next Watch Widget`) :
 - **À vérifier sur une vraie montre** : pose de la complication, choix d'un favori, position
   dans l'extension, ouverture de l'arrêt au toucher. Le simulateur ne permet pas de poser une
   complication sans toucher l'écran : seules les vues et le chemin des données ont été vérifiés.
+
+Notes sur 3.2 (`WatchNextTripWidget.swift`) :
+- Rectangulaire : le trajet (« Travail » ou « Rive → Cornavin ») et sa pastille, quand partir,
+  puis la ligne, sa direction et l'heure de montée ; une fois monté, l'arrivée.
+- Rond et coin : ce qu'il faut viser (marcher, monter, arriver) et les minutes qui restent.
+- Moments d'affichage partagés avec le widget iPhone (`NextTripTimeline`, tpgNextFunc).
+- L'app montre recopie les trajets reçus dans le groupe d'app (`UpcomingTripsStorage`) et ne
+  redessine la complication que s'ils changent. Toucher : détail du trajet (`tpgnext://trip?id=…`).
+- Limite : la complication affiche les heures envoyées par l'iPhone, sans temps réel propre.
 
 ## Étape 4 — Itinéraires
 
@@ -101,4 +110,4 @@ Notes sur 4.2 (`TripDetailWatch.swift`) :
 
 ## Ordre conseillé pour la suite
 
-3.3 ou 1.5 (petits), puis 4.1 → 3.2 → 4.2, et l'étape 2 quand le besoin se fait sentir.
+3.3 ou 1.5 (petits), puis 4.3 / 4.4, et l'étape 2 quand le besoin se fait sentir.

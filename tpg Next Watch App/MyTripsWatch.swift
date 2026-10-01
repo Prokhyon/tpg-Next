@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 import tpgNextFunc
 
 /// Les prochains trajets reçus de l'iPhone, gardés pour le prochain lancement.
@@ -19,11 +20,22 @@ final class WatchTripsModel {
     /// - Parameter trips: aperçus ; sinon les derniers trajets reçus.
     init(trips: [UpcomingTrip]? = nil) {
         self.trips = trips ?? Self.store.load() ?? []
+        if trips == nil {
+            shareWithComplication()
+        }
     }
 
     /// Les trajets pas encore arrivés : l'iPhone n'envoie de nouvelle liste que s'il tourne.
     func upcoming(at date: Date) -> [UpcomingTrip] {
         trips.filter { $0.arrival > date }
+    }
+
+    /// La complication « Prochain trajet » lit les trajets dans le groupe d'app ; elle n'est
+    /// redessinée que s'ils ont changé (budget WidgetKit).
+    private func shareWithComplication() {
+        if UpcomingTripsStorage.save(trips) {
+            WidgetCenter.shared.reloadTimelines(ofKind: UpcomingTripsStorage.widgetKind)
+        }
     }
 
     /// Appelé avec le contexte reçu de l'iPhone, sur n'importe quelle file.
@@ -35,6 +47,7 @@ final class WatchTripsModel {
                 guard trips != self.trips else { return }
                 self.trips = trips
                 Self.store.save(trips)
+                self.shareWithComplication()
             }
         } catch {
             Log.sync.error("Trajets reçus illisibles : \(error.localizedDescription)")

@@ -292,6 +292,34 @@ extension TripEvent {
     }
 }
 
+/// Quand le widget « Prochain trajet » change d'affichage. Partagé par celui de l'iPhone et la
+/// complication de la montre, qui ne font qu'afficher les trajets laissés par leur app.
+public enum NextTripTimeline {
+    /// Le décompte n'est affiché à la minute que dans l'heure qui précède le départ.
+    public static let countdownWindow: TimeInterval = 3600
+
+    /// Maintenant, chaque minute pleine de l'heure qui précède le départ du prochain trajet, puis
+    /// chaque changement d'étape (partir, monter, arriver : le trajet suivant prend la place).
+    /// `refresh` : quand redemander une timeline. L'app recharge le widget quand ses trajets
+    /// changent ; sinon, de quoi ne pas rester figé.
+    public static func dates(for trips: [UpcomingTrip], now: Date = Date(), limit: Int = 150) -> (dates: [Date], refresh: Date) {
+        var dates: Set<Date> = [now]
+        if let next = trips.first(where: { $0.arrival > now }) {
+            var minute = Calendar.current.dateInterval(of: .minute, for: max(now, next.leaving.addingTimeInterval(-countdownWindow)))?.end ?? now
+            while minute < next.leaving {
+                dates.insert(minute)
+                minute.addTimeInterval(60)
+            }
+        }
+        for trip in trips {
+            dates.formUnion([trip.leaving, trip.boarding, trip.arrival].compactMap { $0 })
+        }
+        let sorted = Array(dates.filter { $0 >= now }.sorted().prefix(limit))
+        let refresh = sorted.last.map { max($0, now).addingTimeInterval(60) } ?? now.addingTimeInterval(3600)
+        return (sorted, refresh)
+    }
+}
+
 public enum UpcomingTripsStorage {
     private static let key = "widget.upcomingTrips"
     /// Le genre du widget, pour que l'app le redessine.
