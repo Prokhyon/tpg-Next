@@ -14,10 +14,11 @@ import tpgNextFunc
 /// Les rappels prévus dans une bulle sur iPad, une feuille sur iPhone, plutôt qu'une page entière.
 struct ScheduledNotificationsSheet: View {
     @Environment(\.dismiss) private var dismiss
+    var previewAutomatic: [AutomaticReminders.Group]? = nil
 
     var body: some View {
         NavigationStack {
-            ScheduledNotifications()
+            ScheduledNotifications(previewAutomatic: previewAutomatic)
                 .navigationTitle("Rappels prévus")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -47,6 +48,8 @@ struct ScheduledNotifications: View {
     private var liveActivities = TripLiveActivities.shared
 
     @State private var automatic: [AutomaticReminders.Group] = []
+    /// Pour les aperçus : ces rappels plutôt que ceux du centre de notifications.
+    var previewAutomatic: [AutomaticReminders.Group]? = nil
 
     var body: some View {
         let manual = transportNotificationManager.scheduledNotificationIdentifiers
@@ -59,9 +62,8 @@ struct ScheduledNotifications: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         if !live.isEmpty {
-                            CardSection("Suivi en cours") {
-                                ForEach(Array(live.enumerated()), id: \.element.key) { index, entry in
-                                    if index > 0 { CardDivider() }
+                            section("Suivi en cours") {
+                                ForEach(live, id: \.key) { entry in
                                     liveRow(key: entry.key, trip: entry.value)
                                 }
                             }
@@ -70,10 +72,9 @@ struct ScheduledNotifications: View {
                             manualSection(manual)
                         }
                         if !automatic.isEmpty {
-                            CardSection("Automatiques",
-                                        footer: "Programmés par vos trajets réguliers et vos itinéraires enregistrés : ils se règlent dans chaque trajet régulier et dans les paramètres. Appuyez longuement sur un trajet régulier pour le sauter ce jour-là.") {
-                                ForEach(Array(automatic.enumerated()), id: \.element.id) { index, group in
-                                    if index > 0 { CardDivider() }
+                            section("Automatiques",
+                                    footer: "Programmés par vos trajets réguliers et vos itinéraires enregistrés : ils se règlent dans chaque trajet régulier et dans les paramètres. Appuyez longuement sur un trajet régulier pour le sauter ce jour-là.") {
+                                ForEach(automatic) { group in
                                     automaticRow(group)
                                 }
                             }
@@ -90,6 +91,73 @@ struct ScheduledNotifications: View {
         .task { await reloadAutomatic() }
     }
 
+    // MARK: Morceaux
+
+    /// Un titre, des capsules l'une sous l'autre, et une explication dessous.
+    private func section<Content: View>(_ title: LocalizedStringKey, footer: LocalizedStringKey? = nil,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .padding(.leading, 8)
+            content()
+            if let footer {
+                Text(footer)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Un rappel dans sa capsule, manuel ou automatique : à gauche le symbole du trajet ou la
+    /// ligne du départ, le titre et le détail, à droite le chevron d'un rappel qui ouvre son
+    /// trajet ou la croix d'un rappel posé à la main. De l'air au-dessus et au-dessous du texte.
+    private func capsuleRow<Leading: View, Trailing: View>(title: Text, subtitle: String,
+                                                           @ViewBuilder leading: () -> Leading,
+                                                           @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 12) {
+            leading()
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                title
+                    .font(.callout)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(verbatim: subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            .multilineTextAlignment(.leading)
+            Spacer(minLength: 4)
+            trailing()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .basicElementBackground(minHeight: 60)
+        .contentShape(.contextMenuPreview, Capsule())
+        .contentShape(Capsule())
+    }
+
+    /// Le symbole d'un trajet suivi ou programmé, et le chevron qui l'ouvre.
+    private func capsuleRow(title: Text, subtitle: String, systemImage: String, color: Color) -> some View {
+        capsuleRow(title: title, subtitle: subtitle) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(color)
+                .frame(width: 28)
+        } trailing: {
+            Image(systemName: "chevron.right")
+                .font(.footnote.bold())
+                .foregroundStyle(.tertiary)
+        }
+    }
+
     // MARK: Suivi en cours
 
     /// Une seule ligne par trajet suivi : l'activité en direct montre déjà ses étapes.
@@ -97,9 +165,9 @@ struct ScheduledNotifications: View {
         Button {
             close { LiveTripPresentation.shared.open(key) }
         } label: {
-            SettingsRow(verbatim: trip.attributes.title,
-                        subtitle: String(localized: "Arrivée à \(dateToString(with: trip.state.arrival)) · alertes de montée et de descente"),
-                        systemImage: "inset.filled.circle", color: .accent, showsChevron: true)
+            capsuleRow(title: Text(tripTitle: trip.attributes.title),
+                       subtitle: String(localized: "Arrivée à \(dateToString(with: trip.state.arrival)) · alertes de montée et de descente"),
+                       systemImage: "inset.filled.circle", color: .accent)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -113,43 +181,61 @@ struct ScheduledNotifications: View {
 
     // MARK: Rappels manuels
 
+    /// Comme les automatiques : la ligne du départ, sa destination, puis l'arrêt, l'heure du
+    /// départ et le délai. Un toucher ouvre l'arrêt sur ce départ ; la croix annule le rappel.
     private func manualSection(_ manual: [String: StopEvent]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Vos rappels")
-                .font(.headline)
-                .padding(.leading, 8)
-            ForEach(Array(manual.keys), id: \.self) { key in
-                let stopEvent = manual[key]!
-                HStack {
-                    VStack(spacing: 0) {
-                        HStack {
-                            SmallStopTitleView(stopName: stopEvent.stopPointName)
-                            Spacer()
-                            let notificationInterval = Int(parseIdentifier(key)?.notificationInterval ?? 0)
-                            Text(notificationInterval == 0 ? "Rappel à l'arrivée" : "Rappel \(notificationInterval)' avant")
-                        }
-                        .padding(5)
-                        StopEventView(event: stopEvent, showTime: true)
-                    }
-                    Button {
-                        withAnimation(.easeInOut) {
-                            transportNotificationManager.cancelScheduledNotifications(timetableIdentifier: "timetable_\(key)",
-                                                                                      estimatedIdentifier: "estimated_\(key)",
-                                                                                      completeCancel: true)
-                        }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill").font(.title2)
-                    }
-                    .accessibilityLabel("Annuler le rappel")
-                    .padding(5)
-                }
-                .padding(.horizontal, 15)
-                .frame(minHeight: 120)
-                .background(BasicCard())
-                .padding(.vertical, 2)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
+        let reminders = manual.sorted {
+            (Self.departure(of: $0.value) ?? .distantFuture) < (Self.departure(of: $1.value) ?? .distantFuture)
+        }
+        return section("Vos rappels") {
+            ForEach(reminders, id: \.key) { key, event in
+                manualRow(key: key, event: event)
+                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
             }
         }
+    }
+
+    private func manualRow(key: String, event: StopEvent) -> some View {
+        let minutes = Int(parseIdentifier(key)?.notificationInterval ?? 0)
+        let delay = minutes == 0 ? String(localized: "à l'arrivée") : String(localized: "\(minutes)' avant")
+        let departure = Self.departure(of: event).map { String(localized: "départ \(dateToString(with: $0))") }
+        let subtitle = [shortStopName(event.stopPointName), departure, delay].compactMap { $0 }.joined(separator: " · ")
+        return Button {
+            close {
+                openRoute(.stop(name: event.stopPointName, sloid: event.stopId,
+                                highlight: DepartureHighlight(journeyRef: event.journeyRef, lineName: event.lineName,
+                                                              time: event.timetabledTime)))
+            }
+        } label: {
+            capsuleRow(title: Text("→ \(Text(stopName: event.destination))"), subtitle: subtitle) {
+                BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
+                    .font(.callout)
+                    .fixedSize()
+            } trailing: {
+                Button {
+                    withAnimation(.easeInOut) {
+                        transportNotificationManager.cancelScheduledNotifications(timetableIdentifier: "timetable_\(key)",
+                                                                                  estimatedIdentifier: "estimated_\(key)",
+                                                                                  completeCancel: true)
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 34, height: 34)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Annuler le rappel")
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Ligne \(event.lineName) vers \(event.destination), \(subtitle)"))
+    }
+
+    private static func departure(of event: StopEvent) -> Date? {
+        OJPDate.date(from: event.estimatedTime) ?? OJPDate.date(from: event.timetabledTime)
     }
 
     // MARK: Rappels automatiques
@@ -159,9 +245,9 @@ struct ScheduledNotifications: View {
         Button {
             open(group)
         } label: {
-            SettingsRow(Text(tripTitle: group.title), subtitle: group.summary,
-                        systemImage: group.isRegular ? "repeat" : "point.bottomleft.forward.to.point.topright.scurvepath.fill",
-                        color: group.isRegular ? .teal : .orange, showsChevron: true)
+            capsuleRow(title: Text(tripTitle: group.title), subtitle: group.summary,
+                       systemImage: group.isRegular ? "repeat" : "point.bottomleft.forward.to.point.topright.scurvepath.fill",
+                       color: group.isRegular ? .teal : .orange)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -208,7 +294,8 @@ struct ScheduledNotifications: View {
     }
 
     private func reloadAutomatic() async {
-        let groups = await AutomaticReminders.load()
+        let groups: [AutomaticReminders.Group]
+        if let previewAutomatic { groups = previewAutomatic } else { groups = await AutomaticReminders.load() }
         withAnimation { automatic = groups }
     }
 }
@@ -285,4 +372,26 @@ enum AutomaticReminders {
         }
         return groups.values.sorted { $0.firstDate < $1.firstDate }
     }
+}
+
+extension AutomaticReminders {
+    /// Un trajet régulier demain matin et un itinéraire enregistré : pour les aperçus.
+    static var preview: [Group] {
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date())) ?? Date()
+        let at = { (hour: Int, minute: Int) in tomorrow.addingTimeInterval(TimeInterval(hour * 3600 + minute * 60)) }
+        return [
+            Group(source: .regular(occurrenceID: "preview"), title: "Travail",
+                  notices: [Notice(kind: .reminder, date: at(7, 32))]),
+            Group(source: .saved(id: "preview"), title: "Genève, Rive → Genève, gare Cornavin",
+                  notices: [Notice(kind: .reminder, date: at(17, 40)), Notice(kind: .autoTrack, date: at(17, 35))]),
+        ]
+    }
+}
+
+#Preview("Rappels prévus — automatiques") {
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            ScheduledNotificationsSheet(previewAutomatic: AutomaticReminders.preview)
+        }
+        .previewEnvironment(navigation: false)
 }

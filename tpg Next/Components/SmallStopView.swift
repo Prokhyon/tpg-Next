@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 import tpgNextFunc
 
 struct SmallStopView: View {
@@ -24,6 +25,9 @@ struct SmallStopView: View {
     /// Le bouton d'itinéraire ouvre le menu (partir d'ici, y aller…) plutôt que de lancer un
     /// itinéraire depuis l'arrêt. Par défaut : hors de l'accueil.
     var tripMenu: Bool? = nil
+    /// Un arrêt proche : sa distance et sa direction à droite du nom, depuis cette position en
+    /// attendant celle du suivi. `nil` : rien (favoris).
+    var distanceFrom: CLLocation? = nil
     var stopEventNumber: Int = 3
     /// Départs affichés, parmi ceux demandés.
     var departureCount: Int = 3
@@ -101,7 +105,7 @@ struct SmallStopView: View {
         .combined(with: .opacity)
 
     private func HeaderView() -> some View {
-        HStack {
+        HStack(alignment: .bottom) {
             if #available(iOS 26, *), !isHome {
                 HStack {
                     if isQuay {
@@ -140,6 +144,12 @@ struct SmallStopView: View {
                 .background {
                     BasicElement()
                 }
+                if isHome {
+                    if let distanceFrom {
+                        StopDistanceLabel(coordinate: stop.coordinate, fallback: distanceFrom)
+                            .padding(.horizontal)
+                    }
+                }
                 Spacer()
                 TripButton()
                     .frame(width: 45, height: 45)
@@ -169,9 +179,12 @@ struct SmallStopView: View {
         HStack {
             //                StopIcon(color: .color1)
             StopNameView(stop.name, style: .card, transportType: stop.meansOfTransport)
-            if splitString(stop.name, separator: ",").1.isEmpty {
-                Spacer() // Un nom sur une ligne occupe toute la largeur de la carte.
-            }
+//            if splitString(stop.name, separator: ",").1.isEmpty || distanceFrom != nil {
+//                Spacer(minLength: 4) // Un nom sur une ligne occupe toute la largeur de la carte.
+//            }
+//            if let distanceFrom {
+//                StopDistanceLabel(coordinate: stop.coordinate, fallback: distanceFrom)
+//            }
         }
     }
     

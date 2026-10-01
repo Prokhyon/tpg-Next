@@ -105,9 +105,9 @@ struct FavoritePlaceLabel: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "mappin.circle.fill")
+            Image(systemName: "mappin.and.ellipse.circle")
                 .font(.title3)
-                .foregroundStyle(.accent)
+//                .foregroundStyle(.accent)
             VStack(alignment: .leading, spacing: 0) {
                 Text(verbatim: place.name)
                     .font(.callout.bold())

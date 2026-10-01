@@ -35,6 +35,11 @@ struct HomeDepartures: View {
         return nearby.stops
     }
 
+    /// Les arrêts proches ont leur distance ; pas les favoris.
+    private var distanceFrom: CLLocation? {
+        homeFavorites || testing ? nil : nearby.location
+    }
+
     /// L'arrêt que la liste montre (page courante, arrêt déplié) : celui choisi dans la liste ou
     /// sur la carte, sinon le premier. Par sloid, pour survivre au rafraîchissement de la liste.
     private var displayedSloid: String? {
@@ -123,6 +128,7 @@ struct HomeDepartures: View {
         return VStack(spacing: 12) {
             ForEach(stops, id: \.sloid) { stop in
                 SmallStopView(stop: stop, isHome: true, tripMenu: tripMenu,
+                              distanceFrom: distanceFrom,
                               // Un peu plus que montré : certaines courses sont écartées à l'affichage.
                               stopEventNumber: Self.stackedDepartureCount + 2,
                               departureCount: Self.stackedDepartureCount,
@@ -150,7 +156,8 @@ struct HomeDepartures: View {
                 ForEach(stops, id: \.sloid) { stop in
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
-                        SmallStopView(stop: stop, isHome: true, tripMenu: tripMenu, testing: testing)
+                        SmallStopView(stop: stop, isHome: true, tripMenu: tripMenu,
+                                      distanceFrom: distanceFrom, testing: testing)
                             // Hauteur naturelle, pas celle de la page : mesurée dans une page trop
                             // basse, la carte se comprimait et la page ne grandissait jamais.
                             .fixedSize(horizontal: false, vertical: true)
