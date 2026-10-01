@@ -13,17 +13,25 @@ import tpgNextFunc
 enum WatchRoute: Hashable {
     /// La course d'un départ, ouverte depuis l'arrêt `fromStopSloid`.
     case journey(StopEvent, fromStopSloid: String)
-    /// Les départs d'un arrêt de la course, à partir de l'heure de passage du véhicule.
-    case stop(name: String, sloid: String, journeyRef: String, time: String)
+    /// Les départs d'un arrêt. Ouvert depuis une course (`passage`), à partir de l'heure de
+    /// passage du véhicule.
+    case stop(name: String, sloid: String, isNearby: Bool = false, passage: JourneyPassage? = nil)
 
     @ViewBuilder var destination: some View {
         switch self {
         case .journey(let event, let sloid):
             JourneyView(stopEvent: event, currentStopSloid: sloid)
-        case .stop(let name, let sloid, let journeyRef, let time):
-            StopView(stopName: name, stopSloid: sloid, previousLineRef: journeyRef, previousLineTime: time, isCloseStop: false)
+        case .stop(let name, let sloid, let isNearby, let passage):
+            StopView(stopName: name, stopSloid: sloid, previousLineRef: passage?.journeyRef, previousLineTime: passage?.time,
+                     isCloseStop: isNearby)
         }
     }
+}
+
+/// Le passage d'une course à un arrêt : la page de l'arrêt part de cette heure et entoure ce départ.
+struct JourneyPassage: Hashable {
+    let journeyRef: String
+    let time: String
 }
 
 struct JourneyView: View {
@@ -130,7 +138,7 @@ struct JourneyView: View {
     /// Le départ ne passe pas à l'arrêt affiché : où prendre ce même véhicule à pied.
     private func alternativeLink(_ alternative: ServedAlternative) -> some View {
         NavigationLink(value: WatchRoute.stop(name: alternative.stop.stopPointName, sloid: alternative.stop.sloid,
-                                              journeyRef: stopEvent.journeyRef, time: alternative.stop.timetabledTime)) {
+                                              passage: JourneyPassage(journeyRef: stopEvent.journeyRef, time: alternative.stop.timetabledTime))) {
             HStack {
                 Image(systemName: "figure.walk")
                 VStack(alignment: .leading) {
@@ -163,7 +171,7 @@ struct JourneyView: View {
     /// Un arrêt de la course ; le toucher ouvre ses départs à l'heure de passage du véhicule.
     private func stopRow(_ event: LineEvent) -> some View {
         NavigationLink(value: WatchRoute.stop(name: event.stopPointName, sloid: event.sloid,
-                                              journeyRef: stopEvent.journeyRef, time: event.timetabledTime)) {
+                                              passage: JourneyPassage(journeyRef: stopEvent.journeyRef, time: event.timetabledTime))) {
             JourneyStopRow(event: event, transportType: stopEvent.transportType, showTime: showTime,
                            isFirst: event.id == events.first?.id, isLast: event.id == events.last?.id,
                            isCurrent: event.sloid == currentStopSloid, isNext: event.id == nextStopID)

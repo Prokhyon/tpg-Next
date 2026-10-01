@@ -77,6 +77,12 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
         }
     }
     
+    /// Les favoris tels que la base de la montre les connaît : l'iPhone envoie des arrêts complets,
+    /// mais le sloid seul fait foi (nom à jour). Un arrêt absent de la base garde la copie reçue.
+    func resolvedFavorites(in stopStore: StopStore) -> [Stop] {
+        favoriteStops.map { stopStore.findStop(id: $0.sloid) ?? $0 }
+    }
+
     private func saveFavorites() {
         Self.store.save(favoriteStops)
     }

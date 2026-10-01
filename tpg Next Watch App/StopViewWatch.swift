@@ -30,12 +30,11 @@ struct StopDot: View {
     }
 }
 
+/// Un départ dans la liste triée par horaire.
 struct StopEventView: View  {
     @Environment(\.displayTime) private var now
     var event: StopEvent
     var showTime: Bool
-    /// La course d'où l'arrêt a été ouvert : son départ est entouré.
-    var previousLineRef: String?
 
     var body: some View {
         VStack {
@@ -54,21 +53,31 @@ struct StopEventView: View  {
             }
 
         }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(white: 0.2))
-        }
-        .overlay {
-            if isLinked {
-                RoundedRectangle(cornerRadius: 20)
-                    .strokeBorder(.white, lineWidth: 2)
-            }
-        }
+        .padding(.vertical, 4)
     }
+}
 
-    private var isLinked: Bool {
-        !event.journeyRef.isEmpty && event.journeyRef == previousLineRef
+extension StopEvent {
+    /// Le départ de la course d'où l'arrêt a été ouvert.
+    func isLinked(to journeyRef: String?) -> Bool {
+        !self.journeyRef.isEmpty && self.journeyRef == journeyRef
+    }
+}
+
+/// Le fond d'une rangée de départ : entouré pour celui de la course d'où l'arrêt a été ouvert.
+private struct LinkedRowBackground: ViewModifier {
+    let isLinked: Bool
+
+    func body(content: Content) -> some View {
+        if isLinked {
+            content.listRowBackground(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.white.opacity(0.15))
+                    .strokeBorder(.white, lineWidth: 2)
+            )
+        } else {
+            content
+        }
     }
 }
 
@@ -108,7 +117,9 @@ struct StopView: View {
     @State private var timeRequest = Date()
     /// L'heure choisie dans le menu (« +30 min ») ; `nil` : maintenant, ou l'heure de la course.
     @State private var chosenStart: Date?
-    @State private var requestNumber = 30
+    private let requestNumber = 30
+    /// La dernière réponse reçue : affichée quand le réseau manque.
+    @State private var lastUpdate: Date?
     @State private var showMenu = false
     /// Les lignes affichées ; vide : toutes.
     @State private var selectedLines: Set<String> = []
@@ -138,10 +149,22 @@ struct StopView: View {
         timeRequest.timeIntervalSince(now) > 60
     }
 
+    /// L'API répond qu'il n'y a aucun départ (et non une erreur réseau).
+    private var hasNoDepartures: Bool {
+        stopManager.stopError && !stopManager.stopErrorMessage.isEmpty
+    }
+
+    /// Le réseau a manqué : les départs affichés sont ceux de la dernière réponse.
+    private var isOffline: Bool {
+        stopManager.stopError && stopManager.stopErrorMessage.isEmpty
+    }
+
     var body: some View {
         Group {
-            if stopManager.stopError {
+            if hasNoDepartures {
                 message("Pas de départs trouvés")
+            } else if stopManager.stopEvents.isEmpty && isOffline {
+                message("Connexion impossible", retry: true)
             } else if stopManager.stopEvents.isEmpty {
                 VStack {
                     header
@@ -171,17 +194,18 @@ struct StopView: View {
                     }
                 }
             } else {
-                ScrollView {
+                List {
                     header
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     ForEach(filteredStopEvents.sortedByDeparture(), id: \.id) { event in
                         NavigationLink(value: WatchRoute.journey(event, fromStopSloid: stopSloid)) {
-                            StopEventView(event: event, showTime: showTime, previousLineRef: previousLineRef)
+                            StopEventView(event: event, showTime: showTime)
                                 .foregroundStyle(determineColor(for: event))
                         }
-                        .buttonStyle(.plain)
+                        .modifier(LinkedRowBackground(isLinked: event.isLinked(to: previousLineRef)))
                     }
                 }
-                .containerBackground(Color(white: 0.2).gradient, for: .tabView)
             }
         }
         .toolbar {
@@ -215,40 +239,48 @@ struct StopView: View {
     /// Le nom de l'arrêt, en haut de toutes les dispositions.
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                StopDot()
-                SmallStopTitleView(stopName: stopName)
-                if isCloseStop {
-                    Image(systemName: "location.fill")
+            StopRow(name: stopName, isNearby: isCloseStop)
+            HStack(spacing: 4) {
+                if isShifted {
+                    HeaderCapsule(systemImage: "clock") {
+                        Text("Dès \(timeRequest, format: .dateTime.hour().minute())")
+                    }
                 }
-            }
-            if isShifted {
-                Label {
-                    Text("Dès \(timeRequest, format: .dateTime.hour().minute())")
-                } icon: {
-                    Image(systemName: "clock")
+                if isOffline, let lastUpdate {
+                    HeaderCapsule(systemImage: "wifi.slash") {
+                        Text("Hors ligne · \(lastUpdate, format: .dateTime.hour().minute())")
+                    }
                 }
-                .font(.caption2)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(.black.opacity(0.5)))
             }
         }
         .padding(.horizontal, 10)
     }
 
-    private func message(_ text: LocalizedStringKey) -> some View {
+    private func message(_ text: LocalizedStringKey, retry: Bool = false) -> some View {
         VStack {
             header
             Spacer()
             Text(text)
                 .multilineTextAlignment(.center)
+            if retry {
+                Button("Réessayer", action: reload)
+            }
             Spacer()
         }
     }
 
     private func getStopEvents() {
-        stopManager.selectStop(stopName: stopName, stopSloid: stopSloid, stopEventNumber: requestNumber, timeRequest: timeRequest)
+        stopManager.selectStop(stopName: stopName, stopSloid: stopSloid, stopEventNumber: requestNumber, timeRequest: timeRequest) {
+            if !stopManager.stopError {
+                lastUpdate = Date()
+            }
+        }
+    }
+
+    /// Redemande les départs, comme un rafraîchissement automatique.
+    private func reload() {
+        timeRequest = max(Date(), chosenStart ?? timeRequest(for: previousLineTime))
+        getStopEvents()
     }
 
     /// Décale le début de la liste de `minutes` ; `nil` revient à maintenant.
@@ -278,6 +310,25 @@ struct StopView: View {
 }
 
 
+/// Une information sous le nom de l'arrêt : heure choisie, réseau absent.
+private struct HeaderCapsule<Content: View>: View {
+    let systemImage: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Label {
+            content
+        } icon: {
+            Image(systemName: systemImage)
+        }
+        .font(.caption2)
+        .lineLimit(1)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 2)
+        .background(.thinMaterial, in: Capsule())
+    }
+}
+
 struct StopSortedView: View {
     @Environment(\.displayTime) private var now
     var lineName: String
@@ -303,7 +354,7 @@ struct StopSortedView: View {
                         .padding(2)
                         .foregroundStyle(.primary)
                         .overlay {
-                            if !stopEvent.journeyRef.isEmpty && stopEvent.journeyRef == previousLineRef {
+                            if stopEvent.isLinked(to: previousLineRef) {
                                 Capsule().strokeBorder(.white, lineWidth: 2)
                             }
                         }
@@ -455,8 +506,8 @@ struct StopMenuView: View {
                                                         routeChanged: true, transportType: "Bus"), showTime: false)
         StopEventView(event: WatchPreviewData.departure(inMinutes: 12), showTime: true)
         StopEventView(event: WatchPreviewData.departure(line: "E", destination: "Hermance-Village", quay: "J",
-                                                        inMinutes: 15, transportType: "Bus"),
-                      showTime: false, previousLineRef: "preview-E-Hermance-Village-15.0")
+                                                        inMinutes: 15, transportType: "Bus"), showTime: false)
+            .modifier(LinkedRowBackground(isLinked: true))
     }
     .watchPreviewEnvironment()
 }

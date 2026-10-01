@@ -427,3 +427,19 @@ Guide d'utilisation (Paramètres → Guide d'utilisation, route `.userGuide`) : 
 dans `Guide/UserGuideContent.swift` (groupes → rubriques → points, avec un lien facultatif vers
 une `AppRoute`) ; `Guide/UserGuideView.swift` l'affiche et y cherche. Capture :
 `tpgnext://guide` ou `tpgnext://guide?topic=<id>`.
+
+## Montre
+
+Une seule pile (`ContentView`) : l'accueil (« À proximité », « Favoris ») à la base ; au lancement
+et au retour de l'arrière-plan, l'arrêt le plus proche est ouvert par-dessus. Les écrans s'ouvrent
+par valeur, comme sur l'iPhone : `WatchRoute` (`JourneyViewWatch.swift`) dit quoi ouvrir, la pile
+le construit (`.navigationDestination(for: WatchRoute.self)`).
+
+- Arrêt (`StopView`) → départ → course (`JourneyView`) → arrêt de la course, à l'heure de
+  passage du véhicule (`JourneyPassage`), départ entouré.
+- Réglages de la montre : `@AppStorage` sur `SettingKey.clockTimeByDefault` et
+  `groupByLineByDefault`, propres à la montre (pas de groupe d'app avec l'iPhone).
+- Favoris : envoyés par l'iPhone (sens unique, pas de modification sur la montre), relus par
+  sloid dans la base de la montre (`resolvedFavorites(in:)`).
+- Pas de toucher sur le simulateur : pour voir un écran poussé, un banc d'essai temporaire
+  (vue racine choisie par variable d'environnement, `SIMCTL_CHILD_…`), retiré avant le commit.
