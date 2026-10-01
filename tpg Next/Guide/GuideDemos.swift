@@ -258,6 +258,7 @@ private struct ReminderDemo: View {
     let report: DemoReport
     @State private var chosen: Int?
     @State private var departure = DemoData.departure(line: "12", destination: "Genève, Moillesulaz", quay: "C", inMinutes: 34)
+    @State private var choosing = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -267,30 +268,27 @@ private struct ReminderDemo: View {
             }
             StopEventView(event: departure, showTime: false)
                 .contentShape(.contextMenuPreview, Capsule())
-                // Les choix du vrai menu, sans rien programmer.
+                // Le vrai menu et la vraie feuille, sans rien programmer.
                 .contextMenu {
-                    ForEach([0, 1, 5, 10, 30], id: \.self) { minutes in
-                        Button {
-                            choose(minutes)
-                        } label: {
-                            Text(label(for: minutes))
-                        }
+                    Button {
+                        choosing = true
+                    } label: {
+                        Label("Programmer un rappel…", systemImage: "bell")
                     }
                 }
-                .accessibilityAction(named: "Prévenir 5' avant") { choose(5) }
+                .accessibilityAction(named: "Programmer un rappel…") { choosing = true }
+        }
+        .sheet(isPresented: $choosing) {
+            ReminderSheet(event: departure, stopID: "", onChoose: choose)
         }
     }
 
     private func choose(_ minutes: Int) {
-        // Après la fermeture du menu : l'animation serait sinon cachée par lui.
+        // Après la fermeture de la feuille : l'animation serait sinon cachée par elle.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             withAnimation(.spring(duration: 0.5, bounce: 0.3)) { chosen = minutes }
             report.complete()
         }
-    }
-
-    private func label(for minutes: Int) -> String {
-        minutes == 0 ? String(localized: "Prévenir à l'arrivée") : String(localized: "Prévenir \(minutes)' avant")
     }
 
     /// La notification telle qu'elle arrivera.

@@ -110,18 +110,7 @@ struct TripMapView: View {
                             let splitArrivalStopName = splitString(leg.legAlightStopName, separator: ",")
                             
                             Annotation("\(splitArrivalStopName.0)\n\(splitArrivalStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(leg.legAlightLatitude) ?? 0.0, longitude: Double(leg.legAlightLongitude) ?? 0.0)) {
-                                Circle()
-                                    .strokeBorder(Color.primary, lineWidth: 3)
-                                    .background(
-                                        Circle()
-                                            .fill(lineColorInverted)
-                                            .overlay {
-                                                Circle()
-                                                    .fill(Color.primary)
-                                                    .frame(width: 4, height: 4)
-                                            }
-                                    )
-                                    .frame(width: 15, height: 15)
+                                StopIcon(color: lineColorInverted, terminus: true, size: 15)
                             }
                         }
                     }

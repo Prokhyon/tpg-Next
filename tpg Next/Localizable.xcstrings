@@ -41,7 +41,7 @@
     "« Arrêter le suivi » depuis le trajet ; le suivi se termine aussi de lui-même à l'arrivée." : {
 
     },
-    "« Suivre en direct » depuis un itinéraire, le prochain trajet de l'accueil, un itinéraire enregistré ou un départ (appui long, puis choix de la montée et de la descente)." : {
+    "« Suivre en direct » depuis un itinéraire, le prochain trajet de l'accueil, un itinéraire enregistré ou un départ (appui long, « Suivre en direct », puis l'autre arrêt)." : {
 
     },
     "%@ · %@" : {
@@ -393,10 +393,16 @@
         }
       }
     },
+    "À l'arrivée" : {
+
+    },
     "À l'heure" : {
 
     },
     "À l'heure de partir" : {
+
+    },
+    "À partir de %@" : {
 
     },
     "À proximité" : {
@@ -617,6 +623,9 @@
     "Annuler" : {
 
     },
+    "Annuler le rappel" : {
+
+    },
     "Aperçu d'un lieu" : {
 
     },
@@ -648,13 +657,16 @@
     "Appuyez longuement sur le trajet du jour : Choisir un autre trajet… pour ce jour-là seulement, puis Revenir au trajet habituel si besoin." : {
 
     },
-    "Appuyez longuement sur un départ : prévenir à l'arrivée du véhicule, ou 1, 5, 10 ou 30 minutes avant. Le rappel suit le temps réel, et vous êtes prévenu si le véhicule prend de l'avance ou du retard." : {
-
-    },
     "Appuyez longuement sur un départ pour être prévenu à son arrivée, ou quelques minutes avant. Vous l'êtes aussi s'il prend de l'avance ou du retard." : {
 
     },
-    "Appuyez longuement sur un départ, sur la page d'un arrêt, puis choisissez quand être prévenu. Retrouvez et annulez vos rappels depuis la cloche, en haut de l'accueil." : {
+    "Appuyez longuement sur un départ, puis « Programmer un rappel… » : tournez la roue des minutes, jusqu'à 90 avant le passage, ou touchez 5, 10, 15 ou 30 min. Le rappel suit le temps réel, et vous êtes prévenu si le véhicule prend de l'avance ou du retard." : {
+
+    },
+    "Appuyez longuement sur un départ, sur la page d'un arrêt, pour être prévenu avant son passage." : {
+
+    },
+    "Appuyez longuement sur un départ, sur la page d'un arrêt, puis « Programmer un rappel… » et choisissez combien de minutes avant être prévenu. Retrouvez et annulez vos rappels depuis la cloche, en haut de l'accueil." : {
 
     },
     "Appuyez longuement sur un horaire pour programmer un rappel. Vous pourrez voir les rappels prévus depuis les paramètres." : {
@@ -747,6 +759,9 @@
         }
       }
     },
+    "Arrivée à %@ · alertes de montée et de descente" : {
+
+    },
     "Arrivée à l'arrêt" : {
 
     },
@@ -798,6 +813,9 @@
 
     },
     "Aujourd'hui" : {
+
+    },
+    "Automatiques" : {
 
     },
     "Autorisations, onglets et gestes à connaître." : {
@@ -1107,6 +1125,9 @@
     "Choisir la direction" : {
 
     },
+    "Choisir un arrêt" : {
+
+    },
     "Choisir un autre trajet" : {
 
     },
@@ -1196,7 +1217,7 @@
     "Dans le 12 · descendez à Moillesulaz dans 14 min" : {
 
     },
-    "Dans le même menu, « Suivre en direct » : indiquez où vous montez et où vous descendez, puis suivez la course sur l'écran verrouillé." : {
+    "Dans le même menu, « Suivre en direct » : choisissez de monter ou de descendre à cet arrêt, puis l'autre arrêt dans la feuille qui s'ouvre. La course se suit sur l'écran verrouillé." : {
 
     },
     "Dans les paramètres, choisissez un rappel avant l'heure de partir, et le suivi en direct lancé de lui-même avant le départ." : {
@@ -1740,6 +1761,9 @@
     "Jours" : {
 
     },
+    "Jusqu'à %@" : {
+
+    },
     "Jusqu'à quel arrêt ?" : {
 
     },
@@ -1773,7 +1797,7 @@
     "La carte des arrêts affichés. Celui dont vous voyez les départs y est mis en évidence : touchez-en un autre pour afficher ses départs. Touchez ailleurs sur la carte, ou le bouton d'agrandissement, pour l'ouvrir en plein écran." : {
 
     },
-    "La cloche, en haut à droite, liste les rappels de départ programmés : touchez la croix pour en annuler un." : {
+    "La cloche, en haut à droite, montre tout ce qui va vous prévenir : le trajet suivi en direct, vos rappels de départ (la croix en annule un), et les rappels automatiques de vos trajets réguliers et itinéraires enregistrés. Touchez un trajet pour l'ouvrir ; appuyez longuement sur un trajet régulier pour le sauter ce jour-là." : {
 
     },
     "La course commence à cet arrêt." : {
@@ -2160,6 +2184,9 @@
     "Métro" : {
 
     },
+    "Minutes avant" : {
+
+    },
     "Modifier" : {
 
     },
@@ -2213,6 +2240,9 @@
 
     },
     "Non desservi" : {
+
+    },
+    "Notification à %@" : {
 
     },
     "Notifications" : {
@@ -2520,10 +2550,8 @@
     "Préparez-vous à descendre" : {
 
     },
-    "Prévenir %lld' avant" : {
-
-    },
     "Prévenir 1' avant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2534,6 +2562,7 @@
       }
     },
     "Prévenir 5' avant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2544,6 +2573,7 @@
       }
     },
     "Prévenir 10' avant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2554,6 +2584,7 @@
       }
     },
     "Prévenir 30' avant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2564,6 +2595,7 @@
       }
     },
     "Prévenir à l'arrivée" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2613,6 +2645,18 @@
         }
       }
     },
+    "Programmer le rappel" : {
+
+    },
+    "Programmer un rappel" : {
+
+    },
+    "Programmer un rappel…" : {
+
+    },
+    "Programmés par vos trajets réguliers et vos itinéraires enregistrés : ils se règlent dans chaque trajet régulier et dans les paramètres. Appuyez longuement sur un trajet régulier pour le sauter ce jour-là." : {
+
+    },
     "Propre à chaque appareil" : {
 
     },
@@ -2660,9 +2704,6 @@
     "Quand une correspondance est serrée, l'activité vous demande si vous êtes monté. Répondez depuis l'écran verrouillé : la suite du trajet s'adapte." : {
 
     },
-    "Que suivez-vous ?" : {
-
-    },
     "Quelques boutons utiles:" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2703,6 +2744,9 @@
           }
         }
       }
+    },
+    "rappel à %@" : {
+
     },
     "Rappel à l'arrivée" : {
       "localizations" : {
@@ -2881,6 +2925,9 @@
     "Retirer des lieux favoris" : {
 
     },
+    "Retirer l'arrêt" : {
+
+    },
     "Retour" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2960,6 +3007,9 @@
     "Semaine" : {
 
     },
+    "Sens" : {
+
+    },
     "Sept gestes à essayer du doigt : favoris, rappels, tri, suivi en direct…" : {
 
     },
@@ -2988,7 +3038,13 @@
     "Suivi automatique" : {
 
     },
+    "Suivi en cours" : {
+
+    },
     "Suivi en direct" : {
+
+    },
+    "suivi en direct à %@" : {
 
     },
     "Suivi en direct automatique" : {
@@ -3172,6 +3228,9 @@
     "Train" : {
 
     },
+    "Trajet" : {
+
+    },
     "Trajet modifié" : {
 
     },
@@ -3249,6 +3308,9 @@
 
     },
     "Trier par ligne" : {
+
+    },
+    "Trop tard : le départ est trop proche" : {
 
     },
     "Un itinéraire depuis la carte" : {
@@ -3373,6 +3435,9 @@
 
     },
     "Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils. Désactivée, ils restent sur cet appareil ; ce qui est déjà dans iCloud n'est pas effacé." : {
+
+    },
+    "Vos rappels" : {
 
     },
     "Vos recherches récentes, vos trajets réguliers et enregistrés, les arrêts proches et la liste des lignes." : {

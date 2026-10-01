@@ -58,8 +58,7 @@ struct TripAlternativesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text(verbatim: "\(origin.name) → \(destination.name)")
-                        .font(.headline)
+                    Text(route: origin.name, to: destination.name)
                     Text(dayText)
                         .foregroundStyle(.secondary)
                 }

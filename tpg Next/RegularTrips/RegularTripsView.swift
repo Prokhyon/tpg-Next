@@ -36,10 +36,9 @@ struct UpcomingRegularTripCard: View {
                 }
                 .font(.headline)
                 Spacer()
+                // L'état est sur la languette de la carte (`AgendaCard`).
                 if isOpening {
                     ProgressView()
-                } else {
-                    RegularTripStatusBadge(state: state)
                 }
             }
             if isChosen {
@@ -69,6 +68,38 @@ struct RegularTripChanges: View {
             .font(.footnote)
             .foregroundStyle(.orange)
         }
+    }
+}
+
+/// L'état du trajet en languette : un petit rectangle de couleur qui dépasse du haut de la
+/// carte, comme un marque-page. Le bas est caché sous la carte.
+struct BookmarkTab: View {
+    let badge: UpcomingTrip.Badge
+    /// La partie qui dépasse ; elle grandit avec le texte (`AgendaCard` la mesure).
+    var visibleHeight: CGFloat = 24
+    static let hiddenHeight: CGFloat = 12
+
+    var body: some View {
+        Label(badge.text, systemImage: badge.symbol)
+            .font(.caption.bold())
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .padding(.horizontal, 10)
+            .frame(height: visibleHeight)
+            .padding(.bottom, Self.hiddenHeight)
+            .background(
+                UnevenRoundedRectangle(topLeadingRadius: 8, topTrailingRadius: 8)
+                    .fill(badge.tone.tabColor.gradient)
+            )
+            .accessibilityElement(children: .combine)
+    }
+}
+
+extension UpcomingTrip.Badge.Tone {
+    /// Pleine, sous un texte blanc : le gris secondaire y serait trop pâle.
+    var tabColor: Color {
+        self == .neutral ? .gray : color
     }
 }
 
@@ -138,8 +169,8 @@ struct RegularTripRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(trip.displayName)
-                    .font(.headline)
+                trip.displayTitle
+                    .font(.headline.weight(.regular))
                     .lineLimit(2)
                 Spacer()
                 if trip.reminderMinutes != nil || trip.alertsEnabled {

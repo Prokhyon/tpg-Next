@@ -101,6 +101,7 @@ private struct PreviewEnvironment: ViewModifier {
                 content
             }
         }
+        .departureActionSheets()
         .environment(stopStore)
         .environment(favoritesViewModel)
         .environment(favoritePlaces)

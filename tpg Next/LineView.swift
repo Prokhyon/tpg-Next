@@ -68,6 +68,7 @@ struct LineView: View {
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.departureActions) private var departureActions
     var autoRefresh: Bool = true
     
     var stopEvent: StopEvent
@@ -144,7 +145,7 @@ struct LineView: View {
                                                 if let trackedKey {
                                                     TripLiveActivities.shared.stop(trackedKey)
                                                 } else {
-                                                    openRoute(.trackJourney(event: stopEvent, stopSloid: currentStop?.sloid ?? stopEvent.stopId))
+                                                    departureActions.track(stopEvent, currentStop?.sloid ?? stopEvent.stopId, true)
                                                 }
                                             }
                                         }
@@ -438,7 +439,7 @@ struct SkippedStopsRow: View {
                 Text("\(stops.count) arrêts non desservis")
                     .font(.subheadline.bold())
                 if let first = stops.first, let last = stops.last {
-                    Text(verbatim: "\(first.stopPointName) → \(last.stopPointName)")
+                    Text(route: first.stopPointName, to: last.stopPointName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

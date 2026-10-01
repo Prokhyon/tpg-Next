@@ -425,9 +425,9 @@ extension TripView {
         @State var locationManager = LocationManager()
         @Environment(StopStore.self) var stopStore
         
-        /// La bulle n'a rien à montrer hors de ces deux cas : elle disparaît, et le champ s'élargit.
+        /// La bulle n'a rien à montrer hors de ces cas : elle disparaît, et le champ s'élargit.
         static func isVisible(field: TripField, focus: TripField?, text: String, selected: TripField?) -> Bool {
-            focus == field || (text.isEmpty && selected == field)
+            focus == field || !text.isEmpty || selected == field
         }
 
         var body: some View {
@@ -478,6 +478,23 @@ extension TripView {
                 }) {
                     Image(systemName: (showCloseStops ? "location.fill" :  "location")).font(.title3)
                 }
+            } else if !searchText.isEmpty {
+                // Retire l'arrêt choisi, sans rendre le focus au champ.
+                Button(action: {
+                    withAnimation {
+                        searchText = ""
+                        viewModel.selectedField = field
+                        viewModel.tripDone = false
+                        if field == .departure {
+                            viewModel.departure.endpoint = nil
+                        } else if field == .arrival {
+                            viewModel.arrival.endpoint = nil
+                        }
+                    }
+                }) {
+                    Image(systemName: "xmark").font(.title2)
+                }
+                .accessibilityLabel("Retirer l'arrêt")
             }
         }
     }
@@ -559,8 +576,9 @@ extension TripView {
                             }
                             .padding(.trailing, 20)
                     }
-                    if !text.isEmpty {
-                        // Efface le texte et l'arrêt choisi, et laisse le champ prêt à la saisie.
+                    if !text.isEmpty && focusField.wrappedValue == field {
+                        // Pendant la saisie : efface le texte et l'arrêt choisi, et laisse le
+                        // champ prêt à la saisie. Hors saisie, la bulle à côté retire l'arrêt.
                         Button {
                             withAnimation {
                                 if field == .departure {

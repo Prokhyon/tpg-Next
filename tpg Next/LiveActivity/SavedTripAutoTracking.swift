@@ -15,7 +15,7 @@ enum SavedTripAutoTracking {
     static let choices = [0, 15, 30, 60]
     /// Clé du `userInfo` de la notification : la toucher ouvre l'onglet Trajets.
     static let userInfoKey = "savedTripAutoTrack"
-    private static let prefix = "saved_track_"
+    static let prefix = "saved_track_"
     /// iOS ne garde que 64 notifications en attente pour toute l'app.
     private static let maximumReminders = 10
 

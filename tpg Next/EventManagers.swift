@@ -125,17 +125,27 @@ public class SavedTripsModel {
     }
 
     public func addTrip(_ trip: TripEvent) {
-        if !savedTrips.contains(trip) {
+        if !tripIsSaved(trip) {
             savedTrips.append(trip)
         }
     }
 
+    /// Retire l'itinéraire enregistré, qu'on tienne sa version enregistrée ou celle du jour.
     public func removeTrip(_ trip: TripEvent) {
-        savedTrips.removeAll { $0.id == trip.id }
+        let id = savedTrip(for: trip)?.id ?? trip.id
+        savedTrips.removeAll { $0.id == id }
+        live[id] = nil
     }
 
     public func tripIsSaved(_ trip: TripEvent) -> Bool {
-        savedTrips.contains(trip)
+        savedTrip(for: trip) != nil
+    }
+
+    /// L'itinéraire enregistré derrière `trip`. Le détail s'ouvre sur la version du jour
+    /// (`displayedTrip`, retards compris) : elle n'est plus égale à celle enregistrée, et le
+    /// menu proposait alors de l'enregistrer au lieu de la retirer.
+    private func savedTrip(for trip: TripEvent) -> TripEvent? {
+        savedTrips.first { $0.id == trip.id || $0 == trip || displayedTrip(for: $0) == trip }
     }
 
     /// Remplace un itinéraire enregistré qui ne convient plus (supprimé, horaire changé).
