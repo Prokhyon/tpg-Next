@@ -44,11 +44,7 @@ struct ContentView: View {
                 if !trips.isEmpty {
                     Section("Mes trajets") {
                         ForEach(trips) { trip in
-                            if let route = trip.boardingRoute {
-                                NavigationLink(value: route) { UpcomingTripRow(trip: trip) }
-                            } else {
-                                UpcomingTripRow(trip: trip)
-                            }
+                            NavigationLink(value: WatchRoute.trip(trip)) { UpcomingTripRow(trip: trip) }
                         }
                     }
                 }

@@ -107,15 +107,6 @@ struct UpcomingTripRow: View {
     }
 }
 
-extension UpcomingTrip {
-    /// Les départs de l'arrêt de montée, à l'heure du véhicule à prendre, qui y est entouré.
-    var boardingRoute: WatchRoute? {
-        guard let leg = event?.vehicleLegs.first, !leg.legBoardStopId.isEmpty else { return nil }
-        return .stop(name: leg.legBoardStopName, sloid: leg.legBoardStopId,
-                     passage: JourneyPassage(journeyRef: leg.journeyRef, time: leg.legBoardTimetableTime))
-    }
-}
-
 #Preview("Trajets") {
     List {
         UpcomingTripRow(trip: .sample())
