@@ -65,6 +65,15 @@ struct DeparturesProvider: AppIntentTimelineProvider {
         DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120)
     }
 
+    /// L'aperçu de la galerie : départs d'exemple, mais au nom de l'arrêt réglé. Sur la montre,
+    /// chaque favori y est proposé ; avec le même arrêt d'exemple, ils semblaient tous identiques.
+    private func preview(for configuration: SelectStopIntent) -> DeparturesEntry {
+        guard let stop = configuration.selection.stop else {
+            return DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120)
+        }
+        return DeparturesEntry(date: Date(), stop: stop, events: PreviewData.events, status: .ok, distance: nil)
+    }
+
     /// Vrai quand le code tourne dans l'agent d'aperçu de Xcode, où ni la
     /// localisation ni le réseau ne sont souhaitables.
     static var isRunningInPreviewCanvas: Bool {
@@ -87,7 +96,7 @@ struct DeparturesProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: SelectStopIntent, in context: Context) async -> DeparturesEntry {
         // La galerie de widgets doit montrer quelque chose immédiatement.
-        guard !context.isPreview, !Self.isRunningInPreviewCanvas else { return placeholder(in: context) }
+        guard !context.isPreview, !Self.isRunningInPreviewCanvas else { return preview(for: configuration) }
         return await buildEntries(for: configuration).first ?? placeholder(in: context)
     }
 
