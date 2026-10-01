@@ -10,6 +10,7 @@ Guide pour modifier l'app sans casser l'iPhone, l'iPad ni la montre.
 | `tpgNextFunc` | `tpgNextFunc/` | Framework partagé : requêtes OJP, lecture des réponses, modèles, base des arrêts, couleurs des lignes |
 | `tpg Next Widget` | `tpg Next Widget/` | Widget des départs (passe par l'App Group) |
 | `tpg Next Watch App` | `tpg Next Watch App/` | App Apple Watch |
+| `tpg Next Watch Widget` | `tpg Next Watch Widget/` | Complications de la montre (embarquées dans l'app montre) |
 | `tpgNextFuncTests` | `tpgNextFuncTests/` | Tests du framework, sur de vraies réponses de l'API |
 
 Les dossiers sont **synchronisés** : un fichier créé dans `tpg Next/` (ou un sous-dossier) est
@@ -441,5 +442,11 @@ le construit (`.navigationDestination(for: WatchRoute.self)`).
   `groupByLineByDefault`, propres à la montre (pas de groupe d'app avec l'iPhone).
 - Favoris : envoyés par l'iPhone (sens unique, pas de modification sur la montre), relus par
   sloid dans la base de la montre (`resolvedFavorites(in:)`).
+- Complications (`tpg Next Watch Widget`, watchOS 26) : `DeparturesProvider` et `SelectStopIntent`
+  du widget iPhone sont compilés aussi pour cette cible (`#if os(watchOS)` pour ce qui diffère),
+  seules les vues sont propres (`WatchDeparturesWidget.swift`). L'app montre écrit pour elles
+  l'index des arrêts, les favoris (`FavoritesStorage.save`) et la dernière position dans le
+  groupe d'app. Toucher une complication ouvre `tpgnext://stop?sloid=…&name=…`.
+- Plan et état d'avancement : `ROADMAP-Montre.md`.
 - Pas de toucher sur le simulateur : pour voir un écran poussé, un banc d'essai temporaire
   (vue racine choisie par variable d'environnement, `SIMCTL_CHILD_…`), retiré avant le commit.

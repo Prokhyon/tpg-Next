@@ -72,6 +72,7 @@ struct ContentView: View {
                 getLocation()
             }
         }
+        .onOpenURL(perform: open)
         .onChange(of: stopStore.isLoaded) {
             getLocation()
         }
@@ -128,12 +129,25 @@ struct ContentView: View {
                     }
                 }
                 stopStore.location = userLocation
+                // Le repli des complications, qui n'ont pas toujours le droit de demander la position.
+                SharedStorage.saveLastKnownLocation(userLocation)
             } else {
                 Log.location.error("Position indisponible")
                 locationUnavailable = true
             }
             locationManager.locationUpdateHandler = nil
         }
+    }
+
+    /// `tpgnext://stop?sloid=…&name=…`, envoyé par une complication : ouvre cet arrêt, à la place
+    /// du plus proche.
+    private func open(_ url: URL) {
+        guard url.scheme == "tpgnext", url.host == "stop",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let sloid = items.first(where: { $0.name == "sloid" })?.value else { return }
+        let name = items.first(where: { $0.name == "name" })?.value ?? stopStore.findStop(id: sloid)?.name ?? ""
+        opensNearestStop = false
+        path = [.stop(name: name, sloid: sloid, isNearby: sloidHarmonizer(code: sloid) == closeStop.map { sloidHarmonizer(code: $0.sloid) })]
     }
 
     /// Ouvre l'arrêt le plus proche, sauf s'il est déjà à la base de la pile : une course

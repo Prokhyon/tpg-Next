@@ -16,6 +16,10 @@
 		786C183E2C67624E00C214AA /* ClusterMap in Frameworks */ = {isa = PBXBuildFile; productRef = 786C183D2C67624E00C214AA /* ClusterMap */; };
 		786C18402C67624E00C214AA /* ClusterMapSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 786C183F2C67624E00C214AA /* ClusterMapSwiftUI */; };
 		78C254702E1D664D00115169 /* Updates.md in Resources */ = {isa = PBXBuildFile; fileRef = 78C2546F2E1D664D00115169 /* Updates.md */; };
+		7A7C00000000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
+		7A7C00000000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
+		7A7C00000000000000000C03 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
+		7A7C00000000000000000C04 /* tpg Next Watch Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
@@ -43,6 +47,20 @@
 			remoteInfo = "watch tpg Next Watch App";
 		};
 		7829E4012D2298380049A10B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 782463362D21C6B800CDE4D2;
+			remoteInfo = tpgNextFunc;
+		};
+		7A7C00000000000000000102 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7A7C00000000000000000F01;
+			remoteInfo = "tpg Next Watch Widget";
+		};
+		7A7C00000000000000000104 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
 			proxyType = 1;
@@ -117,6 +135,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A7C00000000000000000E04 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7A7C00000000000000000C04 /* tpg Next Watch Widget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -127,6 +156,7 @@
 		78C2546F2E1D664D00115169 /* Updates.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Updates.md; sourceTree = "<group>"; };
 		78C6A6542C988B45006F5AF4 /* tpg-Next-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "tpg-Next-Info.plist"; sourceTree = SOURCE_ROOT; };
 		78D5C4032C2094F00083C4C6 /* tpg Next.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tpg Next.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Watch Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B02 /* DeparturesProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeparturesProvider.swift; sourceTree = "<group>"; };
@@ -172,12 +202,20 @@
 			);
 			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;
 		};
+		7A7C00000000000000000D02 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7A7C00000000000000000F01 /* tpg Next Watch Widget */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		782463382D21C6B900CDE4D2 /* tpgNextFunc */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (782463412D21C6B900CDE4D2 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = tpgNextFunc; sourceTree = "<group>"; };
 		7829E3EF2D2297EA0049A10B /* tpg Next Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "tpg Next Watch App"; sourceTree = "<group>"; };
 		787686B6305BDA6E00621A56 /* tpg Next */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (787686DA305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 787686DB305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 787686DC305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "tpg Next"; sourceTree = "<group>"; };
+		7A7C00000000000000000D01 /* tpg Next Watch Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7A7C00000000000000000D02 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "tpg Next Watch Widget"; sourceTree = "<group>"; };
 		7E57A1B20000000000000003 /* tpgNextFuncTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = tpgNextFuncTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -204,6 +242,14 @@
 				786C18402C67624E00C214AA /* ClusterMapSwiftUI in Frameworks */,
 				7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */,
 				786C183E2C67624E00C214AA /* ClusterMap in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E02 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A7C00000000000000000C03 /* tpgNextFunc.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,6 +291,7 @@
 				7E57A1B20000000000000003 /* tpgNextFuncTests */,
 				7829E3EF2D2297EA0049A10B /* tpg Next Watch App */,
 				7BADCAFE0000000000000D01 /* tpg Next Widget */,
+				7A7C00000000000000000D01 /* tpg Next Watch Widget */,
 				786C00D42CD413BE009DAC17 /* Frameworks */,
 				78D5C4042C2094F00083C4C6 /* Products */,
 			);
@@ -257,6 +304,7 @@
 				782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */,
 				7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */,
 				7BADCAFE0000000000000A01 /* tpg Next Widget.appex */,
+				7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */,
 				7E57A1B20000000000000002 /* tpgNextFuncTests.xctest */,
 			);
 			name = Products;
@@ -322,11 +370,13 @@
 				7829E3EB2D2297EA0049A10B /* Frameworks */,
 				7829E3EC2D2297EA0049A10B /* Resources */,
 				7829E4032D2298380049A10B /* Embed Frameworks */,
+				7A7C00000000000000000E04 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				7829E4022D2298380049A10B /* PBXTargetDependency */,
+				7A7C00000000000000000101 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7829E3EF2D2297EA0049A10B /* tpg Next Watch App */,
@@ -369,6 +419,29 @@
 			productName = TPG4;
 			productReference = 78D5C4032C2094F00083C4C6 /* tpg Next.app */;
 			productType = "com.apple.product-type.application";
+		};
+		7A7C00000000000000000F01 /* tpg Next Watch Widget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A7C00000000000000000203 /* Build configuration list for PBXNativeTarget "tpg Next Watch Widget" */;
+			buildPhases = (
+				7A7C00000000000000000E01 /* Sources */,
+				7A7C00000000000000000E02 /* Frameworks */,
+				7A7C00000000000000000E03 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A7C00000000000000000103 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A7C00000000000000000D01 /* tpg Next Watch Widget */,
+			);
+			name = "tpg Next Watch Widget";
+			packageProductDependencies = (
+			);
+			productName = "tpg Next Watch Widget";
+			productReference = 7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		7BADCAFE0000000000000F01 /* tpg Next Widget */ = {
 			isa = PBXNativeTarget;
@@ -432,6 +505,9 @@
 					78D5C4022C2094F00083C4C6 = {
 						CreatedOnToolsVersion = 15.4;
 					};
+					7A7C00000000000000000F01 = {
+						CreatedOnToolsVersion = 27.1;
+					};
 					7BADCAFE0000000000000F01 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -462,6 +538,7 @@
 				7829E3ED2D2297EA0049A10B /* tpg Next Watch App */,
 				7BADCAFE0000000000000F01 /* tpg Next Widget */,
 				7E57A1B20000000000000001 /* tpgNextFuncTests */,
+				7A7C00000000000000000F01 /* tpg Next Watch Widget */,
 			);
 		};
 /* End PBXProject section */
@@ -483,6 +560,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		78D5C4012C2094F00083C4C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E03 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -525,6 +609,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A7C00000000000000000C01 /* SelectStopIntent.swift in Sources */,
+				7A7C00000000000000000C02 /* DeparturesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -574,6 +667,16 @@
 		786C18442C6762BB00C214AA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 786C18432C6762BB00C214AA /* ClusterMapSwiftUI */;
+		};
+		7A7C00000000000000000101 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7A7C00000000000000000F01 /* tpg Next Watch Widget */;
+			targetProxy = 7A7C00000000000000000102 /* PBXContainerItemProxy */;
+		};
+		7A7C00000000000000000103 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
+			targetProxy = 7A7C00000000000000000104 /* PBXContainerItemProxy */;
 		};
 		7BADCAFE0000000000000101 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -631,7 +734,7 @@
 				TARGETED_DEVICE_FAMILY = "1,4";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -672,7 +775,7 @@
 				TARGETED_DEVICE_FAMILY = "1,4";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -704,7 +807,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -736,7 +839,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -872,6 +975,7 @@
 		78D5C4122C2094F20083C4C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -909,6 +1013,7 @@
 		78D5C4132C2094F20083C4C6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -940,6 +1045,65 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7A7C00000000000000000201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "tpg Next Watch Widget/tpg Next Watch Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "tpg Next Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		7A7C00000000000000000202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "tpg Next Watch Widget/tpg Next Watch Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "tpg Next Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -1090,6 +1254,15 @@
 			buildConfigurations = (
 				78D5C4122C2094F20083C4C6 /* Debug */,
 				78D5C4132C2094F20083C4C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A7C00000000000000000203 /* Build configuration list for PBXNativeTarget "tpg Next Watch Widget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A7C00000000000000000201 /* Debug */,
+				7A7C00000000000000000202 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

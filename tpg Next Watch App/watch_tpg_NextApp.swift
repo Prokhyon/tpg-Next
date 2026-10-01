@@ -9,6 +9,7 @@ import SwiftUI
 import tpgNextFunc
 import WatchConnectivity
 import Combine
+import WidgetKit
 
 @main
 struct watch_tpg_Next_Watch_AppApp: App {
@@ -22,7 +23,20 @@ struct watch_tpg_Next_Watch_AppApp: App {
                 .accentColor(Color.primary)
                 .environment(stopStore)
                 .environment(watchFavorites)
+                .task { await prepareWidgetData() }
         }
+    }
+
+    /// Les complications ne peuvent pas charger la base des arrêts (6 Mo de JSON) : elles lisent
+    /// l'index binaire que l'app écrit dans le groupe d'app, comme le widget de l'iPhone.
+    private func prepareWidgetData() async {
+        await stopStore.waitUntilLoaded()
+        let stops = stopStore.activeStops
+        await Task.detached(priority: .utility) {
+            if StopIndex.ensureIndex(for: stops) {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }.value
     }
 }
 
@@ -85,6 +99,10 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
 
     private func saveFavorites() {
         Self.store.save(favoriteStops)
+        // Les complications choisissent leur arrêt parmi les favoris et en proposent un par favori.
+        FavoritesStorage.save(favoriteStops.map(FavoriteStop.init(stop:)))
+        WidgetCenter.shared.reloadAllTimelines()
+        WidgetCenter.shared.invalidateConfigurationRecommendations()
     }
 
     private func loadFavorites() {
