@@ -343,6 +343,11 @@ struct ContentView: View {
             case .reminders:
                 ScheduledNotificationsSheet(previewAutomatic: AutomaticReminders.preview)
                     .previewEnvironment(navigation: false)
+            case .api:
+                NavigationStack {
+                    APIDiagnosticsView()
+                }
+                .previewEnvironment(navigation: false)
             case .flex:
                 // Un bus à la demande (tpg flex), demain matin.
                 TripAlternativesView(title: "Autres horaires", footer: "L'itinéraire choisi remplace l'actuel.",
@@ -510,7 +515,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, operators, flex, reminders
+    case reminder, newRegular, editRegular, operators, flex, reminders, api
     var id: String { rawValue }
 }
 #endif

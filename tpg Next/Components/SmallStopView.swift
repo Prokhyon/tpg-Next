@@ -105,7 +105,7 @@ struct SmallStopView: View {
         .combined(with: .opacity)
 
     private func HeaderView() -> some View {
-        HStack(alignment: .bottom) {
+        HStack {
             if #available(iOS 26, *), !isHome {
                 HStack {
                     if isQuay {
@@ -144,13 +144,13 @@ struct SmallStopView: View {
                 .background {
                     BasicElement()
                 }
+                Spacer()
                 if isHome {
                     if let distanceFrom {
                         StopDistanceLabel(coordinate: stop.coordinate, fallback: distanceFrom)
                             .padding(.horizontal)
                     }
                 }
-                Spacer()
                 TripButton()
                     .frame(width: 45, height: 45)
                     .padding(5)
@@ -232,7 +232,7 @@ struct SmallStopView: View {
             } else if stopManager.stopError {
                 HStack {
                     Spacer()
-                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage)
+                    DeparturesUnavailableText(errorMessage: stopManager.stopErrorMessage, failure: stopManager.failure)
                     Spacer()
                 }
             } else {

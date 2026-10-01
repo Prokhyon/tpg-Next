@@ -266,7 +266,8 @@ struct LineStopDeparturesPanel: View {
             }
 
             if departures.isEmpty {
-                Text(stopManager.stopError ? "Pas de départ trouvé" : "Recherche des départs…")
+                Text(stopManager.failure?.userMessage
+                     ?? (stopManager.stopError ? "Pas de départ trouvé" : "Recherche des départs…"))
                     .foregroundStyle(.secondary)
             } else {
                 VStack(spacing: 0) {

@@ -14,6 +14,8 @@ import MapKit
 public class TripManager {
     public var tripEvents: [TripEvent] = []
     public var tripError: Bool = false
+    /// Pourquoi la requête a échoué (réseau, service, quota), `nil` si l'API a répondu.
+    public private(set) var failure: OJPClient.Failure?
     
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
     /// (timer, changement d'heure, rafraîchissement) ne doit pas l'écraser.
@@ -22,13 +24,19 @@ public class TripManager {
     /// Sans départ ou sans arrivée, la requête échoue et `tripError` passe à vrai.
     public func selectTrip(from departure: TripEndpoint?, to arrival: TripEndpoint?, at selectedTime: Date, isArrivalTime: Bool) {
         self.tripError = false
+        self.failure = nil
         latestRequest += 1
         let request = latestRequest
         fetchTrips(with: departure?.stop, with: departure?.place, with: departure?.isPlace ?? false,
                    with: arrival?.stop, with: arrival?.place, with: arrival?.isPlace ?? false,
-                   with: selectedTime, with: isArrivalTime) { data in
+                   with: selectedTime, with: isArrivalTime) { result in
             guard request == self.latestRequest else { return }
-            guard let data else {
+            let data: Data
+            switch result {
+            case .success(let received):
+                data = received
+            case .failure(let failure):
+                self.failure = failure
                 self.tripError = true
                 return
             }
@@ -58,6 +66,7 @@ public class TripManager {
                         if let parserError = error as? ParserError, case .noEventFound(let message) = parserError {
                             Log.network.info("Aucun itinéraire : \(message)")
                         } else {
+                            self.failure = .unreadable
                             Log.network.error("Itinéraires : réponse illisible")
                         }
                     }

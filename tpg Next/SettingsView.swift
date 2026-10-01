@@ -30,6 +30,7 @@ struct SettingsView: View {
     @Environment(FavoritePlacesModel.self) private var favoritePlaces
     @State var showMail: Bool = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.openRoute) private var openRoute
 
     var body: some View {
         ScrollView {
@@ -45,6 +46,10 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
+                    // Discret : le diagnostic de l'API sert au développeur, sur n'importe quelle version.
+                    .onLongPressGesture {
+                        openRoute(.apiDiagnostics)
+                    }
             }
             .padding(.horizontal)
             .padding(.top, 8)
