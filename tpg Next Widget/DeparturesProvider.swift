@@ -95,8 +95,10 @@ struct DeparturesProvider: AppIntentTimelineProvider {
         return stops.map { entity in
             let intent = SelectStopIntent()
             intent.stop = entity
-            let description: LocalizedStringResource = entity.isAutomatic ? "Arrêt le plus proche" : "Favori : \(entity.name)"
-            return AppIntentRecommendation(intent: intent, description: description)
+            // Le texte entier, déjà traduit : avec un argument (« Favori : %@ »), le sélecteur
+            // n'affichait que « %@ », l'argument n'étant pas transmis hors de l'app.
+            let description = entity.isAutomatic ? String(localized: "Arrêt le plus proche") : String(localized: "Favori : \(entity.name)")
+            return AppIntentRecommendation(intent: intent, description: LocalizedStringResource(stringLiteral: description))
         }
     }
     #endif

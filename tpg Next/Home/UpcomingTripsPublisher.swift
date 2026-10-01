@@ -2,8 +2,8 @@
 //  UpcomingTripsPublisher.swift
 //  tpg Next
 //
-//  Laisse au widget « Prochain trajet » les prochains trajets, avec leur temps réel quand
-//  l'app le connaît.
+//  Laisse au widget « Prochain trajet » et à la montre les prochains trajets, avec leur temps
+//  réel quand l'app le connaît.
 //
 
 import Foundation
@@ -63,6 +63,10 @@ enum UpcomingTripsPublisher {
             .prefix(count)
         if UpcomingTripsStorage.save(Array(upcoming)) {
             WidgetCenter.shared.reloadTimelines(ofKind: UpcomingTripsStorage.widgetKind)
+        }
+        // La montre les affiche dans « Mes trajets » ; rien n'est envoyé s'ils n'ont pas changé.
+        if let data = try? JSONEncoder().encode(Array(upcoming)) {
+            WatchContext.update(WatchContext.upcomingTripsKey, with: data)
         }
     }
 }

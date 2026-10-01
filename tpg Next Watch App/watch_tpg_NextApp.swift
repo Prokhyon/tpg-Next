@@ -14,7 +14,14 @@ import WidgetKit
 @main
 struct watch_tpg_Next_Watch_AppApp: App {
     @State private var stopStore = StopStore(publishesNames: true)
-    @State private var watchFavorites = WatchFavoritesViewModel()
+    @State private var watchTrips: WatchTripsModel
+    @State private var watchFavorites: WatchFavoritesViewModel
+
+    init() {
+        let trips = WatchTripsModel()
+        _watchTrips = State(initialValue: trips)
+        _watchFavorites = State(initialValue: WatchFavoritesViewModel(trips: trips))
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -23,6 +30,7 @@ struct watch_tpg_Next_Watch_AppApp: App {
                 .accentColor(Color.primary)
                 .environment(stopStore)
                 .environment(watchFavorites)
+                .environment(watchTrips)
                 .task { await prepareWidgetData() }
         }
     }
@@ -41,10 +49,10 @@ struct watch_tpg_Next_Watch_AppApp: App {
 }
 
 
+/// Les favoris reçus de l'iPhone. Délégué unique de la session : il transmet aussi les
+/// prochains trajets à `WatchTripsModel` (un second délégué volerait la réception).
 @Observable
 class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
-    static let shared = WatchFavoritesViewModel()
-    
     var favoriteStops: [Stop] = [] {
         didSet {
             saveFavorites()
@@ -52,8 +60,10 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     }
     
     private static let store = CodableStore<[Stop]>(key: "favoriteStops")
-    
-    override init() {
+    @ObservationIgnored private let trips: WatchTripsModel?
+
+    init(trips: WatchTripsModel? = nil) {
+        self.trips = trips
         super.init()
         setupWCSession()
         loadFavorites()
@@ -69,7 +79,14 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     /// Chemin principal : l'iPhone pousse les favoris via le contexte applicatif,
     /// livré même si l'app montre n'était pas lancée au moment de la modification.
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        applyFavorites(from: applicationContext)
+        applyContext(applicationContext)
+    }
+
+    /// Le contexte contient toujours toutes les clés (`WatchContext`) : chacune n'est appliquée
+    /// que si elle a changé.
+    private func applyContext(_ context: [String: Any]) {
+        applyFavorites(from: context)
+        trips?.apply(from: context)
     }
 
     /// Conservé pour rester compatible avec une version de l'app iPhone
@@ -79,11 +96,13 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     }
 
     private func applyFavorites(from payload: [String: Any]) {
-        guard let data = payload["favoriteStops"] as? Data else { return }
+        guard let data = payload[WatchContext.favoritesKey] as? Data else { return }
 
         do {
             let stops = try JSONDecoder().decode([Stop].self, from: data)
             DispatchQueue.main.async {
+                // Sans changement, rien à enregistrer ni de complication à recharger.
+                guard stops != self.favoriteStops else { return }
                 self.favoriteStops = stops // le didSet enregistre
             }
         } catch {
@@ -99,7 +118,7 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
 
     private func saveFavorites() {
         Self.store.save(favoriteStops)
-        // Les complications choisissent leur arrêt parmi les favoris et en proposent un par favori.
+        // Les complications choisissent leur arrêt parmi les favoris et en proposent quelques-uns.
         FavoritesStorage.save(favoriteStops.map(FavoriteStop.init(stop:)))
         WidgetCenter.shared.reloadAllTimelines()
         WidgetCenter.shared.invalidateConfigurationRecommendations()
@@ -114,6 +133,6 @@ class WatchFavoritesViewModel: NSObject, WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         guard activationState == .activated else { return }
         // Un contexte poussé pendant que l'app montre était éteinte attend déjà ici.
-        applyFavorites(from: session.receivedApplicationContext)
+        applyContext(session.receivedApplicationContext)
     }
 }

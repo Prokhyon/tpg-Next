@@ -551,12 +551,8 @@ public class FavoritesViewModel {
     /// le système conserve le dernier contexte et le livre au prochain réveil de l'app
     /// montre. C'est la sémantique voulue ici — « le dernier état gagne ».
     public func syncFavoritesToWatch() {
-        guard WCSession.isSupported() else { return }
-        let session = WCSession.default
-        guard session.activationState == .activated else { return }
         do {
-            let data = try JSONEncoder().encode(favoriteStops)
-            try session.updateApplicationContext(["favoriteStops": data])
+            WatchContext.update(WatchContext.favoritesKey, with: try JSONEncoder().encode(favoriteStops))
         } catch {
             Log.sync.error("Envoi des favoris à la montre impossible : \(error.localizedDescription)")
         }

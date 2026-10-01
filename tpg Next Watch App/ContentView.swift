@@ -12,6 +12,8 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(StopStore.self) var stopStore
     @Environment(WatchFavoritesViewModel.self) var watchFavorites
+    @Environment(WatchTripsModel.self) private var watchTrips
+    @Environment(\.displayTime) private var now
     @State var locationManager = LocationManager()
     @State private var closestStops: [Stop] = []
     @State var closeStop: Stop? = nil
@@ -38,6 +40,18 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
+                let trips = watchTrips.upcoming(at: now)
+                if !trips.isEmpty {
+                    Section("Mes trajets") {
+                        ForEach(trips) { trip in
+                            if let route = trip.boardingRoute {
+                                NavigationLink(value: route) { UpcomingTripRow(trip: trip) }
+                            } else {
+                                UpcomingTripRow(trip: trip)
+                            }
+                        }
+                    }
+                }
                 Section("À proximité") {
                     if nearbyStops.isEmpty {
                         locationStatus
