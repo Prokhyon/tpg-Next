@@ -29,7 +29,23 @@ public struct LineEvent: Codable, Identifiable, Hashable {
     public var quayAccess: QuayAccess? = nil
 
     public var id: String { sloid + timetabledTime }
-    
+
+    /// Public pour construire une course hors de l'API (aperçus de la montre). Mêmes paramètres
+    /// que l'initialiseur par membres qu'il remplace.
+    public init(stopPointName: String, plannedQuay: String, timetabledTime: String, estimatedTime: String, stopPlaceRef: String,
+                sloid: String, previousCall: Bool, longitude: String, latitude: String, isCancelled: Bool? = nil, quayAccess: QuayAccess? = nil) {
+        self.stopPointName = stopPointName
+        self.plannedQuay = plannedQuay
+        self.timetabledTime = timetabledTime
+        self.estimatedTime = estimatedTime
+        self.stopPlaceRef = stopPlaceRef
+        self.sloid = sloid
+        self.previousCall = previousCall
+        self.longitude = longitude
+        self.latitude = latitude
+        self.isCancelled = isCancelled
+        self.quayAccess = quayAccess
+    }
 }
 
 /// Une rangée de la liste d'une course : un arrêt, ou plusieurs arrêts sautés d'affilée,

@@ -18,8 +18,6 @@ struct ContentView: View {
     @State var viewCloseStops = false
     @State var selected: Stop? = nil
     @State var autoRefresh = true
-    @State var viewLineSorted = true
-    @State private var showTime = false
     
     var body: some View {
         ZStack {
@@ -93,7 +91,12 @@ struct ContentView: View {
                 
             } detail: {
                 if let selected = selected {
-                        StopView(stopName: selected.name, stopSloid: selected.sloid, isCloseStop: closestStops.contains(selected), showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
+                    // Une pile par arrêt : en changer repart de ses départs.
+                    NavigationStack {
+                        StopView(stopName: selected.name, stopSloid: selected.sloid, isCloseStop: closestStops.contains(selected), autoRefresh: autoRefresh)
+                            .navigationDestination(for: WatchRoute.self) { $0.destination }
+                    }
+                    .id(selected.sloid)
                 } else {
                     Text("Sélectionnez un arrêt")
                 }
