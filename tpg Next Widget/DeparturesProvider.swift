@@ -71,6 +71,20 @@ struct DeparturesProvider: AppIntentTimelineProvider {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
 
+    #if os(watchOS)
+    /// La montre ne propose pas de régler un widget : elle offre ces configurations toutes faites,
+    /// l'arrêt le plus proche puis les favoris reçus de l'iPhone.
+    func recommendations() -> [AppIntentRecommendation<SelectStopIntent>] {
+        let stops = [StopEntity.automatic] + FavoritesStorage.load().prefix(8).map { StopEntity(stop: $0.fallbackStop) }
+        return stops.map { entity in
+            let intent = SelectStopIntent()
+            intent.stop = entity
+            let description = entity.isAutomatic ? String(localized: "Arrêt le plus proche") : entity.name
+            return AppIntentRecommendation(intent: intent, description: LocalizedStringResource(stringLiteral: description))
+        }
+    }
+    #endif
+
     func snapshot(for configuration: SelectStopIntent, in context: Context) async -> DeparturesEntry {
         // La galerie de widgets doit montrer quelque chose immédiatement.
         guard !context.isPreview, !Self.isRunningInPreviewCanvas else { return placeholder(in: context) }
@@ -215,7 +229,14 @@ private final class LocationFetcher: NSObject, CLLocationManagerDelegate, @unche
     func isAuthorizedForWidgetUpdates() async -> Bool {
         await withCheckedContinuation { continuation in
             DispatchQueue.main.async {
+                #if os(watchOS)
+                // Pas d'`isAuthorizedForWidgetUpdates` sur la montre : l'extension partage
+                // l'autorisation de l'app.
+                let status = CLLocationManager().authorizationStatus
+                continuation.resume(returning: status == .authorizedWhenInUse || status == .authorizedAlways)
+                #else
                 continuation.resume(returning: CLLocationManager().isAuthorizedForWidgetUpdates)
+                #endif
             }
         }
     }

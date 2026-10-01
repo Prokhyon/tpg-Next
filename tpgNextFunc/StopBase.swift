@@ -348,6 +348,16 @@ public enum FavoritesStorage {
         guard let data = defaults.data(forKey: key) else { return [] }
         return (try? JSONDecoder().decode([FavoriteStop].self, from: data)) ?? []
     }
+
+    /// Enregistre les favoris là où le widget les lit. Pour la montre, qui reçoit les siens de
+    /// l'iPhone : sur l'iPhone, `FavoritesViewModel` s'en charge.
+    public static func save(_ favorites: [FavoriteStop], to defaults: UserDefaults = SharedStorage.defaults) {
+        do {
+            defaults.set(try JSONEncoder().encode(favorites), forKey: key)
+        } catch {
+            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
+        }
+    }
 }
 
 @Observable

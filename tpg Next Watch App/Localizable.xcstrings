@@ -1,6 +1,24 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
+    "%lld arrêts non desservis" : {
+
+    },
+    "+1 h" : {
+
+    },
+    "+15 min" : {
+
+    },
+    "+30 min" : {
+
+    },
+    "≈ %lld min à pied" : {
+
+    },
+    "À proximité" : {
+
+    },
     "Afficher l'heure" : {
       "localizations" : {
         "en" : {
@@ -10,6 +28,12 @@
           }
         }
       }
+    },
+    "Ajoutez des favoris dans l'app iPhone." : {
+
+    },
+    "Aucun départ pour ces lignes" : {
+
     },
     "Autres arrêts proches" : {
       "localizations" : {
@@ -21,10 +45,74 @@
         }
       }
     },
+    "Connexion impossible" : {
+
+    },
+    "Course introuvable" : {
+
+    },
+    "Course supprimée" : {
+
+    },
+    "Départs dès %@" : {
+
+    },
+    "Départs plus tard" : {
+
+    },
+    "Dès %@" : {
+
+    },
+    "Favori" : {
+
+    },
+    "Favoris" : {
+
+    },
+    "Horaire exceptionnel" : {
+
+    },
+    "Hors ligne · %@" : {
+
+    },
+    "Ligne %@" : {
+
+    },
+    "Lignes" : {
+
+    },
+    "Maintenant" : {
+
+    },
+    "Ne passe pas à cet arrêt" : {
+
+    },
+    "Non desservi" : {
+
+    },
+    "Options" : {
+
+    },
+    "Parcours modifié" : {
+
+    },
     "Pas de départs trouvés" : {
 
     },
+    "Passe à %@" : {
+
+    },
+    "Position indisponible" : {
+
+    },
+    "Recherche des arrêts…" : {
+
+    },
+    "Réessayer" : {
+
+    },
     "Sélectionnez un arrêt" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -43,6 +131,12 @@
           }
         }
       }
+    },
+    "Toutes les lignes" : {
+
+    },
+    "tpg Next" : {
+
     },
     "Trier par horaire" : {
       "localizations" : {
