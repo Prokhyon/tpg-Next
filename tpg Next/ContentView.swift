@@ -343,6 +343,20 @@ struct ContentView: View {
             case .reminders:
                 ScheduledNotificationsSheet(previewAutomatic: AutomaticReminders.preview)
                     .previewEnvironment(navigation: false)
+            case .live:
+                LiveTripView(key: "preview", previewTrip: .previewTransfer)
+                    .presentationDragIndicator(.visible)
+            case .liveRiding:
+                LiveTripView(key: "preview", previewTrip: .previewRiding)
+                    .presentationDragIndicator(.visible)
+            case .track:
+                TrackJourneySheet(event: PreviewData.lineDeparture, stopSloid: PreviewData.rive.sloid,
+                                  departsFromStop: true, previewEvents: PreviewData.journeyStops,
+                                  previewSelection: ProcessInfo.processInfo.environment["TPG_TRACK_SELECT"].flatMap(Int.init)
+                                    .flatMap { offset in
+                                        PreviewData.journeyStops.firstIndex { $0.sloid == PreviewData.rive.sloid }
+                                            .map { PreviewData.journeyStops[min($0 + offset, PreviewData.journeyStops.count - 1)].id }
+                                    })
             case .api:
                 NavigationStack {
                     APIDiagnosticsView()
@@ -515,7 +529,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, operators, flex, reminders, api
+    case reminder, newRegular, editRegular, operators, flex, reminders, api, track, live, liveRiding
     var id: String { rawValue }
 }
 #endif

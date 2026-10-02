@@ -91,8 +91,9 @@ extension View {
 
 // MARK: - Le trajet en entier
 
-/// Tout le trajet suivi, de haut en bas : le départ, chaque véhicule avec ses arrêts, les
-/// attentes et l'arrivée. L'étape en cours est mise en évidence, les étapes passées s'effacent.
+/// Tout le trajet suivi, de haut en bas, comme le détail d'un itinéraire : le départ, chaque
+/// véhicule entre sa montée et sa descente sur le trait de sa ligne, les marches et attentes,
+/// puis l'arrivée. L'étape en cours est entourée et décompte ; les étapes passées s'effacent.
 struct LiveTripView: View {
     let key: String
     /// Pour les aperçus : le trajet à afficher quand rien n'est suivi.
@@ -107,80 +108,104 @@ struct LiveTripView: View {
     private var trip: TripLiveActivities.LiveTrip? { liveActivities.live[key] ?? previewTrip }
 
     var body: some View {
-        ZStack {
-            ScrollView {
-                if let trip {
-                    VStack(alignment: .leading, spacing: 0) {
-                        header(trip)
-                        if let doubt = liveActivities.doubtful[key] {
-                            DoubtfulTransferCard(doubt: doubt,
-                                                 boarded: { liveActivities.confirmBoarded(key) },
-                                                 missed: { liveActivities.confirmMissed(key) })
-                            .padding(.bottom, 14)
-                        }
-                        if let options = liveActivities.alternatives[key], options.count > 1 {
-                            ReplanOptionsCard(options: options, chosen: liveActivities.chosenAlternative[key]) {
-                                liveActivities.choose($0, for: key)
-                            }
-                            .padding(.bottom, 14)
-                        }
-                        timeline(trip)
+        ScrollView {
+            if let trip {
+                VStack(alignment: .leading, spacing: 0) {
+                    header(trip)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
+                    if let doubt = liveActivities.doubtful[key] {
+                        DoubtfulTransferCard(doubt: doubt,
+                                             boarded: { liveActivities.confirmBoarded(key) },
+                                             missed: { liveActivities.confirmMissed(key) })
+                        .padding(.horizontal, 15)
+                        .padding(.bottom, 14)
                     }
-                    .padding(.horizontal, 15)
-                    .padding(.top, 10)
-                    .padding(.bottom, 40)
-                } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "inset.filled.circle.slash")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        Text("Ce trajet n'est plus suivi")
-                            .font(.headline)
+                    if let options = liveActivities.alternatives[key], options.count > 1 {
+                        ReplanOptionsCard(options: options, chosen: liveActivities.chosenAlternative[key]) {
+                            liveActivities.choose($0, for: key)
+                        }
+                        .padding(.horizontal, 15)
+                        .padding(.bottom, 14)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 60)
+                    timeline(trip)
+                        .padding(.horizontal, 15)
                 }
+                .padding(.top, 28)
+                .padding(.bottom, 20)
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: "inset.filled.circle.slash")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text("Ce trajet n'est plus suivi")
+                        .font(.headline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
             }
-            .readableScrollContent()
-            .navigationTitle(trip?.attributes.title ?? String(localized: "Trajet suivi"))
-            .navigationBarTitleDisplayMode(.inline)
-            VStack {
-                Spacer()
+        }
+        .readableScrollContent()
+        .safeAreaInset(edge: .bottom) {
+            if trip != nil {
                 Button(role: .destructive) {
                     liveActivities.stop(key)
                     dismiss()
                 } label: {
                     Label("Arrêter le suivi", systemImage: "stop.circle")
-                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .prominentButtonStyle()
-                .padding()
+                .tint(.red)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
             }
         }
     }
 
     // MARK: En-tête
 
+    /// Le nom du trajet, puis l'arrivée dans une capsule, comme l'heure d'un départ.
     private func header(_ trip: TripLiveActivities.LiveTrip) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(trip.attributes.title)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(tripTitle: trip.attributes.title)
                 .font(.title2.bold())
-            HStack(spacing: 5) {
-                Text("Arrivée \(trip.state.arrival.formatted(date: .omitted, time: .shortened))")
-                if trip.state.arrivalDelay >= 2 {
-                    Text("+\(trip.state.arrivalDelay)'")
-                        .foregroundStyle(trip.state.arrivalDelay >= 5 ? .red : .orange)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+            HStack(spacing: 10) {
+                Image(systemName: "flag.checkered")
+                    .foregroundStyle(.tint)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Arrivée")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(stopName: trip.attributes.destination)
+                        .font(.subheadline)
+                        .lineLimit(1)
                 }
-                Text("· \(shortStopName(trip.attributes.destination))")
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Spacer(minLength: 6)
+                VStack(alignment: .trailing, spacing: 0) {
+                    HStack(spacing: 4) {
+                        Text(dateToString(with: trip.state.arrival))
+                            .font(.headline)
+                        if trip.state.arrivalDelay >= 2 {
+                            Text("+\(trip.state.arrivalDelay)'")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(trip.state.arrivalDelay >= 5 ? .red : .orange)
+                        }
+                    }
+                    TripActivityMinutes(target: trip.state.arrival > now ? trip.state.arrival : nil)
+                        .font(.caption.bold())
+                        .foregroundStyle(.tint)
+                }
             }
-            .font(.subheadline)
+            .padding(.horizontal, 16)
+            .basicElementBackground(minHeight: 54)
             if let alert = trip.state.alert {
                 Label(alert, systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote)
                     .foregroundStyle(.orange)
-                    .padding(.top, 4)
             }
             // Dans le véhicule, la position affine l'horaire : le dire, pour que l'écart avec
             // l'heure annoncée ailleurs ne surprenne pas.
@@ -197,14 +222,12 @@ struct LiveTripView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.bottom, 20)
     }
 
-    // MARK: La frise
+    // MARK: Les étapes
 
     @ViewBuilder
     private func timeline(_ trip: TripLiveActivities.LiveTrip) -> some View {
@@ -212,195 +235,214 @@ struct LiveTripView: View {
         let phase = state.phase(at: now)
         let legs = state.legs
         // Une marche finale sépare la dernière descente de l'arrivée ; sans elle, la descente
-        // est l'arrivée, et une seule rangée suffit.
+        // est l'arrivée, et une seule capsule suffit.
         let finalWalk = legs.last.map { state.arrival.timeIntervalSince($0.alight) > 60 } ?? false
-        let start = hasStart(state)
 
         VStack(spacing: 0) {
-            if start, let first = legs.first {
-                place(name: trip.attributes.origin, time: state.departure, label: "Départ",
-                      symbol: "figure.walk.circle.fill", tint: .secondary,
-                      above: .none, below: .dotted, past: state.departure < now)
-                note(walkText(from: state.departure, to: first.board), past: first.board < now)
+            if hasStart(state), let first = legs.first {
+                LiveStopCapsule(name: trip.attributes.origin, caption: "Départ", time: state.departure,
+                                iconColor: .white, past: state.departure < now)
+                note(walking: true, minutes(state.departure, first.board), past: first.board < now)
             }
 
             ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
-                let color = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName)
-                let isLast = index == legs.count - 1
-                let isEnd = isLast && !finalWalk
-
-                place(name: leg.boardName, time: leg.board, label: boardLabel(leg),
-                      symbol: "arrow.up.circle.fill", tint: color,
-                      above: index == 0 && !start ? .none : .dotted, below: .solid(color),
-                      past: leg.board < now, highlighted: phase == .waiting(leg: index),
-                      target: phase == .waiting(leg: index) ? leg.board : nil, delay: leg.delay)
-
-                ride(leg, index: index, color: color, riding: phase == .riding(leg: index))
-
-                place(name: leg.alightName, time: leg.alight,
-                      label: isEnd ? "Arrivée" : "Descente",
-                      symbol: isEnd ? "mappin.circle.fill" : "arrow.down.circle.fill",
-                      tint: color, above: .solid(color), below: isEnd ? .none : .dotted,
-                      past: leg.alight < now,
-                      highlighted: phase == .riding(leg: index) || (isEnd && phase == .arrived),
-                      target: phase == .riding(leg: index) ? leg.alight : nil)
-
+                let isEnd = index == legs.count - 1 && !finalWalk
+                legBlock(leg, index: index, phase: phase, isEnd: isEnd)
                 if index + 1 < legs.count {
-                    note(waitText(from: leg.alight, to: legs[index + 1].board), past: legs[index + 1].board < now)
+                    note(walking: false, minutes(leg.alight, legs[index + 1].board), past: legs[index + 1].board < now)
                 }
             }
 
             if let last = legs.last, finalWalk {
-                note(walkText(from: last.alight, to: state.arrival), past: state.arrival < now)
-                place(name: trip.attributes.destination, time: state.arrival, label: "Arrivée",
-                      symbol: "mappin.circle.fill", tint: .secondary, above: .dotted, below: .none,
-                      past: state.arrival < now, highlighted: phase == .arrived)
+                note(walking: true, minutes(last.alight, state.arrival), past: state.arrival < now)
+                LiveStopCapsule(name: trip.attributes.destination, caption: "Arrivée", time: state.arrival,
+                                iconColor: .white, past: state.arrival < now, highlighted: phase == .arrived,
+                                terminus: true)
             }
         }
     }
 
-    /// Vrai si la frise commence par le départ à pied : la première montée a alors un trait au-dessus.
-    private func hasStart(_ state: TripActivityState) -> Bool {
-        guard let first = state.legs.first else { return false }
-        return first.board.timeIntervalSince(state.departure) > 60
+    /// Un véhicule : sa montée et sa descente en capsules, reliées par le trait de sa ligne, et
+    /// entre elles la ligne, sa direction et ses arrêts.
+    private func legBlock(_ leg: TripActivityState.Leg, index: Int, phase: TripActivityState.Phase,
+                          isEnd: Bool) -> some View {
+        let color = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName)
+        let stopColor = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName, inverted: true)
+        let waiting = phase == .waiting(leg: index)
+        let riding = phase == .riding(leg: index)
+        return VStack(spacing: 0) {
+            LiveStopCapsule(name: leg.boardName, caption: boardCaption(leg), time: leg.board, delay: leg.delay,
+                            iconColor: stopColor, past: leg.board < now, highlighted: waiting,
+                            target: waiting ? leg.board : nil, cancelled: leg.cancelled == true)
+            ride(leg, index: index, stopColor: stopColor, riding: riding)
+            LiveStopCapsule(name: leg.alightName, caption: isEnd ? "Arrivée" : "Descente", time: leg.alight,
+                            iconColor: stopColor, past: leg.alight < now,
+                            highlighted: riding || (isEnd && phase == .arrived),
+                            target: riding ? leg.alight : nil, terminus: isEnd)
+        }
+        // Le trait de la ligne, du point de la montée à celui de la descente.
+        .background(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(color.opacity(leg.alight < now && !riding ? 0.35 : 1))
+                .frame(width: 8)
+                .padding(.vertical, 30)
+                .padding(.leading, LiveStopCapsule.trailX - 4)
+        }
     }
 
-    private func boardLabel(_ leg: TripActivityState.Leg) -> LocalizedStringKey {
+    private func boardCaption(_ leg: TripActivityState.Leg) -> LocalizedStringKey {
         leg.boardQuay.isEmpty ? "Montée" : "Montée · quai \(leg.boardQuay)"
     }
 
-    private func walkText(from: Date, to: Date) -> LocalizedStringKey {
-        "\(minutes(from, to))' à pied"
-    }
-
-    private func waitText(from: Date, to: Date) -> LocalizedStringKey {
-        "\(minutes(from, to))' d'attente"
+    /// Vrai si le trajet commence par une marche jusqu'à la première montée.
+    private func hasStart(_ state: TripActivityState) -> Bool {
+        guard let first = state.legs.first else { return false }
+        return first.board.timeIntervalSince(state.departure) > 60
     }
 
     private func minutes(_ from: Date, _ to: Date) -> Int {
         max(0, Int((to.timeIntervalSince(from) / 60).rounded()))
     }
 
-    // MARK: Les rangées
-
-    /// Un arrêt de la frise : le départ, une montée, une descente ou l'arrivée.
-    private func place(name: String, time: Date, label: LocalizedStringKey, symbol: String, tint: Color,
-                       above: LiveTripRail, below: LiveTripRail, past: Bool,
-                       highlighted: Bool = false, target: Date? = nil, delay: Int = 0) -> some View {
-        LiveTripRow(above: above, below: below, highlighted: highlighted, tint: tint,
-                    past: past && !highlighted) {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(tint)
-                .background(Circle().fill(.background).padding(3))
-        } content: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 1) {
-                    StopNameView(shortStopName(name), style: .row)
-                        .font(highlighted ? .title3.bold() : .body.weight(.medium))
-                    Text(label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 4)
-                VStack(alignment: .trailing, spacing: 1) {
-                    HStack(spacing: 4) {
-                        Text(dateToString(with: time))
-                            .font(.subheadline.bold())
-                        if delay >= 2 {
-                            Text("+\(delay)'")
-                                .font(.subheadline.bold())
-                                .foregroundStyle(delay >= 5 ? .red : .orange)
-                        }
-                    }
-                    if let target {
-                        TripActivityMinutes(target: target)
-                            .font(.caption.bold())
-                            .foregroundStyle(tint)
-                    }
-                }
-            }
-        }
-    }
-
-    /// Le trajet à bord : la ligne, sa direction, et les arrêts entre la montée et la descente.
+    /// « [12] → Carouge **Bachet** » entre la montée et la descente, comme dans le détail d'un
+    /// itinéraire ; à bord, où est le véhicule, et ses arrêts dépliés.
     @ViewBuilder
-    private func ride(_ leg: TripActivityState.Leg, index: Int, color: Color, riding: Bool) -> some View {
+    private func ride(_ leg: TripActivityState.Leg, index: Int, stopColor: Color, riding: Bool) -> some View {
         let calls = (leg.calls ?? []).filter { $0.time > leg.board && $0.time < leg.alight }
         // Le véhicule en route : ses arrêts s'ouvrent d'eux-mêmes, pour voir où il en est.
         let open = expanded.contains(index) || riding
         let vehicleStop = riding ? leg.vehicleStop(at: now) : nil
-        LiveTripRow(above: .solid(color), below: .solid(color), highlighted: riding, tint: color,
-                    past: leg.alight < now && !riding) {
-            TripActivityLineBadge(line: leg.line, color: color)
-        } content: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("→ \(Text(stopName: leg.destination))")
-                            .font(.subheadline.weight(.medium))
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Color.clear.frame(width: LiveStopCapsule.trailX + 14, height: 1)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        BusLineIcon(lineName: leg.line, operatorName: leg.operatorName)
+                        Image(systemName: "arrow.right")
+                        Text(stopName: leg.destination)
+                            .font(.callout)
                             .lineLimit(1)
-                        if let vehicleStop {
-                            Text("Actuellement à \(vehicleStop)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("\(minutes(leg.board, leg.alight))' de trajet")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                            .minimumScaleFactor(0.8)
                     }
-                    Spacer(minLength: 4)
-                    if !calls.isEmpty {
-                        Button {
-                            withAnimation(.snappy) {
-                                if expanded.contains(index) { expanded.remove(index) } else { expanded.insert(index) }
-                            }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Text("\(calls.count) arrêts")
-                                Image(systemName: open ? "chevron.up" : "chevron.down")
-                            }
+                    if let vehicleStop {
+                        Label("Actuellement à \(shortStopName(vehicleStop))", systemImage: "location.fill")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.tint)
+                    } else {
+                        Text("\(minutes(leg.board, leg.alight))' de trajet")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
-                if open {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(calls, id: \.self) { call in
-                            let atVehicle = call.name == vehicleStop
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(atVehicle ? color : Color.secondary.opacity(0.4))
-                                    .frame(width: atVehicle ? 9 : 5, height: atVehicle ? 9 : 5)
-                                    .frame(width: 10)
-                                Text(call.name)
-                                    .font(.footnote.weight(atVehicle ? .semibold : .regular))
-                                Spacer(minLength: 4)
-                                Text(dateToString(with: call.time))
-                                    .font(.footnote)
-                            }
-                            .foregroundStyle(call.time < now && !atVehicle ? .tertiary : .secondary)
+                Spacer(minLength: 4)
+                if !calls.isEmpty, !riding {
+                    Button {
+                        withAnimation(.snappy) {
+                            if expanded.contains(index) { expanded.remove(index) } else { expanded.insert(index) }
                         }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("\(calls.count) arrêts")
+                            Image(systemName: open ? "chevron.up" : "chevron.down")
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .basicElementBackground(minHeight: 30)
                     }
+                    .buttonStyle(.plain)
                 }
+            }
+            .padding(.trailing, 5)
+            .padding(.vertical, 10)
+            .opacity(leg.alight < now && !riding ? 0.45 : 1)
+            if open {
+                ForEach(calls, id: \.self) { call in
+                    let atVehicle = call.name == vehicleStop
+                    HStack(spacing: 8) {
+                        StopIcon(color: stopColor, currentStop: atVehicle, size: atVehicle ? 14 : 11)
+                            .frame(width: LiveStopCapsule.trailX * 2)
+                        Text(stopName: call.name)
+                            .font(.footnote)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Text(dateToString(with: call.time))
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.vertical, 4)
+                    .opacity(call.time < now && !atVehicle ? 0.4 : 1)
+                }
+                .padding(.bottom, 6)
             }
         }
     }
 
-    /// Une attente ou une marche : pas de marqueur, le trait pointillé traverse la rangée.
-    private func note(_ text: LocalizedStringKey, past: Bool) -> some View {
-        LiveTripRow(above: .dotted, below: .dotted, highlighted: false, tint: .secondary, past: past,
-                    markerInset: 0) {
-            EmptyView()
-        } content: {
-            Text(text)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.vertical, 2)
+    /// Une marche ou une attente : l'icône sur l'axe des arrêts, et sa durée.
+    private func note(walking: Bool, _ minutes: Int, past: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: walking ? "figure.walk" : "timer")
+                .frame(width: LiveStopCapsule.trailX * 2)
+            Text(walking ? "\(minutes)' à pied" as LocalizedStringKey : "\(minutes)' d'attente")
+            Spacer()
         }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .padding(.vertical, 10)
+        .opacity(past ? 0.45 : 1)
+    }
+}
+
+/// Un arrêt du trajet suivi en capsule, comme sur la page d'une ligne : son point sur le trait,
+/// son nom, et à droite l'heure, le décompte de l'étape en cours ou ce qu'on y fait.
+struct LiveStopCapsule: View {
+    /// L'axe des points d'arrêt, depuis le bord de la rangée.
+    static let trailX: CGFloat = 30
+
+    let name: String
+    let caption: LocalizedStringKey
+    let time: Date
+    var delay = 0
+    let iconColor: Color
+    let past: Bool
+    var highlighted = false
+    var target: Date?
+    var terminus = false
+    var cancelled = false
+
+    var body: some View {
+        HStack {
+            StopIcon(color: iconColor, currentStop: highlighted, terminus: terminus)
+            SmallStopTitleView(stopName: name)
+                .strikethrough(cancelled)
+            Spacer(minLength: 6)
+            VStack(alignment: .trailing, spacing: 1) {
+                HStack(spacing: 4) {
+                    Text(dateToString(with: time))
+                        .font(.headline.monospacedDigit())
+                    if delay >= 2 {
+                        Text("+\(delay)'")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(delay >= 5 ? .red : .orange)
+                    }
+                }
+                if let target {
+                    TripActivityMinutes(target: target)
+                        .font(.caption.bold())
+                        .foregroundStyle(.tint)
+                } else {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .basicElementBackground(minHeight: 50, highlighted: highlighted)
+        .padding(5)
+        .opacity(past && !highlighted ? 0.45 : 1)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -479,79 +521,6 @@ struct ReplanOptionsCard: View {
         .padding(15)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(BasicCard(cornerRadius: 25))
-    }
-}
-
-// MARK: - Les traits et les rangées
-
-/// Un trait de la frise : plein à la couleur de la ligne à bord, en pointillés à pied ou en
-/// attente, absent avant le départ et après l'arrivée.
-enum LiveTripRail {
-    case none
-    case solid(Color)
-    case dotted
-
-    @ViewBuilder
-    var segment: some View {
-        switch self {
-        case .none:
-            Color.clear.frame(width: 5)
-        case .solid(let color):
-            Rectangle().fill(color).frame(width: 5)
-        case .dotted:
-            DottedLine()
-                .stroke(Color.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 6]))
-                .frame(width: 3)
-                .padding(.vertical, 2)
-        }
-    }
-
-    private struct DottedLine: Shape {
-        func path(in rect: CGRect) -> Path {
-            Path { path in
-                path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-                path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-            }
-        }
-    }
-}
-
-/// Une rangée de la frise : le trait et son marqueur à gauche, l'étape à droite. L'étape en
-/// cours est posée sur un fond teinté ; les étapes passées s'effacent.
-struct LiveTripRow<Marker: View, Content: View>: View {
-    let above: LiveTripRail
-    let below: LiveTripRail
-    let highlighted: Bool
-    let tint: Color
-    let past: Bool
-    /// La hauteur de trait au-dessus du marqueur, pour l'aligner sur la première ligne de texte.
-    var markerInset: CGFloat = 4
-    @ViewBuilder let marker: Marker
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            VStack(spacing: 0) {
-                above.segment.frame(height: markerInset)
-                marker
-                below.segment.frame(maxHeight: .infinity)
-            }
-            .frame(width: 42)
-
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background {
-                    if highlighted {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(tint.opacity(0.14))
-                    }
-                }
-                .padding(.bottom, 8)
-                .opacity(past ? 0.45 : 1)
-        }
-        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

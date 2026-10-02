@@ -35,9 +35,6 @@
     ": %@" : {
       "shouldTranslate" : false
     },
-    "· %@" : {
-
-    },
     "« Arrêter le suivi » depuis le trajet ; le suivi se termine aussi de lui-même à l'arrivée." : {
 
     },
@@ -309,6 +306,19 @@
         }
       }
     },
+    "%@ est le terminus de la course." : {
+
+    },
+    "%@ restantes sur %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ restantes sur %2$@"
+          }
+        }
+      }
+    },
     "%@, vers %@" : {
       "localizations" : {
         "fr" : {
@@ -333,6 +343,16 @@
     },
     "%lld min avant" : {
 
+    },
+    "%lld requêtes · pic %lld/min" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld requêtes · pic %2$lld/min"
+          }
+        }
+      }
     },
     "%lld' à pied" : {
 
@@ -362,6 +382,16 @@
     },
     "%lld' de trajet" : {
 
+    },
+    "%lld/%lld cette minute" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld cette minute"
+          }
+        }
+      }
     },
     "→ %@" : {
 
@@ -421,6 +451,9 @@
 
     },
     "à l'ouest" : {
+
+    },
+    "À partir d'ici" : {
 
     },
     "À partir de %@" : {
@@ -734,6 +767,9 @@
         }
       }
     },
+    "Arrêt du départ" : {
+
+    },
     "Arrêter" : {
 
     },
@@ -849,10 +885,19 @@
     "Aucun départ dans l'heure." : {
 
     },
+    "Aucun échec" : {
+
+    },
+    "Aucun incident." : {
+
+    },
     "Aucun itinéraire à cette heure-là." : {
 
     },
     "Aucun itinéraire à venir" : {
+
+    },
+    "Aucun itinéraire trouvé" : {
 
     },
     "Aucun rappel programmé" : {
@@ -885,6 +930,9 @@
 
     },
     "Aucun transporteur ne correspond." : {
+
+    },
+    "Aucune requête enregistrée." : {
 
     },
     "Aujourd'hui" : {
@@ -1163,10 +1211,10 @@
     "Ce trajet passe par un bus à la demande, sans horaire fixe : pas de rappel ni de suivi en direct. Pensez à le réserver." : {
 
     },
-    "Cet appareil ne prévient pas : les rappels, alertes et activités en direct arrivent sur vos autres appareils. Pour changer, allez dans Paramètres." : {
+    "Cet appareil" : {
 
     },
-    "Cet arrêt est le terminus de la course." : {
+    "Cet appareil ne prévient pas : les rappels, alertes et activités en direct arrivent sur vos autres appareils. Pour changer, allez dans Paramètres." : {
 
     },
     "Cet itinéraire n'est plus proposé." : {
@@ -1194,6 +1242,9 @@
           }
         }
       }
+    },
+    "Chaque clé a 20 000 requêtes par jour et 50 par minute, partagées par tous les appareils qui ont l'app. Le quota d'une clé repart 24 h après le début de sa période, pas à minuit." : {
+
     },
     "Chaque itinéraire montre sur une frise ses lignes, changements, marches et attentes, avec les heures de départ et d'arrivée et les retards. Touchez-en un pour le détail." : {
 
@@ -1270,7 +1321,16 @@
         }
       }
     },
+    "clé %lld" : {
+
+    },
+    "Clé %lld" : {
+
+    },
     "Commencer" : {
+
+    },
+    "Connexion au service des horaires impossible. Vérifiez votre réseau." : {
 
     },
     "Consulter les départs" : {
@@ -1493,10 +1553,10 @@
     "Depuis n'importe où" : {
 
     },
-    "Depuis quel arrêt ?" : {
+    "Dernier jour" : {
 
     },
-    "Dernier jour" : {
+    "Derniers incidents" : {
 
     },
     "Dès %@" : {
@@ -1534,6 +1594,9 @@
         }
       }
     },
+    "Diagnostic de l'API" : {
+
+    },
     "du %@" : {
 
     },
@@ -1554,6 +1617,16 @@
     },
     "En partie gardée" : {
 
+    },
+    "En pause jusqu'à %@ (%@)" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "En pause jusqu'à %1$@ (%2$@)"
+          }
+        }
+      }
     },
     "En plein écran" : {
 
@@ -1594,6 +1667,7 @@
       }
     },
     "Erreur, pas d'itinéraires trouvés" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1948,10 +2022,10 @@
     "Jusqu'à %@" : {
 
     },
-    "Jusqu'à quel arrêt ?" : {
+    "Jusqu'à une date" : {
 
     },
-    "Jusqu'à une date" : {
+    "Jusqu'ici" : {
 
     },
     "L'activité montre l'étape en cours, les comptes à rebours et l'heure d'arrivée. Touchez-la pour ouvrir le trajet en entier." : {
@@ -1994,7 +2068,7 @@
         }
       }
     },
-    "La course commence à cet arrêt." : {
+    "La course commence à %@." : {
 
     },
     "La course d'un départ" : {
@@ -2111,6 +2185,9 @@
     "Le sablier, en haut de la page, alterne entre l'heure de départ (12:34) et le temps restant (14'). Le choix par défaut se règle dans les paramètres, comme l'affichage du retard." : {
 
     },
+    "Le service des horaires ne répond pas pour le moment. Réessayez dans un instant." : {
+
+    },
     "Le suivi en direct" : {
 
     },
@@ -2210,6 +2287,9 @@
 
     },
     "Les réglages : affichage des départs, organisation de l'accueil, notifications, transporteurs choisis." : {
+
+    },
+    "Les requêtes de l'app et du widget, et le plus grand nombre envoyé en une minute : à comparer aux 50 par minute d'une clé." : {
 
     },
     "Les résultats" : {
@@ -2344,6 +2424,9 @@
           }
         }
       }
+    },
+    "lu %@" : {
+
     },
     "Ma position" : {
 
@@ -2668,6 +2751,9 @@
     "Parfait : l'arrêt est dans vos favoris, et vous savez où il se trouve." : {
 
     },
+    "Partager le rapport" : {
+
+    },
     "Partir d'ici" : {
       "localizations" : {
         "en" : {
@@ -2717,6 +2803,9 @@
     "Pas d'autre départ de cette ligne dans la liste." : {
 
     },
+    "Pas de connexion à internet." : {
+
+    },
     "Pas de départ trouvé" : {
 
     },
@@ -2731,6 +2820,9 @@
       }
     },
     "Pas de trajet ce jour-là" : {
+
+    },
+    "Pas encore de réponse avec cette clé sur cet appareil." : {
 
     },
     "Pas encore essayé" : {
@@ -2999,6 +3091,9 @@
         }
       }
     },
+    "Quota des clés" : {
+
+    },
     "Rangez les départs dans l'ordre de passage, ou regroupés par ligne et destination." : {
 
     },
@@ -3165,6 +3260,9 @@
     "Renommer…" : {
 
     },
+    "Repart %@" : {
+
+    },
     "Répéter chaque semaine" : {
 
     },
@@ -3303,9 +3401,6 @@
     "Semaine" : {
 
     },
-    "Sens" : {
-
-    },
     "Sept gestes à essayer du doigt : favoris, rappels, tri, suivi en direct…" : {
 
     },
@@ -3315,7 +3410,7 @@
     "Si la localisation est autorisée, l'app reste active pendant le suivi (indicateur bleu) et ajuste l'heure du véhicule où vous êtes. Cela consomme un peu de batterie." : {
 
     },
-    "Source : registre national des lignes (ATLAS)." : {
+    "Sources : registre national des lignes (ATLAS). Couleurs : search.ch et © les contributeurs d'OpenStreetMap." : {
 
     },
     "Suivant" : {
@@ -3438,6 +3533,12 @@
     "Touchez encore pour revenir à l'autre affichage." : {
 
     },
+    "Touchez l'arrêt où vous descendez" : {
+
+    },
+    "Touchez l'arrêt où vous montez" : {
+
+    },
     "Touchez l'étoile d'un lieu dans Explorer pour le retrouver ici, sur l'accueil et dans l'itinéraire." : {
 
     },
@@ -3505,6 +3606,9 @@
 
     },
     "Toutes" : {
+
+    },
+    "Toutes les clés" : {
 
     },
     "Toutes les lignes" : {
@@ -3702,6 +3806,9 @@
 
     },
     "Vérification…" : {
+
+    },
+    "Vérifier les clés maintenant" : {
 
     },
     "Visite guidée" : {

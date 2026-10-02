@@ -20,8 +20,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Ceci permettra de programmer des notifications de rappel avant l'arrivée d'un véhicule</string>
 	<key>UIBackgroundModes</key>
