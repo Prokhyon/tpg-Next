@@ -174,8 +174,11 @@ Bon à savoir :
   (`A__NF`, `PLATFORM_ACCESS_WITH_ASSISTANCE`) et écrire les libellés dans l'app
   (`Components/ServiceInfoLabels.swift`).
 - **L'exploitant n'est qu'une référence** en 2.0 (`ojp:881`). `OJPOperators.swift` la
-  traduit en nom pour `LineColors`. Un exploitant absent de la table prend la couleur par
-  défaut : relever sa référence et l'ajouter.
+  traduit en nom pour `LineColors`, qui retrouve le transporteur ATLAS puis la couleur de
+  la ligne dans `LineColors.json` (`Scripts/line-colors.py` : search.ch, OpenStreetMap,
+  relevés à la main dans `Scripts/line-colors-manual.csv`). Les tableaux de `LineColors.swift`
+  ne servent plus qu'aux lignes absentes de ce relevé (TAC d'Annemasse…). Un exploitant que ni
+  le registre ni la table ne connaissent prend la couleur par défaut : relever sa référence.
 - **Arrêts précédents et suivants** : ne pas les demander avec la liste des départs (8 fois
   plus lourd). Charger la course du départ choisi avec `JourneyTrackModel`.
 - **« Ausfall » ne veut pas dire « supprimé ».** L'attribut d'incident (`…_IncidentTrip…`)

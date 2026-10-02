@@ -303,7 +303,52 @@ public struct LineColors {
         "CGN SA": cgnColors
     ]
 
+    /// Les couleurs relevées par `Scripts/line-colors.py` (search.ch, OpenStreetMap, relevés à la
+    /// main), par transporteur (identifiant ATLAS) puis numéro sans espaces (« IC3 »). Elles passent
+    /// devant les tableaux ci-dessus, qui ne servent plus qu'aux lignes absentes du relevé.
+    /// `nil` : une ligne blanche ou noire, qui disparaîtrait sur le fond ; elle prend la couleur neutre.
+    private static let catalog: [String: [String: Color?]] = {
+        guard let url = Bundle(for: StopStore.self).url(forResource: "LineColors", withExtension: "json") else {
+            Log.data.error("LineColors.json introuvable dans le bundle")
+            return [:]
+        }
+        do {
+            let hexes = try JSONDecoder().decode([String: [String: String]].self, from: Data(contentsOf: url))
+            return hexes.mapValues { lines in
+                Dictionary(lines.map { (catalogKey($0.key), color(hex: $0.value)) }, uniquingKeysWith: { first, _ in first })
+            }
+        } catch {
+            Log.data.error("Lecture de LineColors.json impossible : \(error.localizedDescription)")
+            return [:]
+        }
+    }()
+
+    /// Le transporteur sous les noms que donnent les horaires : celui d'OJP 1.0 (registre ATLAS) et
+    /// ceux du relevé d'OJP 2.0, quand ils diffèrent.
+    private static let operatorIDs: [String: String] = {
+        var ids = Dictionary(LineDirectory.operators.map { ($0.colorName, $0.id) }, uniquingKeysWith: { first, _ in first })
+        for (ref, name) in OJPOperators.names where ids[name] == nil {
+            ids[name] = LineDirectory.operator(ojpRef: ref)?.id
+        }
+        return ids
+    }()
+
+    private static func catalogKey(_ lineID: String) -> String {
+        lineID.filter { !$0.isWhitespace }.uppercased()
+    }
+
+    /// « E20A16 » ; `nil` pour un blanc ou un noir.
+    private static func color(hex: String) -> Color? {
+        guard hex.count == 6, let value = UInt32(hex, radix: 16) else { return nil }
+        let components = [value >> 16, value >> 8, value].map { Double($0 & 0xFF) / 255 }
+        guard !components.allSatisfy({ $0 > 0.92 }), !components.allSatisfy({ $0 < 0.1 }) else { return nil }
+        return Color(red: components[0], green: components[1], blue: components[2])
+    }
+
     public static func lineColor(for lineID: String, operatorName: String, inverted: Bool = false) -> Color {
+        if let id = operatorIDs[operatorName], let entry = catalog[id]?[catalogKey(lineID)] {
+            return entry ?? (inverted ? .color1 : .primary)
+        }
         if let colorMap = colorMaps[operatorName], let color = colorMap[lineID] {
             return color
         } else {

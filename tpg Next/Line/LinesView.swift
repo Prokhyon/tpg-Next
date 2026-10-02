@@ -38,7 +38,8 @@ struct LinesView: View {
                     .id(selected.id)
                     .transition(.opacity)
                 }
-                Text("Source : registre national des lignes (ATLAS).")
+                // OpenStreetMap (licence ODbL) demande d'être cité : des couleurs viennent de lui.
+                Text("Sources : registre national des lignes (ATLAS). Couleurs : search.ch et © les contributeurs d'OpenStreetMap.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
