@@ -232,11 +232,16 @@ struct TrackJourneySheet: View {
     let event: StopEvent
     let stopSloid: String
     let departsFromStop: Bool
+    /// Pour les aperçus : la course, sans la demander à l'API.
+    var previewEvents: [LineEvent]?
+    var previewSelection: LineEvent.ID?
     @Environment(\.dismiss) private var dismiss
+    @State private var detent = PresentationDetent.large
 
     var body: some View {
         NavigationStack {
-            TrackJourneyView(event: event, stopSloid: stopSloid, departsFromStop: departsFromStop)
+            TrackJourneyView(event: event, stopSloid: stopSloid, departsFromStop: departsFromStop,
+                             previewEvents: previewEvents, previewSelection: previewSelection)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -247,7 +252,8 @@ struct TrackJourneySheet: View {
                     }
                 }
         }
-        .presentationDetents([.medium, .large])
+        // En grand : la course entière se parcourt d'un coup d'œil ; vers le bas, la moitié.
+        .presentationDetents([.medium, .large], selection: $detent)
         .presentationCornerRadius(35)
     }
 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5E4170000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 5E4170000000000000000002 /* Sentry */; };
 		7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
 		782463402D21C6B900CDE4D2 /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7829E3FB2D2297EB0049A10B /* tpg Next Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -242,6 +243,7 @@
 				786C18402C67624E00C214AA /* ClusterMapSwiftUI in Frameworks */,
 				7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */,
 				786C183E2C67624E00C214AA /* ClusterMap in Frameworks */,
+				5E4170000000000000000003 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -415,6 +417,7 @@
 			packageProductDependencies = (
 				786C183D2C67624E00C214AA /* ClusterMap */,
 				786C183F2C67624E00C214AA /* ClusterMapSwiftUI */,
+				5E4170000000000000000002 /* Sentry */,
 			);
 			productName = TPG4;
 			productReference = 78D5C4032C2094F00083C4C6 /* tpg Next.app */;
@@ -528,6 +531,7 @@
 			mainGroup = 78D5C3FA2C2094F00083C4C6;
 			packageReferences = (
 				786C183C2C67624E00C214AA /* XCRemoteSwiftPackageReference "ClusterMap" */,
+				5E4170000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			productRefGroup = 78D5C4042C2094F00083C4C6 /* Products */;
 			projectDirPath = "";
@@ -989,6 +993,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1027,6 +1032,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1288,6 +1294,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5E4170000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.30.0;
+			};
+		};
 		786C183C2C67624E00C214AA /* XCRemoteSwiftPackageReference "ClusterMap" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/vospennikov/ClusterMap.git";
@@ -1299,6 +1313,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5E4170000000000000000002 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5E4170000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
 		786C183D2C67624E00C214AA /* ClusterMap */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 786C183C2C67624E00C214AA /* XCRemoteSwiftPackageReference "ClusterMap" */;
