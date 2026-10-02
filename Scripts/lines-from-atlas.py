@@ -6,7 +6,8 @@ Deux jeux de données publics, sans clé, sur https://data.opentransportdata.swi
 - « business-organisation-v2 » : les transporteurs (« actual-date-business-organisation.csv »).
 
 Les adresses des fichiers changent : elles sont relevées sur la page de chaque jeu de données.
-À relancer à chaque horaire annuel, ou quand une ligne change :
+À relancer avec les autres scripts (Scripts/update-data.sh), à chaque horaire annuel ou quand une
+ligne change :
 
     python3 Scripts/lines-from-atlas.py
 """
@@ -79,8 +80,17 @@ def main():
         })
     lines.sort(key=lambda line: (line["operator"], line["number"]))
     operators.sort(key=lambda operator: operator["name"].lower())
-    directory = {"operators": operators, "lines": lines}
-    OUTPUT.write_text(json.dumps(directory, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    before = json.loads(OUTPUT.read_text(encoding="utf-8")) if OUTPUT.exists() else {"lines": []}
+    # Un registre qui fond d'un coup trahit un jeu de données incomplet : on ne l'écrit pas.
+    if len(lines) < 0.95 * len(before["lines"]):
+        raise SystemExit(f"{len(lines)} lignes contre {len(before['lines'])} avant, {OUTPUT.name} conservé")
+
+    # Une entrée par ligne de texte : le diff d'une mise à jour se relit.
+    def entries(items):
+        return ",\n".join(json.dumps(item, ensure_ascii=False, separators=(",", ":")) for item in items)
+
+    OUTPUT.write_text(f'{{"operators":[\n{entries(operators)}\n],"lines":[\n{entries(lines)}\n]}}\n',
+                      encoding="utf-8")
     print(f"{len(lines)} lignes, {len(operators)} transporteurs → {OUTPUT}")
 
 

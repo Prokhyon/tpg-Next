@@ -211,4 +211,13 @@ struct StopIndexTests {
     @Test func missingFileIsRejected() {
         #expect(StopIndexReader(url: FileManager.default.temporaryDirectory.appendingPathComponent("absent.bin")) == nil)
     }
+
+    @Test func renamingAStopChangesTheSignature() {
+        // Même nombre d'arrêts : l'ancienne signature ne voyait pas la mise à jour de la base.
+        var renamed = stops
+        renamed[2] = Stop(name: "Lausanne, gare", sloid: "ch:1:sloid:1120", codedidoc: "", country: "CH", canton: "VD",
+                          meansOfTransport: "TRAIN", wgs84Coordinates: Coordinates(lon: 6.6291, lat: 46.5168))
+        #expect(StopIndex.signature(for: stops) == StopIndex.signature(for: stops))
+        #expect(StopIndex.signature(for: stops) != StopIndex.signature(for: renamed))
+    }
 }
