@@ -13,7 +13,7 @@ enum OJPOperators {
     /// Relevé le 17.09.2026 en croisant, course par course, les réponses OJP 1.0 (nom) et 2.0
     /// (référence) de gares et d'arrêts de la région. Introuvables alors : TAC (Annemasse), LEB,
     /// CarPostal ; leurs lignes prennent la couleur par défaut.
-    private static let names: [String: String] = [
+    static let names: [String: String] = [
         "ojp:881": "Transports Publics Genevois",
         "ojp:11": "Schweizerische Bundesbahnen SBB",
         "ojp:151": "Transports Publics de la Région Lausannoise sa",
