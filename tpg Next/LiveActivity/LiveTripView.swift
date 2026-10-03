@@ -48,7 +48,9 @@ struct TripLiveAccessory: View {
                     Text(step.action)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text(step.stopName)
+                    // Le nom court, coupé s'il le faut : pas de `TripActivityStopName` ici, son
+                    // `ViewThatFits` faisait boucler la mise en page de la barre d'onglets.
+                    Text(shortStopName(step.stopName))
                         .font(.subheadline.bold())
                 }
                 .lineLimit(1)

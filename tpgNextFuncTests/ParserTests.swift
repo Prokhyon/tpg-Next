@@ -119,11 +119,12 @@ struct StopEventParserTests {
     }
 }
 
-@Suite("Itinéraires (OJP 1.0)")
+@Suite("Itinéraires (OJP 2.0)")
 struct TripParserTests {
     static let cases: [(fixture: String, geoDeparture: Bool)] = [
         ("trip-rive-cornavin", false),
         ("trip-geo-cornavin", true),
+        ("trip-geo-lausanne", true),
     ]
 
     private func parse(_ fixture: String, geoDeparture: Bool) throws -> [TripEvent] {
@@ -174,6 +175,53 @@ struct TripParserTests {
                 }
             }
             #expect(abs(previousEnd - 1) < 0.05)
+        }
+    }
+
+    /// Position près de Plainpalais → Lausanne (02.10.2026, vers 17:39) : réponse 2.0 réelle,
+    /// avec temps réel, marche jusqu'au premier arrêt, tram puis train.
+    @Test func realResponseIsReadLikeVersionOne() throws {
+        let trips = try parse("trip-geo-lausanne", geoDeparture: true)
+        let legs = trips.flatMap(\.legs)
+        let train = try #require(legs.first { $0.publishedLineName == "IR90" })
+        // La catégorie, comme le `TransportTypeName` d'OJP 1.0, pas le mode (« Zug »).
+        #expect(train.transportTypeName == "InterRegio")
+        #expect(train.legOperator == "Schweizerische Bundesbahnen SBB")
+        #expect(!train.legBoardEstimatedTime.isEmpty)
+        #expect(!train.legBoardLongitude.isEmpty)
+        #expect(!train.legIntermediates.isEmpty)
+        let tram = try #require(legs.first { $0.publishedLineName == "15" })
+        #expect(tram.transportTypeName == "Tram")
+        #expect(tram.legOperator == "Transports Publics Genevois")
+        // Marche depuis la position (`ContinuousLeg`) : une étape à pied, sans véhicule.
+        for trip in trips {
+            let first = try #require(trip.legs.first)
+            #expect(first.transfer && first.publishedLineName.isEmpty)
+            #expect(durationMinutes(first.transferDuration) != nil)
+        }
+    }
+
+    /// OJP 2.0 ne donne d'une correspondance que la marche : l'attente se déduit des heures.
+    @Test func changeShowsWaitAndWalk() throws {
+        let trip = try #require(try parse("trip-geo-lausanne", geoDeparture: true)
+            .first { $0.vehicleLegs.map(\.publishedLineName) == ["15", "IR90"] })
+        // Entre le tram et le train : la marche depuis la position est la première étape.
+        let index = try #require(trip.legs.indices.dropFirst().first { trip.legs[$0].transfer })
+        let change = trip.legs[index]
+        let walk = try #require(durationMinutes(change.transferWalkDuration))
+        let window = try #require(durationMinutes(change.transferDuration))
+        #expect(walk < window)
+        let arrival = try #require(trip.legs[index - 1].alightDate)
+        let departure = try #require(trip.legs[index + 1].boardDate)
+        #expect(window == Int((departure.timeIntervalSince(arrival) / 60).rounded()))
+    }
+
+    @Test func noTripFoundIsAnError() {
+        let response = Data(#"<?xml version="1.0" encoding="utf-8"?><OJP xmlns:siri="http://www.siri.org.uk/siri" version="2.0" xmlns="http://www.vdv.de/ojp"><OJPResponse><siri:ServiceDelivery><siri:ResponseTimestamp>2026-10-02T17:31:50+02:00</siri:ResponseTimestamp><OJPTripDelivery><siri:ResponseTimestamp>2026-10-02T17:31:50+02:00</siri:ResponseTimestamp><CalcTime>73</CalcTime><ErrorCondition><TripProblemType>TRIP_NOTRIPFOUND</TripProblemType></ErrorCondition></OJPTripDelivery></siri:ServiceDelivery></OJPResponse></OJP>"#.utf8)
+        #expect(throws: ParserError.self) {
+            try parseTripEvents(from: response, startCoordinate: Coordinates(lon: 0, lat: 0),
+                                endCoordinates: Coordinates(lon: 0, lat: 0), startName: "", endName: "",
+                                startCode: nil, endCode: nil, geoDeparture: false, geoArrival: false)
         }
     }
 
@@ -407,5 +455,69 @@ struct JourneyServiceTests {
         let position = try #require(estimatedVehiclePosition(events: events, segments: track, at: now))
         #expect(abs(position.longitude - 6.0) < 0.0001)
         #expect(position.latitude > 46.08 && position.latitude < 46.09)
+    }
+}
+
+@Suite("Lignes évitées")
+struct AvoidedLineTests {
+    /// Rive → Cornavin, dimanche 13.09.2026 vers 17:56.
+    private func trips() throws -> [TripEvent] {
+        try parseTripEvents(from: Fixture.data("trip-rive-cornavin"),
+                            startCoordinate: Coordinates(lon: 6.1418, lat: 46.1985),
+                            endCoordinates: Coordinates(lon: 6.1424, lat: 46.2102),
+                            startName: "Genève, Rive", endName: "Genève, gare Cornavin",
+                            startCode: "ch:1:sloid:87061", endCode: "ch:1:sloid:87057",
+                            geoDeparture: false, geoArrival: false)
+    }
+
+    @Test func linesComeFromVehicleLegsOnce() throws {
+        let trip = try #require(try trips().first { $0.vehicleLegs.map(\.publishedLineName) == ["12", "19"] })
+        let lines = trip.avoidableLines
+        #expect(lines.map(\.name) == ["12", "19"])
+        #expect(lines.allSatisfy { $0.lineRef.hasPrefix("ojp:") })
+        #expect(lines.first?.operatorName == "Transports Publics Genevois")
+    }
+
+    @Test func tripsWithAnAvoidedLineAreDropped() throws {
+        let trips = try trips()
+        let twelve = try #require(trips.flatMap(\.avoidableLines).first { $0.name == "12" })
+        let kept = trips.avoiding([twelve])
+        #expect(kept.count < trips.count)
+        #expect(!kept.flatMap(\.vehicleLegs).contains { $0.publishedLineName == "12" })
+        #expect(trips.avoiding([]) == trips)
+    }
+
+    /// Une variante de la ligne avec une autre référence : le nom et l'exploitant suffisent.
+    @Test func lineIsRecognizedWithoutItsReference() throws {
+        let trip = FullTripTest().Trip
+        var leg = trip.legs[1]
+        leg.lineRef = "ojp:92000:A"
+        let line = try #require(AvoidedLine(leg: leg))
+        var variant = leg
+        variant.lineRef = "ojp:92000:Z"
+        #expect(line.matches(variant))
+        variant.publishedLineName = "B"
+        #expect(!line.matches(variant))
+        #expect(!line.matches(trip.legs[0]))
+    }
+
+    /// Un itinéraire enregistré avant la lecture de la ligne : il se décode, sans ligne à éviter.
+    @Test func legSavedWithoutLineRef() throws {
+        let leg = FullTripTest().Trip.legs[1]
+        let decoded = try JSONDecoder().decode(TripLeg.self, from: JSONEncoder().encode(leg))
+        #expect(decoded.lineRef == nil)
+        #expect(AvoidedLine(leg: decoded) == nil)
+    }
+
+    @Test func filterListsEveryLineThenExcludes() throws {
+        #expect(lineFilterXML(avoiding: []).isEmpty)
+        var leg = FullTripTest().Trip.legs[1]
+        leg.lineRef = "ojp:91012:B"
+        let twelve = try #require(AvoidedLine(leg: leg))
+        leg.lineRef = "ojp:9200L:_x0020_&"
+        let other = try #require(AvoidedLine(leg: leg))
+        let xml = lineFilterXML(avoiding: [twelve, other])
+        #expect(xml == "<LineFilter><Line><siri:LineRef>ojp:91012:B</siri:LineRef></Line>"
+                + "<Line><siri:LineRef>ojp:9200L:_x0020_&amp;</siri:LineRef></Line><Exclude>true</Exclude></LineFilter>")
     }
 }

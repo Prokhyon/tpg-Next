@@ -34,16 +34,16 @@ struct TripTimeSearchPanel: View {
             if dynamicTypeSize <= .large {
                 HStack {
                     DatePicker(selection: $viewModel.selectedTime) {
-                        Text("Date et heure:")
+                        Text("Date et heure :")
                     }
                     .padding(.trailing, 5)
                     resetTimeButton
                 }
             } else {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Date et heure:")
+                    Text("Date et heure :")
                     HStack {
-                        DatePicker("Date et heure:", selection: $viewModel.selectedTime)
+                        DatePicker("Date et heure :", selection: $viewModel.selectedTime)
                             .labelsHidden()
                         Spacer()
                         resetTimeButton

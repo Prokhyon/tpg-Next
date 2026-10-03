@@ -190,10 +190,12 @@ struct TripActivityStep {
     let target: Date?
     /// En petit au-dessus : où se trouve le véhicule.
     let vehicleNote: String?
-    /// En gros : l'arrêt de montée, de descente, ou d'arrivée.
+    /// En gros : l'arrêt de montée, de descente, ou d'arrivée, en entier (commune comprise).
     let stopName: String
-    /// En petit dessous : ce qu'on y fait.
+    /// En petit dessous : ce qu'on y fait (texte brut, pour l'accessibilité et le bandeau).
     let action: String
+    /// La même chose mise en forme : la direction écrite comme un arrêt, « Carouge **Bachet** ».
+    let actionText: Text
     /// L'étape d'après, en petit sous la frise.
     let next: TripActivityState.NextStep?
     /// En haut : le nom du trajet, l'heure d'arrivée et son retard.
@@ -225,32 +227,35 @@ struct TripActivityStep {
         case .waiting(let index):
             let leg = state.legs[index]
             self.leg = leg
-            stopName = shortStopName(leg.boardName)
+            stopName = leg.boardName
             // En attente, l'arrêt de montée et les minutes suffisent.
             vehicleNote = nil
             var parts = [String(localized: "Montée")]
             if !leg.boardQuay.isEmpty { parts.append(String(localized: "quai \(leg.boardQuay)")) }
             // La direction en entier : « Village » seul ne dit pas où va la ligne.
             // La ligne dans le texte : en attente, le marqueur montre la marche ou l'attente.
-            parts.append("\(leg.line) → \(leg.destination)")
-            if leg.delay >= 2 { parts.append("+\(leg.delay)'") }
-            action = parts.joined(separator: " · ")
+            let lead = (parts + [leg.line]).joined(separator: " · ")
+            let delay = leg.delay >= 2 ? " · +\(leg.delay)'" : ""
+            action = "\(lead) → \(leg.destination)\(delay)"
+            actionText = Text(verbatim: "\(lead) → ") + Text(stopName: leg.destination) + Text(verbatim: delay)
         case .riding(let index):
             let leg = state.legs[index]
             self.leg = leg
-            let name = shortStopName(leg.alightName)
-            stopName = name
-            // Déjà à l'arrêt de descente : l'arrêt en gros suffit.
+            stopName = leg.alightName
+            // Déjà à l'arrêt de descente : l'arrêt en gros suffit. Les passages embarqués
+            // portent des noms courts (l'état doit tenir en 4 Ko).
             vehicleNote = leg.vehicleStop(at: now).flatMap { stop in
-                stop == name ? nil : String(localized: "Actuellement à \(stop)")
+                stop == shortStopName(leg.alightName) ? nil : String(localized: "Actuellement à \(stop)")
             }
             action = String(localized: "Descente")
+            actionText = Text(action)
         case .arrived:
             leg = state.legs.last
             vehicleNote = nil
-            stopName = shortStopName(attributes.destination)
+            stopName = attributes.destination
             // Le trajet est fini : on le dit, sans répéter le retard affiché en route.
             action = String(localized: "Trajet terminé · arrivé à \(state.arrival.formatted(date: .omitted, time: .shortened))")
+            actionText = Text(action)
         }
     }
 
@@ -269,19 +274,19 @@ struct TripActivityStep {
         return false
     }
 
-    /// « Terrassière · 5' de trajet », « 6' d'attente », « Arrivée à 18:55 ».
-    var nextText: String? {
+    /// « Genève **Terrassière** · 5' de trajet », « 6' d'attente », « Arrivée à 18:55 ».
+    var nextText: Text? {
         switch next {
         case .ride(let stop, let minutes):
-            return String(localized: "\(shortStopName(stop)) · \(minutes)' de trajet")
+            return Text("\(Text(stopName: stop)) · \(minutes)' de trajet")
         case .transfer(_, let wait):
             guard let nextLeg else { return nil }
-            return String(localized: "\(wait)' d'attente · \(nextLeg.line) → \(nextLeg.destination)")
+            return Text("\(wait)' d'attente · \(nextLeg.line) → \(Text(stopName: nextLeg.destination))")
         case .arrival(let date, let walk):
             let time = date.formatted(date: .omitted, time: .shortened)
             return walk > 0
-                ? String(localized: "Arrivée à \(time) · \(walk)' à pied")
-                : String(localized: "Arrivée à \(time)")
+                ? Text("Arrivée à \(time) · \(walk)' à pied")
+                : Text("Arrivée à \(time)")
         case nil:
             return nil
         }
@@ -348,15 +353,13 @@ struct TripActivityTimeline: View {
 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(step.stopName)
-                            .font(compact ? .title3.bold() : .title2.bold())
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
+                        TripActivityStopName(name: step.stopName)
+                            .font(compact ? .title3 : .title2)
                         Spacer(minLength: 8)
                         TripActivityMinutes(target: step.target)
                             .font(compact ? .subheadline.bold() : .headline)
                     }
-                    Text(step.action)
+                    step.actionText
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -375,7 +378,7 @@ struct TripActivityTimeline: View {
                         }
                     }
                     .frame(width: railWidth)
-                    Text(nextText)
+                    nextText
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -445,17 +448,15 @@ struct TripActivityWatchView: View {
                     .font(.caption.bold())
                     .minimumScaleFactor(0.7)
             }
-            Text(step.stopName)
+            TripActivityStopName(name: step.stopName)
                 .font(.headline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
             if let alert {
                 Text(alert)
                     .font(.caption2)
                     .foregroundStyle(.orange)
                     .lineLimit(1)
-            } else if let detail = step.nextText ?? (step.isArrived ? step.action : nil) {
-                Text(detail)
+            } else if let detail = step.nextText ?? (step.isArrived ? step.actionText : nil) {
+                detail
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -465,7 +466,8 @@ struct TripActivityWatchView: View {
     }
 }
 
-/// En haut de la frise : la ligne de l'étape en cours, ou le véhicule à l'arrivée.
+/// En haut de la frise : la ligne de l'étape en cours, ce qu'il y a à faire en attendant, ou
+/// l'arrêt d'arrivée.
 struct TripActivityMarker: View {
     let step: TripActivityStep
     var compact = false
@@ -486,7 +488,9 @@ struct TripActivityMarker: View {
                 symbol(step.isWalking ? "figure.walk" : "clock")
             }
         case .arrived:
-            symbol(nil)
+            // Le trajet est fini : le point d'arrivée, comme au bout d'un itinéraire.
+            TripActivityStopIcon(terminus: true, compact: compact)
+                .frame(minWidth: compact ? 28 : 40, minHeight: compact ? 19 : 27)
         }
     }
 
@@ -500,7 +504,8 @@ struct TripActivityMarker: View {
                 transportIcon(with: step.leg?.transportType ?? "Bus")
             }
         }
-        .font(compact ? .caption : .title3)
+        // Aussi lisibles que le badge de ligne qu'elles remplacent.
+        .font(compact ? .body.weight(.semibold) : .title2.weight(.semibold))
         .foregroundStyle(step.color)
         .frame(minWidth: compact ? 28 : 40, minHeight: compact ? 19 : 27)
     }
@@ -565,10 +570,11 @@ struct TripActivityNextMarker: View {
     var body: some View {
         switch step.next {
         case .ride:
-            Circle()
-                .strokeBorder(step.color, lineWidth: 3)
-                .background(Circle().fill(.background))
-                .frame(width: 13, height: 13)
+            // L'arrêt où descendre, comme sur la page de la ligne.
+            if let leg = step.leg {
+                StopIcon(color: LineColors.lineColor(for: leg.line, operatorName: leg.operatorName, inverted: true),
+                         size: 16)
+            }
         case .transfer:
             if let nextLeg = step.nextLeg {
                 TripActivityLineBadge(line: nextLeg.line,
@@ -576,12 +582,41 @@ struct TripActivityNextMarker: View {
                                       compact: true)
             }
         case .arrival:
-            Image(systemName: "mappin.circle.fill")
-                .font(.body)
-                .foregroundStyle(.secondary)
+            TripActivityStopIcon(terminus: true, compact: true)
         case nil:
             EmptyView()
         }
+    }
+}
+
+/// Un nom d'arrêt en entier sur une ligne, « Genève **Rive** » (la commune en régulier,
+/// l'arrêt en gras) ; trop long pour la place, sans la commune. La police vient de l'appelant.
+///
+/// Jamais dans le bandeau de l'app (`TripLiveAccessory`) : la barre d'onglets dimensionne le
+/// bandeau d'après son contenu, et le choix de `ViewThatFits` y basculait en boucle — l'app
+/// gelait pendant tout le suivi.
+struct TripActivityStopName: View {
+    let name: String
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            Text(stopName: name)
+                .lineLimit(1)
+            Text(stopName: shortStopName(name))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+    }
+}
+
+/// Le point de départ ou d'arrivée d'un trajet, comme aux deux bouts d'un itinéraire
+/// (`TripTimeline`). Le fond du système : la couleur de l'app n'existe pas dans le widget.
+struct TripActivityStopIcon: View {
+    var terminus = false
+    var compact = false
+
+    var body: some View {
+        StopIcon(color: Color(uiColor: .systemBackground), terminus: terminus, size: compact ? 16 : 22)
     }
 }
 
@@ -606,11 +641,13 @@ struct TripActivityMinutes: View {
 
 // MARK: - Aperçus
 
-private extension TripActivityState {
+#if DEBUG
+extension TripActivityState {
     /// Le 12 de Rive à Terrassière, puis le 19 jusqu'à Cornavin. Données inventées, calées sur
     /// maintenant ; `boardIn` : minutes avant la montée dans le 12 (négatif : déjà à bord).
+    /// `alightName` : la descente du 12, pour essayer un nom long.
     static func preview(boardIn: Double = 4, delay: Int = 0, alert: String? = nil,
-                        question: Question? = nil) -> TripActivityState {
+                        question: Question? = nil, alightName: String = "Genève, Terrassière") -> TripActivityState {
         let now = Date()
         let board = now.addingTimeInterval(boardIn * 60)
         let calls = ["Bel-Air", "Molard", "Rive", "Terrassière"].enumerated().map { index, name in
@@ -620,7 +657,7 @@ private extension TripActivityState {
             legs: [
                 .init(line: "12", operatorName: "Transports Publics Genevois", transportType: "Tram",
                       destination: "Carouge, Bachet", boardName: "Genève, Rive", boardQuay: "B",
-                      board: board, alight: board.addingTimeInterval(5 * 60), alightName: "Genève, Terrassière",
+                      board: board, alight: board.addingTimeInterval(5 * 60), alightName: alightName,
                       delay: delay, calls: calls),
                 .init(line: "19", operatorName: "Transports Publics Genevois", transportType: "Bus",
                       destination: "Vernier, Village", boardName: "Genève, Terrassière", boardQuay: "",
@@ -639,8 +676,56 @@ private extension TripActivityState {
     }
 }
 
-private let previewAttributes = TripActivityAttributes(key: "preview", title: "Travail",
-                                                       origin: "Genève, Rive", destination: "Genève, gare Cornavin")
+let previewAttributes = TripActivityAttributes(key: "preview", title: "Travail",
+                                               origin: "Genève, Rive", destination: "Genève, gare Cornavin")
+
+/// L'activité dans ses états, dessinée dans l'app : le simulateur ne montre ni l'écran
+/// verrouillé ni la Dynamic Island (capture : `tpgnext://sheet?name=activity`).
+struct TripActivityGallery: View {
+    private let states: [(String, TripActivityState)] = [
+        ("Attente", .preview()),
+        ("Le véhicule arrive", .preview(boardIn: 0.5)),
+        ("À bord", .preview(boardIn: -2)),
+        ("À bord, nom long", .preview(boardIn: -2, alightName: "Plan-les-Ouates, ZIPLO-Pré-Fleuri Nord")),
+        ("Correspondance", .preview(boardIn: -7)),
+        ("Arrivé", .preview(boardIn: -30)),
+    ]
+
+    /// `TPG_ACTIVITY_REVERSED` : les derniers états en haut, pour les capturer sans défiler.
+    private var shown: [(String, TripActivityState)] {
+        ProcessInfo.processInfo.environment["TPG_ACTIVITY_REVERSED"] == nil ? states : states.reversed()
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(shown, id: \.0) { title, state in
+                    let step = TripActivityStep(attributes: previewAttributes, state: state, now: Date())
+                    Text(title).font(.caption).foregroundStyle(.secondary)
+                    TripActivityContent(step: step, alert: state.alert, key: "preview")
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+                    // La Dynamic Island compacte : marqueur à gauche, minutes à droite.
+                    HStack {
+                        TripActivityMarker(step: step, compact: true)
+                            .padding(.horizontal, 3)
+                        Spacer(minLength: 90)
+                        TripActivityMinutes(target: step.target)
+                            .font(.caption2.bold())
+                            .minimumScaleFactor(0.6)
+                            .frame(maxWidth: 64)
+                            .padding(.trailing, 4)
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(height: 37)
+                    .foregroundStyle(.white)
+                    .background(.black, in: Capsule())
+                    .frame(width: 250)
+                }
+            }
+            .padding()
+        }
+    }
+}
 
 #Preview("Écran verrouillé", as: .content, using: previewAttributes) {
     TripLiveActivity()
@@ -668,3 +753,4 @@ private let previewAttributes = TripActivityAttributes(key: "preview", title: "T
 } contentStates: {
     TripActivityState.preview()
 }
+#endif

@@ -601,7 +601,7 @@ struct DepartureTimeSheet: View {
                 }
             }
             Button(action: confirm) {
-                Text("Selectionner")
+                Text("Sélectionner")
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)
             }

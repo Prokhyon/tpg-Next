@@ -40,6 +40,27 @@ qu'un deuxième écran s'en sert, il passe dans `Components/`.
 Ce qui parle à l'API ou décode ses réponses va dans `tpgNextFunc`, pas dans l'app : le
 widget et la montre en profitent, et les tests peuvent le vérifier.
 
+## Langues
+
+Le français est la langue source (les clés), traduit en anglais US (`en`), anglais UK (`en-GB`)
+et allemand (`de`). Un catalogue par groupe de cibles :
+
+| Catalogue | Cibles |
+|---|---|
+| `tpg Next/Localizable.xcstrings` | l'app **et** le widget (membre du widget dans le projet) |
+| `tpg Next Watch App/Localizable.xcstrings` | l'app montre **et** ses complications |
+| `tpgNextFunc/Localizable.xcstrings` | le framework : `String(localized: "…", bundle: #bundle)`, sans quoi le texte est cherché dans l'app qui l'appelle |
+| `InfoPlist.xcstrings` (app, montre) | nom de l'app, demande de localisation |
+
+- Un texte du framework sans `bundle: #bundle` reste en français partout.
+- L'allemand suit l'usage suisse : « ss » (pas de ß), « Kante » pour un quai, « Linie 12 »
+  plutôt que « le 12 », « Tram ». L'anglais : *route* pour un itinéraire, *trip* pour un trajet,
+  *service* pour la course d'un véhicule, *platform* pour un quai.
+- `en-GB` reprend `en` en changeant l'orthographe (*favourite*, *colour*, *cancelled*…) et les
+  guillemets (‘ ’).
+- Sans dossier `fr.lproj`, iOS garde le français : la région de développement compte comme une
+  langue disponible. Les autres langues (italien…) retombent sur l'anglais.
+
 ## Ouvrir un écran
 
 Un lien ne construit jamais l'écran d'arrivée : il dit **quoi** ouvrir, la pile de l'onglet
@@ -164,12 +185,25 @@ Toutes les requêtes passent par `OJPClient` (`tpgNextFunc/OJPClient.swift`).
 |---|---|---|---|
 | Départs d'un arrêt | `OJPStopEventRequest` | 2.0 | `StopFunc.swift`, lecture dans `OJPParsing.swift` |
 | Course d'une ligne | `OJPTripInfoRequest` | 2.0 | `LineFunc.swift`, lecture dans `JourneyParser.swift` |
-| Itinéraires | `OJPTripRequest` | 1.0 | `TripFunc.swift` |
+| Itinéraires | `OJPTripRequest` | 2.0 | `TripFunc.swift`, lecture dans `OJPParsing.swift` |
 
 Bon à savoir :
 
 - **L'ordre des paramètres compte.** L'API refuse (erreur 400) une requête dont les
   paramètres ne suivent pas l'ordre du schéma OJP.
+- **Itinéraires (2.0, depuis le 02.10.2026)** : sans `NumberOfResults`, l'API ne trouve
+  rien (`TRIP_NOTRIPFOUND`) ; avec 5, elle en rend 8 à 10. Une correspondance ne donne que sa
+  marche : l'attente se déduit des heures (`TripEventParser.withWaits`). Le type de véhicule
+  est la catégorie (`ProductCategory` : « Tram », « InterRegio »), pas le mode (« Zug »).
+  Les bus à la demande (tpg flex) n'y sont jamais proposés, même avec
+  `IncludeAllRestrictedLines` : la 1.0 les donnait comme des bus ordinaires, parfois seuls.
+  Filtres vérifiés : `LineFilter` (exclure une ligne par sa `LineRef`, ex. `ojp:91012:B`, la
+  même dans les deux sens) et `ModeAndModeOfOperationFilter` par mode (le sous-mode est ignoré).
+  « Éviter la ligne » (menu d'un résultat) s'en sert : `AvoidedLine`, `lineFilterXML`, et un
+  tri de secours dans l'app par nom et exploitant (`[TripEvent].avoiding`). Les lignes évitées
+  vivent dans `ItineraryViewModel.avoidedLines`, effacées quand le départ ou l'arrivée change. Les anciennes réponses
+  1.0 des tests (`Fixtures/trip-*.xml`, sauf `trip-geo-lausanne`) ont été réécrites au format
+  2.0, sans changer leurs courses.
 - **Les textes arrivent en allemand**, quelle que soit la langue demandée. Lire les codes
   (`A__NF`, `PLATFORM_ACCESS_WITH_ASSISTANCE`) et écrire les libellés dans l'app
   (`Components/ServiceInfoLabels.swift`).
@@ -203,7 +237,7 @@ horaires (`estimatedVehiclePosition`).
 ## Trajets réguliers et activité en direct
 
 - Un trajet régulier garde une **recette** (`tpgNextFunc/RegularTrip.swift`) : départ, arrivée,
-  heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` 1.0 est redemandée et le
+  heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` est redemandée et le
   trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
   notifications : `tpg Next/RegularTrips/`.
 - **Absent de la réponse ne veut pas dire perdu** : OJP ne propose que ~5 itinéraires, choisis
@@ -324,8 +358,17 @@ horaires (`estimatedVehiclePosition`).
   badge de ligne à bord, `figure.walk` en chemin, `clock` à l'arrêt, puis l'icône du véhicule
   une minute avant la montée estimée (`TripActivityState.approachLead`, échéance ajoutée à
   `nextTransition` pour que le système redessine seul), et le véhicule à l'arrivée.
+- Noms d'arrêt de l'activité : en entier sur une ligne, commune en régulier et arrêt en gras
+  (`TripActivityStopName`, sur `Text(stopName:)`) ; sans la commune s'ils ne tiennent pas
+  (`ViewThatFits`). Pas dans le bandeau de l'app (`TripLiveAccessory`) : la barre d'onglets
+  dimensionne le bandeau d'après son contenu, le choix de `ViewThatFits` y basculait en boucle et
+  l'app gelait pendant tout le suivi ; le bandeau garde le nom court en gras, coupé s'il le faut.
+  Les passages embarqués gardent des noms courts (4 Ko). Arrêt de descente et
+  arrivée avec `StopIcon`, comme dans un itinéraire (fond système : `CustomBackground` n'existe
+  pas dans le widget).
 - Les captures du simulateur (`simctl io screenshot`) ne montrent pas la Dynamic Island :
-  utiliser les aperçus de `TripLiveActivity.swift`.
+  utiliser les aperçus de `TripLiveActivity.swift`, ou la galerie `tpgnext://sheet?name=activity`
+  (Debug ; `TPG_ACTIVITY_REVERSED=1` met les derniers états en haut).
 
 ## Accueil et recherche
 
@@ -337,7 +380,11 @@ horaires (`estimatedVehiclePosition`).
   heures (`NextTripSection`, régulier ou enregistré, avec l'heure où partir
   `TripEvent.leavingDate`), précédé de sa date — sans trajet, pas de date —, les favoris, les
   départs à proximité, puis la carte « Autour de vous » (`HomeMapCard`, aperçu figé qui montre
-  les mêmes arrêts que la liste, `NearbyStops`, et met en évidence celui qu'elle affiche ; le toucher ouvre `MapView`
+  les mêmes arrêts que la liste, `NearbyStops`, et met en évidence celui qu'elle affiche ; la
+  position y est un point fixe, celle de la dernière recherche (`nearby.location`), jamais
+  `UserAnnotation()` : en mouvement (positions en continu d'un trajet suivi), MapKit
+  redessinait la carte à chaque image, même hors de l'écran (15 à 35 % du processeur mesurés
+  sur simulateur) ; le toucher ouvre `MapView`
   en plein écran, avec sa propre pile et son propre `\.layout`, mesuré à nouveau). Sur grand
   écran, rien ne défile : à gauche le prochain trajet, les favoris et la carte qui prend la place
   restante ; à droite les départs empilés (`HomeDepartures(stacked:)`, un arrêt déplié à la

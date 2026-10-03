@@ -319,7 +319,7 @@ extension OJPUsage.Snapshot {
         snapshot.failuresByDay = [today: ["hors-ligne": 3, "limite-minute": 1], yesterday: ["serveur (503)": 2]]
         snapshot.incidents = [
             .init(date: now.addingTimeInterval(-300), code: "limite-minute", key: 3, endpoint: "ojp20"),
-            .init(date: now.addingTimeInterval(-3_600), code: "hors-ligne", key: 1, endpoint: "ojp2020"),
+            .init(date: now.addingTimeInterval(-3_600), code: "hors-ligne", key: 1, endpoint: "ojp20"),
             .init(date: now.addingTimeInterval(-90_000), code: "serveur (503)", key: 2, endpoint: "ojp20"),
         ]
         return snapshot

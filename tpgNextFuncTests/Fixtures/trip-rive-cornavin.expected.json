@@ -37,9 +37,9 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT4M",
-        "transferWalkDuration" : "PT4M",
+        "transferWalkDuration" : "",
         "transportTypeName" : ""
       },
       {
@@ -83,6 +83,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92009:L",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "9",
         "transfer" : false,
@@ -147,6 +148,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91012:B",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "12",
         "transfer" : false,
@@ -180,7 +182,7 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT3M",
         "transferWalkDuration" : "PT2M",
         "transportTypeName" : ""
@@ -219,6 +221,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92019:C",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "19",
         "transfer" : false,
@@ -278,6 +281,7 @@
 
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92029:B",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "29",
         "transfer" : false,
@@ -311,8 +315,8 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT1M",
-        "transferDuration" : "PT4M",
+        "transferBuffer" : "",
+        "transferDuration" : "PT3M",
         "transferWalkDuration" : "PT2M",
         "transportTypeName" : ""
       },
@@ -351,6 +355,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92008:I",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "8",
         "transfer" : false,
@@ -407,9 +412,9 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT4M",
-        "transferWalkDuration" : "PT4M",
+        "transferWalkDuration" : "",
         "transportTypeName" : ""
       },
       {
@@ -453,6 +458,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92006:N",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "6",
         "transfer" : false,
@@ -546,6 +552,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92010:H",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "10",
         "transfer" : false,

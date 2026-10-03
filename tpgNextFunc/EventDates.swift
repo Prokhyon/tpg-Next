@@ -36,8 +36,8 @@ extension TripLeg {
     /// La descente : heure estimée si elle est connue, sinon prévue.
     public var alightDate: Date? { OJPDate.date(from: legAlightEstimatedTime) ?? OJPDate.date(from: legAlightTimetableTime) }
 
-    /// La durée de l'étape. OJP ne donne une `Duration` qu'aux étapes à pied : celle d'un bus
-    /// ou d'un tram (`TimedLeg`) vient de ses heures de montée et de descente.
+    /// La durée de l'étape. Seule celle des étapes à pied est gardée : celle d'un bus ou d'un
+    /// tram (`TimedLeg`) vient de ses heures de montée et de descente.
     public var duration: TimeInterval? {
         if let boardDate, let alightDate {
             return alightDate.timeIntervalSince(boardDate)

@@ -108,7 +108,7 @@ struct StopView: View {
                         Button {
                             selectTime.toggle()
                         } label: {
-                            Label("Selectionner l'heure", systemImage: "clock")
+                            Label("Sélectionner l'heure", systemImage: "clock")
                                 .symbolEffect(.bounce.down.byLayer, value: selectTime)
                         }
 

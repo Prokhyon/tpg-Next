@@ -90,6 +90,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92019:C",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "19",
         "transfer" : false,
@@ -197,6 +198,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "15",
         "transfer" : false,
@@ -304,6 +306,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91018:",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "18",
         "transfer" : false,
@@ -405,6 +408,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92001:S",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "1",
         "transfer" : false,
@@ -512,6 +516,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "15",
         "transfer" : false,

@@ -98,7 +98,7 @@ public struct Quay: Codable, Identifiable, Hashable {
 }
 
 
-/// La requête `OJPStopEventRequest` (OJP 1.0) des `count` prochains départs à partir de `date`.
+/// La requête `OJPStopEventRequest` (OJP 2.0) des `count` prochains départs à partir de `date`.
 func stopEventRequestXML(stopName: String, stopSloid: String, count: Int, at date: Date) -> String {
     let requestTimestamp = OJPDate.string(from: Date())
     let depArrTime = OJPDate.string(from: date)

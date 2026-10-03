@@ -200,7 +200,7 @@ struct TripLegsList: View {
     private func incidentNotice(_ leg: TripLeg) -> LocalizedStringKey? {
         let skipped = leg.skippedIntermediates.count
         if skipped > 0 {
-            return "\(skipped) arrêt(s) non desservi(s)"
+            return "\(skipped) arrêts non desservis"
         }
         return leg.hasIncident ? "Parcours modifié" : nil
     }
