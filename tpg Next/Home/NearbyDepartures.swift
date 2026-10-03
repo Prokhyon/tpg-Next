@@ -70,13 +70,13 @@ struct HomeDepartures: View {
                     .padding(.top, 70)
                     .padding(.horizontal)
                 case .loading:
-                    Text("Chargement...")
+                    Text("Chargement…")
                         .padding(.top, 70)
                 }
             } else if !displayedStops.isEmpty {
                 departures(displayedStops, tripMenu: true)
             } else {
-                Text("Pas d'arrets en favoris")
+                Text("Aucun arrêt favori")
                     .padding(.top, 70)
             }
         }

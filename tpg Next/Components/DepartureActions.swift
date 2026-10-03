@@ -210,16 +210,16 @@ extension BusNotificationManager {
     func scheduleReminder(for event: StopEvent, stopID: String, minutes: Int) {
         let confirmation = NotificationConfirmationViewModel.shared
         guard notificationManager.isNotificationAuthorized else {
-            confirmation.show(message: String(localized: "Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les paramètres du téléphone"), error: true)
+            confirmation.show(message: String(localized: "Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les réglages du téléphone"), error: true)
             return
         }
         scheduleNotifications(for: event, lineEvent: nil, stopID: stopID, notificationInterval: Double(minutes)) { success in
             if !success {
-                confirmation.show(message: String(localized: "Erreur: Le rappel n'a pas pu être prévu"), error: true)
+                confirmation.show(message: String(localized: "Erreur : le rappel n'a pas pu être programmé"), error: true)
             } else if minutes == 0 {
-                confirmation.show(message: String(localized: "Rappel à l'arrivée prévu avec succès"), error: false)
+                confirmation.show(message: String(localized: "Rappel programmé à l'arrivée"), error: false)
             } else {
-                confirmation.show(message: String(localized: "Rappel \(minutes)' avant prévu avec succès"), error: false)
+                confirmation.show(message: String(localized: "Rappel programmé \(minutes)' avant"), error: false)
             }
         }
     }

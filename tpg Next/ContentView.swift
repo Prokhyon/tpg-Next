@@ -349,6 +349,8 @@ struct ContentView: View {
             case .liveRiding:
                 LiveTripView(key: "preview", previewTrip: .previewRiding)
                     .presentationDragIndicator(.visible)
+            case .activity:
+                TripActivityGallery()
             case .track:
                 TrackJourneySheet(event: PreviewData.lineDeparture, stopSloid: PreviewData.rive.sloid,
                                   departsFromStop: true, previewEvents: PreviewData.journeyStops,
@@ -529,7 +531,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, operators, flex, reminders, api, track, live, liveRiding
+    case reminder, newRegular, editRegular, operators, flex, reminders, api, track, live, liveRiding, activity
     var id: String { rawValue }
 }
 #endif

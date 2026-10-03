@@ -22,14 +22,16 @@ public class TripManager {
     private var latestRequest = 0
 
     /// Sans départ ou sans arrivée, la requête échoue et `tripError` passe à vrai.
-    public func selectTrip(from departure: TripEndpoint?, to arrival: TripEndpoint?, at selectedTime: Date, isArrivalTime: Bool) {
+    /// Sans itinéraire qui évite `avoidedLines`, aussi.
+    public func selectTrip(from departure: TripEndpoint?, to arrival: TripEndpoint?, at selectedTime: Date, isArrivalTime: Bool,
+                           avoiding avoidedLines: [AvoidedLine] = []) {
         self.tripError = false
         self.failure = nil
         latestRequest += 1
         let request = latestRequest
         fetchTrips(with: departure?.stop, with: departure?.place, with: departure?.isPlace ?? false,
                    with: arrival?.stop, with: arrival?.place, with: arrival?.isPlace ?? false,
-                   with: selectedTime, with: isArrivalTime) { result in
+                   with: selectedTime, with: isArrivalTime, avoiding: avoidedLines) { result in
             guard request == self.latestRequest else { return }
             let data: Data
             switch result {
@@ -50,10 +52,14 @@ public class TripManager {
                                         startName: departure?.name ?? "", endName: arrival?.name ?? "",
                                         startCode: departure?.stop?.sloid, endCode: arrival?.stop?.sloid,
                                         geoDeparture: departure?.isPlace ?? false, geoArrival: arrival?.isPlace ?? false)
+                        .avoiding(avoidedLines)
                 }
                 DispatchQueue.main.async {
                     guard request == self.latestRequest else { return }
                     switch result {
+                    case .success(let found) where found.isEmpty:
+                        // Toutes les propositions empruntaient une ligne évitée.
+                        self.tripError = true
                     case .success(var trips):
                         // Repris tel quel : l'itinéraire dont la première étape n'a ni transfert
                         // ni ligne arrive en dernier, et passe en tête.

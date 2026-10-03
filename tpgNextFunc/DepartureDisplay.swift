@@ -33,7 +33,7 @@ public enum DepartureDisplay: Equatable {
         case .minutes(let minutes, _): return "\(minutes)'"
         case .clock(let time, _): return time
         case .plannedWithDelay(let planned, let delay): return "\(planned);\(delay)"
-        case .cancelled: return String(localized: "Supprimé")
+        case .cancelled: return String(localized: "Supprimé", bundle: #bundle)
         case .unknown: return ""
         }
     }
@@ -126,7 +126,7 @@ public struct DepartureTimeView: View {
                 .frame(minWidth: iconWidth)
         case .atStop:
             // « 0 », seul à côté d'un nom d'arrêt ou sous « Heure », ne se lisait pas.
-            Text(String(localized: "Maintenant"))
+            Text(String(localized: "Maintenant", bundle: #bundle))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         case .plannedWithDelay(let planned, let delay):

@@ -31,8 +31,15 @@ class ItineraryViewModel {
     /// Texte cherché dans les arrêts pour le champ actif (départ ou arrivée).
     var stopQuery = ""
 
-    var departure = TripPoint()
-    var arrival = TripPoint()
+    var departure = TripPoint() {
+        didSet { if departure.endpoint != oldValue.endpoint { avoidedLines = [] } }
+    }
+    var arrival = TripPoint() {
+        didSet { if arrival.endpoint != oldValue.endpoint { avoidedLines = [] } }
+    }
+    /// Les lignes que la recherche évite, choisies dans les résultats. Elles ne valent que
+    /// pour ce départ et cette arrivée.
+    var avoidedLines: [AvoidedLine] = []
     var selectedTime = Date()
     var isArrivalTime = false
 

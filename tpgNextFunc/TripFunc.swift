@@ -57,7 +57,10 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
     /// Optionnel : les itinéraires enregistrés avant qu'il soit lu n'en ont pas (voir `resolvedOperatingDayRef`).
     public var operatingDayRef: String? = nil
     public var publishedLineName: String
-    /// Vide pour un bus ou un tram : OJP ne la donne pas. Passer par `duration`.
+    /// La ligne pour OJP (`ojp:91012:B`), la même dans les deux sens : sert à l'éviter
+    /// (`AvoidedLine`). Optionnel : les itinéraires enregistrés avant qu'elle soit lue n'en ont pas.
+    public var lineRef: String? = nil
+    /// Vide pour un bus ou un tram : leur durée se déduit des heures. Passer par `duration`.
     public var legDuration: String
     public var transferDuration: String
     public var transferWalkDuration: String
@@ -90,6 +93,45 @@ public struct TripLeg: Identifiable, Hashable, Encodable, Decodable {
 extension TripEvent {
     /// Au moins une étape en bus à la demande.
     public var hasOnDemandLeg: Bool { legs.contains(where: \.isOnDemand) }
+}
+
+/// Une ligne que la recherche d'itinéraire évite, choisie dans les résultats.
+public struct AvoidedLine: Hashable, Identifiable, Sendable {
+    public let lineRef: String
+    public let name: String
+    public let operatorName: String
+    public var id: String { lineRef }
+
+    /// La ligne d'une étape en véhicule ; `nil` pour la marche ou sans référence de ligne.
+    public init?(leg: TripLeg) {
+        guard !leg.transfer, !leg.publishedLineName.isEmpty, let lineRef = leg.lineRef, !lineRef.isEmpty else { return nil }
+        self.lineRef = lineRef
+        name = leg.publishedLineName
+        operatorName = leg.legOperator
+    }
+
+    /// L'étape passe par cette ligne. Le nom et l'exploitant la reconnaissent aussi : une variante
+    /// de la ligne pourrait avoir une autre référence, que le filtre d'OJP laisserait passer.
+    public func matches(_ leg: TripLeg) -> Bool {
+        guard !leg.transfer else { return false }
+        return leg.lineRef == lineRef || (leg.publishedLineName == name && leg.legOperator == operatorName)
+    }
+}
+
+extension TripEvent {
+    /// Les lignes de l'itinéraire, dans l'ordre, chacune une fois.
+    public var avoidableLines: [AvoidedLine] {
+        var seen: Set<String> = []
+        return legs.compactMap(AvoidedLine.init(leg:)).filter { seen.insert($0.lineRef).inserted }
+    }
+}
+
+extension Array where Element == TripEvent {
+    /// Sans les itinéraires qui empruntent une ligne évitée.
+    public func avoiding(_ lines: [AvoidedLine]) -> [TripEvent] {
+        guard !lines.isEmpty else { return self }
+        return filter { trip in !trip.legs.contains { leg in lines.contains { $0.matches(leg) } } }
+    }
 }
 
 public struct LegIntermediate: Codable, Identifiable, Hashable {
@@ -178,7 +220,7 @@ public func parseTripEvents(from data: Data, startCoordinate: Coordinates, endCo
     return parser.trips.map(StopNames.withOfficialDestinations)
 }
 
-/// `<ojp:PlaceRef>` d'un départ ou d'une arrivée : l'arrêt, ou les coordonnées d'un lieu.
+/// `<PlaceRef>` d'un départ ou d'une arrivée : l'arrêt, ou les coordonnées d'un lieu.
 /// `nil` si l'élément attendu manque.
 private func placeRefXML(stop: Stop?, geoPosition: GeoPosition?, useGeoPosition: Bool) -> String? {
     let reference: String
@@ -186,30 +228,42 @@ private func placeRefXML(stop: Stop?, geoPosition: GeoPosition?, useGeoPosition:
     if useGeoPosition {
         guard let geoPosition else { return nil }
         reference = """
-        <ojp:GeoPosition>
-            <Longitude>\(geoPosition.coordinate.longitude)</Longitude>
-            <Latitude>\(geoPosition.coordinate.latitude)</Latitude>
-        </ojp:GeoPosition>
+        <GeoPosition>
+            <siri:Longitude>\(geoPosition.coordinate.longitude)</siri:Longitude>
+            <siri:Latitude>\(geoPosition.coordinate.latitude)</siri:Latitude>
+        </GeoPosition>
         """
         name = geoPosition.name
     } else {
         guard let stop else { return nil }
-        reference = "<ojp:StopPlaceRef>\(stop.sloid.xmlEscaped)</ojp:StopPlaceRef>"
+        reference = "<StopPlaceRef>\(stop.sloid.xmlEscaped)</StopPlaceRef>"
         name = stop.name
     }
     return """
-    <ojp:PlaceRef>
+    <PlaceRef>
         \(reference)
-        <ojp:LocationName>
-            <ojp:Text>\(name.xmlEscaped)</ojp:Text>
-        </ojp:LocationName>
-    </ojp:PlaceRef>
+        <Name>
+            <Text>\(name.xmlEscaped)</Text>
+        </Name>
+    </PlaceRef>
     """
 }
 
-/// Les itinéraires entre deux points (OJP 1.0). `completion` reçoit la réponse brute,
+/// Le `<LineFilter>` qui exclut `lines`, vide sans ligne à éviter. Il précède les autres
+/// paramètres de la requête.
+func lineFilterXML(avoiding lines: [AvoidedLine]) -> String {
+    guard !lines.isEmpty else { return "" }
+    let refs = lines.map { "<Line><siri:LineRef>\($0.lineRef.xmlEscaped)</siri:LineRef></Line>" }.joined()
+    return "<LineFilter>\(refs)<Exclude>true</Exclude></LineFilter>"
+}
+
+/// Les itinéraires entre deux points (OJP 2.0). `completion` reçoit la réponse brute,
 /// ou la raison de l'échec, sur le thread principal.
-public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, completion: @escaping (Result<Data, OJPClient.Failure>) -> Void) {
+///
+/// OJP 2.0 ne propose pas les bus à la demande (tpg flex), que la 1.0 donnait comme des bus
+/// ordinaires, parfois seuls : l'heure n'y est qu'une proposition, il faut réserver.
+/// `avoidedLines` : les lignes à exclure (`LineFilter`), dans les deux sens.
+public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: GeoPosition?, with geoDeparture: Bool, with arrivalStop: Stop?, with arrivalGeoPosition: GeoPosition?, with geoArrival: Bool, with selectedTime: Date, with isArrivalTime: Bool, avoiding avoidedLines: [AvoidedLine] = [], completion: @escaping (Result<Data, OJPClient.Failure>) -> Void) {
     // Sans déballage forcé : un lieu attendu mais absent faisait planter l'app.
     guard let origin = placeRefXML(stop: departureStop, geoPosition: departureGeoPosition, useGeoPosition: geoDeparture),
           let destination = placeRefXML(stop: arrivalStop, geoPosition: arrivalGeoPosition, useGeoPosition: geoArrival) else {
@@ -218,36 +272,41 @@ public func fetchTrips(with departureStop: Stop?, with departureGeoPosition: Geo
         return
     }
     let requestTimestamp = OJPDate.string(from: Date())
-    let depArrTime = "<ojp:DepArrTime>\(OJPDate.string(from: selectedTime))</ojp:DepArrTime>"
+    let depArrTime = "<DepArrTime>\(OJPDate.string(from: selectedTime))</DepArrTime>"
+    // L'ordre des paramètres suit le schéma OJP 2.0 : l'API refuse une requête désordonnée.
+    // Sans `NumberOfResults`, elle ne trouve aucun itinéraire (TRIP_NOTRIPFOUND). Elle en
+    // rend souvent plus que demandé : 5 en donne 8 à 10.
     let xmlString = """
     <?xml version="1.0" encoding="utf-8"?>
-    <OJP xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.siri.org.uk/siri" version="1.0" xmlns:ojp="http://www.vdv.de/ojp" xsi:schemaLocation="http://www.siri.org.uk/siri ../ojp-xsd-v1.0/OJP.xsd">
+    <OJP xmlns="http://www.vdv.de/ojp" xmlns:siri="http://www.siri.org.uk/siri" version="2.0">
         <OJPRequest>
-            <ServiceRequest>
-                <RequestTimestamp>\(requestTimestamp)</RequestTimestamp>
-                <RequestorRef>API-Explorer</RequestorRef>
-                <ojp:OJPTripRequest>
-                    <RequestTimestamp>\(requestTimestamp)</RequestTimestamp>
-                    <ojp:Origin>
+            <siri:ServiceRequest>
+                <siri:RequestTimestamp>\(requestTimestamp)</siri:RequestTimestamp>
+                <siri:RequestorRef>tpgNext</siri:RequestorRef>
+                <OJPTripRequest>
+                    <siri:RequestTimestamp>\(requestTimestamp)</siri:RequestTimestamp>
+                    <Origin>
                         \(origin)
                         \(isArrivalTime ? "" : depArrTime)
-                    </ojp:Origin>
-                    <ojp:Destination>
+                    </Origin>
+                    <Destination>
                         \(destination)
                         \(isArrivalTime ? depArrTime : "")
-                    </ojp:Destination>
-                    <ojp:Params>
-                        <ojp:IncludeTrackSections>false</ojp:IncludeTrackSections>
-                        <ojp:IncludeLegProjection>false</ojp:IncludeLegProjection>
-                        <ojp:IncludeTurnDescription></ojp:IncludeTurnDescription>
-                        <ojp:IncludeIntermediateStops>true</ojp:IncludeIntermediateStops>
-                    </ojp:Params>
-                </ojp:OJPTripRequest>
-            </ServiceRequest>
+                    </Destination>
+                    <Params>
+                        \(lineFilterXML(avoiding: avoidedLines))
+                        <NumberOfResults>5</NumberOfResults>
+                        <IncludeTrackSections>false</IncludeTrackSections>
+                        <IncludeLegProjection>false</IncludeLegProjection>
+                        <IncludeTurnDescription>false</IncludeTurnDescription>
+                        <IncludeIntermediateStops>true</IncludeIntermediateStops>
+                    </Params>
+                </OJPTripRequest>
+            </siri:ServiceRequest>
         </OJPRequest>
     </OJP>
     """
-    OJPClient.post(xmlString, to: .v1, completion: completion)
+    OJPClient.post(xmlString, to: .v2, completion: completion)
 }
 
 @Observable

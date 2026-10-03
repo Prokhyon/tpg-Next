@@ -2,7 +2,7 @@
 //  OJPParsing.swift
 //  tpgNextFunc
 //
-//  Lecture des réponses OJP 1.0 (départs, itinéraires). Même approche que
+//  Lecture des réponses OJP 2.0 (départs, itinéraires). Même approche que
 //  `JourneyParser` : une pile des éléments ouverts plutôt qu'une série de drapeaux
 //  « à l'intérieur de… » à tenir à jour à la main.
 //
@@ -209,7 +209,7 @@ final class StopEventParser: OJPParser {
 
 // MARK: - Itinéraires
 
-/// Les itinéraires d'une réponse `OJPTripRequest`.
+/// Les itinéraires d'une réponse `OJPTripRequest` en OJP 2.0.
 ///
 /// Le contexte (coordonnées des quais et des arrêts) précède les résultats : il est lu
 /// d'abord, puis sert à placer la montée, la descente et les arrêts intermédiaires.
@@ -220,11 +220,10 @@ final class TripEventParser: OJPParser {
 
     private var trip: TripEvent?
     private var leg: TripLeg?
+    private var operatorRef = ""
     private var intermediate: LegIntermediate?
     private var legs: [TripLeg] = []
     private var intermediates: [LegIntermediate] = []
-    /// La première `Duration` après `ResultId` est celle de l'itinéraire entier.
-    private var nextDurationIsTrip = false
 
     private var coordinates: [String: (longitude: String, latitude: String)] = [:]
     private var placeRef = ""
@@ -241,16 +240,20 @@ final class TripEventParser: OJPParser {
         switch name {
         case "TripResult":
             trip = template
-        case "TripLeg":
+        case "Leg":
             leg = TripLeg(id: "", legBoardStopName: "", legBoardStopId: "", legBoardQuay: "", legBoardTimetableTime: "",
                           legBoardEstimatedTime: "", legBoardLongitude: "", legBoardLatitude: "", legAlightStopName: "",
                           legAlightStopId: "", legAlightQuay: "", legAlightTimetableTime: "", legAlightEstimatedTime: "",
                           legAlightLongitude: "", legAlightLatitude: "", legIntermediates: [], legDestination: "",
                           journeyRef: "", publishedLineName: "", legDuration: "", transferDuration: "",
                           transferWalkDuration: "", transferBuffer: "", transportTypeName: "", legOperator: "")
-        case "LegIntermediates":
+            operatorRef = ""
+        // Une correspondance, ou la marche depuis (ou jusqu'à) un lieu qui n'est pas un arrêt.
+        case "TransferLeg", "ContinuousLeg":
+            leg?.transfer = true
+        case "LegIntermediate":
             intermediate = LegIntermediate(id: "", stopId: "", stopName: "", longitude: "", latitude: "")
-        case "Location" where isInside("TripResponseContext"):
+        case "Place" where isInside("TripResponseContext"):
             placeRef = ""
             placeLongitude = ""
             placeLatitude = ""
@@ -260,19 +263,20 @@ final class TripEventParser: OJPParser {
     }
 
     override func didEnd(_ name: String, parent: String, value: String) {
-        if name == "ErrorText" {
+        // `ErrorCondition/TripProblemType` : TRIP_NOTRIPFOUND, TRIP_ORIGINUNKNOWN…
+        if name == "TripProblemType" && !isInside("TripResult") {
             error = .noEventFound(message: value)
         }
         if isInside("TripResponseContext") {
             readContext(name, value: value)
             return
         }
-        if isInside("LegIntermediates") {
+        if isInside("LegIntermediate") {
             readIntermediate(name, parent: parent, value: value)
         } else {
             readStopOfLeg(name, parent: parent, value: value)
         }
-        readTripAndLeg(name, value: value)
+        readTripAndLeg(name, parent: parent, value: value)
         close(name)
     }
 
@@ -284,7 +288,7 @@ final class TripEventParser: OJPParser {
             placeLongitude = value
         case "Latitude":
             placeLatitude = value
-        case "Location":
+        case "Place":
             if !placeRef.isEmpty, !placeLongitude.isEmpty, !placeLatitude.isEmpty {
                 coordinates[placeRef] = (placeLongitude, placeLatitude)
             }
@@ -305,72 +309,69 @@ final class TripEventParser: OJPParser {
 
     /// Montée, descente et libellés du service.
     private func readStopOfLeg(_ name: String, parent: String, value: String) {
+        // La montée peut aussi donner son arrivée, la descente son départ : seuls le départ de
+        // la montée et l'arrivée de la descente comptent.
         let boarding = isInside("LegBoard")
         let alighting = isInside("LegAlight")
+        let boardingTime = boarding && isInside("ServiceDeparture")
+        let alightingTime = alighting && isInside("ServiceArrival")
         if name == "Text" {
             switch parent {
             case "StopPointName":
                 if boarding { leg?.legBoardStopName = value } else if alighting { leg?.legAlightStopName = value }
             case "PlannedQuay":
                 if boarding { leg?.legBoardQuay = value } else if alighting { leg?.legAlightQuay = value }
-            case "PublishedLineName": leg?.publishedLineName = value
+            case "PublishedServiceName": leg?.publishedLineName = value
             case "DestinationText": leg?.legDestination = value
-            case "TransportTypeName": leg?.transportTypeName = value
-            case "OperatorName": leg?.legOperator = value
+            // « Tram », « InterRegio », « Schiff » : la catégorie, comme le `TransportTypeName`
+            // d'OJP 1.0 qu'attend `transportIcon`. Le mode (« Zug ») ne sert qu'à défaut.
+            case "Name" where isInside("ProductCategory"):
+                leg?.transportTypeName = value
+            case "Name" where isInside("Mode"):
+                if leg?.transportTypeName.isEmpty == true { leg?.transportTypeName = value }
             default: break
             }
         } else {
             switch name {
             case "TimetabledTime":
-                if boarding { leg?.legBoardTimetableTime = value } else if alighting { leg?.legAlightTimetableTime = value }
+                if boardingTime { leg?.legBoardTimetableTime = value } else if alightingTime { leg?.legAlightTimetableTime = value }
             case "EstimatedTime":
-                if boarding { leg?.legBoardEstimatedTime = value } else if alighting { leg?.legAlightEstimatedTime = value }
+                if boardingTime { leg?.legBoardEstimatedTime = value } else if alightingTime { leg?.legAlightEstimatedTime = value }
             case "StopPointRef":
                 if boarding { leg?.legBoardStopId = value } else if alighting { leg?.legAlightStopId = value }
             case "DestinationStopPointRef": leg?.legDestinationRef = value
+            case "OperatorRef": operatorRef = value
             default: break
             }
         }
     }
 
-    private func readTripAndLeg(_ name: String, value: String) {
+    private func readTripAndLeg(_ name: String, parent: String, value: String) {
         switch name {
-        case "ResultId":
-            trip?.id = value
-            nextDurationIsTrip = true
-        case "Duration":
-            if nextDurationIsTrip {
-                nextDurationIsTrip = false
-                trip?.duration = value
-            }
-            // Une étape à pied porte sa durée de correspondance après son mode de transfert.
-            if leg?.transfer == true {
-                leg?.transferDuration = value
-            } else {
-                leg?.legDuration = value
-            }
-        case "StartTime": trip?.startTime = value
-        case "EndTime": trip?.endTime = value
-        case "Transfers": trip?.transfers = value
-        case "LegId": leg?.id = value
+        case "Id" where parent == "TripResult": trip?.id = value
+        case "Id" where parent == "Leg": leg?.id = value
+        // Celle d'un bus ou d'un tram (`Leg/Duration`) n'est pas gardée : elle se déduit de
+        // ses heures, à jour du temps réel. Celle d'une étape à pied n'est que la marche.
+        case "Duration" where parent == "Trip": trip?.duration = value
+        case "Duration" where parent == "TransferLeg" || parent == "ContinuousLeg": leg?.transferDuration = value
+        case "StartTime" where parent == "Trip": trip?.startTime = value
+        case "EndTime" where parent == "Trip": trip?.endTime = value
+        case "Transfers" where parent == "Trip": trip?.transfers = value
         case "JourneyRef": leg?.journeyRef = value
         case "OperatingDayRef": leg?.operatingDayRef = value
-        case "TransferMode", "IndividualMode":
-            if value == "walk" { leg?.transfer = true }
+        case "LineRef" where isInside("Service"): leg?.lineRef = value
         case "Code" where isInside("Attribute") && isInside("Service"):
             let codes = leg?.attributeCodes ?? []
             leg?.attributeCodes = codes + [value]
         case "BusSubmode" where isInside("Service"):
             leg?.busSubmode = value
-        case "WalkDuration": leg?.transferWalkDuration = value
-        case "BufferTime": leg?.transferBuffer = value
         default: break
         }
     }
 
     private func close(_ name: String) {
         switch name {
-        case "LegIntermediates":
+        case "LegIntermediate":
             if var stop = intermediate {
                 if let place = coordinates[stop.stopId] {
                     stop.longitude = place.longitude
@@ -379,7 +380,7 @@ final class TripEventParser: OJPParser {
                 intermediates.append(stop)
                 intermediate = nil
             }
-        case "TripLeg":
+        case "Leg":
             if var current = leg {
                 if let board = coordinates[current.legBoardStopId] {
                     current.legBoardLongitude = board.longitude
@@ -389,6 +390,9 @@ final class TripEventParser: OJPParser {
                     current.legAlightLongitude = alight.longitude
                     current.legAlightLatitude = alight.latitude
                 }
+                if !current.transfer {
+                    current.legOperator = OJPOperators.name(forRef: operatorRef) ?? ""
+                }
                 current.legIntermediates = intermediates
                 legs.append(current)
             }
@@ -396,13 +400,32 @@ final class TripEventParser: OJPParser {
             intermediates = []
         case "TripResult":
             if var current = trip {
-                current.legs = legs
+                current.legs = Self.withWaits(legs, start: current.startDate, end: current.endDate)
                 trips.append(current)
             }
             trip = nil
             legs = []
         default:
             break
+        }
+    }
+
+    /// OJP 2.0 ne donne d'une correspondance que la marche, là où la 1.0 donnait aussi
+    /// l'attente (`WalkDuration`, `BufferTime`). Elle se déduit de la descente précédente
+    /// et de la montée suivante : la correspondance prend tout ce temps, et la marche en
+    /// devient une partie, affichée à côté (voir `TripLegsList`).
+    static func withWaits(_ legs: [TripLeg], start: Date?, end: Date?) -> [TripLeg] {
+        legs.enumerated().map { index, leg in
+            guard leg.transfer, let walk = durationMinutes(leg.transferDuration) else { return leg }
+            let from = index > 0 ? legs[index - 1].alightDate : start
+            let to = index + 1 < legs.count ? legs[index + 1].boardDate : end
+            guard let from, let to else { return leg }
+            let window = Int((to.timeIntervalSince(from) / 60).rounded())
+            guard window > walk else { return leg }
+            var waiting = leg
+            waiting.transferWalkDuration = leg.transferDuration
+            waiting.transferDuration = "PT\(window)M"
+            return waiting
         }
     }
 }

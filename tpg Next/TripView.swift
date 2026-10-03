@@ -65,6 +65,7 @@ struct TripView: View {
                         case.closeStops:
                             ResultsCloseStopsView(viewModel: viewModel, calculationSuccess: $calculationSuccess, showCloseStops: $showCloseStops, closestStops: $closestStops, results: $results)
                         case.tripResults:
+                            AvoidedLinesBar(viewModel: viewModel, search: searchTrips)
                             ResultsTripView(viewModel: viewModel, tripManager: tripManager, showTime: $showTime, adjustTime: adjustTime, timeChange: timeChange, searchTrips: searchTrips,
                                             selectedID: selectedTrip?.id, onSelect: layout.showsSecondaryPane ? { trip in
                                                 // Retoucher l'itinéraire détaillé le désélectionne.
@@ -75,13 +76,15 @@ struct TripView: View {
                                 .opacity(0)
                                 .frame(height: 50)
                         
-                                Text("Chargement...")
+                                Text("Chargement…")
                         case.error:
                             Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
                                 .opacity(0)
                                 .frame(height: 50)
                         
-                                Text(tripManager.failure?.userMessage ?? "Aucun itinéraire trouvé")
+                                Text(tripManager.failure?.userMessage
+                                     ?? (viewModel.avoidedLines.isEmpty ? "Aucun itinéraire trouvé" : "Aucun itinéraire n'évite ces lignes"))
+                            AvoidedLinesBar(viewModel: viewModel, search: searchTrips)
                         }
                     }
                     if #available(iOS 26, *) {
@@ -428,7 +431,8 @@ struct TripView: View {
             }
             results = Results.loading
             tripManager.tripEvents.removeAll()
-            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
+            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime,
+                                   isArrivalTime: viewModel.isArrivalTime, avoiding: viewModel.avoidedLines)
             viewModel.tripDone = true
             showCloseStops = false
             calculationSuccess = false

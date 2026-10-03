@@ -314,7 +314,7 @@ extension TripView {
                         Text("Pas d'arrêts trouvés à proximité")
                     }
                 } else {
-                    Text("Chargement...")
+                    Text("Chargement…")
                 }
             }
             
@@ -387,6 +387,17 @@ extension TripView {
                         } label: {
                             Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
                         }
+                        // Relance la recherche sans la ligne, dans les deux sens.
+                        Section {
+                            ForEach(event.avoidableLines.filter { !viewModel.avoidedLines.contains($0) }) { line in
+                                Button {
+                                    viewModel.avoidedLines.append(line)
+                                    searchTrips()
+                                } label: {
+                                    Label("Éviter la ligne \(line.name)", systemImage: "nosign")
+                                }
+                            }
+                        }
                     } preview: {
                         TripMapView(tripEvent: event, isPreview: true)
                             .frame(width: layout.previewWidth, height: 300)
@@ -408,6 +419,44 @@ extension TripView {
         }
     }
     
+    /// Les lignes évitées, au-dessus des résultats : toucher l'une la rend à la recherche.
+    struct AvoidedLinesBar: View {
+        @Bindable var viewModel: ItineraryViewModel
+        let search: () -> Void
+
+        var body: some View {
+            if !viewModel.avoidedLines.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        Label("Lignes évitées", systemImage: "nosign")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        ForEach(viewModel.avoidedLines) { line in
+                            Button {
+                                withAnimation { viewModel.avoidedLines.removeAll { $0 == line } }
+                                search()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    BusLineIcon(lineName: line.name, operatorName: line.operatorName)
+                                    Image(systemName: "xmark")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color.primary.opacity(0.04)))
+                            }
+                            .foregroundStyle(.primary)
+                            .accessibilityLabel("Ne plus éviter la ligne \(line.name)")
+                        }
+                    }
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
     struct ResultsEmptyView: View {
         var body: some View {
             Spacer()

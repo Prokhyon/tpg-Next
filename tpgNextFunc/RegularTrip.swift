@@ -10,7 +10,7 @@ import CoreLocation
 
 // Un itinéraire enregistré ne vaut que pour son jour : ses `journeyRef` désignent des courses
 // datées. Un trajet régulier garde donc la *recette* (départ, arrivée, heure, lignes suivies)
-// et redemande chaque jour les itinéraires à OJP (`OJPTripRequest`, 1.0). Il y reconnaît le
+// et redemande chaque jour les itinéraires à OJP (`OJPTripRequest`, 2.0). Il y reconnaît le
 // trajet habituel par ses lignes et ses arrêts de montée et de descente, et lit le temps réel
 // de la réponse : retards, parcours modifiés, correspondances compromises.
 

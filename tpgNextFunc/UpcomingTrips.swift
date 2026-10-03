@@ -67,20 +67,20 @@ public struct TripCountdown: Hashable {
         case .walkToStop:
             let time = dateToString(with: leaving)
             if !Calendar.current.isDate(leaving, inSameDayAs: date) {
-                return String(localized: "Demain, partir à \(time)")
+                return String(localized: "Demain, partir à \(time)", bundle: #bundle)
             }
             let minutes = minutesUntilLeaving(from: date)
-            return minutes >= 60 ? String(localized: "Partir à \(time)") : String(localized: "Partir dans \(minutes) min")
+            return minutes >= 60 ? String(localized: "Partir à \(time)", bundle: #bundle) : String(localized: "Partir dans \(minutes) min", bundle: #bundle)
         case .waitForDeparture:
             let departure = boarding ?? leaving
             let time = dateToString(with: departure)
             if !Calendar.current.isDate(departure, inSameDayAs: date) {
-                return String(localized: "Demain, départ à \(time)")
+                return String(localized: "Demain, départ à \(time)", bundle: #bundle)
             }
             let minutes = Self.minutes(until: departure, from: date)
-            return minutes >= 60 ? String(localized: "Départ à \(time)") : String(localized: "Départ dans \(minutes) min")
+            return minutes >= 60 ? String(localized: "Départ à \(time)", bundle: #bundle) : String(localized: "Départ dans \(minutes) min", bundle: #bundle)
         case .onTheWay:
-            return String(localized: "En route · arrivée à \(dateToString(with: arrival))")
+            return String(localized: "En route · arrivée à \(dateToString(with: arrival))", bundle: #bundle)
         }
     }
 
@@ -90,10 +90,10 @@ public struct TripCountdown: Hashable {
         guard phase(at: date) != .onTheWay else { return nil }
         let departure = boarding ?? leaving
         if !Calendar.current.isDate(departure, inSameDayAs: date) {
-            return String(localized: "demain")
+            return String(localized: "demain", bundle: #bundle)
         }
         let minutes = Self.minutes(until: departure, from: date)
-        return minutes < 60 ? String(localized: "dans \(minutes) min") : nil
+        return minutes < 60 ? String(localized: "dans \(minutes) min", bundle: #bundle) : nil
     }
 
     /// Le rappel de marche : « Partir dans 3 min · 5 min à pied jusqu'à Rive » tant qu'il faut
@@ -101,13 +101,13 @@ public struct TripCountdown: Hashable {
     /// `namingStop` faux (petits formats) : « Partir dans 3 min · 5 min à pied ».
     public func walkReminder(at date: Date, namingStop: Bool = true) -> String? {
         guard let walkMinutes, let described = walkDescription else { return nil }
-        let walk = namingStop ? described : String(localized: "\(walkMinutes) min à pied")
+        let walk = namingStop ? described : String(localized: "\(walkMinutes) min à pied", bundle: #bundle)
         switch phase(at: date) {
         case .walkToStop:
             let minutes = minutesUntilLeaving(from: date)
             let leave = minutes < 60 && Calendar.current.isDate(leaving, inSameDayAs: date)
-                ? String(localized: "Partir dans \(minutes) min")
-                : String(localized: "Partir à \(dateToString(with: leaving))")
+                ? String(localized: "Partir dans \(minutes) min", bundle: #bundle)
+                : String(localized: "Partir à \(dateToString(with: leaving))", bundle: #bundle)
             return "\(leave) · \(walk)"
         case .waitForDeparture:
             return walk
@@ -121,20 +121,20 @@ public struct TripCountdown: Hashable {
     /// n'est ainsi jamais comptée dans le départ annoncé.
     public func reminderSubtitle(minutesBefore minutes: Int) -> String {
         if let walkMinutes {
-            let walk = String(localized: "\(walkMinutes) min à pied")
+            let walk = String(localized: "\(walkMinutes) min à pied", bundle: #bundle)
             return minutes == 0
-                ? String(localized: "C'est l'heure de partir · \(walk)")
-                : String(localized: "Partir dans \(minutes) min · \(walk)")
+                ? String(localized: "C'est l'heure de partir · \(walk)", bundle: #bundle)
+                : String(localized: "Partir dans \(minutes) min · \(walk)", bundle: #bundle)
         }
-        return minutes == 0 ? String(localized: "Départ maintenant") : String(localized: "Départ dans \(minutes) min")
+        return minutes == 0 ? String(localized: "Départ maintenant", bundle: #bundle) : String(localized: "Départ dans \(minutes) min", bundle: #bundle)
     }
 
     /// « 5 min à pied jusqu'à Rive » ; `nil` sans marche.
     public var walkDescription: String? {
         guard let walkMinutes else { return nil }
-        guard let boardingStop, !boardingStop.isEmpty else { return String(localized: "\(walkMinutes) min à pied jusqu'à l'arrêt") }
+        guard let boardingStop, !boardingStop.isEmpty else { return String(localized: "\(walkMinutes) min à pied jusqu'à l'arrêt", bundle: #bundle) }
         let stop = splitString(boardingStop, separator: ",")
-        return String(localized: "\(walkMinutes) min à pied jusqu'à \(stop.1.isEmpty ? stop.0 : stop.1)")
+        return String(localized: "\(walkMinutes) min à pied jusqu'à \(stop.1.isEmpty ? stop.0 : stop.1)", bundle: #bundle)
     }
 
     /// Les minutes avant de partir, déduites de celles du bus moins la marche : chaque durée

@@ -77,8 +77,9 @@ struct HomeMapCard: View {
         // leurs changements ne la redessinaient pas.
         let stops = self.stops
         let highlighted = withoutDepartures ? nil : nearby.highlightedSloid
+        let userCoordinate = nearby.location?.coordinate
         return MapReader { proxy in
-            map(stops: stops, highlighted: highlighted)
+            map(stops: stops, highlighted: highlighted, user: userCoordinate)
                 // Pas de bouton dans les marqueurs : leur toucher se mêlait à celui de la carte.
                 // On cherche l'arrêt le plus proche du doigt.
                 .onTapGesture { point in
@@ -109,7 +110,11 @@ struct HomeMapCard: View {
         .contentShape(RoundedRectangle(cornerRadius: 30))
     }
 
-    private func map(stops: [Stop], highlighted: String?) -> some View {
+    /// `user` : la position de la dernière recherche des arrêts proches, pas `UserAnnotation()`.
+    /// Celle-ci suit chaque position reçue, et pendant un trajet suivi (positions en continu, en
+    /// mouvement) MapKit redessinait la carte à chaque image, même défilée hors de l'écran :
+    /// 15 à 35 % du processeur, défilement et touchers en retard dans toute l'app.
+    private func map(stops: [Stop], highlighted: String?, user: CLLocationCoordinate2D?) -> some View {
         Map(position: $position, interactionModes: []) {
             ForEach(stops) { stop in
                 // Comme un arrêt touché sur la carte plein écran : plus gros, en couleur, nommé.
@@ -119,7 +124,12 @@ struct HomeMapCard: View {
                 }
                 .annotationTitles(isHighlighted ? .automatic : .hidden)
             }
-            UserAnnotation()
+            if let user {
+                Annotation("", coordinate: user, anchor: .center) {
+                    HomeMapUserDot()
+                }
+                .annotationTitles(.hidden)
+            }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
     }
@@ -194,4 +204,17 @@ struct HomeMapCard: View {
     }
     .environment(NearbyStops())
     .previewEnvironment()
+}
+
+/// La position sur la carte de l'accueil, dessinée comme celle du système, mais immobile entre
+/// deux recherches des arrêts proches.
+private struct HomeMapUserDot: View {
+    var body: some View {
+        Circle()
+            .fill(Color.blue)
+            .frame(width: 14, height: 14)
+            .overlay(Circle().stroke(.white, lineWidth: 3))
+            .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+            .accessibilityHidden(true)
+    }
 }

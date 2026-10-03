@@ -216,7 +216,7 @@ struct VehicleInfoPanel: View {
                 InfoChip(text: "Plancher bas", systemImage: "arrow.down.to.line")
             }
             if let skipped = skippedStopsCount, skipped > 0 {
-                InfoChip(text: "\(skipped) arrêt(s) non desservi(s)", systemImage: "nosign", tint: .red)
+                InfoChip(text: "\(skipped) arrêts non desservis", systemImage: "nosign", tint: .red)
             }
             if let number = service?.trainNumber, !number.isEmpty {
                 InfoChip(text: "Course \(number)", systemImage: "number")

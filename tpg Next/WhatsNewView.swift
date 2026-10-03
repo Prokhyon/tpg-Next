@@ -33,7 +33,7 @@ struct WhatsNew {
                  description: "Les tracés sur les cartes suivent désormais les routes"),
             Item(systemImage: "point.bottomleft.forward.to.point.topright.scurvepath.fill",
                  title: "Aperçus d'itinéraire",
-                 description: "Une timeline simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attente dans les résultats et itinéraires enregistrés")
+                 description: "Une frise simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attentes, dans les résultats et les itinéraires enregistrés")
         ]
     )
 

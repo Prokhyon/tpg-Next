@@ -238,7 +238,7 @@ struct SmallStopView: View {
             } else {
                 HStack {
                     Spacer()
-                    Text("Recherche des départs...")
+                    Text("Recherche des départs…")
                     Spacer()
                 }
             }

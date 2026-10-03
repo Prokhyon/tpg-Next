@@ -301,14 +301,14 @@ class BusNotificationManager {
             if notificationInterval == 0.0 {
                 let delayMessage = String(localized: "avec \(intDelay) minutes de retard.")
                 if isTimetabled {
-                    message = String(localized: "\(transport) aurait du arriver mais arrivera \(delayMessage)")
+                    message = String(localized: "\(transport) aurait dû arriver mais arrivera \(delayMessage)")
                 } else {
                     message = String(localized: "\(transport) devrait arriver à l'arrêt")
                 }
             } else {
                 let intNotificationInterval = Int(notificationInterval)
                 if isTimetabled {
-                    let delayMessage = String(format: "avec \(intDelay) minutes de retard.")
+                    let delayMessage = String(localized: "avec \(intDelay) minutes de retard.")
                     message = String(localized: "\(transport) devait arriver dans \(intNotificationInterval) minutes mais arrivera \(delayMessage)")
                 } else {
                     message = String(localized: "\(transport) est estimé dans \(intNotificationInterval) minutes à l'arrêt")

@@ -15,9 +15,7 @@ import Foundation
 /// aussitôt avec une autre : l'utilisateur ne voit l'échec que si toutes manquent.
 public enum OJPClient {
     public enum Version: String {
-        /// Itinéraires.
-        case v1 = "ojp2020"
-        /// Départs et courses.
+        /// Départs, courses et itinéraires. OJP 1.0 (`ojp2020`) ne sert plus.
         case v2 = "ojp20"
 
         var url: URL { URL(string: "https://api.opentransportdata.swiss/" + rawValue)! }
