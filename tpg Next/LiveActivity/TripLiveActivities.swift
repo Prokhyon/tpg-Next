@@ -23,7 +23,7 @@ final class TripLiveActivities {
     static let shared = TripLiveActivities()
 
     /// Lancée automatiquement ce délai avant le départ d'un trajet régulier.
-    static let autoStartLead: TimeInterval = 20 * 60
+    nonisolated static let autoStartLead: TimeInterval = 20 * 60
 
     /// Ce qu'il faut pour redemander à OJP ce qui est suivi.
     private enum Tracked: Codable {
@@ -749,6 +749,7 @@ final class TripLiveActivities {
     private func syncActiveKeys() {
         let activities = Activity<TripActivityAttributes>.activities
             .filter { $0.activityState == .active || $0.activityState == .stale }
+        activities.forEach(observeState(of:))
         let keys = Set(activities.map(\.attributes.key))
         if keys != activeKeys { activeKeys = keys }
         // Au lancement, l'app retrouve ainsi les trajets suivis avant sa fermeture.
@@ -765,6 +766,26 @@ final class TripLiveActivities {
             save()
         }
         syncBackgroundLocation()
+    }
+
+    /// Les activités dont la fin est attendue, par identifiant.
+    @ObservationIgnored private var stateObservers: [String: Task<Void, Never>] = [:]
+
+    /// Retirée de l'écran verrouillé, ou terminée par iOS : la liste suit aussitôt, et la
+    /// localisation se referme s'il ne reste rien à suivre. Sans cela, il fallait attendre la
+    /// relecture suivante, qui n'arrive en arrière-plan qu'avec une nouvelle position : téléphone
+    /// posé, iOS n'en donne plus, et la localisation restait ouverte.
+    private func observeState(of activity: Activity<TripActivityAttributes>) {
+        guard stateObservers[activity.id] == nil else { return }
+        stateObservers[activity.id] = Task { [weak self] in
+            for await state in activity.activityStateUpdates where state == .dismissed || state == .ended {
+                break
+            }
+            guard let self else { return }
+            stateObservers[activity.id] = nil
+            Log.location.info("Activité en direct fermée : suivi arrêté")
+            syncActiveKeys()
+        }
     }
 
     /// Vrai une fois `locationStatus` observé, pour ne pas empiler les observations.
