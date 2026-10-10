@@ -229,7 +229,7 @@ extension TripView {
                                     withAnimation {
                                         if viewModel.selectedField == .departure {
                                             // Execute only when selectedTextField is 1
-                                            viewModel.departure.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                                            viewModel.selectCurrentPosition(coordinate, for: .departure)
                                             results = Results.favorites
                                             showCloseStops = false
                                             calculationSuccess = false
@@ -237,7 +237,7 @@ extension TripView {
                                             viewModel.tripDone = false
                                         } else if viewModel.selectedField == .arrival {
                                             // Execute only when selectedTextField is 2
-                                            viewModel.arrival.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                                            viewModel.selectCurrentPosition(coordinate, for: .arrival)
                                             results = Results.favorites
                                             showCloseStops = false
                                             calculationSuccess = false
@@ -580,38 +580,48 @@ extension TripView {
                             Image(systemName: "magnifyingglass")
                                 .foregroundStyle(selected ? Color.accentColor : .primary.opacity(0.2))
                         }
-                        if field == .arrival {
-                            TextField("Destination", text: $viewModel.arrival.text)
-                            //                            .frame(height: size)
-                                .focused(focusField, equals: .arrival)
-                            //                            .opacity(focusField.wrappedValue == .arrival ? 1:0)
-                                .onChange(of: viewModel.arrival.text) {
-                                    if selected {
-                                        if hasSelection && focusField.wrappedValue == nil {
-                                            results = Results.empty
-                                        } else if !viewModel.arrival.text.isEmpty {
-                                            results = Results.search
-                                        } else if viewModel.arrival.text.isEmpty {
-                                            results = Results.favorites
+                        VStack(alignment: .leading, spacing: 0) {
+                            if field == .arrival {
+                                TextField("Destination", text: $viewModel.arrival.text)
+                                //                            .frame(height: size)
+                                    .focused(focusField, equals: .arrival)
+                                //                            .opacity(focusField.wrappedValue == .arrival ? 1:0)
+                                    .onChange(of: viewModel.arrival.text) {
+                                        if selected {
+                                            if hasSelection && focusField.wrappedValue == nil {
+                                                results = Results.empty
+                                            } else if !viewModel.arrival.text.isEmpty {
+                                                results = Results.search
+                                            } else if viewModel.arrival.text.isEmpty {
+                                                results = Results.favorites
+                                            }
                                         }
                                     }
-                                }
-                        } else {
-                            TextField("Origine", text: $viewModel.departure.text)
-                            //                            .frame(height: size)
-                                .focused(focusField, equals: .departure)
-                            //                            .opacity(focusField.wrappedValue == .departure ? 1:0)
-                                .onChange(of: viewModel.departure.text) {
-                                    if selected {
-                                        if hasSelection && focusField.wrappedValue == nil {
-                                            results = Results.empty
-                                        } else if !viewModel.departure.text.isEmpty {
-                                            results = Results.search
-                                        } else if viewModel.departure.text.isEmpty {
-                                            results = Results.favorites
+                            } else {
+                                TextField("Origine", text: $viewModel.departure.text)
+                                //                            .frame(height: size)
+                                    .focused(focusField, equals: .departure)
+                                //                            .opacity(focusField.wrappedValue == .departure ? 1:0)
+                                    .onChange(of: viewModel.departure.text) {
+                                        if selected {
+                                            if hasSelection && focusField.wrappedValue == nil {
+                                                results = Results.empty
+                                            } else if !viewModel.departure.text.isEmpty {
+                                                results = Results.search
+                                            } else if viewModel.departure.text.isEmpty {
+                                                results = Results.favorites
+                                            }
                                         }
                                     }
-                                }
+                            }
+                            // « Ma position » : l'adresse trouvée, qui nommera l'itinéraire.
+                            if focusField.wrappedValue != field,
+                               let address = (field == .departure ? viewModel.departure : viewModel.arrival).endpoint?.place?.address {
+                                Text(address)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
                         }
                         //                    if text.isEmpty {
                         ////                        Text(emptyText)

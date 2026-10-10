@@ -513,6 +513,16 @@ struct ContentView: View {
                 // tpgnext://sheet?name=reminder|newRegular|editRegular|operators|flex|reminders|reminders
                 let name = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
                 debugSheet = DebugSheet(rawValue: name)
+            case "quicktrip":
+                // tpgnext://quicktrip?sloid=… : itinéraire depuis la position, comme « Y aller ».
+                let sloid = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
+                Task { @MainActor in
+                    // La base des arrêts se charge encore au lancement.
+                    for _ in 0..<40 where !stopStore.isLoaded { try? await Task.sleep(for: .milliseconds(250)) }
+                    if let stop = stopStore.findStop(id: sloid) {
+                        itineraryViewModel.searchNow(from: nil, to: .stop(stop), tab: navigationModel)
+                    }
+                }
             case "map":
                 navigationModel.selectedTab = .home
                 navigationModel.showsFullMap = true

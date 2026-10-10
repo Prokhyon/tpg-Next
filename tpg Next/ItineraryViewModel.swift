@@ -53,6 +53,43 @@ class ItineraryViewModel {
 
     var selectedField: TripField? = .departure
 
+    /// Les adresses de « Ma position » en cours de recherche, par champ.
+    @ObservationIgnored private var addressLookups: [TripField: Task<Void, Never>] = [:]
+
+    /// Choisit la position actuelle (« Ma position ») et cherche aussitôt son adresse, qui
+    /// nommera l'itinéraire.
+    func selectCurrentPosition(_ coordinate: CLLocationCoordinate2D, for field: TripField) {
+        let place = GeoPosition(name: "Ma position", coordinate: coordinate)
+        let point: ReferenceWritableKeyPath<ItineraryViewModel, TripPoint> = field == .departure ? \.departure : \.arrival
+        self[keyPath: point].select(.place(place))
+        addressLookups[field]?.cancel()
+        addressLookups[field] = Task { @MainActor [weak self] in
+            guard let address = await PlaceAddress.lookUp(coordinate), !Task.isCancelled, let self,
+                  // Un autre lieu a pu être choisi entre-temps.
+                  self[keyPath: point].endpoint?.place == place else { return }
+            var located = place
+            located.address = address
+            self[keyPath: point].endpoint = .place(located)
+        }
+    }
+
+    /// Attend les adresses en cours, 2 secondes au plus : sans réponse, l'itinéraire garde
+    /// « Ma position ».
+    func waitForAddresses() async {
+        let lookups = Array(addressLookups.values)
+        guard !lookups.isEmpty else { return }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                for lookup in lookups { await lookup.value }
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(2))
+            }
+            await group.next()
+            group.cancelAll()
+        }
+    }
+
     /// Départ et arrivée renseignés : la recherche d'itinéraire peut être lancée.
     var canSearch: Bool { departure.endpoint != nil && arrival.endpoint != nil }
 

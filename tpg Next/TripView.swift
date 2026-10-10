@@ -193,7 +193,7 @@ struct TripView: View {
                             let coordinate = CLLocationCoordinate2D(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
     //                                           print(coordinate)
                         
-                            viewModel.departure.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                            viewModel.selectCurrentPosition(coordinate, for: .departure)
                         
                             locationManager.locationUpdateHandler = nil
                         
@@ -201,7 +201,7 @@ struct TripView: View {
                             viewModel.isArrivalTime = false
                         
                             tripManager.tripEvents.removeAll()
-                            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime, isArrivalTime: viewModel.isArrivalTime)
+                            requestTrips()
                             if let arrival = viewModel.arrival.endpoint {
                                 RecentTrips.shared.add(from: nil, to: arrival)
                             }
@@ -424,6 +424,16 @@ struct TripView: View {
         searchTrips()
     }
 
+    /// Demande les itinéraires, une fois l'adresse de « Ma position » trouvée (2 s au plus) :
+    /// elle les nomme.
+    private func requestTrips() {
+        Task { @MainActor in
+            await viewModel.waitForAddresses()
+            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime,
+                                   isArrivalTime: viewModel.isArrivalTime, avoiding: viewModel.avoidedLines)
+        }
+    }
+
     func searchTrips() {
         if viewModel.canSearch {
             if let arrival = viewModel.arrival.endpoint {
@@ -431,8 +441,7 @@ struct TripView: View {
             }
             results = Results.loading
             tripManager.tripEvents.removeAll()
-            tripManager.selectTrip(from: viewModel.departure.endpoint, to: viewModel.arrival.endpoint, at: viewModel.selectedTime,
-                                   isArrivalTime: viewModel.isArrivalTime, avoiding: viewModel.avoidedLines)
+            requestTrips()
             viewModel.tripDone = true
             showCloseStops = false
             calculationSuccess = false
