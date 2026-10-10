@@ -165,6 +165,10 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
     /// trajet habituel, et c'est lui qui est suivi. Optionnel : les trajets enregistrés avant
     /// n'en ont pas.
     public var dayOverrides: [String: TripEvent]?
+    /// Les lignes à ne jamais proposer quand le trajet est recalculé (alternative du jour,
+    /// autres horaires, suite d'un trajet suivi). Optionnel : les trajets enregistrés avant
+    /// n'en ont pas (voir `linesToAvoid`).
+    public var avoidedLines: [AvoidedLine]?
 
     public init(trip: TripEvent, weekdays: Set<Weekday>, anchor: Anchor = .departure, name: String = "",
                 followsLines: Bool = true, reminderMinutes: Int? = 5, alertsEnabled: Bool = true,
@@ -205,6 +209,17 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
     /// Un autre itinéraire a été choisi pour ce jour-là.
     public func isOverridden(on day: String) -> Bool {
         dayOverrides?[day] != nil
+    }
+
+    /// Les lignes évitées, aucune par défaut.
+    public var linesToAvoid: [AvoidedLine] {
+        get { avoidedLines ?? [] }
+        set { avoidedLines = newValue.isEmpty ? nil : newValue }
+    }
+
+    /// Une ligne du trajet habituel : l'éviter n'aurait pas de sens.
+    public func isUsualLine(_ line: AvoidedLine) -> Bool {
+        snapshot.vehicleLegs.contains(where: line.matches)
     }
 
     /// L'activité en direct, activée par défaut.
@@ -492,7 +507,8 @@ public enum RegularTripResolver {
         var match: RegularTripMatch?
         var failure: Error = Failure.noTrip
         do {
-            let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime)
+            let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime,
+                                        avoiding: trip.linesToAvoid)
             match = trip.match(in: trips, for: occurrence)
         } catch {
             failure = error
@@ -512,23 +528,28 @@ public enum RegularTripResolver {
     }
 
     /// Les itinéraires proposés par OJP : ceux du jour pour reconnaître le trajet habituel, ou
-    /// ceux parmi lesquels choisir en créant un trajet régulier.
+    /// ceux parmi lesquels choisir en créant un trajet régulier. Sans `avoidedLines`.
     public static func trips(from origin: RegularTripPlace, to destination: RegularTripPlace,
-                             at time: Date, isArrivalTime: Bool) async throws -> [TripEvent] {
+                             at time: Date, isArrivalTime: Bool,
+                             avoiding avoidedLines: [AvoidedLine] = []) async throws -> [TripEvent] {
         let start = origin.endpoint
         let end = destination.endpoint
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTrips(with: start.stop, with: start.place, with: start.isPlace,
                        with: end.stop, with: end.place, with: end.isPlace,
-                       with: time, with: isArrivalTime) { continuation.resume(returning: try? $0.get()) }
+                       with: time, with: isArrivalTime, avoiding: avoidedLines) { continuation.resume(returning: try? $0.get()) }
         }
         guard let data else { throw Failure.request }
         do {
-            return try parseTripEvents(from: data, startCoordinate: origin.coordinates,
-                                       endCoordinates: destination.coordinates,
-                                       startName: origin.name, endName: destination.name,
-                                       startCode: origin.sloid, endCode: destination.sloid,
-                                       geoDeparture: origin.sloid == nil, geoArrival: destination.sloid == nil)
+            let trips = try parseTripEvents(from: data, startCoordinate: origin.coordinates,
+                                            endCoordinates: destination.coordinates,
+                                            startName: origin.name, endName: destination.name,
+                                            startCode: origin.sloid, endCode: destination.sloid,
+                                            geoDeparture: origin.sloid == nil, geoArrival: destination.sloid == nil)
+                .avoiding(avoidedLines)
+            // Toutes les propositions empruntaient une ligne évitée.
+            if trips.isEmpty && !avoidedLines.isEmpty { throw Failure.noTrip }
+            return trips
         } catch ParserError.noEventFound {
             throw Failure.noTrip
         }

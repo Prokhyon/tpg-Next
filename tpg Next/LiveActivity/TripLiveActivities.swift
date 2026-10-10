@@ -607,7 +607,8 @@ final class TripLiveActivities {
                                     coordinates: Coordinates(lon: longitude, lat: latitude))
         let needed = state.legs[index].transferTime.map { TimeInterval($0) } ?? TripActivityState.minimumTransfer
         let leaving = max(now, state.legs[index].alight).addingTimeInterval(needed)
-        let tails = await TripReplanner.tails(from: from, at: leaving, to: entry.recipe.destination)
+        let tails = await TripReplanner.tails(from: from, at: leaving, to: entry.recipe.destination,
+                                              avoiding: entry.recipe.linesToAvoid)
         // Le motif, tel qu'il s'affichera : c'est la seule explication que le voyageur aura.
         let cancelled = state.legs.indices.contains(index + 1) && state.legs[index + 1].cancelled == true
         guard let best = tails.first else {

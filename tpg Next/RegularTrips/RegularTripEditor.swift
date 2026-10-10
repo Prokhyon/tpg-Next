@@ -15,6 +15,7 @@ struct RegularTripEditor: View {
     @AppStorage(SettingKey.regularTripAlertsOnThisDevice) private var alertsOnThisDevice = RegularTripAlerts.defaultOnThisDevice
     @AppStorage(SettingKey.regularTripRemindersOnThisDevice) private var remindersOnThisDevice = RegularTripAlerts.defaultOnThisDevice
     private let isNew: Bool
+    @State private var choosingAvoidedLine = false
     /// Poussé dans la pile de la création (`NewRegularTripView`) : ni pile propre ni « Annuler »,
     /// et l'enregistrement ferme toute la feuille.
     private var onSaved: (() -> Void)?
@@ -85,6 +86,7 @@ struct RegularTripEditor: View {
                             .frame(minHeight: 56)
                         }
                     }
+                    avoidedLinesSection
                 }
 
                 if trip.snapshot.hasOnDemandLeg {
@@ -151,6 +153,44 @@ struct RegularTripEditor: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Enregistrer") { save() }
                     .disabled(trip.weekdays.isEmpty)
+            }
+        }
+    }
+
+    private var avoidedLinesSection: some View {
+        CardSection("Lignes à éviter",
+                    footer: "Jamais proposées quand le trajet doit être recalculé : alternative du jour, autres horaires, suite d'un trajet suivi.") {
+            ForEach(trip.linesToAvoid) { line in
+                HStack(spacing: 10) {
+                    BusLineIcon(lineName: line.name, operatorName: line.operatorName)
+                    Text("Ligne \(line.name)")
+                    Spacer()
+                    Button {
+                        withAnimation { trip.linesToAvoid.removeAll { $0 == line } }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Ne plus éviter la ligne \(line.name)")
+                }
+                .frame(minHeight: 50)
+                CardDivider(inset: 0)
+            }
+            Button {
+                choosingAvoidedLine = true
+            } label: {
+                Label("Ajouter une ligne…", systemImage: "plus.circle.fill")
+                    .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+        }
+        .sheet(isPresented: $choosingAvoidedLine) {
+            AvoidableLinePicker(trip: trip) { line in
+                withAnimation { trip.linesToAvoid.append(line) }
             }
         }
     }
@@ -271,6 +311,110 @@ struct RegularTripEditor: View {
         let parts = key.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
         return Calendar.swissTransit.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+    }
+}
+
+/// Les lignes qu'OJP propose pour ce trajet, au prochain jour où il est fait, sauf celles du
+/// trajet habituel et celles déjà évitées. Une seule demande : une ligne qui n'apparaît qu'à
+/// d'autres heures n'y est pas.
+struct AvoidableLinePicker: View {
+    let trip: RegularTrip
+    let onPick: (AvoidedLine) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = Search.loading
+
+    enum Search {
+        case loading
+        case lines([AvoidedLine])
+        case failed
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    switch search {
+                    case .loading:
+                        VStack(spacing: 10) {
+                            ProgressView()
+                            Text("Recherche des lignes proposées…")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 30)
+                    case .failed:
+                        message("Impossible de charger les lignes proposées.")
+                        Button("Réessayer") { Task { await load() } }
+                            .frame(maxWidth: .infinity)
+                    case .lines(let lines) where lines.isEmpty:
+                        message("Aucune autre ligne n'est proposée pour ce trajet.")
+                    case .lines(let lines):
+                        CardSection(footer: "Les lignes proposées pour ce trajet, au prochain jour où vous le faites.") {
+                            ForEach(Array(lines.enumerated()), id: \.element) { index, line in
+                                if index > 0 { CardDivider(inset: 0) }
+                                Button {
+                                    onPick(line)
+                                    dismiss()
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        BusLineIcon(lineName: line.name, operatorName: line.operatorName)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Ligne \(line.name)")
+                                            if !line.operatorName.isEmpty {
+                                                Text(verbatim: line.operatorName)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                        Spacer()
+                                    }
+                                    .frame(minHeight: 50)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 30)
+            }
+            .readableScrollContent()
+            .navigationTitle("Éviter une ligne")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annuler") { dismiss() }
+                }
+            }
+            .task { await load() }
+        }
+    }
+
+    private func message(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 30)
+    }
+
+    private func load() async {
+        search = .loading
+        let request = trip.occurrences(after: Date()).first.map(trip.request(for:)) ?? (time: Date(), isArrivalTime: false)
+        do {
+            let trips = try await RegularTripResolver.trips(from: trip.origin, to: trip.destination, at: request.time,
+                                                            isArrivalTime: request.isArrivalTime, avoiding: trip.linesToAvoid)
+            var seen: Set<String> = []
+            search = .lines(trips.flatMap(\.avoidableLines).filter { !trip.isUsualLine($0) && seen.insert($0.lineRef).inserted })
+        } catch RegularTripResolver.Failure.noTrip {
+            search = .lines([])
+        } catch {
+            search = .failed
+        }
     }
 }
 

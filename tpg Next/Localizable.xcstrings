@@ -2309,6 +2309,28 @@
         }
       }
     },
+    "Ajouter une ligne…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linie hinzufügen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Line…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Line…"
+          }
+        }
+      }
+    },
     "Ajoutez un arrêt aux favoris depuis la recherche ou son menu" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3830,6 +3852,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No matching operators."
+          }
+        }
+      }
+    },
+    "Aucune autre ligne n'est proposée pour ce trajet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für diese Fahrt werden keine anderen Linien vorgeschlagen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No other lines are suggested for this trip."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No other lines are suggested for this trip."
           }
         }
       }
@@ -7448,6 +7492,50 @@
         }
       }
     },
+    "Éviter la ligne %@ pour ce trajet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linie %@ für diese Fahrt meiden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid Line %@ for This Trip"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid Line %@ for This Trip"
+          }
+        }
+      }
+    },
+    "Éviter une ligne" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Linie meiden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid a Line"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avoid a Line"
+          }
+        }
+      }
+    },
     "Explorer" : {
       "localizations" : {
         "de" : {
@@ -8416,6 +8504,28 @@
         }
       }
     },
+    "Impossible de charger les lignes proposées." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die vorgeschlagenen Linien konnten nicht geladen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the suggested lines."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the suggested lines."
+          }
+        }
+      }
+    },
     "Inverser le départ et l'arrivée" : {
       "localizations" : {
         "de" : {
@@ -8632,6 +8742,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Later routes"
+          }
+        }
+      }
+    },
+    "Jamais proposées quand le trajet doit être recalculé : alternative du jour, autres horaires, suite d'un trajet suivi." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie vorgeschlagen, wenn die Fahrt neu berechnet werden muss: Alternative des Tages, andere Zeiten, Rest einer verfolgten Fahrt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never suggested when the trip has to be recalculated: alternative for the day, other times, rest of a tracked trip."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never suggested when the trip has to be recalculated: alternative for the day, other times, rest of a tracked trip."
           }
         }
       }
@@ -10228,6 +10360,28 @@
         }
       }
     },
+    "Les lignes proposées pour ce trajet, au prochain jour où vous le faites." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die für diese Fahrt vorgeschlagenen Linien am nächsten Tag, an dem Sie sie machen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines suggested for this trip, on the next day you take it."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines suggested for this trip, on the next day you take it."
+          }
+        }
+      }
+    },
     "Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les réglages du téléphone" : {
       "localizations" : {
         "de" : {
@@ -10763,6 +10917,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lines %@"
+          }
+        }
+      }
+    },
+    "Lignes à éviter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu meidende Linien"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines to Avoid"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lines to Avoid"
           }
         }
       }
@@ -14200,6 +14376,28 @@
         }
       }
     },
+    "Recherche des lignes proposées…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorgeschlagene Linien werden gesucht…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching suggested lines…"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching suggested lines…"
+          }
+        }
+      }
+    },
     "Rechercher" : {
       "localizations" : {
         "de" : {
@@ -14966,6 +15164,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "If you need to walk to the stop, the reminder says ‘Leave in 10 min · 5 min walk’. With no walk: ‘Departs in 10 min’. Walking time is never hidden in the departure time."
+          }
+        }
+      }
+    },
+    "Sans les lignes %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohne die Linien %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without lines %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without lines %@"
           }
         }
       }

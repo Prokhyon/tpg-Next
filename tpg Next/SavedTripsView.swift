@@ -285,7 +285,9 @@ struct SavedTripsAgenda: View {
                                      footer: "Pour ce jour seulement : les autres jours gardent le trajet habituel.",
                                      origin: trip.origin, destination: trip.destination,
                                      around: occurrence.target, isArrivalTime: trip.anchor == .arrival,
-                                     current: regularTripsModel.displayedTrip(for: occurrence)) {
+                                     current: regularTripsModel.displayedTrip(for: occurrence),
+                                     regular: trip,
+                                     onAvoid: { regularTripsModel.avoid($0, in: trip.id) }) {
                     regularTripsModel.choose($0, for: occurrence)
                 }
             }

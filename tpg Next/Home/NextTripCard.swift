@@ -240,7 +240,8 @@ struct NextTripCard: View {
                                  footer: "Pour ce jour seulement : les autres jours gardent le trajet habituel.",
                                  origin: recipe.origin, destination: recipe.destination,
                                  around: occurrence.target, isArrivalTime: recipe.anchor == .arrival,
-                                 current: displayed) {
+                                 current: displayed, regular: recipe,
+                                 onAvoid: { regularTripsModel.avoid($0, in: recipe.id) }) {
                 regularTripsModel.choose($0, for: occurrence)
             }
         case .saved(let saved):
