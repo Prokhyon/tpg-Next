@@ -125,11 +125,10 @@ public struct TripActivityState: Codable, Hashable {
         }
         guard let first = legs.first, let last = legs.last else { return nil }
         let status = RegularTripStatus(trip: trip)
-        // Départ à pied : autant d'avance sur la montée que prévu, décalé du retard.
-        let walkBefore = max(0, (trip.anchorDate(.departure, timetabled: true) ?? first.board)
-            .timeIntervalSince(trip.startDate ?? first.board))
-        let walkAfter = max(0, (trip.endDate ?? last.alight)
-            .timeIntervalSince(trip.anchorDate(.arrival, timetabled: true) ?? last.alight))
+        // La marche avant la montée et après la descente, d'après les étapes à pied : le départ
+        // et l'arrivée de l'itinéraire comptent déjà le retard (voir `TripEvent.leadingWalk`).
+        let walkBefore = trip.leadingWalk
+        let walkAfter = trip.trailingWalk
         self.init(legs: legs,
                   departure: first.board.addingTimeInterval(-walkBefore),
                   arrival: last.alight.addingTimeInterval(walkAfter),

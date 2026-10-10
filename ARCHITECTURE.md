@@ -193,7 +193,11 @@ Bon à savoir :
   paramètres ne suivent pas l'ordre du schéma OJP.
 - **Itinéraires (2.0, depuis le 02.10.2026)** : sans `NumberOfResults`, l'API ne trouve
   rien (`TRIP_NOTRIPFOUND`) ; avec 5, elle en rend 8 à 10. Une correspondance ne donne que sa
-  marche : l'attente se déduit des heures (`TripEventParser.withWaits`). Le type de véhicule
+  marche : l'attente se déduit des heures (`TripEventParser.withWaits`). Le départ et
+  l'arrivée de l'itinéraire (`StartTime`, `EndTime`) sont des heures estimées, retard compris :
+  la marche se lit sur les étapes à pied (`TripEvent.leadingWalk`, `trailingWalk`), jamais en
+  les comparant aux heures prévues des courses, ce qui compterait le retard deux fois
+  (`leavingDate`, `plannedStartDate`, `plannedEndDate`). Le type de véhicule
   est la catégorie (`ProductCategory` : « Tram », « InterRegio »), pas le mode (« Zug »).
   Les bus à la demande (tpg flex) n'y sont jamais proposés, même avec
   `IncludeAllRestrictedLines` : la 1.0 les donnait comme des bus ordinaires, parfois seuls.

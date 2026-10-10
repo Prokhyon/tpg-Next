@@ -345,8 +345,9 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         }
         var trip = snapshot
         trip.id = occurrence.id
-        trip.startTime = shift(trip.startTime)
-        trip.endTime = shift(trip.endTime)
+        // Départ et arrivée prévus, sans le retard du jour où il a été enregistré.
+        trip.startTime = snapshot.plannedStartDate.map { OJPDate.string(from: $0.addingTimeInterval(delta)) } ?? shift(trip.startTime)
+        trip.endTime = snapshot.plannedEndDate.map { OJPDate.string(from: $0.addingTimeInterval(delta)) } ?? shift(trip.endTime)
         trip.legs = trip.legs.map { leg in
             var leg = leg
             leg.legBoardTimetableTime = shift(leg.legBoardTimetableTime)
@@ -390,8 +391,9 @@ public struct RegularTripOccurrence: Identifiable, Hashable {
             guard let date, let anchorDate else { return 0 }
             return date.timeIntervalSince(anchorDate)
         }
-        plannedDeparture = target.addingTimeInterval(offset(snapshot.startDate))
-        plannedArrival = max(target.addingTimeInterval(offset(snapshot.endDate)), plannedDeparture)
+        // Les heures prévues : celles de l'itinéraire enregistré comptent son retard du jour.
+        plannedDeparture = target.addingTimeInterval(offset(snapshot.plannedStartDate))
+        plannedArrival = max(target.addingTimeInterval(offset(snapshot.plannedEndDate)), plannedDeparture)
     }
 }
 
@@ -488,14 +490,40 @@ public struct RegularTripStatus: Hashable {
     }
 }
 
+// OJP 2.0 donne le départ et l'arrivée d'un itinéraire (`startTime`, `endTime`) en heures
+// estimées, retard compris. Les comparer aux heures prévues des courses compte le retard deux
+// fois : la marche se mesure donc sur les étapes à pied, et les heures prévues s'en déduisent.
 extension TripEvent {
-    /// L'heure où partir, marche comprise : la montée estimée, moins la marche prévue jusqu'à
-    /// l'arrêt. Sans véhicule, le départ de l'itinéraire.
+    /// La marche avant la première montée : les étapes à pied qui la précèdent. 0 sans étape
+    /// à pied, ou sans véhicule.
+    public var leadingWalk: TimeInterval {
+        guard let first = legs.firstIndex(where: { !$0.transfer && !$0.publishedLineName.isEmpty }) else { return 0 }
+        return legs[..<first].compactMap(\.walkDuration).reduce(0, +)
+    }
+
+    /// La marche après la dernière descente, jusqu'à l'arrivée.
+    public var trailingWalk: TimeInterval {
+        guard let last = legs.lastIndex(where: { !$0.transfer && !$0.publishedLineName.isEmpty }) else { return 0 }
+        return legs[(last + 1)...].compactMap(\.walkDuration).reduce(0, +)
+    }
+
+    /// L'heure où partir, marche comprise : la montée estimée, moins la marche jusqu'à l'arrêt.
+    /// Sans véhicule, le départ de l'itinéraire.
     public var leavingDate: Date? {
-        guard let start = startDate,
-              let plannedBoard = anchorDate(.departure, timetabled: true),
-              let board = anchorDate(.departure, timetabled: false) else { return startDate }
-        return board.addingTimeInterval(-plannedBoard.timeIntervalSince(start))
+        guard !vehicleLegs.isEmpty, let board = anchorDate(.departure, timetabled: false) else { return startDate }
+        return board.addingTimeInterval(-leadingWalk)
+    }
+
+    /// Le départ prévu, marche comprise : la montée prévue, moins la marche jusqu'à l'arrêt.
+    public var plannedStartDate: Date? {
+        guard !vehicleLegs.isEmpty, let board = anchorDate(.departure, timetabled: true) else { return startDate }
+        return board.addingTimeInterval(-leadingWalk)
+    }
+
+    /// L'arrivée prévue, marche comprise : la descente prévue, plus la marche jusqu'à l'arrivée.
+    public var plannedEndDate: Date? {
+        guard !vehicleLegs.isEmpty, let alight = anchorDate(.arrival, timetabled: true) else { return endDate }
+        return alight.addingTimeInterval(trailingWalk)
     }
 
     /// Les étapes en bus, tram, train ou bateau ; sans la marche.
