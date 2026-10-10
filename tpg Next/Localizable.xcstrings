@@ -16346,6 +16346,28 @@
         }
       }
     },
+    "Touchez pour suivre le trajet en direct." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippen, um die Fahrt live zu verfolgen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to track the trip live."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to track the trip live."
+          }
+        }
+      }
+    },
     "Touchez un départ pour voir tous les arrêts de sa course, où se trouve le véhicule et le tracé de la ligne sur la carte." : {
       "localizations" : {
         "de" : {

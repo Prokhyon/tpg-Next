@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import ActivityKit
 import UserNotifications
 import tpgNextFunc
 
@@ -56,6 +57,11 @@ enum SavedTripReminders {
                 content.subtitle = TripCountdown(trip: trip)?.reminderSubtitle(minutesBefore: minutes)
                     ?? String(localized: "Départ dans \(minutes) min")
                 content.body = RegularTripAlerts.description(of: RegularTripMatch(trip: trip, kind: .usual))
+                // Plus tôt que le suivi automatique : le toucher ouvre l'app, qui le lance aussitôt
+                // (`TripLiveActivities.startSoonDepartingSavedTrips`).
+                if minutes < SavedTripAutoTracking.leadMinutes && ActivityAuthorizationInfo().areActivitiesEnabled {
+                    content.body = [content.body, RegularTripAlerts.trackingHint].filter { !$0.isEmpty }.joined(separator: "\n")
+                }
                 content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
                 content.userInfo = [userInfoKey: saved.id]
                 content.threadIdentifier = "saved_\(saved.id)"

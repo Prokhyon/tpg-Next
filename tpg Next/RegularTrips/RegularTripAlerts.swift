@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ActivityKit
 import UIKit
 import UserNotifications
 import tpgNextFunc
@@ -74,6 +75,9 @@ enum RegularTripAlerts {
                 ?? String(localized: "Départ dans \(minutes) min")
             content.body = match.map { description(of: $0) }
                 ?? plannedDescription(of: trip.plannedTrip(for: occurrence))
+            if reminderStartsTracking(trip, departure: occurrence.plannedDeparture, firing: fireDate) {
+                content.body = [content.body, trackingHint].filter { !$0.isEmpty }.joined(separator: "\n")
+            }
             content.sound = UNNotificationSound(named: UNNotificationSoundName("tpgNextNotificationSound.caf"))
             content.userInfo = [occurrenceKey: occurrence.id]
             // Le départ passé, le rappel ne sert plus : il quitte le centre de notifications.
@@ -195,6 +199,18 @@ enum RegularTripAlerts {
 
     /// L'heure de départ du trajet, marche comprise : la montée estimée, moins la marche prévue
     /// jusqu'à l'arrêt.
+    /// Ajouté au rappel quand le toucher lancera le suivi en direct.
+    static var trackingHint: String { String(localized: "Touchez pour suivre le trajet en direct.") }
+
+    /// Toucher le rappel ouvre l'app, qui lance alors d'elle-même le suivi en direct
+    /// (`TripLiveActivities.startSoonDepartingTrips`) : il est activé pour ce trajet et sur cet
+    /// appareil, et le départ sera assez proche. La localisation n'est pas vérifiée : la lire
+    /// hors du fil principal n'est pas sûr (voir `TripLiveActivities.hasLocation`).
+    private static func reminderStartsTracking(_ trip: RegularTrip, departure: Date, firing: Date) -> Bool {
+        trip.showsLiveActivity && isEnabledOnThisDevice && ActivityAuthorizationInfo().areActivitiesEnabled
+            && departure.timeIntervalSince(firing) < TripLiveActivities.autoStartLead
+    }
+
     private static func leavingTime(occurrence: RegularTripOccurrence, match: RegularTripMatch?) -> Date {
         match?.trip.leavingDate ?? occurrence.plannedDeparture
     }
