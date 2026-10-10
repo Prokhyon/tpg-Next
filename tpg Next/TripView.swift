@@ -41,6 +41,9 @@ struct TripView: View {
     @State private var switchRotation: Bool = false
     
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
+    /// La carte a pris l'onglet Trajets : leur liste s'ouvre d'ici.
+    @AppStorage(SettingKey.mapTab) private var mapTab = false
+    @Environment(\.openRoute) private var openRoute
     
     enum Results {
         case empty, favorites, search, closeStops, tripResults, loading, error
@@ -385,11 +388,25 @@ struct TripView: View {
 //            }   
 //        }
 //        .toolbar(.hidden, for: .navigationBar)
-        // Les itinéraires enregistrés ont leur onglet, Trajets.
+        // Les itinéraires enregistrés ont leur onglet, Trajets, sauf si la carte l'a pris.
         .toolbar {
-            if results == .tripResults {
+            if results == .tripResults || mapTab {
                 TrailingBarButtons {
-                    ShowTimeButton(showTime: $showTime)
+                    if results == .tripResults {
+                        ShowTimeButton(showTime: $showTime)
+                    }
+                    if mapTab {
+                        // Une page de la pile : le retour depuis un itinéraire ramène à la liste.
+                        Button {
+                            openRoute(.savedTrips)
+                        } label: {
+                            Label {
+                                Text("Mes itinéraires")
+                            } icon: {
+                                Image("scurvepath.stack.fill")
+                            }
+                        }
+                    }
                 }
             }
         }

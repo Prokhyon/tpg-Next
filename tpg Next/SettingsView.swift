@@ -25,6 +25,7 @@ struct SettingsView: View {
     @AppStorage(SettingKey.iCloudSync) private var iCloudSync = true
     @AppStorage(SettingKey.appIcon) private var storedAppIcon = AppIconChoice.classique.rawValue
     @AppStorage(SettingKey.lineColoredShadows) private var lineColoredShadows = false
+    @AppStorage(SettingKey.mapTab) private var mapTab = false
     @Environment(SavedTripsModel.self) private var savedTripsModel
     @Environment(FavoritesViewModel.self) private var favoritesViewModel
     @Environment(FavoritePlacesModel.self) private var favoritePlaces
@@ -41,6 +42,7 @@ struct SettingsView: View {
                 savedTripsSection
                 syncSection
                 appearanceSection
+                tabsSection
                 helpSection
                 Text(verbatim: Self.version)
                     .font(.footnote)
@@ -186,6 +188,15 @@ struct SettingsView: View {
             CardDivider()
             Toggle(isOn: $lineColoredShadows) {
                 SettingsRow("Ombres aux couleurs des lignes", systemImage: "shadow")
+            }
+        }
+    }
+
+    private var tabsSection: some View {
+        CardSection("Onglets",
+                    footer: "La carte des arrêts prend la place de l'onglet Trajets. Vos itinéraires restent à portée de main depuis la page Itinéraire.") {
+            Toggle(isOn: $mapTab) {
+                SettingsRow("Onglet Carte à la place de Trajets", systemImage: "map.fill")
             }
         }
     }

@@ -4,7 +4,7 @@
 //
 //  La carte des arrêts, en aperçu sur l'accueil : elle remplace l'onglet Carte. Elle montre les
 //  arrêts de la liste des départs, et met en évidence celui que la liste affiche. La toucher
-//  l'ouvre en plein écran.
+//  ouvre la carte complète dans la pile de l'accueil, barre d'onglets visible.
 //
 
 import SwiftUI
@@ -15,7 +15,6 @@ import tpgNextFunc
 struct HomeMapCard: View {
     @Environment(StopStore.self) private var stopStore
     @Environment(FavoritesViewModel.self) private var favoritesViewModel
-    @Environment(NavigationModel.self) private var navigationModel
     @Environment(NearbyStops.self) private var nearby
     @Environment(\.layout) private var layout
     @Environment(\.openRoute) private var openRoute
@@ -25,13 +24,10 @@ struct HomeMapCard: View {
     /// en évidence, et toucher un arrêt ouvre sa page.
     var withoutDepartures = false
     var testing = false
-    @Namespace private var transition
     @State private var region = Self.region(around: Self.geneva)
     @State private var position: MapCameraPosition = .region(Self.region(around: Self.geneva))
     /// Sans arrêts proches (position refusée), ceux autour du centre de la carte.
     @State private var fallbackStops: [Stop] = []
-    /// Les pages ouvertes depuis la carte plein écran (arrêt, ligne) : elle a sa propre pile.
-    @State private var fullMapPath: [AppRoute] = []
 
     /// Sans position : le centre de Genève.
     private static let geneva = CLLocationCoordinate2D(latitude: 46.20973, longitude: 6.14244)
@@ -47,21 +43,8 @@ struct HomeMapCard: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Carte des arrêts")
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction { navigationModel.showsFullMap = true }
-                .matchedTransitionSource(id: "map", in: transition)
+                .accessibilityAction { openFullMap() }
                 .padding(.horizontal, 10)
-        }
-        .fullScreenCover(isPresented: Bindable(navigationModel).showsFullMap) {
-            NavigationStack(path: $fullMapPath) {
-                MapView(initialRegion: region) { navigationModel.showsFullMap = false }
-                    .appRouteDestinations()
-            }
-            .environment(\.openRoute, OpenRouteAction { fullMapPath.append($0) })
-            .departureActionSheets()
-            // Mesurée à nouveau : sur grand écran, l'accueil passe à la carte le `\.layout` de sa
-            // colonne, et les pages arrêt et ligne s'ouvraient alors dans leur version iPhone.
-            .providingLayoutContext()
-            .navigationTransition(.zoom(sourceID: "map", in: transition))
         }
         .onChange(of: nearby.stops, initial: true) { recenter() }
         // Ce que fait la liste des départs quand elle est là.
@@ -86,7 +69,7 @@ struct HomeMapCard: View {
                     if let stop = Self.stop(near: point, in: stops, proxy: proxy) {
                         choose(stop)
                     } else {
-                        navigationModel.showsFullMap = true
+                        openFullMap()
                     }
                 }
         }
@@ -95,7 +78,7 @@ struct HomeMapCard: View {
         .if(!fillsHeight) { $0.frame(height: layout.width > 500 ? 340 : 200) }
         .overlay(alignment: .bottomTrailing) {
             Button {
-                navigationModel.showsFullMap = true
+                openFullMap()
             } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
                     .font(.subheadline.bold())
@@ -132,6 +115,11 @@ struct HomeMapCard: View {
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
+    }
+
+    /// La carte complète, ouverte sur la zone de l'aperçu sans attendre la position.
+    private func openFullMap() {
+        openRoute(.stopsMap(MapArea(region)))
     }
 
     /// Un arrêt de la liste devient celui qu'elle affiche ; un autre (liste des favoris) ouvre
