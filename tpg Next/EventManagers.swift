@@ -49,7 +49,7 @@ public class TripManager {
             DispatchQueue.global(qos: .userInitiated).async {
                 let result = Result {
                     try parseTripEvents(from: data, startCoordinate: startCoordinate, endCoordinates: endCoordinate,
-                                        startName: departure?.name ?? "", endName: arrival?.name ?? "",
+                                        startName: departure?.displayName ?? "", endName: arrival?.displayName ?? "",
                                         startCode: departure?.stop?.sloid, endCode: arrival?.stop?.sloid,
                                         geoDeparture: departure?.isPlace ?? false, geoArrival: arrival?.isPlace ?? false)
                         .avoiding(avoidedLines)

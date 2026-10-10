@@ -111,10 +111,14 @@ public struct ShortStop: Codable, Identifiable, Hashable, Equatable {
 public struct GeoPosition: Hashable {
     public let name: String
     public let coordinate: CLLocationCoordinate2D
+    /// L'adresse de « Ma position », trouvée après coup : elle nomme l'itinéraire. Hors de
+    /// l'égalité : la trouver ne change pas de lieu.
+    public var address: String?
 
-    public init(name: String, coordinate: CLLocationCoordinate2D) {
+    public init(name: String, coordinate: CLLocationCoordinate2D, address: String? = nil) {
         self.name = name
         self.coordinate = coordinate
+        self.address = address
     }
 
     public static func == (lhs: GeoPosition, rhs: GeoPosition) -> Bool {

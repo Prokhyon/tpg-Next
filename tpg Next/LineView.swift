@@ -388,7 +388,12 @@ struct LineEventElementView: View {
                 HStack {
                     StopIcon(color: LineColors.lineColor(for: currentLine, operatorName: operatorName, inverted: true), currentStop: currentStop)
                     if geoPositionDisplay {
+                        // Une adresse (celle de « Ma position ») peut être longue : elle rétrécit
+                        // plutôt que de se couper, avec de l'air au-dessus et au-dessous.
                         Text(eventName)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
+                            .padding(.vertical, 8)
                     } else {
                         SmallStopTitleView(stopName: eventName)
                             .strikethrough(skipped)
