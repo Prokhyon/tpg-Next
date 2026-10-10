@@ -176,6 +176,26 @@ final class TripLiveActivities {
 
     func isTracking(_ key: String) -> Bool { activeKeys.contains(key) }
 
+    /// De quoi ouvrir les lignes et les arrêts du trajet suivi depuis sa page : l'activité n'en
+    /// garde que les noms. `nil` s'il n'est plus suivi.
+    func links(for key: String) -> LiveTripLinks? {
+        switch tracked[key] {
+        case .trip(let entry):
+            return LiveTripLinks(trip: entry.trip)
+        case .journey(let entry):
+            return LiveTripLinks(journey: entry.event,
+                                 board: ShortStop(name: entry.boardName, sloid: entry.boardSloid),
+                                 alight: ShortStop(name: entry.alightName, sloid: entry.alightSloid),
+                                 points: routes[key]?.points(of: 0) ?? [])
+        case nil:
+            return nil
+        }
+    }
+
+    /// Le tracé du trajet suivi, avec les heures de passage : pour sa carte. Relu à chaque mise
+    /// à jour de l'état (`live`), qui est ce que les vues observent.
+    func route(for key: String) -> TripRoute? { routes[key] }
+
     static func key(for trip: TripEvent) -> String { "trip_" + trip.id }
 
     static func key(forJourney event: StopEvent, boardSloid: String) -> String {
