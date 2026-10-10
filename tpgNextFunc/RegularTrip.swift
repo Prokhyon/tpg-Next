@@ -300,11 +300,24 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         return RegularTripMatch(trip: best, kind: followsLines && !legs.isEmpty ? .alternative : .usual)
     }
 
-    /// Le trajet habituel, à son heure ou décalé (horaire modifié).
-    public func usualMatch(_ trip: TripEvent, for occurrence: RegularTripOccurrence) -> RegularTripMatch {
+    /// Le trajet habituel, à son heure ou décalé (horaire modifié). `confirmed` : la course est
+    /// celle déjà reconnue ce jour-là, ou aucune ne passe plus à l'heure habituelle.
+    public func usualMatch(_ trip: TripEvent, for occurrence: RegularTripOccurrence, confirmed: Bool = false) -> RegularTripMatch {
         let target = occurrence.target
         let minutes = Int(((trip.anchorDate(anchor, timetabled: true) ?? target).timeIntervalSince(target) / 60).rounded())
-        return RegularTripMatch(trip: trip, kind: abs(minutes) <= 1 ? .usual : .shifted(minutes: minutes))
+        return RegularTripMatch(trip: trip, kind: abs(minutes) <= 1 ? .usual : .shifted(minutes: minutes, confirmed: confirmed))
+    }
+
+    /// Le trajet habituel déjà connu ce jour-là, à vérifier course par course si OJP cesse de le
+    /// proposer : celui reconnu à une requête précédente (`remembered`), sinon l'itinéraire
+    /// enregistré s'il est précisément de ce passage (trajet créé le jour même, ou autre trajet
+    /// choisi pour ce jour).
+    public func known(_ remembered: TripEvent?, for occurrence: RegularTripOccurrence) -> TripEvent? {
+        if let remembered = knownUsual(remembered, for: occurrence) { return remembered }
+        let snapshot = recipe(for: occurrence.day).snapshot
+        guard let anchorDate = snapshot.anchorDate(anchor, timetabled: true),
+              abs(anchorDate.timeIntervalSince(occurrence.target)) <= 60 else { return nil }
+        return knownUsual(snapshot, for: occurrence)
     }
 
     /// `trip`, s'il peut servir à vérifier le trajet habituel de ce jour-là course par course :
@@ -387,8 +400,10 @@ public struct RegularTripMatch: Hashable {
     @frozen public enum Kind: Hashable {
         /// Le trajet habituel, à son heure.
         case usual
-        /// Le trajet habituel, mais à une autre heure (horaire modifié).
-        case shifted(minutes: Int)
+        /// Le trajet habituel, mais à une autre heure (horaire modifié). `confirmed` : vérifié,
+        /// aucune course ne passe plus à l'heure habituelle ; sinon, elle n'était peut-être
+        /// simplement pas dans la réponse d'OJP.
+        case shifted(minutes: Int, confirmed: Bool = false)
         /// Le trajet habituel n'est pas proposé : voici le meilleur à sa place.
         case alternative
     }
@@ -402,6 +417,23 @@ public struct RegularTripMatch: Hashable {
     }
 
     public var status: RegularTripStatus { RegularTripStatus(trip: trip) }
+
+    /// Un horaire modifié, vérifié ; les autres sortes sont rendues telles quelles.
+    func confirmed() -> RegularTripMatch {
+        guard case .shifted(let minutes, _) = kind else { return self }
+        return RegularTripMatch(trip: trip, kind: .shifted(minutes: minutes, confirmed: true))
+    }
+
+    /// Sûr d'être la course du jour : à l'heure, ou décalé et confirmé. Seul un tel trajet est
+    /// gardé comme trajet du jour, pas un autre bus des mêmes lignes pris à sa place parce
+    /// qu'OJP ne proposait pas le bon.
+    public var isSure: Bool {
+        switch kind {
+        case .usual: true
+        case .shifted(_, let confirmed): confirmed
+        case .alternative: false
+        }
+    }
 }
 
 /// Ce qui change par rapport à l'horaire, lu dans le temps réel d'un itinéraire.
@@ -500,15 +532,34 @@ public enum RegularTripResolver {
     /// réponse, ou remplacé par une autre course des mêmes lignes, il n'est pas perdu pour
     /// autant : OJP ne propose que quelques itinéraires. Il est alors vérifié course par course
     /// (`TripVerifier`), et gardé tant que ses courses passent et que ses correspondances tiennent.
+    ///
+    /// Sans trajet connu, absent de la réponse ne veut pas dire supprimé : avant de conclure à un
+    /// horaire modifié ou à un autre trajet, la course habituelle est cherchée aux départs de
+    /// chaque arrêt de montée (`scheduled`), puis vérifiée course par course.
     public static func resolve(_ trip: RegularTrip, on occurrence: RegularTripOccurrence,
                                known: TripEvent? = nil) async throws -> RegularTripMatch {
+        try await resolve(trip, on: occurrence, known: known,
+                          fetch: { origin, destination, time, isArrivalTime in
+                              try await trips(from: origin, to: destination, at: time, isArrivalTime: isArrivalTime,
+                                              avoiding: trip.linesToAvoid)
+                          },
+                          verify: TripVerifier.verify,
+                          departures: departures(of:))
+    }
+
+    /// `resolve`, avec OJP en paramètres (tests) : les itinéraires (`fetch` : départ, arrivée,
+    /// heure, heure d'arrivée ou non), la vérification course par course, et les départs de
+    /// l'arrêt de montée d'une étape (`nil` si l'API ne répond pas).
+    static func resolve(_ trip: RegularTrip, on occurrence: RegularTripOccurrence, known: TripEvent?,
+                        fetch: (RegularTripPlace, RegularTripPlace, Date, Bool) async throws -> [TripEvent],
+                        verify: (TripEvent) async -> TripVerifier.Outcome,
+                        departures: (TripLeg) async -> [StopEvent]?) async throws -> RegularTripMatch {
         let known = trip.knownUsual(known, for: occurrence)
         let (time, isArrivalTime) = trip.request(for: occurrence)
         var match: RegularTripMatch?
         var failure: Error = Failure.noTrip
         do {
-            let trips = try await trips(from: trip.origin, to: trip.destination, at: time, isArrivalTime: isArrivalTime,
-                                        avoiding: trip.linesToAvoid)
+            let trips = try await fetch(trip.origin, trip.destination, time, isArrivalTime)
             match = trip.match(in: trips, for: occurrence)
         } catch {
             failure = error
@@ -517,14 +568,73 @@ public enum RegularTripResolver {
             if case .usual = match.kind { return match }
             // La course déjà reconnue, simplement décalée : OJP a raison, rien à vérifier.
             if let known, match.trip.vehicleLegs.map(\.journeyRef) == known.vehicleLegs.map(\.journeyRef) {
-                return match
+                return match.confirmed()
             }
         }
-        if let known, case .feasible(let verified) = await TripVerifier.verify(known) {
-            return trip.usualMatch(verified, for: occurrence)
+        if let known {
+            if case .feasible(let verified) = await verify(known) {
+                return trip.usualMatch(verified, for: occurrence, confirmed: true)
+            }
+        } else if trip.recipe(for: occurrence.day).followsLines, !trip.recipe(for: occurrence.day).legs.isEmpty {
+            switch await scheduled(trip.plannedTrip(for: occurrence), departures: departures) {
+            case .found(let scheduledTrip):
+                if case .feasible(let verified) = await verify(scheduledTrip) {
+                    return trip.usualMatch(verified, for: occurrence, confirmed: true)
+                }
+            case .missing:
+                // Plus aucune course à l'heure habituelle : l'horaire a bien changé.
+                if let match { return match.confirmed() }
+            case .unknown:
+                break
+            }
         }
         guard let match else { throw failure }
         return match
+    }
+
+    /// La course habituelle d'un jour, cherchée aux départs de chaque arrêt de montée.
+    enum Scheduled: Equatable {
+        /// L'itinéraire prévu, avec ses courses datées : à vérifier course par course.
+        case found(TripEvent)
+        /// Une des lignes ne passe plus à l'heure prévue.
+        case missing
+        /// Impossible à dire : API muette, départs qui ne vont pas assez loin.
+        case unknown
+    }
+
+    /// Retrouve les courses de `planned` (l'itinéraire enregistré, recalé sur le jour) aux départs
+    /// de leur arrêt de montée : même ligne, même heure prévue à une minute près, de préférence
+    /// la même destination.
+    static func scheduled(_ planned: TripEvent, departures: (TripLeg) async -> [StopEvent]?) async -> Scheduled {
+        var trip = planned
+        for index in planned.legs.indices {
+            let leg = planned.legs[index]
+            guard !leg.transfer, !leg.publishedLineName.isEmpty else { continue }
+            guard let time = OJPDate.date(from: leg.legBoardTimetableTime),
+                  let events = await departures(leg) else { return .unknown }
+            let candidates = events.filter { event in
+                guard event.lineName == leg.publishedLineName, !event.journeyRef.isEmpty,
+                      let passage = OJPDate.date(from: event.timetabledTime) else { return false }
+                return abs(passage.timeIntervalSince(time)) <= 60
+            }
+            guard let course = candidates.first(where: { $0.destination == leg.legDestination }) ?? candidates.first else {
+                // Absente d'une liste qui va au-delà de l'heure prévue : la course n'existe plus.
+                let last = events.compactMap { OJPDate.date(from: $0.timetabledTime) }.max()
+                if let last, last > time.addingTimeInterval(60) { return .missing }
+                return .unknown
+            }
+            trip.legs[index].journeyRef = course.journeyRef
+            trip.legs[index].operatingDayRef = course.operatingDayRef.isEmpty ? nil : course.operatingDayRef
+        }
+        return .found(trip)
+    }
+
+    /// Les départs de l'arrêt de montée d'une étape, à partir d'une minute avant son heure
+    /// prévue ; `nil` si l'API ne répond pas.
+    static func departures(of leg: TripLeg) async -> [StopEvent]? {
+        guard let time = OJPDate.date(from: leg.legBoardTimetableTime) else { return nil }
+        return try? await fetchStopEvents(stopName: leg.legBoardStopName, stopSloid: sloidHarmonizer(code: leg.legBoardStopId),
+                                          count: 20, at: time.addingTimeInterval(-60)).events
     }
 
     /// Les itinéraires proposés par OJP : ceux du jour pour reconnaître le trajet habituel, ou

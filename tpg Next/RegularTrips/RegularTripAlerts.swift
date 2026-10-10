@@ -153,7 +153,7 @@ enum RegularTripAlerts {
         switch match.kind {
         case .usual:
             break
-        case .shifted(let minutes):
+        case .shifted(let minutes, _):
             // L'heure prévue : l'estimée bouge à chaque lecture et relancerait l'alerte.
             let time = first.flatMap { OJPDate.date(from: $0.legBoardTimetableTime) }.map(dateToString(with:)) ?? ""
             changes.append(minutes < 0

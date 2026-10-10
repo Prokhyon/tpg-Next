@@ -219,6 +219,53 @@ struct RegularTripTests {
         #expect(RegularTripStatus(trip: detour).disruptedLines.contains("A"))
     }
 
+    /// L'itinéraire d'origine sert de trajet connu, mais seulement pour son propre passage.
+    @Test func theSnapshotIsKnownOnlyForItsOwnPassage() throws {
+        let regular = RegularTrip(trip: try tripWithTransfer(), weekdays: [.sunday])
+        #expect(regular.known(nil, for: try occurrence(of: regular)) != nil)
+        #expect(regular.known(nil, for: try occurrence(of: regular, shiftedBy: 10)) == nil)
+    }
+
+    /// OJP ne propose qu'une autre course des mêmes lignes, 8 minutes plus tôt : la course
+    /// habituelle est cherchée aux départs avant de conclure à un horaire modifié.
+    @Test func anAbsentCourseIsLookedUpBeforeCallingItShifted() async throws {
+        let usual = try tripWithTransfer()
+        let regular = RegularTrip(trip: usual, weekdays: [.sunday])
+        let later = try occurrence(of: regular, shiftedBy: 8)
+        func event(_ line: String, at time: String, journeyRef: String) -> StopEvent {
+            StopEvent(stopPointName: "", stopId: "", plannedQuay: "", timetabledTime: time, estimatedTime: "",
+                      lineName: line, origin: "", destination: "", transportType: "", operatorName: "",
+                      journeyRef: journeyRef, operatingDayRef: "")
+        }
+        func departures(found: Bool) -> (TripLeg) async -> [StopEvent]? {
+            { leg in
+                let time = OJPDate.date(from: leg.legBoardTimetableTime)!
+                return [event(found ? leg.publishedLineName : "X", at: leg.legBoardTimetableTime, journeyRef: "ref-\(leg.publishedLineName)"),
+                        event("X", at: OJPDate.string(from: time.addingTimeInterval(600)), journeyRef: "other")]
+            }
+        }
+        func resolve(_ departures: @escaping (TripLeg) async -> [StopEvent]?) async throws -> RegularTripMatch {
+            try await RegularTripResolver.resolve(regular, on: later, known: nil,
+                                                  fetch: { _, _, _, _ in [usual] },
+                                                  verify: { .feasible($0) },
+                                                  departures: departures)
+        }
+
+        // La course habituelle passe : c'est elle, à l'heure.
+        let found = try await resolve(departures(found: true))
+        #expect(found.kind == .usual)
+        #expect(found.trip.vehicleLegs.map(\.journeyRef) == ["ref-12", "ref-19"])
+        #expect(found.isSure)
+        // Plus aucune course à l'heure habituelle : l'horaire a bien changé.
+        let missing = try await resolve(departures(found: false))
+        #expect(missing.kind == .shifted(minutes: -8, confirmed: true))
+        #expect(missing.isSure)
+        // Départs inconnus : décalé, sans certitude, et pas gardé comme trajet du jour.
+        let unknown = try await resolve { _ in nil }
+        #expect(unknown.kind == .shifted(minutes: -8, confirmed: false))
+        #expect(!unknown.isSure)
+    }
+
     /// Les lignes évitées : enregistrées avec le trajet, jamais celles du trajet habituel.
     @Test func avoidedLinesAreKept() throws {
         let usual = try tripWithTransfer()
