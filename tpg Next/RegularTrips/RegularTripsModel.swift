@@ -200,13 +200,11 @@ final class RegularTripsModel {
             live[occurrence.id] = .loading
         }
         var knownTrips = Self.knownStore.load() ?? [:]
-        let known = trip.knownUsual(known, for: occurrence)
-            ?? trip.knownUsual(knownTrips[occurrence.id], for: occurrence)
-            ?? trip.knownUsual(trip.dayOverrides?[occurrence.day], for: occurrence)
+        let known = trip.knownUsual(known, for: occurrence) ?? trip.known(knownTrips[occurrence.id], for: occurrence)
         do {
             let match = try await RegularTripResolver.resolve(trip, on: occurrence, known: known)
             live[occurrence.id] = .found(match, updated: Date())
-            if let usual = trip.knownUsual(match.trip, for: occurrence) {
+            if match.isSure, let usual = trip.knownUsual(match.trip, for: occurrence) {
                 knownTrips[occurrence.id] = usual
                 // Les jours passés ne servent plus.
                 let today = Calendar.swissTransit.dayKey(for: Date())

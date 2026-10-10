@@ -253,8 +253,12 @@ horaires (`estimatedVehiclePosition`).
   part avant l'arrivée du précédent (plus serré que la marche : gardé, signalé « compromise »).
   Le trajet connu vient de `RegularTripsModel` (gardé d'un lancement à l'autre,
   `regularTripsKnownUsual`), de l'activité en direct, de l'itinéraire enregistré lui-même, ou
-  de l'autre trajet choisi pour ce jour. Une première reconnaissance sans trajet connu (app
-  relancée tout près du départ) reste exposée au problème.
+  de l'autre trajet choisi pour ce jour, ou de l'itinéraire enregistré s'il est de ce passage
+  même (`RegularTrip.known`). Sans trajet connu, une course absente de la réponse est cherchée
+  aux départs de chaque arrêt de montée (`RegularTripResolver.scheduled` : 20 départs dès une
+  minute avant, même ligne à ±1 min), puis vérifiée course par course, avant de conclure à un
+  horaire modifié. « Horaire modifié » porte `confirmed` ; seul un trajet à l'heure, ou décalé
+  et confirmé (`RegularTripMatch.isSure`), est gardé comme trajet du jour.
 - « Mes itinéraires » (`SavedTripsAgenda`, dans `SavedTripsView.swift`) mélange jour par jour les
   itinéraires enregistrés et les prochains trajets réguliers, avec un filtre Tous / Enregistrés /
   Réguliers. Tout va du plus ancien (en haut) au plus récent. Les passés, au-dessus, sont
