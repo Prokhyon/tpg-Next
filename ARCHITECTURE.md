@@ -240,6 +240,11 @@ horaires (`estimatedVehiclePosition`).
   heure de Genève, lignes et arrêts. Chaque jour, `OJPTripRequest` est redemandée et le
   trajet habituel y est reconnu (`.usual`, `.shifted`, `.alternative`). Écrans et
   notifications : `tpg Next/RegularTrips/`.
+- **Lignes évitées** (`RegularTrip.linesToAvoid`) : passées à chaque demande du trajet
+  (reconnaissance du jour, « Autres horaires », suite d'un trajet suivi via `TripReplanner`),
+  comme dans la recherche d'itinéraire. Choisies dans l'éditeur (`AvoidableLinePicker` : les
+  lignes proposées au prochain jour du trajet) ou par l'appui long dans « Autres horaires » ;
+  jamais une ligne du trajet habituel (`isUsualLine`).
 - **Absent de la réponse ne veut pas dire perdu** : OJP ne propose que ~5 itinéraires, choisis
   d'après le temps réel. Quand le trajet habituel n'y est plus (ou n'y est qu'à une autre
   heure), celui déjà reconnu ce jour-là (`RegularTrip.knownUsual` : courses datées, même jour)

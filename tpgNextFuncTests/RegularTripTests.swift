@@ -219,6 +219,20 @@ struct RegularTripTests {
         #expect(RegularTripStatus(trip: detour).disruptedLines.contains("A"))
     }
 
+    /// Les lignes évitées : enregistrées avec le trajet, jamais celles du trajet habituel.
+    @Test func avoidedLinesAreKept() throws {
+        let usual = try tripWithTransfer()
+        var regular = RegularTrip(trip: usual, weekdays: Weekday.workdays)
+        #expect(regular.avoidedLines == nil)
+        #expect(regular.isUsualLine(try #require(usual.avoidableLines.first)))
+        let other = try #require(try trips().flatMap(\.avoidableLines).first { !regular.isUsualLine($0) })
+        regular.linesToAvoid = [other]
+        let decoded = try JSONDecoder().decode(RegularTrip.self, from: JSONEncoder().encode(regular))
+        #expect(decoded.linesToAvoid == [other])
+        regular.linesToAvoid = []
+        #expect(regular.avoidedLines == nil)
+    }
+
     @Test func survivesEncoding() throws {
         var regular = RegularTrip(trip: try tripWithTransfer(), weekdays: Weekday.workdays, name: "Travail")
         regular.skippedDays = ["2026-12-25"]

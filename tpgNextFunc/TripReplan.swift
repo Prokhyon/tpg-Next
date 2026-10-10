@@ -107,8 +107,9 @@ public enum TripReplanner {
     /// Les suites possibles, la meilleure en tête : le premier arrivé parmi ceux qu'on peut
     /// encore attraper. Vide si l'API ne répond pas, ou si plus rien ne mène à destination.
     public static func tails(from stop: RegularTripPlace, at time: Date,
-                             to destination: RegularTripPlace, limit: Int = 3) async -> [TripEvent] {
-        let trips = await options(from: stop, at: time, to: destination)
+                             to destination: RegularTripPlace, avoiding avoidedLines: [AvoidedLine] = [],
+                             limit: Int = 3) async -> [TripEvent] {
+        let trips = await options(from: stop, at: time, to: destination, avoiding: avoidedLines)
         let catchable = trips.filter { ($0.anchorDate(.departure, timetabled: false) ?? .distantPast) >= time }
         let ranked = (catchable.isEmpty ? trips : catchable)
             .sorted { ($0.endDate ?? .distantFuture) < ($1.endDate ?? .distantFuture) }
@@ -122,13 +123,13 @@ public enum TripReplanner {
     }
 
     private static func options(from stop: RegularTripPlace, at time: Date,
-                                to destination: RegularTripPlace) async -> [TripEvent] {
+                                to destination: RegularTripPlace, avoiding avoidedLines: [AvoidedLine]) async -> [TripEvent] {
         let origin = stop.endpoint
         let arrival = destination.endpoint
         let data: Data? = await withCheckedContinuation { continuation in
             fetchTrips(with: origin.stop, with: origin.place, with: origin.isPlace,
                        with: arrival.stop, with: arrival.place, with: arrival.isPlace,
-                       with: time, with: false) { continuation.resume(returning: try? $0.get()) }
+                       with: time, with: false, avoiding: avoidedLines) { continuation.resume(returning: try? $0.get()) }
         }
         guard let data else { return [] }
         let trips = try? parseTripEvents(from: data, startCoordinate: stop.coordinates,
@@ -136,6 +137,6 @@ public enum TripReplanner {
                                          startName: stop.name, endName: destination.name,
                                          startCode: stop.sloid, endCode: destination.sloid,
                                          geoDeparture: stop.sloid == nil, geoArrival: destination.sloid == nil)
-        return trips ?? []
+        return (trips ?? []).avoiding(avoidedLines)
     }
 }

@@ -96,7 +96,7 @@ extension TripEvent {
 }
 
 /// Une ligne que la recherche d'itinéraire évite, choisie dans les résultats.
-public struct AvoidedLine: Hashable, Identifiable, Sendable {
+public struct AvoidedLine: Codable, Hashable, Identifiable, Sendable {
     public let lineRef: String
     public let name: String
     public let operatorName: String

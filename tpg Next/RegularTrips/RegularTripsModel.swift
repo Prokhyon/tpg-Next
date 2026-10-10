@@ -96,6 +96,15 @@ final class RegularTripsModel {
         }
     }
 
+    /// Ne plus jamais proposer cette ligne quand le trajet est recalculé. L'état des jours est
+    /// oublié : il est redemandé sans elle.
+    func avoid(_ line: AvoidedLine, in tripID: UUID) {
+        guard let index = regularTrips.firstIndex(where: { $0.id == tripID }),
+              !regularTrips[index].linesToAvoid.contains(line) else { return }
+        regularTrips[index].linesToAvoid.append(line)
+        forgetDay(of: regularTrips[index])
+    }
+
     /// Ce jour-là, le trajet n'est pas fait (congé, télétravail).
     func skip(_ occurrence: RegularTripOccurrence) {
         guard let index = regularTrips.firstIndex(where: { $0.id == occurrence.tripID }) else { return }

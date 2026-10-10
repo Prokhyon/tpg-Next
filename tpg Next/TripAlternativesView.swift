@@ -20,7 +20,13 @@ struct TripAlternativesView: View {
     let isArrivalTime: Bool
     /// L'itinéraire actuel, marqué dans la liste.
     let current: TripEvent?
+    /// Le trajet régulier dont on choisit l'itinéraire d'un jour : ses lignes évitées valent
+    /// ici, et le menu d'une proposition en ajoute (`onAvoid`), sauf celles du trajet habituel.
+    let regular: RegularTrip?
+    let onAvoid: ((AvoidedLine) -> Void)?
     let onChoose: (TripEvent) -> Void
+    /// Les lignes que les propositions évitent : celles du trajet régulier, et celles ajoutées ici.
+    @State private var avoided: [AvoidedLine]
 
     /// L'heure demandée à OJP : un peu avant l'heure voulue (ou après, pour une arrivée), pour
     /// que les propositions l'encadrent.
@@ -35,14 +41,19 @@ struct TripAlternativesView: View {
     }
 
     init(title: LocalizedStringKey, footer: LocalizedStringKey, origin: RegularTripPlace, destination: RegularTripPlace,
-         around time: Date, isArrivalTime: Bool = false, current: TripEvent?, onChoose: @escaping (TripEvent) -> Void) {
+         around time: Date, isArrivalTime: Bool = false, current: TripEvent?,
+         regular: RegularTrip? = nil, onAvoid: ((AvoidedLine) -> Void)? = nil,
+         onChoose: @escaping (TripEvent) -> Void) {
         self.title = title
         self.footer = footer
         self.origin = origin
         self.destination = destination
         self.isArrivalTime = isArrivalTime
         self.current = current
+        self.regular = regular
+        self.onAvoid = onAvoid
         self.onChoose = onChoose
+        _avoided = State(initialValue: regular?.linesToAvoid ?? [])
         margin = isArrivalTime ? 15 * 60 : -15 * 60
         _time = State(initialValue: time.addingTimeInterval(margin))
     }
@@ -64,6 +75,11 @@ struct TripAlternativesView: View {
                         Text(dayText)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        if !avoided.isEmpty {
+                            Label("Sans les lignes \(avoided.map(\.name).formatted(.list(type: .and)))", systemImage: "nosign")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
@@ -97,6 +113,19 @@ struct TripAlternativesView: View {
                                 row(trip)
                             }
                             .buttonStyle(.plain)
+                            .contextMenu {
+                                if let onAvoid, let regular {
+                                    ForEach(trip.avoidableLines.filter { !avoided.contains($0) && !regular.isUsualLine($0) }) { line in
+                                        Button {
+                                            onAvoid(line)
+                                            avoided.append(line)
+                                            Task { await load() }
+                                        } label: {
+                                            Label("Éviter la ligne \(line.name) pour ce trajet", systemImage: "nosign")
+                                        }
+                                    }
+                                }
+                            }
                         }
                         moveButton(earlier: false)
                         Text(footer)
@@ -194,7 +223,8 @@ struct TripAlternativesView: View {
     private func load() async {
         search = .loading
         do {
-            let trips = try await RegularTripResolver.trips(from: origin, to: destination, at: time, isArrivalTime: isArrivalTime)
+            let trips = try await RegularTripResolver.trips(from: origin, to: destination, at: time, isArrivalTime: isArrivalTime,
+                                                            avoiding: avoided)
             guard !Task.isCancelled else { return }
             search = .results(trips.sortedByStart())
         } catch RegularTripResolver.Failure.noTrip {

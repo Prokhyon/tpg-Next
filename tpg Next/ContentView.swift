@@ -338,6 +338,8 @@ struct ContentView: View {
             case .editRegular:
                 RegularTripEditor(trip: RegularTrip(trip: PreviewData.tripWithTransfer, weekdays: Weekday.workdays))
                     .environment(regularTripsModel)
+            case .avoidLine:
+                AvoidableLinePicker(trip: RegularTrip(trip: PreviewData.tripWithTransfer, weekdays: Weekday.workdays)) { _ in }
             case .operators:
                 LineOperatorPicker()
             case .reminders:
@@ -531,7 +533,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, operators, flex, reminders, api, track, live, liveRiding, activity
+    case reminder, newRegular, editRegular, avoidLine, operators, flex, reminders, api, track, live, liveRiding, activity
     var id: String { rawValue }
 }
 #endif
