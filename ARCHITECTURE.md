@@ -315,7 +315,14 @@ horaires (`estimatedVehiclePosition`).
   Il s'ouvre en feuille plein écran, posée par `ContentView` (`LiveTripPresentation.shared`) : le
   bandeau est refait à chaque changement d'étape et emporterait sa feuille. Le trajet y est
   déroulé de haut en bas (départ, montées, véhicules et leurs arrêts, attentes, arrivée), l'étape
-  en cours sur fond teinté et les étapes passées effacées.
+  en cours sur fond teinté et les étapes passées effacées. La feuille a sa propre pile
+  (`LiveTripSheet`) : arrêts et lignes s'y ouvrent comme dans le détail d'un itinéraire, grâce
+  aux liens que le suivi garde à part (`TripLiveActivities.links(for:)` → `LiveTripLinks`,
+  l'activité n'ayant que des noms). La ligne s'ouvre sur sa portion du trajet
+  (`AppRoute.line(…, alightStop:)`, aussi depuis un itinéraire). La carte (`LiveTripMap`, petite
+  dans la feuille, en grand sur `.liveTripMap`, à droite sur grand écran) grise ce qui est
+  parcouru : le véhicule en cours est coupé (`TripRoute.split`) là où ses heures de passage le
+  placent (`TripRoute.expectedPosition`, décalées de `positionOffset`).
 - **Position** : dans le véhicule, la position du voyageur est celle du véhicule.
   `TripPositionEstimator.fix(on:…)` la projette sur le tracé (`TripRoute`, gardé dans l'app :
   l'activité n'a pas la place) et en tire l'avance ou le retard, appliqué par

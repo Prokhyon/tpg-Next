@@ -73,6 +73,9 @@ struct LineView: View {
     
     var stopEvent: StopEvent
     var currentStop: ShortStop?
+    /// La descente d'un trajet qui emprunte cette course : la portion parcourue, de
+    /// `currentStop` (la montée) à elle, est mise en avant.
+    var alightStop: ShortStop? = nil
     var currentLine: String
     
     private var operatorName: String { journey.operatorName }
@@ -105,13 +108,14 @@ struct LineView: View {
 //                            .opacity(0.0)
                         ScrollViewReader { scroll in
                             ScrollView {
+                                let range = tripRange
                                 LazyVStack {
                                     ForEach(journeyRows(lineEvents)) { row in
                                         switch row {
                                         case .stop(let event):
-                                            stopRow(event, scroll: scroll)
+                                            stopRow(event, range: range, scroll: scroll)
                                         case .skipped(let stops):
-                                            skippedBlock(stops, scroll: scroll)
+                                            skippedBlock(stops, range: range, scroll: scroll)
                                         }
                                     }
                                 }
@@ -224,20 +228,44 @@ struct LineView: View {
         }
     }
 
-    /// Un arrêt de la course, avec son trait de ligne.
-    private func stopRow(_ event: LineEvent, scroll: ScrollViewProxy) -> some View {
+    /// La portion d'un trajet sur la course, par `LineEvent.id` : la montée, la descente, et
+    /// tous les arrêts de l'une à l'autre. `nil` hors d'un trajet, ou si l'un des deux manque.
+    private var tripRange: TripRange? {
+        guard let currentStop, let alightStop else { return nil }
+        func stop(_ event: LineEvent) -> String {
+            sloidHarmonizer(code: event.sloid.isEmpty ? event.stopPlaceRef : event.sloid)
+        }
+        let board = sloidHarmonizer(code: currentStop.sloid)
+        let alight = sloidHarmonizer(code: alightStop.sloid)
+        let boards = lineEvents.indices.filter { stop(lineEvents[$0]) == board }
+        // Une course peut passer deux fois au même arrêt (boucle) : l'heure de montée départage.
+        let boardTime = OJPDate.date(from: stopEvent.timetabledTime)
+        guard let boardIndex = boards.first(where: { boardTime != nil && OJPDate.date(from: lineEvents[$0].timetabledTime) == boardTime }) ?? boards.first,
+              let alightIndex = lineEvents.indices.first(where: { $0 > boardIndex && stop(lineEvents[$0]) == alight }) else { return nil }
+        return TripRange(board: lineEvents[boardIndex].id, alight: lineEvents[alightIndex].id,
+                         inside: Set(lineEvents[boardIndex...alightIndex].map(\.id)),
+                         after: Set(lineEvents[(alightIndex + 1)...].map(\.id)))
+    }
+
+    /// Un arrêt de la course, avec son trait de ligne. Dans un trajet, la montée et la descente
+    /// sont mises en avant ; les arrêts d'avant la montée s'effacent, ceux d'après la descente
+    /// gardent leur texte, sur un trait en points.
+    private func stopRow(_ event: LineEvent, range: TripRange?, scroll: ScrollViewProxy) -> some View {
         let skipped = event.isCancelled == true
+        let role: LocalizedStringKey? = event.id == range?.board ? "Montée" : event.id == range?.alight ? "Descente" : nil
+        let isCurrent = range.map { event.id == $0.board || event.id == $0.alight } ?? (event.sloid == currentStop?.sloid)
+        let after = range?.after.contains(event.id) ?? false
+        let before = range.map { !$0.inside.contains(event.id) && !after } ?? false
         return stopLink(event) {
-            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: event.sloid == currentStop?.sloid, selected: event.id == selectedStop?.id, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime, skipped: skipped)
+            LineEventElementView(currentLine: currentLine, operatorName: operatorName, transportType: stopEvent.transportType, currentStop: isCurrent, selected: event.id == selectedStop?.id, eventName: event.stopPointName, estimatedTime: event.estimatedTime, timetabledTime: event.timetabledTime, plannedQuay: event.plannedQuay, showTime: $showTime, skipped: skipped, role: role, dimmed: before)
         }
         .foregroundStyle(.primary)
         .onAppear {
             if !scrollDone {
                 DispatchQueue.main.async {
                     withAnimation(.easeInOut(duration: 0.4)) {
-                        if let currentStop = currentStop {
-                            let currentStopID = currentStop.sloid + stopEvent.timetabledTime
-                            scroll.scrollTo(currentStopID, anchor: UnitPoint(x: 0.0, y: 0.05))
+                        if let target = range?.board ?? currentStop.map({ $0.sloid + stopEvent.timetabledTime }) {
+                            scroll.scrollTo(target, anchor: UnitPoint(x: 0.0, y: 0.05))
                             scrollDone = true
                         }
                     }
@@ -254,14 +282,15 @@ struct LineView: View {
             }
         }
         .background(
-            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineEvents.last?.id, lineColor: lineColor, busIsHere: $busIsHere, skipped: skipped)
+            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineEvents.last?.id, lineColor: before ? lineColor.opacity(0.35) : lineColor, busIsHere: $busIsHere, skipped: skipped,
+                           dashed: after ? .all : event.id == range?.alight ? .below : .none)
         )
         .id(event.id)
     }
 
     /// Plusieurs arrêts sautés d'affilée, repliés en un bloc. Déplié d'office s'il contient
     /// l'arrêt d'où la course a été ouverte : c'est lui que l'utilisateur cherche.
-    @ViewBuilder private func skippedBlock(_ stops: [LineEvent], scroll: ScrollViewProxy) -> some View {
+    @ViewBuilder private func skippedBlock(_ stops: [LineEvent], range: TripRange?, scroll: ScrollViewProxy) -> some View {
         let id = JourneyRow.skipped(stops).id
         let containsCurrent = stops.contains { $0.sloid == currentStop?.sloid }
         let expanded = expandedSkippedBlocks.contains(id) != containsCurrent
@@ -281,7 +310,7 @@ struct LineView: View {
             LineBackground(event: stops[0], lineColor: lineColor, busIsHere: $busIsHere, skipped: true)
         )
         if expanded {
-            ForEach(stops) { stopRow($0, scroll: scroll) }
+            ForEach(stops) { stopRow($0, range: range, scroll: scroll) }
         }
     }
 
@@ -307,6 +336,15 @@ struct LineView: View {
     }
 }
 
+/// La portion d'un trajet sur une course, par `LineEvent.id`.
+struct TripRange {
+    var board: String
+    var alight: String
+    var inside: Set<String>
+    /// Les arrêts après la descente.
+    var after: Set<String>
+}
+
 struct LineBackground: View {
     @Environment(\.displayTime) private var now
     var event: LineEvent
@@ -318,10 +356,28 @@ struct LineBackground: View {
     var trailX: CGFloat = 45
     /// Arrêt sauté : le véhicule n'y passe pas, le trait est en pointillé.
     var skipped = false
-    
+    /// Au-delà de la descente d'un trajet : le véhicule continue sans le voyageur, le trait est
+    /// en points de la couleur de la ligne (sous l'arrêt seulement, pour la descente).
+    var dashed: DashedPart = .none
+
+    enum DashedPart {
+        case none, below, all
+    }
+
     var body: some View {
         GeometryReader { geometry in
-            if skipped {
+            if dashed == .all, !skipped {
+                dashes(from: event.id == firstEventId ? geometry.size.height / 2 : -4,
+                       to: event.id == lastEventId ? geometry.size.height / 2 : geometry.size.height + 4)
+            } else if dashed == .below, !skipped {
+                Rectangle()
+                    .frame(width: 7, height: geometry.size.height / 2 + 8)
+                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? lineColor.opacity(0.3) : lineColor)
+                    .position(x: trailX, y: geometry.size.height / 4)
+                if event.id != lastEventId {
+                    dashes(from: geometry.size.height / 2, to: geometry.size.height + 4)
+                }
+            } else if skipped {
                 Path { path in
                     path.move(to: CGPoint(x: trailX, y: -4))
                     path.addLine(to: CGPoint(x: trailX, y: geometry.size.height + 4))
@@ -359,6 +415,17 @@ struct LineBackground: View {
             }
         }
     }
+
+    /// Le trait en points, de `from` à `to` dans la rangée.
+    private func dashes(from top: CGFloat, to bottom: CGFloat) -> some View {
+        Path { path in
+            path.move(to: CGPoint(x: trailX, y: top))
+            path.addLine(to: CGPoint(x: trailX, y: bottom))
+        }
+        .stroke(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? lineColor.opacity(0.3) : lineColor,
+                // Des points, comme la marche dans la frise d'un itinéraire (`TripTimeline`).
+                style: StrokeStyle(lineWidth: 6, lineCap: .round, dash: [0, 10]))
+    }
 }
 
 struct LineEventElementView: View {
@@ -378,6 +445,11 @@ struct LineEventElementView: View {
     var displayIcon: Bool = true //Display a transport icon if event time equals current time
     /// Arrêt sauté (`NotServicedStop`) : nom barré, « Non desservi » à la place de l'heure.
     var skipped = false
+    /// Ce qu'on y fait dans un trajet (« Montée », « Descente »), sous le nom.
+    var role: LocalizedStringKey? = nil
+    /// Hors du trajet (avant la montée) : le contenu s'efface comme un passage passé, pas le
+    /// fond, sous lequel le trait de la ligne se verrait.
+    var dimmed = false
     
     var body: some View {
 //        RoundedRectangle(cornerRadius: 20)
@@ -394,6 +466,15 @@ struct LineEventElementView: View {
                             .lineLimit(2)
                             .minimumScaleFactor(0.7)
                             .padding(.vertical, 8)
+                    } else if let role {
+                        VStack(alignment: .leading, spacing: 0) {
+                            SmallStopTitleView(stopName: eventName)
+                                .strikethrough(skipped)
+                            Text(role)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tint)
+                        }
+                        .padding(.vertical, 4)
                     } else {
                         SmallStopTitleView(stopName: eventName)
                             .strikethrough(skipped)
@@ -411,7 +492,7 @@ struct LineEventElementView: View {
                     .foregroundStyle(.primary)
 //                .foregroundStyle(pastEventPossible ? determineColor(for: estimatedTime): .primary)
                     // Même règle que le trait de la ligne : sans temps réel, l'heure prévue.
-                    .opacity(skipped ? 0.5 : pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false, now: now) ? 0.3 : 1)
+                    .opacity(skipped || dimmed ? 0.5 : pastEventPossible && hasPassed(OJPDate.date(from: estimatedTime) ?? OJPDate.date(from: timetabledTime), includingCurrentMinute: false, now: now) ? 0.3 : 1)
                 .padding(.horizontal)
                 .basicElementBackground(minHeight: 45, highlighted: currentStop, selected: selected)
                 .padding(5)

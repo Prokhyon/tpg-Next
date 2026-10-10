@@ -16,8 +16,10 @@ enum AppRoute: Hashable {
     /// Départs d'un arrêt. `highlight` met en avant une course (ouverture depuis une ligne,
     /// un itinéraire ou un rappel) et fait partir la liste de son heure de passage.
     case stop(name: String, sloid: String, highlight: DepartureHighlight? = nil)
-    /// Course d'une ligne. `event.lineName` est la ligne affichée.
-    case line(event: StopEvent, currentStop: ShortStop?)
+    /// Course d'une ligne. `event.lineName` est la ligne affichée. `alightStop` : la descente
+    /// d'un trajet, quand la course en fait partie ; la page montre alors la portion parcourue,
+    /// de `currentStop` (la montée) à elle.
+    case line(event: StopEvent, currentStop: ShortStop?, alightStop: ShortStop? = nil)
     case stopMap(quays: [Quay], sloid: String, name: String)
     case lineMap(events: [LineEvent], operatorName: String, event: StopEvent, currentStopSloid: String?)
     case trip(TripEvent)
@@ -43,6 +45,8 @@ enum AppRoute: Hashable {
     case lineInfo(TransitLine)
     /// Le trajet suivi en direct, en entier.
     case liveTrip(key: String)
+    /// Sa carte, en grand.
+    case liveTripMap(key: String)
     /// Le guide d'utilisation.
     case userGuide
     /// L'usage des clés OJP et les échecs vus par cet appareil.
@@ -97,8 +101,8 @@ struct AppRouteDestination: View {
                      previousLineRef: highlight?.journeyRef,
                      previousLineName: highlight?.lineName,
                      previousLineTime: highlight?.time)
-        case let .line(event, currentStop):
-            LineView(stopEvent: event, currentStop: currentStop, currentLine: event.lineName)
+        case let .line(event, currentStop, alightStop):
+            LineView(stopEvent: event, currentStop: currentStop, alightStop: alightStop, currentLine: event.lineName)
         case let .stopMap(quays, sloid, name):
             StopMapView(quays: quays, stopSloid: sloid, stopName: name)
         case let .lineMap(events, operatorName, event, currentStopSloid):
@@ -142,6 +146,8 @@ struct AppRouteDestination: View {
             LineInfoView(line: line)
         case let .liveTrip(key):
             LiveTripView(key: key)
+        case let .liveTripMap(key):
+            LiveTripMapPage(key: key)
         }
     }
 }

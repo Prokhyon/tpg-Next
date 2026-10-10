@@ -46,7 +46,10 @@ struct TripLegsList: View {
                     let alightFocus = TripMapFocus(id: "alight-\(leg.id)", coordinates: [leg.alightCoordinate])
                     let boardRoute = AppRoute.stop(name: leg.legBoardStopName, sloid: leg.legBoardStopId, //Departure stop for the leg
                                                    highlight: DepartureHighlight(journeyRef: leg.journeyRef, lineName: leg.publishedLineName, time: leg.legBoardTimetableTime))
-                    let lineRoute = AppRoute.line(event: createStopEventFromTripLeg(tripLeg: leg), currentStop: nil)
+                    // La page de la ligne montre la portion parcourue, de la montée à la descente.
+                    let lineRoute = AppRoute.line(event: createStopEventFromTripLeg(tripLeg: leg),
+                                                  currentStop: ShortStop(name: leg.legBoardStopName, sloid: sloidHarmonizer(code: leg.legBoardStopId)),
+                                                  alightStop: ShortStop(name: leg.legAlightStopName, sloid: sloidHarmonizer(code: leg.legAlightStopId)))
                     let alightRoute = AppRoute.stop(name: leg.legAlightStopName, sloid: leg.legAlightStopId, //Arrival stop for the leg
                                                     highlight: DepartureHighlight(journeyRef: leg.journeyRef, lineName: leg.publishedLineName, time: leg.legAlightTimetableTime))
                     let notice = incidentNotice(leg)

@@ -345,7 +345,9 @@ struct ContentView: View {
         // Le bandeau s'ouvre en plein écran, et se referme en glissant vers le bas.
         .sheet(isPresented: Bindable(liveTrip).isOpen) {
             if let key = liveTrip.openedKey {
-                LiveTripView(key: key)
+                LiveTripSheet(key: key)
+                    .modifier(TabModels(saved: savedTripsModel, regular: regularTripsModel, itinerary: itineraryViewModel,
+                                        recent: recentSearchModel, navigation: navigationModel))
                     .departureActionSheets()
                     .presentationDragIndicator(.visible)
             }
@@ -369,10 +371,25 @@ struct ContentView: View {
                 ScheduledNotificationsSheet(previewAutomatic: AutomaticReminders.preview)
                     .previewEnvironment(navigation: false)
             case .live:
-                LiveTripView(key: "preview", previewTrip: .previewTransfer)
+                // L'itinéraire d'aperçu, quatre minutes avant la montée.
+                let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: -4)
+                LiveTripSheet(key: "preview", previewTrip: followed.trip, previewLinks: followed.links,
+                              previewRoute: followed.route)
+                    .modifier(TabModels(saved: savedTripsModel, regular: regularTripsModel, itinerary: itineraryViewModel,
+                                        recent: recentSearchModel, navigation: navigationModel))
                     .presentationDragIndicator(.visible)
+            case .liveMap:
+                let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: 1.5)
+                NavigationStack {
+                    LiveTripMapPage(key: "preview", previewTrip: followed.trip, previewLinks: followed.links,
+                                    previewRoute: followed.route)
+                }
             case .liveRiding:
-                LiveTripView(key: "preview", previewTrip: .previewRiding)
+                let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: 1.5)
+                LiveTripSheet(key: "preview", previewTrip: followed.trip, previewLinks: followed.links,
+                              previewRoute: followed.route)
+                    .modifier(TabModels(saved: savedTripsModel, regular: regularTripsModel, itinerary: itineraryViewModel,
+                                        recent: recentSearchModel, navigation: navigationModel))
                     .presentationDragIndicator(.visible)
             case .activity:
                 TripActivityGallery()
@@ -506,7 +523,10 @@ struct ContentView: View {
                 transportType: query("transportType"),
                 operatorName: query("operator")
             )
-            navigationModel.open(.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: sloid))), in: .home)
+            // `alight` (facultatif) : la descente d'un trajet, dont la portion est mise en avant.
+            let alight = query("alight").map { ShortStop(name: stopStore.findStop(id: $0)?.name ?? "", sloid: sloidHarmonizer(code: $0)) }
+            navigationModel.open(.line(event: event, currentStop: ShortStop(name: stopName, sloid: sloidHarmonizer(code: sloid)),
+                                       alightStop: alight), in: .home)
         default:
             return
         }
@@ -567,7 +587,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, avoidLine, operators, flex, reminders, api, track, live, liveRiding, activity
+    case reminder, newRegular, editRegular, avoidLine, operators, flex, reminders, api, track, live, liveRiding, liveMap, activity
     var id: String { rawValue }
 }
 #endif
@@ -777,4 +797,23 @@ struct DockView: View {
             .padding(.bottom)
     }
     .previewEnvironment(navigation: false)
+}
+
+/// Les modèles posés sur les onglets, à reposer sur une feuille : elle est présentée au-dessus
+/// d'eux et n'en hérite pas. Sans eux, la page d'un arrêt ouverte depuis le trajet suivi plantait.
+private struct TabModels: ViewModifier {
+    let saved: SavedTripsModel
+    let regular: RegularTripsModel
+    let itinerary: ItineraryViewModel
+    let recent: RecentSearch
+    let navigation: NavigationModel
+
+    func body(content: Content) -> some View {
+        content
+            .environment(saved)
+            .environment(regular)
+            .environment(itinerary)
+            .environment(recent)
+            .environment(navigation)
+    }
 }

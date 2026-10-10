@@ -93,23 +93,87 @@ extension View {
 
 // MARK: - Le trajet en entier
 
+/// Le trajet suivi ouvert depuis le bandeau : sa page, avec sa propre pile. Les lignes et les
+/// arrêts s'y empilent (ligne, puis un de ses arrêts, puis une autre course…) sans quitter la
+/// feuille. Ouverte depuis un onglet, `LiveTripView` prend la pile de l'onglet.
+struct LiveTripSheet: View {
+    let key: String
+    var previewTrip: TripLiveActivities.LiveTrip?
+    var previewLinks: LiveTripLinks?
+    var previewRoute: TripRoute?
+    @State private var path: [AppRoute] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            LiveTripView(key: key, previewTrip: previewTrip, previewLinks: previewLinks, previewRoute: previewRoute)
+                .toolbar(.hidden, for: .navigationBar)
+                .appRouteDestinations()
+                .navigationDestination(for: LiveTripMapRoute.self) { route in
+                    LiveTripMapPage(key: route.key, previewTrip: previewTrip, previewLinks: previewLinks,
+                                    previewRoute: previewRoute)
+                }
+        }
+        .environment(\.openRoute, OpenRouteAction { path.append($0) })
+    }
+}
+
+/// La carte en grand d'un trajet d'aperçu : elle n'a pas de route à elle, ses données ne sont
+/// pas suivies.
+struct LiveTripMapRoute: Hashable {
+    let key: String
+}
+
 /// Tout le trajet suivi, de haut en bas, comme le détail d'un itinéraire : le départ, chaque
 /// véhicule entre sa montée et sa descente sur le trait de sa ligne, les marches et attentes,
 /// puis l'arrivée. L'étape en cours est entourée et décompte ; les étapes passées s'effacent.
+///
+/// Comme dans le détail d'un itinéraire, les arrêts ouvrent leurs départs, la ligne sa course
+/// (la portion du trajet mise en avant), et la carte montre où l'on en est.
 struct LiveTripView: View {
     let key: String
-    /// Pour les aperçus : le trajet à afficher quand rien n'est suivi.
+    /// Pour les aperçus : le trajet à afficher quand rien n'est suivi, ses liens et son tracé.
     var previewTrip: TripLiveActivities.LiveTrip?
+    var previewLinks: LiveTripLinks?
+    var previewRoute: TripRoute?
 
     @Environment(\.displayTime) private var now
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layout) private var layout
     /// Les véhicules dont on a déplié les arrêts intermédiaires.
     @State private var expanded: Set<Int> = []
     private var liveActivities = TripLiveActivities.shared
 
+    init(key: String, previewTrip: TripLiveActivities.LiveTrip? = nil, previewLinks: LiveTripLinks? = nil,
+         previewRoute: TripRoute? = nil) {
+        self.key = key
+        self.previewTrip = previewTrip
+        self.previewLinks = previewLinks
+        self.previewRoute = previewRoute
+    }
+
     private var trip: TripLiveActivities.LiveTrip? { liveActivities.live[key] ?? previewTrip }
+    private var route: TripRoute? { liveActivities.route(for: key) ?? previewRoute }
+
+    /// Les liens du trajet, s'ils correspondent bien à ses étapes (un recalcul en route peut les
+    /// avoir changées entre deux mises à jour).
+    private var links: LiveTripLinks? {
+        guard let links = liveActivities.links(for: key) ?? previewLinks,
+              links.legs.count == trip?.state.legs.count else { return nil }
+        return links
+    }
 
     var body: some View {
+        // Sur grand écran, la carte à droite des étapes, comme le détail d'un itinéraire.
+        AdaptiveSplit {
+            content
+        } secondary: {
+            if let trip {
+                LiveTripMap(state: trip.state, links: links, route: route)
+            }
+        }
+    }
+
+    private var content: some View {
         ScrollView {
             if let trip {
                 VStack(alignment: .leading, spacing: 0) {
@@ -129,6 +193,11 @@ struct LiveTripView: View {
                         }
                         .padding(.horizontal, 15)
                         .padding(.bottom, 14)
+                    }
+                    if !layout.showsSecondaryPane {
+                        mapCard(trip)
+                            .padding(.horizontal, 15)
+                            .padding(.bottom, 14)
                     }
                     timeline(trip)
                         .padding(.horizontal, 15)
@@ -229,6 +298,52 @@ struct LiveTripView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    // MARK: La carte
+
+    /// La carte, petite : elle s'ouvre en grand dans la pile.
+    private func mapCard(_ trip: TripLiveActivities.LiveTrip) -> some View {
+        let map = LiveTripMap(state: trip.state, links: links, route: route, compact: true)
+            .frame(height: 190)
+            .clipShape(RoundedRectangle(cornerRadius: 25))
+            .overlay(alignment: .topTrailing) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.footnote.bold())
+                    .padding(9)
+                    .background(.regularMaterial, in: Circle())
+                    .padding(10)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 25))
+            .accessibilityLabel(Text("Carte du trajet"))
+        // Un aperçu n'est pas suivi : sa carte en grand reprend ses données.
+        return Group {
+            if previewTrip != nil, liveActivities.live[key] == nil {
+                NavigationLink(value: LiveTripMapRoute(key: key)) { map }
+            } else {
+                NavigationLink(value: AppRoute.liveTripMap(key: key)) { map }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Les liens
+
+    /// La page d'un arrêt, la course mise en avant à son passage.
+    private func stopRoute(_ stop: ShortStop, time: String, leg: LiveTripLinks.Leg?) -> AppRoute {
+        .stop(name: stop.name, sloid: stop.sloid,
+              highlight: leg.map { DepartureHighlight(journeyRef: $0.line.journeyRef, lineName: $0.line.lineName,
+                                                      time: time.isEmpty ? nil : time) })
+    }
+
+    /// Ouvre `route` au toucher ; sans route (aperçu, trajet plus suivi), affiche seulement.
+    @ViewBuilder private func link<Label: View>(_ route: AppRoute?, @ViewBuilder label: () -> Label) -> some View {
+        if let route {
+            NavigationLink(value: route, label: label)
+                .buttonStyle(.plain)
+        } else {
+            label()
+        }
+    }
+
     // MARK: Les étapes
 
     @ViewBuilder
@@ -242,8 +357,10 @@ struct LiveTripView: View {
 
         VStack(spacing: 0) {
             if hasStart(state), let first = legs.first {
-                LiveStopCapsule(name: trip.attributes.origin, caption: "Départ", time: state.departure,
-                                iconColor: .white, past: state.departure < now)
+                link(links?.origin.map { stopRoute($0, time: "", leg: nil) }) {
+                    LiveStopCapsule(name: trip.attributes.origin, caption: "Départ", time: state.departure,
+                                    iconColor: .white, past: state.departure < now)
+                }
                 note(walking: true, minutes(state.departure, first.board), past: first.board < now)
             }
 
@@ -257,9 +374,11 @@ struct LiveTripView: View {
 
             if let last = legs.last, finalWalk {
                 note(walking: true, minutes(last.alight, state.arrival), past: state.arrival < now)
-                LiveStopCapsule(name: trip.attributes.destination, caption: "Arrivée", time: state.arrival,
-                                iconColor: .white, past: state.arrival < now, highlighted: phase == .arrived,
-                                terminus: true)
+                link(links?.destination.map { stopRoute($0, time: "", leg: nil) }) {
+                    LiveStopCapsule(name: trip.attributes.destination, caption: "Arrivée", time: state.arrival,
+                                    iconColor: .white, past: state.arrival < now, highlighted: phase == .arrived,
+                                    terminus: true)
+                }
             }
         }
     }
@@ -272,15 +391,21 @@ struct LiveTripView: View {
         let stopColor = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName, inverted: true)
         let waiting = phase == .waiting(leg: index)
         let riding = phase == .riding(leg: index)
+        let link = links?.legs[index]
         return VStack(spacing: 0) {
-            LiveStopCapsule(name: leg.boardName, caption: boardCaption(leg), time: leg.board, delay: leg.delay,
-                            iconColor: stopColor, past: leg.board < now, highlighted: waiting,
-                            target: waiting ? leg.board : nil, cancelled: leg.cancelled == true)
-            ride(leg, index: index, stopColor: stopColor, riding: riding)
-            LiveStopCapsule(name: leg.alightName, caption: isEnd ? "Arrivée" : "Descente", time: leg.alight,
-                            iconColor: stopColor, past: leg.alight < now,
-                            highlighted: riding || (isEnd && phase == .arrived),
-                            target: riding ? leg.alight : nil, terminus: isEnd)
+            self.link(link.map { stopRoute($0.board, time: $0.boardTime, leg: $0) }) {
+                LiveStopCapsule(name: leg.boardName, caption: boardCaption(leg), time: leg.board, delay: leg.delay,
+                                iconColor: stopColor, past: leg.board < now, highlighted: waiting,
+                                target: waiting ? leg.board : nil, cancelled: leg.cancelled == true)
+            }
+            ride(leg, index: index, stopColor: stopColor, riding: riding,
+                 lineRoute: link.map { .line(event: $0.line, currentStop: $0.board, alightStop: $0.alight) })
+            self.link(link.map { stopRoute($0.alight, time: $0.alightTime, leg: $0) }) {
+                LiveStopCapsule(name: leg.alightName, caption: isEnd ? "Arrivée" : "Descente", time: leg.alight,
+                                iconColor: stopColor, past: leg.alight < now,
+                                highlighted: riding || (isEnd && phase == .arrived),
+                                target: riding ? leg.alight : nil, terminus: isEnd)
+            }
         }
         // Le trait de la ligne, du point de la montée à celui de la descente.
         .background(alignment: .leading) {
@@ -307,9 +432,11 @@ struct LiveTripView: View {
     }
 
     /// « [12] → Carouge **Bachet** » entre la montée et la descente, comme dans le détail d'un
-    /// itinéraire ; à bord, où est le véhicule, et ses arrêts dépliés.
+    /// itinéraire ; à bord, où est le véhicule, et ses arrêts dépliés. Toucher la ligne ouvre
+    /// sa course (`lineRoute`).
     @ViewBuilder
-    private func ride(_ leg: TripActivityState.Leg, index: Int, stopColor: Color, riding: Bool) -> some View {
+    private func ride(_ leg: TripActivityState.Leg, index: Int, stopColor: Color, riding: Bool,
+                      lineRoute: AppRoute?) -> some View {
         let calls = (leg.calls ?? []).filter { $0.time > leg.board && $0.time < leg.alight }
         // Le véhicule en route : ses arrêts s'ouvrent d'eux-mêmes, pour voir où il en est.
         let open = expanded.contains(index) || riding
@@ -317,6 +444,7 @@ struct LiveTripView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Color.clear.frame(width: LiveStopCapsule.trailX + 14, height: 1)
+                link(lineRoute) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         BusLineIcon(lineName: leg.line, operatorName: leg.operatorName)
@@ -335,6 +463,8 @@ struct LiveTripView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
+                .contentShape(Rectangle())
                 }
                 Spacer(minLength: 4)
                 if !calls.isEmpty, !riding {
@@ -440,10 +570,11 @@ struct LiveStopCapsule: View {
                 }
             }
         }
+        // Le contenu s'efface, pas le fond : le trait de la ligne se verrait au travers.
+        .opacity(past && !highlighted ? 0.45 : 1)
         .padding(.horizontal)
         .basicElementBackground(minHeight: 50, highlighted: highlighted)
         .padding(5)
-        .opacity(past && !highlighted ? 0.45 : 1)
         .accessibilityElement(children: .combine)
     }
 }
@@ -607,6 +738,49 @@ extension TripLiveActivities.LiveTrip {
         trip.state.positionOffset = 95
         return trip
     }
+}
+
+extension TripLiveActivities.LiveTrip {
+    /// L'itinéraire d'aperçu (12, marche, 19), `minutes` après sa première montée (négatif :
+    /// avant), avec ses liens et son tracé : de quoi voir la carte et ouvrir lignes et arrêts.
+    static func previewFollowed(minutesAfterBoarding minutes: Double) -> (trip: Self, links: LiveTripLinks, route: TripRoute) {
+        var trip = PreviewData.tripWithTransfer
+        let board = trip.anchorDate(.departure, timetabled: true) ?? PreviewData.now
+        let delta = PreviewData.now.addingTimeInterval(-minutes * 60).timeIntervalSince(board)
+        func shift(_ time: String) -> String {
+            OJPDate.date(from: time).map { OJPDate.string(from: $0.addingTimeInterval(delta)) } ?? time
+        }
+        trip.startTime = shift(trip.startTime)
+        trip.endTime = shift(trip.endTime)
+        trip.legs = trip.legs.map { leg in
+            var leg = leg
+            leg.legBoardTimetableTime = shift(leg.legBoardTimetableTime)
+            leg.legBoardEstimatedTime = shift(leg.legBoardEstimatedTime)
+            leg.legAlightTimetableTime = shift(leg.legAlightTimetableTime)
+            leg.legAlightEstimatedTime = shift(leg.legAlightEstimatedTime)
+            return leg
+        }
+        // Les arrêts de chaque véhicule, à intervalles réguliers entre la montée et la descente.
+        let route = TripRoute(legs: trip.trackedLegs.map { leg in
+            let stops = leg.trackStops
+            guard let start = leg.boardDate, let end = leg.alightDate, stops.count >= 2 else { return [] }
+            let step = end.timeIntervalSince(start) / Double(stops.count - 1)
+            return stops.enumerated().map { index, stop in
+                TripRoute.Point(latitude: stop.latitude, longitude: stop.longitude,
+                                time: start.addingTimeInterval(Double(index) * step))
+            }
+        })
+        let state = TripActivityState(trip: trip, alert: nil) ?? TripLiveActivities.LiveTrip.preview.state
+        let attributes = TripActivityAttributes(key: "preview", title: "Travail", origin: trip.startName,
+                                                destination: trip.endName)
+        return (TripLiveActivities.LiveTrip(attributes: attributes, state: state), LiveTripLinks(trip: trip), route)
+    }
+}
+
+#Preview("Trajet suivi — liens et carte") {
+    let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: 3)
+    LiveTripSheet(key: "preview", previewTrip: followed.trip, previewLinks: followed.links, previewRoute: followed.route)
+        .previewEnvironment(navigation: false)
 }
 
 #Preview("Trajet suivi — à bord") {
