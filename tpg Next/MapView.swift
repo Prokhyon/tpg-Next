@@ -39,8 +39,9 @@ struct MapView: View {
     @Environment(StopStore.self) var stopStore
     /// La zone de l'aperçu d'où la carte s'ouvre : elle s'y ouvre aussi, sans attendre la position.
     var initialRegion: MKCoordinateRegion? = nil
-    /// Referme la carte. Sans barre d'onglets en dessous, le bas n'a pas à lui laisser de place.
-    var onClose: (() -> Void)? = nil
+    /// Racine d'un onglet : pas de barre de navigation. Ouverte depuis l'accueil, elle garde
+    /// la sienne, pour le bouton retour.
+    var hidesNavigationBar = false
     @State private var stopManager = StopManager()
     @State var locationManager = LocationManager()
     @State private var dataSource = DataSource()
@@ -172,9 +173,7 @@ struct MapView: View {
                             }
                         }
                         .animation(.easeInOut(duration: 0.2), value: selectedResult)
-                        if onClose != nil {
-                            Spacer().frame(height: 10)
-                        } else if #available(iOS 26, *) { //remplacer avec appVersion object
+                        if #available(iOS 26, *) { //remplacer avec appVersion object
                             Rectangle()
                                 .foregroundStyle(.clear)
                                 .frame(height: 50)
@@ -185,27 +184,9 @@ struct MapView: View {
                         }
                     }
                 }
-                .overlay(alignment: .topLeading) {
-                    if let onClose {
-                        Button(action: onClose) {
-                            Image(systemName: "xmark")
-                                .font(.title3.bold())
-                                .foregroundStyle(.primary)
-                                .frame(width: 44, height: 44)
-                        }
-                        .tpgSurface(in: Circle(), interactive: true, legacy: .thinMaterial)
-                        .accessibilityLabel("Fermer la carte")
-                        .padding(.leading, 15)
-                    }
-                }
                 .navigationTitle("Carte") // Set back button text
-//                .navigationBarTitleDisplayMode(.inline)
-//                .toolbar {
-//                    ToolbarItem(placement: .principal) {
-//                        Text("") // Visible title
-//                    }
-//                }
-                .toolbar(.hidden, for: .navigationBar)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar(hidesNavigationBar ? .hidden : .automatic, for: .navigationBar)
                 .onAppear {
                     if selectedResult == nil, let initialRegion {
                         position = .region(initialRegion)
@@ -263,12 +244,16 @@ struct MapView: View {
         return stopManager.quays.first { $0.id == id }
     }
     
+    /// Le centre de Genève tout de suite, puis la position dès qu'elle arrive. Sans la première
+    /// zone, la carte montrait toute l'Europe tant que la position ne répondait pas (onglet Carte
+    /// ouvert au lancement).
     func getLocationRegion(completion: @escaping (MKCoordinateRegion) -> Void) {
         var region = MKCoordinateRegion(
             center: Coordinates(lon: 6.14243773412, lat: 46.20973474672).toCLLocationCoordinate2D,
             span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007)
         )
-        
+        completion(region)
+
         locationManager.requestLocation { location in
             if let userLocation = location {
                 region = MKCoordinateRegion(

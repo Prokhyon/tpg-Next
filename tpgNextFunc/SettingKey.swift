@@ -46,4 +46,6 @@ public enum SettingKey {
     public static let appIcon = "AppIcon"
     /// Ombres des départs et des itinéraires aux couleurs de leurs lignes.
     public static let lineColoredShadows = "LineColoredShadows"
+    /// La carte des arrêts en onglet, à la place de Trajets (qui passe dans l'Itinéraire).
+    public static let mapTab = "MapTab"
 }

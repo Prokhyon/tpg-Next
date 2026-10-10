@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import MapKit
 import tpgNextFunc
 
 /// Tous les écrans qu'on peut ouvrir par-dessus un onglet.
@@ -21,6 +22,8 @@ enum AppRoute: Hashable {
     case lineMap(events: [LineEvent], operatorName: String, event: StopEvent, currentStopSloid: String?)
     case trip(TripEvent)
     case tripMap(TripEvent)
+    /// La carte des arrêts, ouverte sur `area` (l'aperçu de l'accueil) ou sur la position.
+    case stopsMap(MapArea? = nil)
     case settings
     case favoritesOrder
     /// L'ordre et le nom des lieux favoris.
@@ -46,6 +49,26 @@ enum AppRoute: Hashable {
     case apiDiagnostics
     /// Une rubrique du guide ; `entry` : le point à montrer (depuis la recherche du guide).
     case userGuideTopic(id: String, entry: String? = nil)
+}
+
+/// Une zone de carte, comparable : `MKCoordinateRegion` ne l'est pas.
+struct MapArea: Hashable {
+    var latitude: Double
+    var longitude: Double
+    var latitudeDelta: Double
+    var longitudeDelta: Double
+
+    init(_ region: MKCoordinateRegion) {
+        latitude = region.center.latitude
+        longitude = region.center.longitude
+        latitudeDelta = region.span.latitudeDelta
+        longitudeDelta = region.span.longitudeDelta
+    }
+
+    var region: MKCoordinateRegion {
+        MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                           span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta))
+    }
 }
 
 /// La course à mettre en avant sur la page d'un arrêt.
@@ -85,6 +108,8 @@ struct AppRouteDestination: View {
             FullTripView(fullTrip: trip)
         case let .tripMap(trip):
             TripMapView(tripEvent: trip)
+        case let .stopsMap(area):
+            MapView(initialRegion: area?.region)
         case .settings:
             SettingsView()
         case .favoritesOrder:

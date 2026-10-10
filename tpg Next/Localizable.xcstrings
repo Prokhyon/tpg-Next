@@ -7625,6 +7625,7 @@
       }
     },
     "Fermer la carte" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9139,6 +9140,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The map of the stops shown. The one whose departures you see is highlighted: tap another to show its departures. Tap elsewhere on the map, or the expand button, to open it full screen."
+          }
+        }
+      }
+    },
+    "La carte des arrêts prend la place de l'onglet Trajets. Vos itinéraires restent à portée de main depuis la page Itinéraire." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Haltestellenkarte ersetzt den Tab „Fahrten“. Ihre Verbindungen bleiben über die Seite „Verbindung“ erreichbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The stop map takes the place of the Trips tab. Your routes stay within reach from the Route page."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The stop map takes the place of the Trips tab. Your routes stay within reach from the Route page."
           }
         }
       }
@@ -12073,6 +12096,28 @@
         }
       }
     },
+    "Onglet Carte à la place de Trajets" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte statt Fahrten als Tab"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map Tab Instead of Trips"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map Tab Instead of Trips"
+          }
+        }
+      }
+    },
     "Onglet Trajets → Nouveau trajet régulier : départ, arrivée, jours et heure. Ou depuis un itinéraire : Répéter chaque semaine…" : {
       "localizations" : {
         "de" : {
@@ -12091,6 +12136,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trips tab → New Regular Trip: start, destination, days and time. Or from a route: Repeat Weekly…"
+          }
+        }
+      }
+    },
+    "Onglets" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabs"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabs"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabs"
           }
         }
       }
