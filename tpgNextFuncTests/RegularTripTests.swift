@@ -89,6 +89,48 @@ struct RegularTripTests {
         #expect(regular.occurrences(after: occurrence.plannedArrival.addingTimeInterval(60), days: 1).isEmpty)
     }
 
+    /// Le 9, quatre minutes à pied puis le bus, avec 12 minutes de retard à la montée et 11 à la
+    /// descente. Comme OJP 2.0, le départ et l'arrivée de l'itinéraire comptent le retard.
+    private func delayedTrip() throws -> TripEvent {
+        var trip = try #require(try trips().first { $0.vehicleLegs.map(\.publishedLineName) == ["9"] })
+        let index = try #require(trip.legs.firstIndex { !$0.transfer })
+        let board = try #require(OJPDate.date(from: trip.legs[index].legBoardTimetableTime))
+        let alight = try #require(OJPDate.date(from: trip.legs[index].legAlightTimetableTime))
+        trip.legs[index].legBoardEstimatedTime = OJPDate.string(from: board.addingTimeInterval(12 * 60))
+        trip.legs[index].legAlightEstimatedTime = OJPDate.string(from: alight.addingTimeInterval(11 * 60))
+        trip.startTime = OJPDate.string(from: board.addingTimeInterval(12 * 60 - trip.leadingWalk))
+        trip.endTime = OJPDate.string(from: alight.addingTimeInterval(11 * 60))
+        return trip
+    }
+
+    /// Le retard ne se compte qu'une fois : il faut partir quand le bus passe, moins la marche.
+    @Test func aDelayIsNotCountedTwice() throws {
+        let trip = try delayedTrip()
+        #expect(trip.leadingWalk == 4 * 60)
+        #expect(trip.trailingWalk == 0)
+        let board = try #require(trip.anchorDate(.departure, timetabled: false))
+        let plannedBoard = try #require(trip.anchorDate(.departure, timetabled: true))
+        let plannedAlight = try #require(trip.anchorDate(.arrival, timetabled: true))
+        #expect(trip.leavingDate == board.addingTimeInterval(-4 * 60))
+        #expect(trip.plannedStartDate == plannedBoard.addingTimeInterval(-4 * 60))
+        #expect(trip.plannedEndDate == plannedAlight)
+
+        // Pas de marche fantôme après la descente.
+        let state = try #require(TripActivityState(trip: trip, alert: nil))
+        #expect(state.departure == board.addingTimeInterval(-4 * 60))
+        #expect(state.arrival == trip.anchorDate(.arrival, timetabled: false))
+
+        // Enregistré ce jour-là, le trajet régulier garde les heures prévues.
+        let regular = RegularTrip(trip: trip, weekdays: [.sunday])
+        let occurrence = try occurrence(of: regular)
+        #expect(occurrence.plannedDeparture == plannedBoard.addingTimeInterval(-4 * 60))
+        #expect(occurrence.plannedArrival == plannedAlight)
+        let planned = regular.plannedTrip(for: occurrence)
+        #expect(planned.startDate == occurrence.plannedDeparture)
+        #expect(planned.endDate == occurrence.plannedArrival)
+        #expect(planned.leavingDate == occurrence.plannedDeparture)
+    }
+
     @Test func plannedTripIsMovedToTheDay() throws {
         let regular = RegularTrip(trip: try tripWithTransfer(), weekdays: [.monday])
         let monday = try #require(iso8601.date(from: "2026-09-14T04:00:00Z"))
