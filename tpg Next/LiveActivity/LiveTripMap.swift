@@ -22,7 +22,23 @@ struct LiveTripMap: View {
     /// Dans la page du trajet : petite, sans geste ni bouton, cadrée sur ce qui reste à faire.
     var compact = false
 
-    @Environment(\.displayTime) private var now
+    var body: some View {
+        // Le véhicule avance à la seconde, d'après ses heures de passage : il glisse le long du
+        // tracé au lieu de sauter d'une mise à jour à l'autre.
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            LiveTripMapContent(state: state, links: links, route: route, compact: compact, now: context.date)
+        }
+    }
+}
+
+/// La carte à un instant donné.
+private struct LiveTripMapContent: View {
+    let state: TripActivityState
+    let links: LiveTripLinks?
+    let route: TripRoute?
+    let compact: Bool
+    let now: Date
+
     @State private var position: MapCameraPosition = .automatic
     /// Le tracé réel de chaque véhicule, par index d'étape, quand il est connu.
     @State private var tracks: [Int: [CLLocationCoordinate2D]] = [:]
@@ -35,11 +51,13 @@ struct LiveTripMap: View {
             ForEach(segments) { segment in
                 if segment.walking {
                     MapPolyline(coordinates: segment.coordinates)
-                        .stroke(segment.done ? Color.gray.opacity(0.5) : Color.gray,
+                        .stroke(segment.done ? Color(uiColor: .systemGray3) : Color.gray,
                                 style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [4, 5]))
                 } else {
+                    // Le parcouru en gris opaque : semi-transparent, il foncissait là où deux bouts
+                    // se rejoignent.
                     MapPolyline(coordinates: segment.coordinates)
-                        .stroke(segment.done ? Color.gray.opacity(0.55) : segment.color,
+                        .stroke(segment.done ? Color(uiColor: .systemGray3) : segment.color,
                                 style: StrokeStyle(lineWidth: segment.done ? 3 : 4, lineCap: .round, lineJoin: .round))
                 }
             }
@@ -87,11 +105,12 @@ struct LiveTripMap: View {
         }
     }
 
-    /// Où l'on en est.
+    /// Où l'on en est, avec un halo qui respire.
     private var hereMarker: some View {
         Circle()
             .fill(Color.accentColor)
             .frame(width: 18, height: 18)
+            .background { PulsingHalo(spread: 2.2) }
             .overlay(Circle().strokeBorder(.white, lineWidth: 3))
             .shadow(radius: 2)
             .accessibilityLabel(Text("Où vous en êtes"))
@@ -107,6 +126,13 @@ struct LiveTripMap: View {
         let done: Bool
     }
 
+    /// L'heure à laquelle le tracé est coupé : arrondie à 5 s. Une ligne coupée ailleurs est une
+    /// autre ligne pour MapKit (voir `segments`) : la recouper à chaque seconde la redessinerait
+    /// sans cesse, pour un écart qui ne se voit pas.
+    private var cutTime: Date {
+        Date(timeIntervalSinceReferenceDate: (now.timeIntervalSinceReferenceDate / 5).rounded(.down) * 5)
+    }
+
     /// Les véhicules, coupés à la position du véhicule en cours, et les marches entre eux.
     /// MapKit ne redessine pas une ligne dont seules les coordonnées changent : l'id porte la
     /// source du tracé et le point de coupe.
@@ -118,7 +144,7 @@ struct LiveTripMap: View {
             guard line.count >= 2 else { continue }
             let color = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName)
             let source = tracks[index] != nil ? "track" : "\(line.count)"
-            if phase == .riding(leg: index), let vehicle = vehiclePosition(of: index) {
+            if phase == .riding(leg: index), let vehicle = vehiclePosition(of: index, at: cutTime) {
                 let (done, remaining) = TripRoute.split(line, at: vehicle)
                 let cut = String(format: "%.5f,%.5f", vehicle.latitude, vehicle.longitude)
                 if done.count >= 2 {
@@ -182,7 +208,7 @@ struct LiveTripMap: View {
     }
 
     /// Où le véhicule devrait être, d'après ses heures de passage et la correction par la position.
-    private func vehiclePosition(of index: Int) -> CLLocationCoordinate2D? {
+    private func vehiclePosition(of index: Int, at now: Date) -> CLLocationCoordinate2D? {
         let points = route?.points(of: index) ?? []
         if points.count >= 2 {
             let reference = now.addingTimeInterval(-TimeInterval(state.positionOffset ?? 0))
@@ -200,7 +226,7 @@ struct LiveTripMap: View {
     private var currentPosition: CLLocationCoordinate2D? {
         switch state.phase(at: now) {
         case .riding(let index):
-            return vehiclePosition(of: index)
+            return vehiclePosition(of: index, at: now)
         case .waiting(let index):
             // En route vers le premier arrêt, on n'est pas encore à l'arrêt : seule la position
             // du téléphone le dit.

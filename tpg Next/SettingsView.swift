@@ -180,14 +180,19 @@ struct SettingsView: View {
 
     private var appearanceSection: some View {
         CardSection("Apparence",
-                    footer: "Les départs et les itinéraires prennent une ombre aux couleurs de leurs lignes, en dégradé quand il y en a plusieurs.") {
+                    footer: LineColoredShadows.isAvailable
+                        ? Text("Les départs et les itinéraires prennent une ombre aux couleurs de leurs lignes, en dégradé quand il y en a plusieurs.")
+                        : nil) {
             CardLink(.appIcon) {
                 SettingsRow(Text("Icône de l'app"), subtitle: String(localized: appIcon.title),
                             systemImage: "app.badge.fill", showsChevron: true)
             }
-            CardDivider()
-            Toggle(isOn: $lineColoredShadows) {
-                SettingsRow("Ombres aux couleurs des lignes", systemImage: "shadow")
+            // Pas encore proposé dans cette version (voir `LineColoredShadows`).
+            if LineColoredShadows.isAvailable {
+                CardDivider()
+                Toggle(isOn: $lineColoredShadows) {
+                    SettingsRow("Ombres aux couleurs des lignes", systemImage: "shadow")
+                }
             }
         }
     }

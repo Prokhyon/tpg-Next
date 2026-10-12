@@ -106,6 +106,12 @@ struct MapView: View {
                         MapCompass()
                     }
                   
+                    // Sous les barres : sans quoi la barre de navigation ne floutait qu'un
+                    // prolongement de la carte, qui s'arrêtait net sous elle. Les boutons et la
+                    // mention Plans gardent, eux, la place des barres.
+                    .safeAreaPadding(.top, geometry.safeAreaInsets.top)
+                    .safeAreaPadding(.bottom, geometry.safeAreaInsets.bottom)
+                    .ignoresSafeArea()
                     .readSize(onChange: { newValue in
                         dataSource.mapSize = newValue
                     })
@@ -138,8 +144,11 @@ struct MapView: View {
                     }
                     
                     VStack {
+                            // Le flou du haut : sous la barre de navigation (ouverte depuis
+                            // l'accueil), aussi court que sur la carte d'une ligne, sinon il
+                            // finissait net sous la barre ; plus long sous la barre d'état seule.
                             BackdropBlurView(radius: 5)
-                                .frame(height: 100)
+                                .frame(height: hidesNavigationBar ? 100 : 50)
                                 .mask {
                                     Rectangle()
                                         .overlay(alignment: .top) {
@@ -186,6 +195,10 @@ struct MapView: View {
                 }
                 .navigationTitle("Carte") // Set back button text
                 .navigationBarTitleDisplayMode(.inline)
+                // Sans titre dans la barre, comme la carte d'une ligne : avec lui, iOS posait un fond
+                // à bord net sous la barre. Le flou du haut de la carte s'estompe à sa place.
+                // Le titre reste celui du bouton retour des pages suivantes.
+                .toolbar(removing: .title)
                 .toolbar(hidesNavigationBar ? .hidden : .automatic, for: .navigationBar)
                 .onAppear {
                     if selectedResult == nil, let initialRegion {

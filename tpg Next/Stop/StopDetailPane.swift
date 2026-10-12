@@ -197,7 +197,6 @@ struct DepartureDetailPanel: View {
     let select: (StopEvent) -> Void
 
     @State private var showsPreviousStops = false
-    @State private var busIsHere = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -287,7 +286,7 @@ struct DepartureDetailPanel: View {
                         .padding(.vertical, 5)
                         .background(
                             LineBackground(event: stop, firstEventId: journey.events.first?.id, lastEventId: journey.events.last?.id,
-                                           lineColor: LineColors.lineColor(for: event.lineName, operatorName: operatorName), busIsHere: $busIsHere,
+                                           lineColor: LineColors.lineColor(for: event.lineName, operatorName: operatorName),
                                            trailX: 30, skipped: stop.isCancelled == true)
                         )
                     }
@@ -305,7 +304,6 @@ struct DepartureDetailPanel: View {
         // Autre départ : le parcours repart replié.
         .onChange(of: event.journeyRef) {
             showsPreviousStops = false
-            busIsHere = false
         }
     }
 

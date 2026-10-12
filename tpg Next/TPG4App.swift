@@ -69,7 +69,7 @@ struct TPG4App: App {
                 // pour `Color.accentColor`, que `tint` ne change pas.
                 .tint(AppIconChoice(stored: appIcon).accent)
                 .accentColor(AppIconChoice(stored: appIcon).accent)
-                .environment(\.lineColoredShadows, lineColoredShadows)
+                .environment(\.lineColoredShadows, LineColoredShadows.isAvailable && lineColoredShadows)
         }
     }
 }

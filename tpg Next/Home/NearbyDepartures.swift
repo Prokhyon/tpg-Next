@@ -70,8 +70,9 @@ struct HomeDepartures: View {
                     .padding(.top, 70)
                     .padding(.horizontal)
                 case .loading:
-                    Text("Chargement…")
-                        .padding(.top, 70)
+                    // Position et départs attendus : des départs fantômes.
+                    LoadingPlaceholder(kind: .departure, count: 3)
+                        .padding(.top, 8)
                 }
             } else if !displayedStops.isEmpty {
                 departures(displayedStops, tripMenu: true)

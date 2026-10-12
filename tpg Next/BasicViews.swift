@@ -278,6 +278,12 @@ extension EnvironmentValues {
     @Entry var lineColoredShadows = false
 }
 
+/// Les ombres aux couleurs des lignes ne sont pas encore proposées : le réglage est masqué, et
+/// sans effet pour qui l'aurait activé en bêta. Passer à `true` pour les rendre.
+enum LineColoredShadows {
+    static let isAvailable = false
+}
+
 /// L'ombre d'une capsule ou d'une carte : grise, ou, si le réglage est activé, un halo aux
 /// couleurs des lignes, en dégradé dans l'ordre du trajet quand il y en a plusieurs (comme le
 /// trait du widget « Prochain trajet »).
@@ -376,8 +382,8 @@ struct StopIcon: View {
 //                    .onAppear {
 //                        self.isAnimating = true
 //                    }
-                Circle()
-                    .stroke(Color.accentColor, lineWidth: size/2.5)//current stop highlight
+                // L'arrêt mis en avant : un anneau dont la lumière tourne.
+                HighlightStroke(Circle(), lineWidth: size/2.5)
 //                Circle()
 //                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                

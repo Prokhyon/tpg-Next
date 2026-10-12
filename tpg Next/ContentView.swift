@@ -378,6 +378,14 @@ struct ContentView: View {
                     .modifier(TabModels(saved: savedTripsModel, regular: regularTripsModel, itinerary: itineraryViewModel,
                                         recent: recentSearchModel, navigation: navigationModel))
                     .presentationDragIndicator(.visible)
+            case .liveApproach:
+                // Le 12 arrive à Rive dans un peu plus d'une minute : l'arrêt de montée va respirer.
+                let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: -1.2)
+                LiveTripSheet(key: "preview", previewTrip: followed.trip, previewLinks: followed.links,
+                              previewRoute: followed.route)
+                    .modifier(TabModels(saved: savedTripsModel, regular: regularTripsModel, itinerary: itineraryViewModel,
+                                        recent: recentSearchModel, navigation: navigationModel))
+                    .presentationDragIndicator(.visible)
             case .liveMap:
                 let followed = TripLiveActivities.LiveTrip.previewFollowed(minutesAfterBoarding: 1.5)
                 NavigationStack {
@@ -587,7 +595,7 @@ struct ContentView: View {
 
 #if DEBUG
 private enum DebugSheet: String, Identifiable {
-    case reminder, newRegular, editRegular, avoidLine, operators, flex, reminders, api, track, live, liveRiding, liveMap, activity
+    case reminder, newRegular, editRegular, avoidLine, operators, flex, reminders, api, track, live, liveRiding, liveApproach, liveMap, activity
     var id: String { rawValue }
 }
 #endif

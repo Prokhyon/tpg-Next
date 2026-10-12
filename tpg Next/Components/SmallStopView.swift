@@ -236,11 +236,8 @@ struct SmallStopView: View {
                     Spacer()
                 }
             } else {
-                HStack {
-                    Spacer()
-                    Text("Recherche des départs…")
-                    Spacer()
-                }
+                // Les départs attendus, en rangées fantômes.
+                LoadingPlaceholder(kind: .departure, count: 3)
             }
         }
         // La hauteur de trois départs, pour des pages égales ; au-delà, la hauteur naturelle.
