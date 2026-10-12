@@ -67,6 +67,7 @@ struct RegularTripChanges: View {
             }
             .font(.footnote)
             .foregroundStyle(.orange)
+            .alertBounce(changes)
         }
     }
 }
@@ -92,11 +93,15 @@ struct BookmarkTab: View {
                 UnevenRoundedRectangle(topLeadingRadius: 8, topTrailingRadius: 8)
                     .fill(badge.tone.tabColor.gradient)
             )
+            .alertBounce(badge.text, active: badge.tone.isAlert)
             .accessibilityElement(children: .combine)
     }
 }
 
 extension UpcomingTrip.Badge.Tone {
+    /// Un changement à signaler (retard, horaire modifié, perturbation) : son symbole rebondit.
+    var isAlert: Bool { self == .warning || self == .critical }
+
     /// Pleine, sous un texte blanc : le gris secondaire y serait trop pâle.
     var tabColor: Color {
         self == .neutral ? .gray : color
@@ -119,6 +124,7 @@ struct RegularTripStatusBadge: View {
             .padding(.vertical, 4)
             .background(Capsule().fill(color.opacity(0.15)))
             .lineLimit(1)
+            .alertBounce(badge.text, active: badge.tone.isAlert)
     }
 
     /// Le texte, le symbole et le ton : repris tels quels par le widget « Prochain trajet ».

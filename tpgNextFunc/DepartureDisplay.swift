@@ -117,6 +117,13 @@ public struct DepartureTimeView: View {
     }
 
     public var body: some View {
+        content
+            // Le décompte et les heures qui changent (temps réel) roulent au lieu de sauter.
+            .contentTransition(.numericText(countsDown: true))
+            .animation(.snappy, value: display)
+    }
+
+    @ViewBuilder private var content: some View {
         switch display {
         case .atStop where showsIcon:
             // Au moins la largeur de l'icône : elle grandit avec le texte et débordait

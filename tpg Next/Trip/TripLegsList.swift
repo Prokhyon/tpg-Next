@@ -100,6 +100,7 @@ struct TripLegsList: View {
                                             Label(notice, systemImage: "exclamationmark.triangle.fill")
                                                 .font(.caption)
                                                 .foregroundStyle(.orange)
+                                                .alertBounce(leg.skippedIntermediates.count)
                                         }
                                         // Les heures de montée et de descente ne sont qu'une proposition.
                                         if leg.isOnDemand {

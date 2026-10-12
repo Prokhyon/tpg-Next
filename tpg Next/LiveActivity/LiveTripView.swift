@@ -225,6 +225,8 @@ struct LiveTripView: View {
                 } label: {
                     Label("Arrêter le suivi", systemImage: "stop.circle")
                         .font(.headline)
+                        // Le suivi est en cours : son symbole respire, comme sur la page d'un itinéraire.
+                        .symbolEffect(.breathe)
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .prominentButtonStyle()
@@ -260,13 +262,15 @@ struct LiveTripView: View {
                     HStack(spacing: 4) {
                         Text(dateToString(with: trip.state.arrival))
                             .font(.headline)
+                            .rollingDigits(trip.state.arrival)
                         if trip.state.arrivalDelay >= 2 {
                             Text("+\(trip.state.arrivalDelay)'")
                                 .font(.subheadline.bold())
                                 .foregroundStyle(trip.state.arrivalDelay >= 5 ? .red : .orange)
+                                .rollingDigits(trip.state.arrivalDelay)
                         }
                     }
-                    TripActivityMinutes(target: trip.state.arrival > now ? trip.state.arrival : nil)
+                    LiveMinutes(target: trip.state.arrival > now ? trip.state.arrival : nil)
                         .font(.caption.bold())
                         .foregroundStyle(.tint)
                 }
@@ -277,6 +281,7 @@ struct LiveTripView: View {
                 Label(alert, systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote)
                     .foregroundStyle(.orange)
+                    .alertBounce(alert)
             }
             // Dans le véhicule, la position affine l'horaire : le dire, pour que l'écart avec
             // l'heure annoncée ailleurs ne surprenne pas.
@@ -354,6 +359,8 @@ struct LiveTripView: View {
         // Une marche finale sépare la dernière descente de l'arrivée ; sans elle, la descente
         // est l'arrivée, et une seule capsule suffit.
         let finalWalk = legs.last.map { state.arrival.timeIntervalSince($0.alight) > 60 } ?? false
+        // Le véhicule attendu arrive : son arrêt de montée respire.
+        let approaching = state.isVehicleApproaching(at: now)
 
         VStack(spacing: 0) {
             if hasStart(state), let first = legs.first {
@@ -366,7 +373,8 @@ struct LiveTripView: View {
 
             ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
                 let isEnd = index == legs.count - 1 && !finalWalk
-                legBlock(leg, index: index, phase: phase, isEnd: isEnd)
+                legBlock(leg, index: index, phase: phase, isEnd: isEnd,
+                         approaching: approaching && phase == .waiting(leg: index))
                 if index + 1 < legs.count {
                     note(walking: false, minutes(leg.alight, legs[index + 1].board), past: legs[index + 1].board < now)
                 }
@@ -386,7 +394,7 @@ struct LiveTripView: View {
     /// Un véhicule : sa montée et sa descente en capsules, reliées par le trait de sa ligne, et
     /// entre elles la ligne, sa direction et ses arrêts.
     private func legBlock(_ leg: TripActivityState.Leg, index: Int, phase: TripActivityState.Phase,
-                          isEnd: Bool) -> some View {
+                          isEnd: Bool, approaching: Bool) -> some View {
         let color = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName)
         let stopColor = LineColors.lineColor(for: leg.line, operatorName: leg.operatorName, inverted: true)
         let waiting = phase == .waiting(leg: index)
@@ -396,7 +404,8 @@ struct LiveTripView: View {
             self.link(link.map { stopRoute($0.board, time: $0.boardTime, leg: $0) }) {
                 LiveStopCapsule(name: leg.boardName, caption: boardCaption(leg), time: leg.board, delay: leg.delay,
                                 iconColor: stopColor, past: leg.board < now, highlighted: waiting,
-                                target: waiting ? leg.board : nil, cancelled: leg.cancelled == true)
+                                target: waiting ? leg.board : nil, cancelled: leg.cancelled == true,
+                                approaching: approaching)
             }
             ride(leg, index: index, stopColor: stopColor, riding: riding,
                  lineRoute: link.map { .line(event: $0.line, currentStop: $0.board, alightStop: $0.alight) })
@@ -410,7 +419,8 @@ struct LiveTripView: View {
         // Le trait de la ligne, du point de la montée à celui de la descente.
         .background(alignment: .leading) {
             RoundedRectangle(cornerRadius: 5)
-                .fill(color.opacity(leg.alight < now && !riding ? 0.35 : 1))
+                // Pâli mais opaque : semi-transparent, il se voyait plus foncé là où il croise autre chose.
+                .fill(leg.alight < now && !riding ? color.mix(with: Color(uiColor: .systemBackground), by: 0.65) : color)
                 .frame(width: 8)
                 .padding(.vertical, 30)
                 .padding(.leading, LiveStopCapsule.trailX - 4)
@@ -542,10 +552,13 @@ struct LiveStopCapsule: View {
     var target: Date?
     var terminus = false
     var cancelled = false
+    /// Le véhicule arrive à cet arrêt : un halo respire autour de son point.
+    var approaching = false
 
     var body: some View {
         HStack {
             StopIcon(color: iconColor, currentStop: highlighted, terminus: terminus)
+                .background { if approaching { PulsingHalo() } }
             SmallStopTitleView(stopName: name)
                 .strikethrough(cancelled)
             Spacer(minLength: 6)
@@ -553,14 +566,16 @@ struct LiveStopCapsule: View {
                 HStack(spacing: 4) {
                     Text(dateToString(with: time))
                         .font(.headline.monospacedDigit())
+                        .rollingDigits(time)
                     if delay >= 2 {
                         Text("+\(delay)'")
                             .font(.subheadline.bold())
                             .foregroundStyle(delay >= 5 ? .red : .orange)
+                            .rollingDigits(delay)
                     }
                 }
                 if let target {
-                    TripActivityMinutes(target: target)
+                    LiveMinutes(target: target)
                         .font(.caption.bold())
                         .foregroundStyle(.tint)
                 } else {
@@ -746,7 +761,8 @@ extension TripLiveActivities.LiveTrip {
     static func previewFollowed(minutesAfterBoarding minutes: Double) -> (trip: Self, links: LiveTripLinks, route: TripRoute) {
         var trip = PreviewData.tripWithTransfer
         let board = trip.anchorDate(.departure, timetabled: true) ?? PreviewData.now
-        let delta = PreviewData.now.addingTimeInterval(-minutes * 60).timeIntervalSince(board)
+        // L'heure exacte, pas la minute arrondie : l'approche ne dure qu'une minute.
+        let delta = Date().addingTimeInterval(-minutes * 60).timeIntervalSince(board)
         func shift(_ time: String) -> String {
             OJPDate.date(from: time).map { OJPDate.string(from: $0.addingTimeInterval(delta)) } ?? time
         }

@@ -314,7 +314,8 @@ extension TripView {
                         Text("Pas d'arrêts trouvés à proximité")
                     }
                 } else {
-                    Text("Chargement…")
+                    // Les arrêts proches attendus, en rangées fantômes.
+                    LoadingPlaceholder(kind: .stop, count: 3)
                 }
             }
             

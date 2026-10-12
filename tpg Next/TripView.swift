@@ -79,7 +79,8 @@ struct TripView: View {
                                 .opacity(0)
                                 .frame(height: 50)
                         
-                                Text("Chargement…")
+                            // Les itinéraires attendus, en rangées fantômes.
+                            LoadingPlaceholder(kind: .trip, count: 4)
                         case.error:
                             Rectangle()//Placé suite à un bug d'affichage du titre. A tester sans hors beta
                                 .opacity(0)

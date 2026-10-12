@@ -251,9 +251,8 @@ public struct BusLineIcon: View {
                    .background {
                        if highlighted {
                            // Hors du trait de la ligne (qui déborde de 2 points), comme l'anneau
-                           // d'un arrêt sur la page d'une ligne.
-                           Capsule()
-                               .stroke(Color.accentColor, lineWidth: 3)
+                           // d'un arrêt sur la page d'une ligne, et animé comme lui.
+                           HighlightStroke(Capsule(), lineWidth: 3)
                                .padding(-4.5)
                        }
                    }

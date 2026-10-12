@@ -21,10 +21,13 @@ struct LiveTrackingButton: View {
             action()
             if !isTracking { started.toggle() }
         } label: {
+            // En suivi, un anneau autour d'un carré plein, comme l'anneau autour d'un disque pour
+            // le lancer ; il respire tant que le suivi dure.
             Label(isTracking ? "Arrêter le suivi" : "Suivre en direct",
-                  systemImage: isTracking ? "stop.circle.fill" : "inset.filled.circle")
+                  systemImage: isTracking ? "stop.circle" : "inset.filled.circle")
                 .font(.headline)
                 .symbolEffect(.bounce, value: started)
+                .symbolEffect(.breathe, isActive: isTracking)
                 .foregroundStyle(isTracking ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
                 .padding(.horizontal, 18)
                 .frame(minHeight: 48)

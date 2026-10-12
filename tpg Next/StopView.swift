@@ -135,7 +135,10 @@ struct StopView: View {
                         ScrollView {
                             if !stopManager.stopError {
                                 LazyVStack(spacing: 0) {
-                                    
+                                    // Rien de reçu, et pas d'erreur : la réponse est attendue.
+                                    if stopEvents.isEmpty {
+                                        LoadingPlaceholder(kind: .departure, count: 6)
+                                    }
                                     if viewLineSorted {
                                         ForEach(filteredStopEvents.keys.sorted(by: lineGroupPrecedes), id: \.self) { key in
                                             SortedStopEventsView(key: key, filteredStopEvents: filteredStopEvents, groupedStopEvents: groupedStopEvents, showTime: $showTime, previousLineRef: .constant(previousLineRef), selectedJourneyRef: selectedJourneyRef, stopName: stopName, stopSloid: stopSloid,

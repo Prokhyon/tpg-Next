@@ -86,7 +86,6 @@ struct LineView: View {
     @State private var scrollDone = false
     @State private var showTime = false
     private var lineEvents: [LineEvent] { journey.events }
-    @State private var busIsHere: Bool = false
     /// Blocs d'arrêts sautés dont l'utilisateur a inversé l'état (replié ou déplié).
     @State private var expandedSkippedBlocks: Set<String> = []
     /// Hauteur du titre flottant : la liste commence dessous, même avec un texte agrandi.
@@ -110,6 +109,10 @@ struct LineView: View {
                             ScrollView {
                                 let range = tripRange
                                 LazyVStack {
+                                    // La course est attendue : ses arrêts en rangées fantômes.
+                                    if lineEvents.isEmpty {
+                                        LoadingPlaceholder(kind: .stop, count: 8)
+                                    }
                                     ForEach(journeyRows(lineEvents)) { row in
                                         switch row {
                                         case .stop(let event):
@@ -282,10 +285,24 @@ struct LineView: View {
             }
         }
         .background(
-            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineEvents.last?.id, lineColor: before ? lineColor.opacity(0.35) : lineColor, busIsHere: $busIsHere, skipped: skipped,
-                           dashed: after ? .all : event.id == range?.alight ? .below : .none)
+            LineBackground(event: event, firstEventId: lineEvents.first?.id, lastEventId: lineEvents.last?.id,
+                           lineColor: before ? lineColor.mix(with: Color(uiColor: .systemBackground), by: 0.65) : lineColor,
+                           skipped: skipped, dashed: after ? .all : event.id == range?.alight ? .below : .none,
+                           previous: servedPassage(before: event), next: servedPassage(after: event))
         )
         .id(event.id)
+    }
+
+    /// Le passage au premier arrêt desservi avant (ou après) celui-ci : là où le véhicule était
+    /// (ou sera), pour faire avancer le trait entre les deux. Un arrêt sauté n'a pas d'heure qui vaille.
+    private func servedPassage(before event: LineEvent) -> Date? {
+        guard let index = lineEvents.firstIndex(where: { $0.id == event.id }) else { return nil }
+        return lineEvents[..<index].last { $0.isCancelled != true }?.departureDate
+    }
+
+    private func servedPassage(after event: LineEvent) -> Date? {
+        guard let index = lineEvents.firstIndex(where: { $0.id == event.id }) else { return nil }
+        return lineEvents[(index + 1)...].first { $0.isCancelled != true }?.departureDate
     }
 
     /// Plusieurs arrêts sautés d'affilée, repliés en un bloc. Déplié d'office s'il contient
@@ -307,7 +324,7 @@ struct LineView: View {
         .padding(.horizontal, 15)
         .padding(.vertical, 5)
         .background(
-            LineBackground(event: stops[0], lineColor: lineColor, busIsHere: $busIsHere, skipped: true)
+            LineBackground(event: stops[0], lineColor: lineColor, skipped: true)
         )
         if expanded {
             ForEach(stops) { stopRow($0, range: range, scroll: scroll) }
@@ -351,7 +368,6 @@ struct LineBackground: View {
     var firstEventId: String?
     var lastEventId: String?
     var lineColor: Color
-    @Binding var busIsHere: Bool
     /// Abscisse du trait, alignée sur les points d'arrêt de la rangée.
     var trailX: CGFloat = 45
     /// Arrêt sauté : le véhicule n'y passe pas, le trait est en pointillé.
@@ -359,70 +375,100 @@ struct LineBackground: View {
     /// Au-delà de la descente d'un trajet : le véhicule continue sans le voyageur, le trait est
     /// en points de la couleur de la ligne (sous l'arrêt seulement, pour la descente).
     var dashed: DashedPart = .none
+    /// Les passages aux arrêts voisins (desservis). Connus, la limite entre parcouru (pâle) et à
+    /// venir (plein) avance avec le temps entre deux arrêts ; sinon, elle saute à chaque passage.
+    var previous: Date? = nil
+    var next: Date? = nil
 
     enum DashedPart {
         case none, below, all
     }
 
+    /// Le trait parcouru : la couleur de la ligne pâlie, mais opaque. Semi-transparents, deux
+    /// bouts de trait qui se chevauchent entre deux rangées se voyaient plus foncés.
+    private var fadedColor: Color { lineColor.mix(with: Color(uiColor: .systemBackground), by: 0.7) }
+
     var body: some View {
+        // Le véhicule entre l'arrêt précédent et le suivant : la limite avance toutes les deux
+        // secondes. Ailleurs, l'heure de l'app (15 s) suffit.
+        if let start = previous ?? event.departureDate, let end = next ?? event.departureDate,
+           now >= start.addingTimeInterval(-15), now <= end.addingTimeInterval(15) {
+            TimelineView(.periodic(from: .now, by: 2)) { context in
+                trait(at: context.date)
+            }
+        } else {
+            trait(at: now)
+        }
+    }
+
+    private func trait(at now: Date) -> some View {
         GeometryReader { geometry in
-            if dashed == .all, !skipped {
-                dashes(from: event.id == firstEventId ? geometry.size.height / 2 : -4,
-                       to: event.id == lastEventId ? geometry.size.height / 2 : geometry.size.height + 4)
-            } else if dashed == .below, !skipped {
-                Rectangle()
-                    .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: trailX, y: geometry.size.height / 4)
-                if event.id != lastEventId {
-                    dashes(from: geometry.size.height / 2, to: geometry.size.height + 4)
-                }
-            } else if skipped {
+            let height = geometry.size.height
+            let half = height / 2 + 4
+            let isFirst = event.id == firstEventId
+            let isLast = event.id == lastEventId
+            if skipped {
                 Path { path in
                     path.move(to: CGPoint(x: trailX, y: -4))
-                    path.addLine(to: CGPoint(x: trailX, y: geometry.size.height + 4))
+                    path.addLine(to: CGPoint(x: trailX, y: height + 4))
                 }
                 .stroke(lineColor.opacity(0.4), style: StrokeStyle(lineWidth: 5, lineCap: .round, dash: [1, 10]))
-            } else if event.id == firstEventId {
-                Rectangle()
-                    .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: trailX, y: geometry.size.height / 4 * 3)
-            } else if event.id == lastEventId {
-                Rectangle()
-                    .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: trailX, y: geometry.size.height / 4)
+            } else if dashed == .all {
+                dashes(from: isFirst ? height / 2 : -4, to: isLast ? height / 2 : height + 4, at: now)
             } else {
-                var colorUp = hasPassed(event.departureDate, includingCurrentMinute: true, now: now)
-                let colorDown = hasPassed(event.departureDate, includingCurrentMinute: false, now: now)
-                
-                Rectangle()
-                    .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(colorUp ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: trailX, y: geometry.size.height / 4)
-                Rectangle()
-                    .frame(width: 7, height: geometry.size.height / 2 + 8)
-                    .foregroundColor(colorDown ? lineColor.opacity(0.3) : lineColor)
-                    .position(x: trailX, y: geometry.size.height / 4 * 3)
-                    .onAppear {
-                        if busIsHere {
-                            colorUp = false
-                        } else if !busIsHere && colorUp && !colorDown {
-                            busIsHere = true
-                        }
-                    }
+                if !isFirst {
+                    halfTrait(top: -4, height: half, passed: upperProgress(at: now))
+                }
+                if dashed == .below {
+                    if !isLast { dashes(from: height / 2, to: height + 4, at: now) }
+                } else if !isLast {
+                    halfTrait(top: height / 2, height: half, passed: lowerProgress(at: now))
+                }
             }
         }
     }
 
+    /// La moitié haute : la seconde moitié du tronçon depuis l'arrêt précédent (0 à 1).
+    private func upperProgress(at now: Date) -> Double {
+        guard let previous, let time = event.departureDate else {
+            return hasPassed(event.departureDate, includingCurrentMinute: true, now: now) ? 1 : 0
+        }
+        return progress(from: previous, to: time, at: now) * 2 - 1
+    }
+
+    /// La moitié basse : la première moitié du tronçon vers l'arrêt suivant (0 à 1).
+    private func lowerProgress(at now: Date) -> Double {
+        guard let next, let time = event.departureDate else {
+            return hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? 1 : 0
+        }
+        return progress(from: time, to: next, at: now) * 2
+    }
+
+    /// La part écoulée d'un tronçon, de 0 (au départ) à 1 (à l'arrivée).
+    private func progress(from start: Date, to end: Date, at now: Date) -> Double {
+        let span = end.timeIntervalSince(start)
+        guard span > 0 else { return now >= end ? 1 : 0 }
+        return now.timeIntervalSince(start) / span
+    }
+
+    /// Une demi-hauteur de trait : pâle sur la part `passed` (depuis le haut), pleine dessous.
+    private func halfTrait(top: CGFloat, height: CGFloat, passed: Double) -> some View {
+        let faded = height * min(max(passed, 0), 1)
+        return VStack(spacing: 0) {
+            Rectangle().fill(fadedColor).frame(height: faded)
+            Rectangle().fill(lineColor)
+        }
+        .frame(width: 7, height: height)
+        .position(x: trailX, y: top + height / 2)
+    }
+
     /// Le trait en points, de `from` à `to` dans la rangée.
-    private func dashes(from top: CGFloat, to bottom: CGFloat) -> some View {
+    private func dashes(from top: CGFloat, to bottom: CGFloat, at now: Date) -> some View {
         Path { path in
             path.move(to: CGPoint(x: trailX, y: top))
             path.addLine(to: CGPoint(x: trailX, y: bottom))
         }
-        .stroke(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? lineColor.opacity(0.3) : lineColor,
+        .stroke(hasPassed(event.departureDate, includingCurrentMinute: false, now: now) ? fadedColor : lineColor,
                 // Des points, comme la marche dans la frise d'un itinéraire (`TripTimeline`).
                 style: StrokeStyle(lineWidth: 6, lineCap: .round, dash: [0, 10]))
     }
@@ -576,7 +622,6 @@ struct SkippedStopsRow: View {
 
 #Preview("Parcours — données d'exemple") {
     // La liste de la page ligne, hors ligne : ligne 29, Genève, Rive dans 4 min.
-    @Previewable @State var busIsHere = false
     @Previewable @State var showTime = false
     let stops = PreviewData.journeyStops
     let color = LineColors.lineColor(for: "29", operatorName: "Transports Publics Genevois")
@@ -591,7 +636,7 @@ struct SkippedStopsRow: View {
                     .padding(.vertical, 5)
                     .background(
                         LineBackground(event: stop, firstEventId: stops.first?.id, lastEventId: stops.last?.id,
-                                       lineColor: color, busIsHere: $busIsHere)
+                                       lineColor: color)
                     )
             }
         }
