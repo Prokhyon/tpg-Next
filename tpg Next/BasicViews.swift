@@ -573,7 +573,7 @@ struct AdjustTimeButton : View {
                 moveTime(true)
                 earlierAnimation.toggle()
             }) {
-                Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: earlierAnimation)
             }
             .padding()
@@ -581,7 +581,7 @@ struct AdjustTimeButton : View {
                 moveTime(false)
                 laterAnimation.toggle()
             }) {
-                Image(systemName: "text.line.last.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.clockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: laterAnimation)
             }
             .padding()

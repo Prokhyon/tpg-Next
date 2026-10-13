@@ -31,7 +31,7 @@ extension GuideTourStep {
         GuideTourStep(demo: .sortAndFilter, symbol: "line.3.horizontal.decrease.circle.fill",
                       title: "Trier et filtrer",
                       text: "En bas de la page d'un arrêt, rangez les départs par ligne plutôt que par heure. Le filtre ouvre les lignes de l'arrêt : touchez-en une, puis sa direction, pour ne garder qu'elle."),
-        GuideTourStep(demo: .earlierLater, symbol: "clock.arrow.2.circlepath",
+        GuideTourStep(demo: .earlierLater, symbol: "arrow.trianglehead.2.clockwise.rotate.90",
                       title: "Plus tôt, plus tard",
                       text: "Les deux flèches en bas à droite de la page d'un arrêt affichent les départs précédents ou suivants. Entre elles, l'horloge choisit un jour et une heure précis, ou revient à maintenant."),
         GuideTourStep(demo: .tripActions, symbol: "point.bottomleft.forward.to.point.topright.scurvepath.fill",

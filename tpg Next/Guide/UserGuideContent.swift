@@ -157,7 +157,7 @@ enum UserGuide {
             GuideEntry(systemImage: "line.3.horizontal.decrease.circle.fill",
                        title: "Filtrer",
                        text: "Le bouton de filtre, en bas, ouvre les lignes de l'arrêt : touchez-en une pour ne garder qu'elle. Si elle a plusieurs directions, une bulle au-dessus permet de choisir la bonne. La liste se filtre aussitôt ; ↺ remet toutes les lignes, ✓ ou un toucher ailleurs referme les lignes."),
-            GuideEntry(systemImage: "clock.arrow.2.circlepath",
+            GuideEntry(systemImage: "arrow.trianglehead.2.clockwise.rotate.90",
                        title: "Plus tôt, plus tard",
                        text: "Les flèches en bas à droite affichent les départs précédents ou suivants. Pour une heure précise, touchez l'horloge entre elles : choisissez le jour, puis l'heure, et validez avec ✓. « Maintenant » revient à l'heure actuelle ; l'horloge reste orange tant que la liste n'y est pas.",
                        demo: .earlierLater),

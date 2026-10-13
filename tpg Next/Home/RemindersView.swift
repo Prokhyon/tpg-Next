@@ -247,7 +247,7 @@ struct ScheduledNotifications: View {
         } label: {
             capsuleRow(title: Text(tripTitle: group.title), subtitle: group.summary,
                        systemImage: group.isRegular ? "repeat" : "point.bottomleft.forward.to.point.topright.scurvepath.fill",
-                       color: group.isRegular ? .teal : .orange)
+                       color: Color.accentColor)
         }
         .buttonStyle(.plain)
         .contextMenu {

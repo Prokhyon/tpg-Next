@@ -464,7 +464,7 @@ struct TimeShiftButtons: View {
                 moveTime(true)
                 earlier.toggle()
             } icon: {
-                Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: earlier)
             }
             if let chooseTime {
@@ -480,7 +480,7 @@ struct TimeShiftButtons: View {
                 moveTime(false)
                 later.toggle()
             } icon: {
-                Image(systemName: "text.line.last.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.clockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: later)
             }
         }

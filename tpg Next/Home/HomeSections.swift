@@ -24,16 +24,6 @@ enum HomeSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var color: Color {
-        switch self {
-        case .nextTrip: .teal
-        case .favorites: .yellow
-        case .places: .red
-        case .departures: .blue
-        case .map: .green
-        }
-    }
-
     var systemImage: String {
         switch self {
         case .nextTrip: "clock"
@@ -127,7 +117,7 @@ extension HomeLayoutView {
         // La dernière section visible reste : un accueil vide n'aurait plus rien à dire.
         let isLastVisible = !isHidden && order.filter { !hidden.contains($0) }.count == 1
         return HStack(spacing: 14) {
-            SettingsIcon(systemImage: section.systemImage, color: section.color)
+            SettingsIcon(systemImage: section.systemImage, color: .accentColor)
                 .opacity(isHidden ? 0.35 : 1)
             Text(section.title)
                 .foregroundStyle(isHidden ? .secondary : .primary)

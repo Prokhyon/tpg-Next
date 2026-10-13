@@ -18,7 +18,7 @@ public struct HighlightStroke<S: Shape>: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ shape: S, lineWidth: CGFloat, period: Double = 4) {
+    public init(_ shape: S, lineWidth: CGFloat, period: Double = 3.5) {
         self.shape = shape
         self.lineWidth = lineWidth
         self.period = period
@@ -27,6 +27,7 @@ public struct HighlightStroke<S: Shape>: View {
     public var body: some View {
         if reduceMotion {
             shape.stroke(gradient(at: .zero), lineWidth: lineWidth)
+                .shadow(color: .accent, radius: 1)
         } else {
             // L'angle découle de l'heure : l'animation ne repart pas de zéro quand la rangée
             // réapparaît dans une liste, et tous les surlignages tournent ensemble.
@@ -34,6 +35,7 @@ public struct HighlightStroke<S: Shape>: View {
                 let turns = context.date.timeIntervalSinceReferenceDate / period
                 shape.stroke(gradient(at: .degrees(turns.truncatingRemainder(dividingBy: 1) * 360)),
                              lineWidth: lineWidth)
+                .shadow(color: .accentColor, radius: 1)
             }
         }
     }
@@ -41,8 +43,17 @@ public struct HighlightStroke<S: Shape>: View {
     /// Le premier et le dernier se rejoignent : pas de couture sur le tour.
     private func gradient(at angle: Angle) -> AngularGradient {
         let accent = Color.accentColor
-        return AngularGradient(colors: [accent, accent.opacity(0.6), accent.opacity(0.2),
-                                        accent.opacity(0.2), accent.opacity(0.6), accent],
+        return AngularGradient(colors: [accent, accent.opacity(0.5), accent, accent.opacity(0.4), accent, accent.opacity(0.3), accent],
                                center: .center, angle: angle)
+//        return AngularGradient(colors: [accent, accent.opacity(0.6), accent.opacity(0.2),
+//                                        accent.opacity(0.2), accent.opacity(0.6), accent],
+//                               center: .center, angle: angle)
+    }
+}
+
+
+#Preview("Highlight") {
+    HStack {
+        BusLineIcon(lineName: "1", operatorName: "", highlighted: true)
     }
 }
