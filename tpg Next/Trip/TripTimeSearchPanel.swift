@@ -20,7 +20,7 @@ struct TripTimeSearchPanel: View {
         @Bindable var viewModel = itineraryViewModel
         VStack(spacing: 15) {
             let resetTimeButton = Button(action: {
-                viewModel.selectedTime = Date()
+                viewModel.selectedTime = AppClock.now()
                 viewModel.tripDone = false
                 timeAnimate.toggle()
             }) {

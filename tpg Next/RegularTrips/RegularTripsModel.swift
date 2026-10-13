@@ -110,7 +110,7 @@ final class RegularTripsModel {
         guard let index = regularTrips.firstIndex(where: { $0.id == occurrence.tripID }) else { return }
         regularTrips[index].skippedDays.insert(occurrence.day)
         // Les jours passés ne servent plus à rien.
-        let today = Calendar.swissTransit.dayKey(for: Date())
+        let today = Calendar.swissTransit.dayKey(for: AppClock.now())
         regularTrips[index].skippedDays = regularTrips[index].skippedDays.filter { $0 >= today }
     }
 
@@ -118,14 +118,14 @@ final class RegularTripsModel {
     /// et signalé. `trip` vient d'OJP : il vaut déjà pour l'état du jour.
     func choose(_ trip: TripEvent, for occurrence: RegularTripOccurrence) {
         guard let index = regularTrips.firstIndex(where: { $0.id == occurrence.tripID }) else { return }
-        let today = Calendar.swissTransit.dayKey(for: Date())
+        let today = Calendar.swissTransit.dayKey(for: AppClock.now())
         // Les jours passés ne servent plus à rien.
         var overrides = (regularTrips[index].dayOverrides ?? [:]).filter { $0.key >= today }
         overrides[occurrence.day] = trip
         regularTrips[index].dayOverrides = overrides
         let match = RegularTripMatch(trip: trip, kind: .usual)
-        live[occurrence.id] = .found(match, updated: Date())
-        lastRequest[occurrence.id] = Date()
+        live[occurrence.id] = .found(match, updated: AppClock.now())
+        lastRequest[occurrence.id] = AppClock.now()
         Task { await TripLiveActivities.shared.didResolve(occurrence.id, match: match) }
     }
 
@@ -148,7 +148,7 @@ final class RegularTripsModel {
     }
 
     /// Les prochains trajets, dans l'ordre des départs.
-    func upcoming(after date: Date = Date(), days: Int = 7) -> [RegularTripOccurrence] {
+    func upcoming(after date: Date = AppClock.now(), days: Int = 7) -> [RegularTripOccurrence] {
         regularTrips.flatMap { $0.occurrences(after: date, days: days) }
             .sorted { $0.plannedDeparture < $1.plannedDeparture }
     }
@@ -169,7 +169,7 @@ final class RegularTripsModel {
 
     /// Redemande à OJP les trajets dont le départ approche, puis prévient des changements.
     @MainActor
-    func refresh(now: Date = Date()) async {
+    func refresh(now: Date = AppClock.now()) async {
         let soon = upcoming(after: now, days: 2).filter { $0.plannedDeparture.timeIntervalSince(now) < Self.liveWindow }
         await withTaskGroup(of: Void.self) { group in
             for occurrence in soon {
@@ -191,11 +191,11 @@ final class RegularTripsModel {
     @MainActor @discardableResult
     func resolve(_ occurrence: RegularTripOccurrence, force: Bool = false, known: TripEvent? = nil) async -> RegularTripMatch? {
         guard let trip = trip(for: occurrence) else { return nil }
-        if !force, let last = lastRequest[occurrence.id], Date().timeIntervalSince(last) < Self.minimumInterval(before: occurrence.plannedDeparture) {
+        if !force, let last = lastRequest[occurrence.id], AppClock.now().timeIntervalSince(last) < Self.minimumInterval(before: occurrence.plannedDeparture) {
             if case .found(let match, _) = live[occurrence.id] { return match }
             return nil
         }
-        lastRequest[occurrence.id] = Date()
+        lastRequest[occurrence.id] = AppClock.now()
         if live[occurrence.id] == nil {
             live[occurrence.id] = .loading
         }
@@ -203,11 +203,11 @@ final class RegularTripsModel {
         let known = trip.knownUsual(known, for: occurrence) ?? trip.known(knownTrips[occurrence.id], for: occurrence)
         do {
             let match = try await RegularTripResolver.resolve(trip, on: occurrence, known: known)
-            live[occurrence.id] = .found(match, updated: Date())
+            live[occurrence.id] = .found(match, updated: AppClock.now())
             if match.isSure, let usual = trip.knownUsual(match.trip, for: occurrence) {
                 knownTrips[occurrence.id] = usual
                 // Les jours passés ne servent plus.
-                let today = Calendar.swissTransit.dayKey(for: Date())
+                let today = Calendar.swissTransit.dayKey(for: AppClock.now())
                 Self.knownStore.save(knownTrips.filter { String($0.key.suffix(10)) >= today })
             }
             // En route, l'activité en direct suit le trajet de plus près (correspondances,

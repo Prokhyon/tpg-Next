@@ -456,6 +456,31 @@ tpgnext://settings
 
 Dans Xcode : Product → Scheme → Edit Scheme → Run → Arguments → Environment Variables.
 
+## Captures de l'App Store (Debug)
+
+Les captures se font avec des données figées, à 9:41, sans réseau, et donnent les mêmes écrans
+dans toutes les langues et sur tous les appareils, quel que soit le jour.
+
+- `AppClock` (tpgNextFunc/Clock.swift) : l'heure de l'app. Avec l'argument de lancement
+  `-CaptureMode` ou `-CaptureRecord`, elle vaut 9:41 heure suisse au lancement. Tout ce qui
+  s'affiche ou se compare aux horaires passe par `AppClock.now()` ; les notifications, l'activité
+  en direct côté système, les quotas et iCloud restent sur `Date()`.
+- `OJPCapture` (tpgNextFunc/OJPCapture.swift), branché dans `OJPClient.post` :
+  - `-CaptureRecord` écrit chaque réponse dans Documents/Capture du simulateur ;
+  - `-CaptureMode` relit la réponse enregistrée, décalée de 9:41 le jour de l'enregistrement à
+    9:41 aujourd'hui, et ne joint jamais l'API.
+  Une requête est reconnue à son contenu sans horodatages ni jour d'exploitation ; une réponse est
+  gardée par heure demandée (minutes depuis 9:41).
+- Les données vivent dans `tpg Next/Preview Content/Capture` (exclu des archives) et sont
+  versionnées. On n'en ajoute que pour un nouvel écran ou un nouveau scénario ; on n'en remplace
+  jamais sans le décider.
+- Les écrans s'ouvrent avec les liens Debug : `seed` (favoris, lieux, trajets réguliers et
+  enregistrés), `quicktrip … &open=1 | &select=1`, `firstline`, `quaymap … &quay=A&pitch=40&distance=950`,
+  `stop … &grouped=1&count=120&filter=5:Vallard&open=5`. Réglages dans
+  `tpg Next/Previews/CaptureSupport.swift`.
+- `Scripts/capture/capture.sh` : `build`, `replay` (toujours dans un dossier neuf, n'écrase
+  rien) et `record` (ajoute seulement les réponses qui manquent).
+
 ## Widget « Prochain trajet »
 
 L'app écrit les prochains trajets (réguliers et enregistrés, avec leur temps réel s'il est

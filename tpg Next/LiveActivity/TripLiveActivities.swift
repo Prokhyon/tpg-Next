@@ -170,7 +170,7 @@ final class TripLiveActivities {
     }
 
     /// Vrai si ce trajet est suivi et que le voyageur est déjà parti : l'activité s'en occupe.
-    func isUnderway(_ key: String, now: Date = Date()) -> Bool {
+    func isUnderway(_ key: String, now: Date = AppClock.now()) -> Bool {
         activity(for: key) != nil && hasLeft(key, now: now)
     }
 
@@ -252,7 +252,7 @@ final class TripLiveActivities {
 
     private func start(key: String, tracked entry: Tracked, title: String,
                        state: TripActivityState?, origin: String, destination: String) {
-        guard areEnabled, activity(for: key) == nil, let state, state.arrival > Date() else { return }
+        guard areEnabled, activity(for: key) == nil, let state, state.arrival > AppClock.now() else { return }
         guard hasLocation else {
             askForLocation()
             return
@@ -291,7 +291,7 @@ final class TripLiveActivities {
 
     /// L'état de l'activité, avec les passages des courses pas encore terminées. Les mêmes
     /// passages donnent le tracé, gardé à part pour la correction par la position.
-    private func state(for trip: TripEvent, key: String, alert: String?, now: Date = Date()) async -> TripActivityState? {
+    private func state(for trip: TripEvent, key: String, alert: String?, now: Date = AppClock.now()) async -> TripActivityState? {
         var events: [String: [LineEvent]] = [:]
         var calls: [String: [TripActivityState.Call]] = [:]
         for leg in trip.vehicleLegs where !leg.journeyRef.isEmpty && (leg.alightDate ?? .distantFuture) > now {
@@ -356,7 +356,7 @@ final class TripLiveActivities {
     /// Met l'activité à jour avec l'état d'OJP, corrigé par la position quand elle dit quelque
     /// chose de fiable.
     private func push(base state: TripActivityState, to activity: Activity<TripActivityAttributes>,
-                      now: Date = Date()) async {
+                      now: Date = AppClock.now()) async {
         let key = activity.attributes.key
         baseStates[key] = state
         let corrected = await adjusted(state, key: key, now: now)
@@ -434,7 +434,7 @@ final class TripLiveActivities {
 
     /// Lance l'activité des trajets réguliers qui partent bientôt. Une seule fois par trajet :
     /// fermée par l'utilisateur, elle ne revient pas.
-    func startSoonDepartingTrips(of model: RegularTripsModel, now: Date = Date()) {
+    func startSoonDepartingTrips(of model: RegularTripsModel, now: Date = AppClock.now()) {
         // Une activité ne démarre qu'app au premier plan : essayer en arrière-plan échouerait,
         // et marquerait le trajet comme lancé.
         guard areEnabled, hasLocation, UIApplication.shared.applicationState == .active,
@@ -457,7 +457,7 @@ final class TripLiveActivities {
 
     /// Lance le suivi des itinéraires enregistrés qui partent bientôt, si l'utilisateur l'a choisi
     /// (`SavedTripAutoTracking`). Une seule fois par itinéraire : fermé, il ne revient pas.
-    func startSoonDepartingSavedTrips(of model: SavedTripsModel, now: Date = Date()) {
+    func startSoonDepartingSavedTrips(of model: SavedTripsModel, now: Date = AppClock.now()) {
         let minutes = SavedTripAutoTracking.leadMinutes
         guard areEnabled, hasLocation, minutes > 0, UIApplication.shared.applicationState == .active else { return }
         var started = Set(Self.autoStartedStore.load() ?? [])
@@ -479,7 +479,7 @@ final class TripLiveActivities {
     // MARK: Mettre à jour
 
     /// Un trajet régulier vient d'être relu (appelé par `RegularTripsModel`).
-    func didResolve(_ key: String, match: RegularTripMatch, now: Date = Date()) async {
+    func didResolve(_ key: String, match: RegularTripMatch, now: Date = AppClock.now()) async {
         guard case .trip(var entry) = tracked[key] else { return }
         // Parti : un itinéraire recalculé depuis le point de départ renverrait le voyageur en
         // arrière. Seule la suite peut encore changer, et c'est `followedState` qui s'en charge.
@@ -495,7 +495,7 @@ final class TripLiveActivities {
 
     /// Relit les trajets suivis, termine ceux qui sont arrivés, et redessine les autres
     /// (l'étape affichée se déduit de l'heure du dessin).
-    func refresh(model: RegularTripsModel, now: Date = Date()) async {
+    func refresh(model: RegularTripsModel, now: Date = AppClock.now()) async {
         syncActiveKeys()
         for activity in Activity<TripActivityAttributes>.activities where activity.activityState == .active || activity.activityState == .stale {
             let key = activity.attributes.key
@@ -700,7 +700,7 @@ final class TripLiveActivities {
         guard case .trip(let entry) = tracked[key], let leg = doubtfulLeg(key) else { return }
         doubtful[key] = nil
         Task {
-            let now = Date()
+            let now = AppClock.now()
             guard let state = await self.state(for: entry.trip, key: key, alert: nil, now: now),
                   let activity = self.activity(for: key) else { return }
             let repaired = await self.replanned(entry, key: key, state: state, after: leg, now: now)

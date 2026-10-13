@@ -40,7 +40,7 @@ class ItineraryViewModel {
     /// Les lignes que la recherche évite, choisies dans les résultats. Elles ne valent que
     /// pour ce départ et cette arrivée.
     var avoidedLines: [AvoidedLine] = []
-    var selectedTime = Date()
+    var selectedTime = AppClock.now()
     var isArrivalTime = false
 
     var tripDone = false
@@ -103,7 +103,7 @@ class ItineraryViewModel {
     func resetModel() {
         departure = TripPoint()
         arrival = TripPoint()
-        selectedTime = Date()
+        selectedTime = AppClock.now()
         isArrivalTime = false
     }
 
@@ -119,7 +119,7 @@ class ItineraryViewModel {
             quickTrip = true
         }
         arrival.select(destination)
-        selectedTime = Date()
+        selectedTime = AppClock.now()
         isArrivalTime = false
         selectedField = nil
         tripDone = false

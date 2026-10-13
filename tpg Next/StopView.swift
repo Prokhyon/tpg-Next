@@ -39,7 +39,7 @@ struct StopView: View {
     @State private var viewLineSorted = false //Events are grouped by line
     @State private var viewLineFiltered = false //Filter is active
     @State private var selectedNumber = 5
-    @State private var timeRequest = Date() //Time sent to the api for departures
+    @State private var timeRequest = AppClock.now() //Time sent to the api for departures
     @State private var requestNumber = 30
     @State private var selectTime = false //display time selection sheet
     /// « Maintenant » : la liste suit de nouveau l'heure actuelle, même ouverte depuis une course.
@@ -180,7 +180,7 @@ struct StopView: View {
                         .readableScrollContent()
                         
                         .refreshable {
-                            timeRequest = Date()
+                            timeRequest = AppClock.now()
                             getStopEvents()
                         }
                         .onChange(of: allFilteredStopEvents) {
@@ -252,14 +252,27 @@ struct StopView: View {
                                                  applyTime: applyTime, returnToNow: returnToNow))
                 .onAppear {
                     viewLineSorted = groupedDefault
+                    #if DEBUG
+                    if CaptureOptions.stopGrouped { viewLineSorted = true }
+                    if let count = CaptureOptions.stopCount { requestNumber = count }
+                    #endif
                 }
+                #if DEBUG
+                // Captures : une fois les départs arrivés, les directions choisies et le filtre ouvert.
+                .onChange(of: stopManager.stopEvents) {
+                    guard !CaptureOptions.stopFilter.isEmpty else { return }
+                    selectedFilters = CaptureOptions.filterKeys(in: groupedStopEvents)
+                    CaptureOptions.stopFilter = []
+                    filterLines = true
+                }
+                #endif
                 .periodicRefresh(id: refreshGeneration, repeats: autoRefresh) { trigger in
                     // Sans heure choisie par l'utilisateur, chaque rafraîchissement repart de
                     // maintenant : les bus déjà partis quittent la liste. Ouvert depuis une course,
                     // l'arrêt part de son heure de passage, gardée tant qu'elle est à venir.
                     if refreshGeneration == 0 {
-                        let origin = followsNow ? Date() : timeRequest(for: previousLineTime)
-                        timeRequest = trigger == .start ? origin : max(Date(), origin)
+                        let origin = followsNow ? AppClock.now() : timeRequest(for: previousLineTime)
+                        timeRequest = trigger == .start ? origin : max(AppClock.now(), origin)
                     }
                     getStopEvents()
                 }
@@ -346,7 +359,7 @@ struct StopView: View {
     private func returnToNow() {
         followsNow = true
         withAnimation(.snappy) { selectTime = false }
-        timeRequest = Date()
+        timeRequest = AppClock.now()
         if refreshGeneration == 0 {
             getStopEvents()
         } else {
@@ -394,7 +407,7 @@ struct StopView: View {
     func timeRequest(for time: String?) -> Date {
         // Une heure absente ou illisible (ouverture depuis le widget, par exemple)
         // veut simplement dire « les départs à partir de maintenant ».
-        guard let time, let date = stringToDate(with: time) else { return Date() }
+        guard let time, let date = stringToDate(with: time) else { return AppClock.now() }
         return date
     }
     private func estimatedTypicalTimeInterval(from events: [StopEvent]) -> Int { //calcul d'interval pour décalement d'heure
@@ -563,7 +576,7 @@ private struct StopBottomBarPreview: View {
     @State private var showsFilters: Bool
     @State private var showsTime: Bool
     @State private var selection: Set<String>
-    @State private var time = Date()
+    @State private var time = AppClock.now()
     @State private var isShifted: Bool
     @State private var shift = 0
 
@@ -626,7 +639,7 @@ private struct StopBottomBarPreview: View {
                                             withAnimation(.snappy) { showsTime = false }
                                         },
                                         returnToNow: {
-                                            time = Date()
+                                            time = AppClock.now()
                                             isShifted = false
                                             withAnimation(.snappy) { showsTime = false }
                                         }))

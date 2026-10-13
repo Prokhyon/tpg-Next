@@ -52,14 +52,14 @@ public enum DepartureDisplay: Equatable {
 /// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
 ///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
 /// L'affichage d'un départ : « Supprimé » pour une course supprimée, son heure sinon.
-public func departureDisplay(for event: StopEvent, showTime: Bool, at now: Date = Date()) -> DepartureDisplay {
+public func departureDisplay(for event: StopEvent, showTime: Bool, at now: Date = AppClock.now()) -> DepartureDisplay {
     if event.cancelled {
         return .cancelled
     }
     return departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
 }
 
-public func departureDisplay(timetabled: String, estimated: String, showTime: Bool, at now: Date = Date()) -> DepartureDisplay {
+public func departureDisplay(timetabled: String, estimated: String, showTime: Bool, at now: Date = AppClock.now()) -> DepartureDisplay {
     let estimated = estimated.isEmpty ? timetabled : estimated
     guard let timetableTime = OJPDate.date(from: timetabled),
           let estimatedTime = OJPDate.date(from: estimated) else {

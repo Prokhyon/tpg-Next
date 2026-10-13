@@ -145,7 +145,7 @@ public func fetchTransportDepartures(with stopName: String, stopSloid: String, s
 
 /// Les prochains départs d'un arrêt et ses quais, en `async`.
 /// Lève `OJPClient.Failure` en cas d'échec réseau, `ParserError` si l'API n'a pas de départ.
-public func fetchStopEvents(stopName: String, stopSloid: String, count: Int, at date: Date = Date()) async throws -> (events: [StopEvent], quays: [Quay]) {
+public func fetchStopEvents(stopName: String, stopSloid: String, count: Int, at date: Date = AppClock.now()) async throws -> (events: [StopEvent], quays: [Quay]) {
     let data = try await OJPClient.post(stopEventRequestXML(stopName: stopName, stopSloid: stopSloid, count: count, at: date), to: .v2)
     let result = parseStopEventsSync(from: data, stopCode: stopSloid)
     if let error = result.error {

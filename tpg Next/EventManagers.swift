@@ -126,7 +126,7 @@ public class SavedTripsModel {
     static let retentionDays = 30
 
     /// Sans date lisible, on garde : mieux vaut un itinéraire de trop qu'un effacé à tort.
-    static func withoutExpired(_ trips: [TripEvent], now: Date = Date()) -> [TripEvent] {
+    static func withoutExpired(_ trips: [TripEvent], now: Date = AppClock.now()) -> [TripEvent] {
         let limit = now.addingTimeInterval(-TimeInterval(retentionDays) * 86_400)
         return trips.filter { trip in
             guard let end = trip.endDate ?? trip.startDate else { return true }
@@ -172,8 +172,8 @@ public class SavedTripsModel {
             savedTrips.append(new)
         }
         live[old.id] = nil
-        live[new.id] = .found(RegularTripMatch(trip: new, kind: .usual), updated: Date())
-        lastRequest[new.id] = Date()
+        live[new.id] = .found(RegularTripMatch(trip: new, kind: .usual), updated: AppClock.now())
+        lastRequest[new.id] = AppClock.now()
     }
 
     // MARK: Temps réel
@@ -199,7 +199,7 @@ public class SavedTripsModel {
     /// toujours (horaire modifié, course supprimée), puis régulièrement dans les trois heures qui
     /// précèdent le départ, quand OJP a le temps réel.
     @MainActor
-    func refresh(now: Date = Date()) async {
+    func refresh(now: Date = AppClock.now()) async {
         removeExpiredTrips(now: now)
         let soon = savedTrips.filter { trip in
             guard let start = trip.startDate, (trip.endDate ?? start) > now,
@@ -230,13 +230,13 @@ public class SavedTripsModel {
 
     @MainActor @discardableResult
     func resolve(_ trip: TripEvent) async -> RegularTripMatch? {
-        lastRequest[trip.id] = Date()
+        lastRequest[trip.id] = AppClock.now()
         if live[trip.id] == nil {
             live[trip.id] = .loading
         }
         do {
             let match = try await SavedTripResolver.resolve(trip)
-            live[trip.id] = .found(match, updated: Date())
+            live[trip.id] = .found(match, updated: AppClock.now())
             return match
         } catch RegularTripResolver.Failure.noTrip {
             live[trip.id] = .notFound

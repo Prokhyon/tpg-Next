@@ -208,6 +208,12 @@ struct LineFilterBar: View {
         }
         .animation(.snappy, value: openLine)
         .animation(.snappy, value: selection)
+        #if DEBUG
+        // Captures : les directions d'une ligne dépliées à l'ouverture.
+        .onAppear {
+            if let line = CaptureOptions.stopOpenLine { openLine = line }
+        }
+        #endif
     }
 
     private func lineChips(_ lines: [Line]) -> some View {
@@ -364,7 +370,7 @@ struct DepartureTimeBar: View {
 
     /// Aujourd'hui et les six jours suivants.
     private var days: [Date] {
-        let today = Calendar.current.startOfDay(for: .now)
+        let today = Calendar.current.startOfDay(for: AppClock.now())
         return (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: today) }
     }
 
@@ -592,7 +598,7 @@ struct DepartureTimeSheet: View {
                 }
                 .datePickerStyle(.wheel)
                 Button(action: {
-                    time = Date()
+                    time = AppClock.now()
                     resetAnimation.toggle()
                 }) {
                     Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
@@ -808,7 +814,7 @@ struct DeparturesUnavailableText: View {
                     time = date
                     log = "Validé : " + date.formatted(date: .abbreviated, time: .shortened)
                 } returnToNow: {
-                    time = Date()
+                    time = AppClock.now()
                     log = "Maintenant"
                 }
             }

@@ -47,7 +47,7 @@ struct LiveMinutes: View {
     var body: some View {
         if let target {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                let minutes = max(0, Int((target.timeIntervalSince(context.date) + 30) / 60))
+                let minutes = max(0, Int((target.timeIntervalSince(AppClock.shifted(context.date)) + 30) / 60))
                 Text(Duration.seconds(minutes * 60), format: .units(allowed: [.minutes], width: .wide))
                     .monospacedDigit()
                     .lineLimit(1)

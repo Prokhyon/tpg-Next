@@ -394,7 +394,7 @@ struct LineBackground: View {
         if let start = previous ?? event.departureDate, let end = next ?? event.departureDate,
            now >= start.addingTimeInterval(-15), now <= end.addingTimeInterval(15) {
             TimelineView(.periodic(from: .now, by: 2)) { context in
-                trait(at: context.date)
+                trait(at: AppClock.shifted(context.date))
             }
         } else {
             trait(at: now)

@@ -138,6 +138,17 @@ struct StopMapPanel: View {
                     .region(MKCoordinateRegion(center: $0.coordinate,
                                                span: MKCoordinateSpan(latitudeDelta: 0.001, longitudeDelta: 0.001)))
                 } ?? .automatic
+                #if DEBUG
+                // Captures : la carte inclinée, bâtiments en 3D.
+                // Centrée sur l'ensemble des quais, un peu au sud : la carte des départs couvre le bas.
+                if zoomedQuay != nil, let pitch = CaptureOptions.pitch, !quays.isEmpty {
+                    let latitude = quays.map(\.coordinate.latitude).reduce(0, +) / Double(quays.count)
+                    let longitude = quays.map(\.coordinate.longitude).reduce(0, +) / Double(quays.count)
+                    let south = CaptureOptions.distance * 0.04 / 111_000
+                    let center = CLLocationCoordinate2D(latitude: latitude - south, longitude: longitude)
+                    position = .camera(MapCamera(centerCoordinate: center, distance: CaptureOptions.distance, heading: 20, pitch: pitch))
+                }
+                #endif
             }
         }
     }

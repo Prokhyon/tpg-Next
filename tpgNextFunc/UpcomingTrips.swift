@@ -302,7 +302,7 @@ public enum NextTripTimeline {
     /// chaque changement d'étape (partir, monter, arriver : le trajet suivant prend la place).
     /// `refresh` : quand redemander une timeline. L'app recharge le widget quand ses trajets
     /// changent ; sinon, de quoi ne pas rester figé.
-    public static func dates(for trips: [UpcomingTrip], now: Date = Date(), limit: Int = 150) -> (dates: [Date], refresh: Date) {
+    public static func dates(for trips: [UpcomingTrip], now: Date = AppClock.now(), limit: Int = 150) -> (dates: [Date], refresh: Date) {
         var dates: Set<Date> = [now]
         if let next = trips.first(where: { $0.arrival > now }) {
             var minute = Calendar.current.dateInterval(of: .minute, for: max(now, next.leaving.addingTimeInterval(-countdownWindow)))?.end ?? now

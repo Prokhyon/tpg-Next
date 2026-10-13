@@ -255,7 +255,7 @@ struct SmallStopView: View {
     
     private func refreshDepartures() {
         guard !testing else { return }
-        stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: Date())
+        stopManager.selectStop(stopName: stop.name, stopSloid: stop.sloid, stopEventNumber: stopEventNumber, timeRequest: AppClock.now())
     }
     private var filteredEvents: [StopEvent] {
         stopManager.stopEvents.filter { $0.plannedQuay == quay }

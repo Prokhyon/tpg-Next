@@ -26,7 +26,7 @@ struct LiveTripMap: View {
         // Le véhicule avance à la seconde, d'après ses heures de passage : il glisse le long du
         // tracé au lieu de sauter d'une mise à jour à l'autre.
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            LiveTripMapContent(state: state, links: links, route: route, compact: compact, now: context.date)
+            LiveTripMapContent(state: state, links: links, route: route, compact: compact, now: AppClock.shifted(context.date))
         }
     }
 }

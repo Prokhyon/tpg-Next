@@ -688,7 +688,7 @@ struct ReplanOptionsCard: View {
 extension TripLiveActivities.LiveTrip {
     /// Données inventées : le 12 dans quatre minutes, puis le 19.
     static var preview: TripLiveActivities.LiveTrip {
-        let now = Date()
+        let now = AppClock.now()
         let board = now.addingTimeInterval(4 * 60)
         let calls = ["Bel-Air", "Molard", "Rive", "Terrassière"].enumerated().map { index, name in
             TripActivityState.Call(name: name, time: board.addingTimeInterval(TimeInterval(index - 2) * 100))
@@ -709,7 +709,7 @@ extension TripLiveActivities.LiveTrip {
 
     /// Deux véhicules et une correspondance, pour voir toute la frise.
     static var previewTransfer: TripLiveActivities.LiveTrip {
-        let now = Date()
+        let now = AppClock.now()
         let board = now.addingTimeInterval(3 * 60)
         let firstAlight = board.addingTimeInterval(9 * 60)
         let secondBoard = firstAlight.addingTimeInterval(4 * 60)
@@ -762,7 +762,7 @@ extension TripLiveActivities.LiveTrip {
         var trip = PreviewData.tripWithTransfer
         let board = trip.anchorDate(.departure, timetabled: true) ?? PreviewData.now
         // L'heure exacte, pas la minute arrondie : l'approche ne dure qu'une minute.
-        let delta = Date().addingTimeInterval(-minutes * 60).timeIntervalSince(board)
+        let delta = AppClock.now().addingTimeInterval(-minutes * 60).timeIntervalSince(board)
         func shift(_ time: String) -> String {
             OJPDate.date(from: time).map { OJPDate.string(from: $0.addingTimeInterval(delta)) } ?? time
         }

@@ -545,7 +545,8 @@ struct ContentView: View {
     /// Captures et vérifications sans toucher l'écran : `TPG_DEBUG_URLS` liste des liens séparés par
     /// des espaces, ouverts dans l'ordre au lancement. En plus des liens du widget :
     ///   tpgnext://tab?name=home|trip|trips|map|search   tpgnext://settings   tpgnext://map   tpgnext://quicktrip?sloid=…   tpgnext://lines   tpgnext://guide[?topic=…]
-    ///   tpgnext://homelayout   tpgnext://places   tpgnext://appicon   tpgnext://sheet?name=reminder|newRegular|editRegular|avoidLine|operators|flex|reminders
+    ///   tpgnext://stop?…&grouped=1&count=120&filter=5:Vallard,8:douane&open=5
+    ///   tpgnext://homelayout   tpgnext://places   tpgnext://seed   tpgnext://appicon   tpgnext://sheet?name=reminder|newRegular|editRegular|avoidLine|operators|flex|reminders
     private func openDebugURLs() {
         guard let list = ProcessInfo.processInfo.environment["TPG_DEBUG_URLS"] else { return }
         for url in list.split(separator: " ").compactMap({ URL(string: String($0)) }) {
@@ -567,12 +568,42 @@ struct ContentView: View {
                 debugSheet = DebugSheet(rawValue: name)
             case "quicktrip":
                 // tpgnext://quicktrip?sloid=… : itinéraire depuis la position, comme « Y aller ».
-                let sloid = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value ?? ""
+                // `from=…` part d'un arrêt ; `open=1` ouvre le plus beau résultat.
+                let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                let value = { (name: String) in items.first { $0.name == name }?.value }
                 Task { @MainActor in
                     // La base des arrêts se charge encore au lancement.
                     for _ in 0..<40 where !stopStore.isLoaded { try? await Task.sleep(for: .milliseconds(250)) }
-                    if let stop = stopStore.findStop(id: sloid) {
-                        itineraryViewModel.searchNow(from: nil, to: .stop(stop), tab: navigationModel)
+                    guard let stop = stopStore.findStop(id: value("sloid") ?? "") else { return }
+                    let origin = value("from").flatMap { stopStore.findStop(id: $0) }.map { TripEndpoint.stop($0) }
+                    itineraryViewModel.searchNow(from: origin, to: .stop(stop), tab: navigationModel)
+                    // Sur grand écran : le meilleur résultat ouvert à droite (`select=1`).
+                    CaptureOptions.selectsBestTrip = value("select") == "1"
+                    guard value("open") == "1" else { return }
+                    for _ in 0..<60 where tripManager.tripEvents.isEmpty { try? await Task.sleep(for: .milliseconds(250)) }
+                    if let best = tripManager.tripEvents.bestForCapture() {
+                        navigationModel.open(.trip(best), in: .trip)
+                    }
+                }
+            case "firstline", "quaymap":
+                // tpgnext://firstline?sloid=…&line=12 : la course du prochain départ de la ligne,
+                // depuis cet arrêt. tpgnext://quaymap?sloid=… : la carte des quais de l'arrêt.
+                let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                let value = { (name: String) in items.first { $0.name == name }?.value }
+                let host = url.host
+                // `quay=B` et `pitch=60` : un quai sélectionné, la carte inclinée.
+                CaptureOptions.quay = value("quay")
+                CaptureOptions.pitch = value("pitch").flatMap(Double.init)
+                CaptureOptions.distance = value("distance").flatMap(Double.init) ?? 450
+                Task { @MainActor in
+                    for _ in 0..<40 where !stopStore.isLoaded { try? await Task.sleep(for: .milliseconds(250)) }
+                    guard let stop = stopStore.findStop(id: value("sloid") ?? ""),
+                          let result = try? await fetchStopEvents(stopName: stop.name, stopSloid: stop.sloid, count: 30) else { return }
+                    navigationModel.selectedTab = .home
+                    if host == "quaymap" {
+                        navigationModel.open(.stopMap(quays: result.quays, sloid: stop.sloid, name: stop.name), in: .home)
+                    } else if let event = result.events.first(where: { $0.lineName == value("line") && !$0.cancelled }) ?? result.events.first {
+                        navigationModel.open(.line(event: event, currentStop: ShortStop(name: stop.name, sloid: stop.sloid)), in: .home)
                     }
                 }
             case "map":
@@ -581,14 +612,84 @@ struct ContentView: View {
             case "lines":
                 navigationModel.selectedTab = .search
                 navigationModel.open(.lines, in: .search)
+            case "seed":
+                // tpgnext://seed?names=Travail,Sport : favoris, lieux et trajets réguliers de
+                // démonstration (captures), nommés dans la langue de la capture.
+                let names = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value?
+                    .split(separator: ",").map(String.init) ?? []
+                Task { @MainActor in await seedCaptureData(names: names) }
             case "guide":
                 // tpgnext://guide, ou tpgnext://guide?topic=stop pour une rubrique.
                 let topic = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value
                 navigationModel.open(topic.map { .userGuideTopic(id: $0) } ?? .userGuide, in: navigationModel.selectedTab)
             default:
+                if url.host == "stop" {
+                    // Captures : départs groupés, filtre ouvert sur quelques directions.
+                    let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                    let value = { (name: String) in items.first { $0.name == name }?.value }
+                    CaptureOptions.stopGrouped = value("grouped") == "1"
+                    CaptureOptions.stopCount = value("count").flatMap(Int.init)
+                    CaptureOptions.stopOpenLine = value("open")
+                    CaptureOptions.stopFilter = (value("filter") ?? "").split(separator: ",").compactMap { pair in
+                        let parts = pair.split(separator: ":", maxSplits: 1).map(String.init)
+                        return parts.count == 2 ? (line: parts[0], destination: parts[1]) : nil
+                    }
+                }
                 handleOpenURL(url)
             }
         }
+    }
+
+    /// Les données des captures de l'App Store : quatre favoris, les lieux favoris, deux trajets
+    /// réguliers et deux itinéraires enregistrés répartis sur la journée, cherchés à OJP (ou relus
+    /// en mode capture).
+    /// Chaque trajet évite les lignes des précédents, pour varier les couleurs.
+    private func seedCaptureData(names: [String]) async {
+        for _ in 0..<40 where !stopStore.isLoaded { try? await Task.sleep(for: .milliseconds(250)) }
+        let sloids = ["87057", "87387", "87061", "87907"]
+        favoritesViewModel.replaceAll(with: sloids.compactMap { stopStore.findStop(id: "ch:1:sloid:\($0)") })
+        let places = FavoritePlacesModel.shared
+        for place in PreviewData.places where !places.isFavorite(place.coordinate) {
+            places.add(name: place.placeName, address: place.address, coordinate: place.coordinate)
+            if place.isRenamed, let added = places.place(at: place.coordinate) {
+                places.rename(added, to: place.name)
+            }
+        }
+        // Remplace ceux d'une capture précédente (ils survivent à la désinstallation par iCloud).
+        regularTripsModel.regularTrips.forEach { regularTripsModel.remove($0) }
+        savedTripsModel.savedTrips.forEach { savedTripsModel.removeTrip($0) }
+        // (nom, départ, arrivée, dans combien de minutes) ; sans nom : itinéraire enregistré.
+        // Répartis sur la journée : le matin, midi, l'après-midi et le soir.
+        let plans: [(name: String?, from: String, to: String, inMinutes: Double)] = [
+            (names.first ?? "Travail", "87437", "92775", 25),
+            (nil, "87061", "87918", 165),
+            (nil, "92883", "93141", 345),
+            (names.dropFirst().first ?? "Sport", "87057", "87437", 500),
+        ]
+        var shownLines: Set<String> = []
+        for plan in plans {
+            guard let from = stopStore.findStop(id: "ch:1:sloid:\(plan.from)"),
+                  let to = stopStore.findStop(id: "ch:1:sloid:\(plan.to)") else { continue }
+            let origin = RegularTripPlace(name: from.name, sloid: from.sloid, coordinates: from.wgs84Coordinates)
+            let destination = RegularTripPlace(name: to.name, sloid: to.sloid, coordinates: to.wgs84Coordinates)
+            // En mode capture, à partir de 9:41 pile : la même requête à l'enregistrement et à la relecture.
+            let start = AppClock.isCapturing ? AppClock.captureReference : AppClock.now()
+            let target = start.addingTimeInterval(plan.inMinutes * 60)
+            guard let trips = try? await RegularTripResolver.trips(from: origin, to: destination,
+                                                                   at: target, isArrivalTime: false),
+                  let trip = trips.bestForCapture(after: target, avoiding: shownLines)
+            else { continue }
+            shownLines.formUnion(trip.captureLines)
+            if let name = plan.name {
+                // Sans suivi automatique : son bandeau masquerait l'accueil sur les captures.
+                var regular = RegularTrip(trip: trip, weekdays: Set(Weekday.allCases), name: name)
+                regular.liveActivity = false
+                regularTripsModel.save(regular)
+            } else {
+                savedTripsModel.addTrip(trip)
+            }
+        }
+        await regularTripsModel.refresh()
     }
     #endif
 }
