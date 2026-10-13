@@ -26,7 +26,6 @@ struct TPG4App: App {
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
     init() {
-        ErrorReporting.start()
         if #available(iOS 26, *) {
         } else {
             UINavigationBar.setTransparentAppearance()
