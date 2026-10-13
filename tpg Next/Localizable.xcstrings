@@ -1738,6 +1738,28 @@
         }
       }
     },
+    "Accueil repensé" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Startseite"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redesigned Home"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redesigned Home"
+          }
+        }
+      }
+    },
     "Accueil sans défilement" : {
       "localizations" : {
         "de" : {
@@ -3680,50 +3702,6 @@
         }
       }
     },
-    "Carte du trajet" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte der Reise"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trip map"
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trip map"
-          }
-        }
-      }
-    },
-    "Où vous en êtes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wo Sie sind"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Where you are"
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Where you are"
-          }
-        }
-      }
-    },
     "Aucun itinéraire trouvé" : {
       "localizations" : {
         "de" : {
@@ -4635,6 +4613,28 @@
         }
       }
     },
+    "Bienvenue et guide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen und Anleitung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome and Guide"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome and Guide"
+          }
+        }
+      }
+    },
     "Braise" : {
       "localizations" : {
         "de" : {
@@ -4945,6 +4945,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Platform Map"
+          }
+        }
+      }
+    },
+    "Carte du trajet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte der Reise"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip map"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip map"
           }
         }
       }
@@ -5686,6 +5708,28 @@
         }
       }
     },
+    "Complications des prochains départs, vos trajets envoyés par l'iPhone et le détail des courses" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Komplikationen mit den nächsten Abfahrten, Ihre Fahrten vom iPhone und die Details der Kurse"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complications for upcoming departures, your trips sent from iPhone, and service details"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complications for upcoming departures, your trips sent from iPhone, and service details"
+          }
+        }
+      }
+    },
     "Connexion au service des horaires impossible. Vérifiez votre réseau." : {
       "localizations" : {
         "de" : {
@@ -5930,6 +5974,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Service cancelled"
+          }
+        }
+      }
+    },
+    "Courses supprimées, arrêts non desservis et parcours modifiés sont signalés, avec l'arrêt desservi le plus proche" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausfallende Kurse, nicht bediente Haltestellen und geänderte Verläufe werden angezeigt, mit der nächstgelegenen bedienten Haltestelle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canceled services, skipped stops and changed routes are flagged, with the nearest stop still served"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled services, skipped stops and changed routes are flagged, with the nearest stop still served"
           }
         }
       }
@@ -7337,6 +7403,28 @@
         }
       }
     },
+    "Enregistrez vos trajets de la semaine : rappels et alertes en cas de changement, un nouvel onglet Trajets et le widget Prochain trajet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern Sie Ihre wöchentlichen Fahrten: Erinnerungen und Hinweise bei Änderungen, ein neuer Tab „Fahrten“ und das Widget „Nächste Fahrt“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your weekly trips: reminders and alerts when something changes, a new Trips tab and the Next Trip widget"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your weekly trips: reminders and alerts when something changes, a new Trips tab and the Next Trip widget"
+          }
+        }
+      }
+    },
     "Ensuite : %lld min à pied jusqu'à destination." : {
       "localizations" : {
         "de" : {
@@ -7966,6 +8054,28 @@
         }
       }
     },
+    "Guide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anleitung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide"
+          }
+        }
+      }
+    },
     "Guide complet" : {
       "localizations" : {
         "de" : {
@@ -8381,6 +8491,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App Icon"
+          }
+        }
+      }
+    },
+    "Icônes au choix" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol nach Wahl"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Your Icon"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Your Icon"
           }
         }
       }
@@ -10713,6 +10845,28 @@
         }
       }
     },
+    "Lieux favoris, carte « Autour de vous », sections à réorganiser, et synchronisation iCloud de vos favoris et trajets" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingsorte, die Karte „In Ihrer Nähe“, anpassbare Abschnitte und iCloud-Synchronisierung Ihrer Favoriten und Fahrten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorite places, the “Around You” map, reorderable sections, and iCloud sync for your favorites and trips"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favourite places, the ‘Around You’ map, reorderable sections, and iCloud sync for your favourites and trips"
+          }
+        }
+      }
+    },
     "Ligne" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12044,6 +12198,28 @@
         }
       }
     },
+    "Nouvelle app pour iPad et iPhone Duo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue App für iPad und iPhone Duo"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New App for iPad and iPhone Duo"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New App for iPad and iPhone Duo"
+          }
+        }
+      }
+    },
     "NSLocationWhenInUseUsageDescriptio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -12279,6 +12455,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start"
+          }
+        }
+      }
+    },
+    "Où vous en êtes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wo Sie sind"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where you are"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where you are"
           }
         }
       }
@@ -13049,6 +13247,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schedule and receive reminders of a vehicle’s departure"
+          }
+        }
+      }
+    },
+    "Perturbations" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Störungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disruptions"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disruptions"
           }
         }
       }
@@ -15587,6 +15807,28 @@
         }
       }
     },
+    "Suivez votre trajet sur l'écran verrouillé et dans la Dynamic Island : quand descendre, correspondances vérifiées, et une nouvelle suite proposée si l'une d'elles tombe" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verfolgen Sie Ihre Fahrt auf dem Sperrbildschirm und in der Dynamic Island: wann Sie aussteigen, geprüfte Anschlüsse und eine neue Weiterfahrt, falls einer davon nicht klappt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow your trip on the Lock Screen and in the Dynamic Island: when to get off, checked connections, and a new onward route if one of them is missed"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow your trip on the Lock Screen and in the Dynamic Island: when to get off, checked connections, and a new onward route if one of them is missed"
+          }
+        }
+      }
+    },
     "Suivez votre trajet sur l'écran verrouillé. Quand une correspondance est serrée, l'app vous demande si vous êtes monté et adapte la suite." : {
       "localizations" : {
         "de" : {
@@ -17408,6 +17650,28 @@
         }
       }
     },
+    "Un nouveau message de bienvenue et un guide d'utilisation à toucher du doigt. La visite guidée vous fait essayer l'essentiel en deux minutes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neuer Willkommensbildschirm und eine Anleitung zum Ausprobieren. Die geführte Tour zeigt Ihnen das Wichtigste in zwei Minuten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new welcome screen and a hands-on user guide. The guided tour lets you try the essentials in two minutes"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new welcome screen and a hands-on user guide. The guided tour lets you try the essentials in two minutes"
+          }
+        }
+      }
+    },
     "Un numéro, plusieurs lignes" : {
       "localizations" : {
         "de" : {
@@ -17607,6 +17871,28 @@
         }
       }
     },
+    "Une expérience adaptée pour les grands écrans" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein auf grosse Bildschirme abgestimmtes Erlebnis"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An experience tailored to larger screens"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An experience tailored to larger screens"
+          }
+        }
+      }
+    },
     "Une frise simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attentes, dans les résultats et les itinéraires enregistrés" : {
       "localizations" : {
         "de" : {
@@ -17757,6 +18043,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check Keys Now"
+          }
+        }
+      }
+    },
+    "Vingt icônes dans Paramètres › Apparence, et les couleurs de l'app qui s'accordent à la vôtre" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zwanzig App-Symbole unter Einstellungen › Darstellung, und die Farben der App passen sich Ihrer Wahl an"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twenty icons in Settings › Appearance, with app colors that match yours"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twenty icons in Settings › Appearance, with app colours that match yours"
           }
         }
       }
