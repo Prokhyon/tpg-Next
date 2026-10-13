@@ -73,6 +73,56 @@
     ": %@" : {
       "shouldTranslate" : false
     },
+    "Période terminée" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeitraum abgelaufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period ended"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period ended"
+          }
+        }
+      }
+    },
+    "Reparti %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ zurückgesetzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset %@"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reparti %@"
+          }
+        }
+      }
+    },
     "« Arrêter le suivi » depuis le trajet ; le suivi se termine aussi de lui-même à l'arrivée." : {
       "localizations" : {
         "de" : {
@@ -1154,30 +1204,86 @@
         }
       }
     },
-    "%lld/%lld cette minute" : {
+    "%lld/%lld dans la dernière minute" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld/%2$lld in dieser Minute"
+            "value" : "%1$lld/%2$lld in der letzten Minute"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld/%2$lld this minute"
+            "value" : "%1$lld/%2$lld in the last minute"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld/%2$lld this minute"
+            "value" : "%1$lld/%2$lld in the last minute"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$lld/%2$lld cette minute"
+            "value" : "%1$lld/%2$lld dans la dernière minute"
+          }
+        }
+      }
+    },
+    "%lld/%lld dans la dernière minute, dont %lld de cet appareil" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in der letzten Minute, davon %3$lld von diesem Gerät"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in the last minute, %3$lld from this device"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in the last minute, %3$lld from this device"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld dans la dernière minute, dont %3$lld de cet appareil"
+          }
+        }
+      }
+    },
+    "%lld/%lld dans la minute avant la lecture" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in der Minute vor dieser Abfrage"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in the minute before this reading"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld in the minute before this reading"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld dans la minute avant la lecture"
           }
         }
       }
@@ -2134,6 +2240,7 @@
       }
     },
     "Affichez les prochains départs d'un arrêt directement sur l'écran d'accueil" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2564,6 +2671,7 @@
       }
     },
     "Aperçus d'itinéraire" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5246,24 +5354,24 @@
         }
       }
     },
-    "Chaque clé a 20 000 requêtes par jour et 50 par minute, partagées par tous les appareils qui ont l'app. Le quota d'une clé repart 24 h après le début de sa période, pas à minuit." : {
+    "Chaque clé a 20 000 requêtes par jour et 50 par minute, partagées par tous les appareils qui ont l'app. Le quota d'une clé repart 24 h après le début de sa période, pas à minuit. La minute est glissante : ce sont les requêtes reçues par la clé dans les 60 secondes avant la dernière réponse, celles de cet appareil comprises. « Vérifier les clés maintenant » relit toutes les clés, au prix d'une requête chacune." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jeder Schlüssel hat 20'000 Anfragen pro Tag und 50 pro Minute, geteilt von allen Geräten mit der App. Das Kontingent eines Schlüssels wird 24 h nach Beginn seines Zeitraums zurückgesetzt, nicht um Mitternacht."
+            "value" : "Jeder Schlüssel hat 20'000 Anfragen pro Tag und 50 pro Minute, geteilt von allen Geräten mit der App. Das Kontingent eines Schlüssels wird 24 h nach Beginn seines Zeitraums zurückgesetzt, nicht um Mitternacht. Die Minute ist gleitend: Gezählt werden die Anfragen, die der Schlüssel in den 60 Sekunden vor der letzten Antwort erhalten hat, die dieses Geräts eingeschlossen. «Schlüssel jetzt prüfen» liest alle Schlüssel neu, mit je einer Anfrage."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each key has 20,000 requests per day and 50 per minute, shared by every device with the app. A key’s quota resets 24 h after its period started, not at midnight."
+            "value" : "Each key has 20,000 requests per day and 50 per minute, shared by every device with the app. A key’s quota resets 24 h after its period started, not at midnight. The minute is rolling: it counts the requests the key received in the 60 seconds before the last response, this device’s included. “Check Keys Now” reads every key again, at the cost of one request each."
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each key has 20,000 requests per day and 50 per minute, shared by every device with the app. A key’s quota resets 24 h after its period started, not at midnight."
+            "value" : "Each key has 20,000 requests per day and 50 per minute, shared by every device with the app. A key’s quota resets 24 h after its period started, not at midnight. The minute is rolling: it counts the requests the key received in the 60 seconds before the last response, this device’s included. “Check Keys Now” reads every key again, at the cost of one request each."
           }
         }
       }
@@ -10758,6 +10866,7 @@
       }
     },
     "Les tracés sur les cartes suivent désormais les routes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17062,6 +17171,7 @@
       }
     },
     "Tracés de ligne" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17894,6 +18004,7 @@
       }
     },
     "Une frise simplifiée du trajet s'affiche à présent, avec lignes, changements, marches et attentes, dans les résultats et les itinéraires enregistrés" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

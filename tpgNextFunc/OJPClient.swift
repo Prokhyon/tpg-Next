@@ -156,7 +156,7 @@ public enum OJPClient {
     /// Un seul envoi, avec une clé donnée, enregistré dans `OJPUsage`.
     private static func send(_ body: String, to version: Version, key: (number: Int, key: String)) async -> Result<Data, Failure> {
         let usage = OJPUsage.shared
-        usage.recordRequest()
+        usage.recordRequest(key: key.number)
         let failure: Failure
         var httpResponse: HTTPURLResponse?
         do {

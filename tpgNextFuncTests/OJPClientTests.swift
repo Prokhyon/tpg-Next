@@ -78,6 +78,24 @@ struct OJPClientTests {
         #expect(state.quotaUsed == 511)
         #expect(state.quotaReset == Date(timeIntervalSince1970: 1_790_939_787))
         #expect(state.rateRemaining == 48)
+        #expect(state.rateUsed == 2)
+    }
+
+    @Test func ownShareOfTheMinuteIsCounted() throws {
+        // Une clé fictive (98). La minute est glissante : un envoi d'il y a 61 s ne compte plus.
+        let now = Date()
+        OJPUsage.shared.recordRequest(key: 98, now: now.addingTimeInterval(-61))
+        OJPUsage.shared.recordRequest(key: 98, now: now.addingTimeInterval(-30))
+        OJPUsage.shared.recordRequest(key: 98, now: now.addingTimeInterval(-1))
+        let response = try #require(HTTPURLResponse(
+            url: URL(string: "https://api.opentransportdata.swiss/ojp20")!, statusCode: 200, httpVersion: nil,
+            headerFields: ["X-Ratelimit-Limit": "50", "X-Ratelimit-Remaining": "45"]))
+        OJPUsage.shared.record(response: response, key: 98, now: now)
+        let state = try #require(OJPUsage.shared.current.keys[98])
+        #expect(state.rateUsed == 5)
+        #expect(state.rateOwn == 2)
+        #expect(state.isRateCurrent(now: now.addingTimeInterval(59)))
+        #expect(!state.isRateCurrent(now: now.addingTimeInterval(61)))
     }
 
     @Test func everyKeyIsTriedOnce() {

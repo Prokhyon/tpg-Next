@@ -9,6 +9,10 @@
 //  par jour et 50 par minute. `X-Quota-Remaining` dit donc, à chaque réponse, ce qui reste à
 //  tous les utilisateurs de l'app sur cette clé ; un seul appareil suffit à voir venir la limite.
 //
+//  La minute est glissante (vérifié le 11.10.2026) : `X-Ratelimit-Remaining` compte les requêtes
+//  reçues par la clé dans les 60 secondes avant la réponse, et `X-Ratelimit-Reset` vaut toujours
+//  l'instant de la réponse. Le chiffre ne vaut donc que pour ce moment-là.
+//
 
 import Foundation
 
@@ -52,6 +56,9 @@ public final class OJPUsage: @unchecked Sendable {
         public var quotaReset: Date?
         public var rateLimit: Int?
         public var rateRemaining: Int?
+        /// Les requêtes que ce processus a envoyées à la clé dans la minute avant la lecture :
+        /// le reste de `rateUsed` vient d'autres appareils.
+        public var rateOwn: Int?
         public var updated: Date?
         /// La clé n'est plus proposée avant cette heure (quota épuisé, limite par minute, refus).
         public var pausedUntil: Date?
@@ -64,6 +71,26 @@ public final class OJPUsage: @unchecked Sendable {
         public var quotaUsed: Int? {
             guard let quotaLimit, let quotaRemaining else { return nil }
             return quotaLimit - quotaRemaining
+        }
+
+        /// Les requêtes reçues par la clé, tous appareils confondus, dans la minute avant la lecture.
+        public var rateUsed: Int? {
+            guard let rateLimit, let rateRemaining else { return nil }
+            return max(rateLimit - rateRemaining, 0)
+        }
+
+        /// La période du quota n'est pas finie : `quotaRemaining` vaut encore. Une fois `quotaReset`
+        /// passé, le quota est reparti de zéro et les chiffres gardés sont ceux d'avant.
+        public func isQuotaCurrent(now: Date = Date()) -> Bool {
+            guard let quotaReset else { return true }
+            return quotaReset > now
+        }
+
+        /// Lue il y a moins d'une minute : `rateUsed` décrit encore la minute en cours, au moins
+        /// en partie. Au-delà, ce n'est plus qu'un relevé passé.
+        public func isRateCurrent(now: Date = Date()) -> Bool {
+            guard let updated else { return false }
+            return now.timeIntervalSince(updated) < OJPUsage.rateWindow
         }
     }
 
@@ -99,6 +126,8 @@ public final class OJPUsage: @unchecked Sendable {
     }
 
     private static let storagePrefix = "ojpUsage."
+    /// La fenêtre glissante de la limite par minute.
+    public static let rateWindow: TimeInterval = 60
     private static let quotaLevels: [Double] = [0.5, 0.2, 0.05]
     private static let maxIncidents = 40
     private static let keptDays = 14
@@ -106,6 +135,8 @@ public final class OJPUsage: @unchecked Sendable {
     private let lock = NSLock()
     private var snapshot: Snapshot
     private var recentRequests: [Date] = []
+    /// Les envois de la dernière minute, par clé : la part de cet appareil dans `rateUsed`.
+    private var recentRequestsByKey: [Int: [Date]] = [:]
     private var lastAlerts: [String: Date] = [:]
     private let storageKey: String
 
@@ -206,20 +237,24 @@ public final class OJPUsage: @unchecked Sendable {
                 }
             }
             if let limit = int("X-Ratelimit-Limit") { state.rateLimit = limit }
-            if let remaining = int("X-Ratelimit-Remaining") { state.rateRemaining = remaining }
+            if let remaining = int("X-Ratelimit-Remaining") {
+                state.rateRemaining = remaining
+                state.rateOwn = (recentRequestsByKey[key] ?? []).filter { now.timeIntervalSince($0) < Self.rateWindow }.count
+            }
             state.updated = now
             snapshot.keys[key] = state
         }
         if let alert { send(alert) }
     }
 
-    /// Une requête part : les compteurs du jour et le pic par minute.
-    func recordRequest(now: Date = Date()) {
+    /// Une requête part avec la clé `key` : les compteurs du jour et le pic par minute.
+    func recordRequest(key: Int, now: Date = Date()) {
         update(now: now) { snapshot in
             let day = Self.day(now)
             snapshot.requestsByDay[day, default: 0] += 1
-            recentRequests = recentRequests.filter { now.timeIntervalSince($0) < 60 } + [now]
+            recentRequests = recentRequests.filter { now.timeIntervalSince($0) < Self.rateWindow } + [now]
             snapshot.peakPerMinuteByDay[day] = max(snapshot.peakPerMinuteByDay[day] ?? 0, recentRequests.count)
+            recentRequestsByKey[key] = (recentRequestsByKey[key] ?? []).filter { now.timeIntervalSince($0) < Self.rateWindow } + [now]
         }
     }
 
