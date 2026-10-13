@@ -138,9 +138,18 @@ final class TripLiveActivities {
         }
     }
 
+    #if DEBUG
+    /// Captures (`tpgnext://livepreview`) : un trajet suivi factice, pour voir le bandeau sans
+    /// lancer d'activité.
+    var previewBanner: LiveTrip?
+    #endif
+
     /// Le trajet suivi à mettre en avant : celui qui arrive le plus tôt.
     var current: (key: String, trip: LiveTrip)? {
-        live.min { $0.value.state.arrival < $1.value.state.arrival }.map { ($0.key, $0.value) }
+        #if DEBUG
+        if let previewBanner { return ("preview", previewBanner) }
+        #endif
+        return live.min { $0.value.state.arrival < $1.value.state.arrival }.map { ($0.key, $0.value) }
     }
 
     var areEnabled: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }

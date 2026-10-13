@@ -101,6 +101,31 @@ class NavigationModel {
     }
 }
 
+extension EnvironmentValues {
+    /// La place du dock d'avant iOS 26 et du bandeau du trajet suivi, en bas des pages des onglets.
+    @Entry var legacyDockInset: CGFloat = 0
+}
+
+extension View {
+    /// Réserve en bas de la page la place du dock d'avant iOS 26, comme la barre d'onglets du
+    /// système : les listes défilent toujours dessous, ce qui est posé en bas s'arrête au-dessus.
+    /// Posé sur chaque page d'une pile : la marge posée sur les onglets n'atteint pas leurs pages.
+    func legacyDockPadding() -> some View {
+        modifier(LegacyDockPadding())
+    }
+}
+
+private struct LegacyDockPadding: ViewModifier {
+    @Environment(\.legacyDockInset) private var inset
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaPadding(.bottom, inset)
+            // Une seule fois : les feuilles ouvertes depuis la page n'ont pas de dock.
+            .environment(\.legacyDockInset, 0)
+    }
+}
+
 /// La pile d'un onglet : elle sait afficher toutes les routes et les ouvre chez elle.
 private struct TabStack<Root: View>: View {
     @Environment(NavigationModel.self) private var navigationModel
@@ -109,7 +134,8 @@ private struct TabStack<Root: View>: View {
 
     var body: some View {
         NavigationStack(path: navigationModel.path(for: tab)) {
-            root.appRouteDestinations()
+            root.legacyDockPadding()
+                .appRouteDestinations()
         }
         .environment(\.openRoute, OpenRouteAction { navigationModel.open($0, in: tab) })
         .departureActionSheets()
@@ -153,6 +179,22 @@ struct ContentView: View {
     
     @State var lastUsedTime: Date?
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
+
+    /// La hauteur du dock d'avant iOS 26, bandeau du trajet suivi compris.
+    @State private var legacyDockHeight: CGFloat = 0
+
+    /// Le clavier masque le dock, sauf dans la recherche, où il le pousse au-dessus de lui.
+    private var showsLegacyDock: Bool {
+        (!TPGSurface.isGlass || testingNewDock) && !(keyboardResponder.isKeyboardVisible && navigationModel.selectedTab != .search)
+    }
+
+    /// Sans clavier, le dock descend dans la marge du bas, près de l'indicateur d'accueil.
+    private var legacyDockOffset: CGFloat { keyboardResponder.isKeyboardVisible ? 0 : 20 }
+
+    /// La place à réserver en bas des pages pour le dock et le bandeau.
+    private var legacyDockInset: CGFloat {
+        showsLegacyDock ? max(0, legacyDockHeight - legacyDockOffset) : 0
+    }
     
     
     var body: some View {
@@ -203,29 +245,36 @@ struct ContentView: View {
                 }
                 // iOS 26 : le bandeau du trajet suivi s'attache aux onglets, comme dans Musique.
                 .liveTripAccessory()
+                // Avant iOS 26, le dock et le bandeau flottent par-dessus les onglets : leur place
+                // est réservée en bas de chaque page (`legacyDockPadding`).
+                .environment(\.legacyDockInset, legacyDockInset)
             if #available(iOS 26, *), !testingNewDock {
             } else {
-                if !(keyboardResponder.isKeyboardVisible && navigationModel.selectedTab != .search) {
+                if showsLegacyDock {
                     VStack {
                         Spacer()
-                        // Avant iOS 26, le bandeau du trajet suivi flotte au-dessus du dock.
-                        if let current = liveActivities.current {
-                            TripLiveAccessory(key: current.key, live: current.trip)
-                                .frame(height: 52)
-                                .background(Capsule().fill(.thinMaterial).shadow(color: .customShadows, radius: 2, y: 1.5))
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 4)
-                        }
-                        DockView()
-                            .padding(.bottom)
-                            .environment(navigationModel)
-                            .offset(y: keyboardResponder.isKeyboardVisible ? 0 : 20)
-                            .background {
-                                Capsule()
-                                    .fill(.gray)
-                                    .blur(radius: 10)
-                                    .opacity(keyboardResponder.isKeyboardVisible ? 0.3 : 0)
+                        VStack {
+                            // Avant iOS 26, le bandeau du trajet suivi flotte au-dessus du dock.
+                            if let current = liveActivities.current {
+                                TripLiveAccessory(key: current.key, live: current.trip)
+                                    .frame(height: 52)
+                                    .background(Capsule().fill(.thinMaterial).shadow(color: .customShadows, radius: 2, y: 1.5))
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 4)
                             }
+                            DockView()
+                                .padding(.bottom)
+                                .environment(navigationModel)
+                                .background {
+                                    Capsule()
+                                        .fill(.gray)
+                                        .blur(radius: 10)
+                                        .opacity(keyboardResponder.isKeyboardVisible ? 0.3 : 0)
+                                }
+                        }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { legacyDockHeight = $0 }
+                        // Le bandeau descend avec le dock : il reste collé au-dessus de lui.
+                        .offset(y: legacyDockOffset)
                     }
 //                    .ignoresSafeArea(edges: .bottom)
                 }
@@ -611,6 +660,9 @@ struct ContentView: View {
             case "map":
                 navigationModel.selectedTab = .home
                 navigationModel.open(.stopsMap(), in: .home)
+            case "livepreview":
+                // tpgnext://livepreview : le bandeau d'un trajet suivi factice.
+                liveActivities.previewBanner = .preview
             case "lines":
                 navigationModel.selectedTab = .search
                 navigationModel.open(.lines, in: .search)

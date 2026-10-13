@@ -125,7 +125,6 @@ struct LineView: View {
                             }
                             .contentMargins(.top, max(95.0, titleBottom - listTop + 14), for: .automatic)
                             .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).minY + $0.safeAreaInsets.top } action: { listTop = $0 }
-                            .contentMargins(.bottom, TPGSurface.isGlass ? 0.0 : 60, for: .automatic)
                             .readableScrollContent()
                             .refreshable {
                                 getLineEvents(for: stopEvent)

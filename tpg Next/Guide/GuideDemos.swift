@@ -494,7 +494,8 @@ private struct StopPageDemo: View {
         } else {
             StopFloatingControls(isGroupedByLine: byLine, toggleGrouping: toggleGrouping,
                                  showsFilters: $showsFilters, isFiltered: $isFiltered, moveTime: moveTime)
-                .padding(-10)
+                .padding(.horizontal, -10)
+                .padding(.vertical, 6)
         }
     }
 

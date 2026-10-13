@@ -109,7 +109,6 @@ struct TripView: View {
                         }
                         .scrollDismissesKeyboard(.immediately)
                         .contentMargins(.bottom, (results == .tripResults || focusField != nil) ? max(340, searchOverlayHeight + 70) : (focusField != nil) ? 70 : max(270, searchOverlayHeight), for: .automatic)
-                        .contentMargins(.bottom, TPGSurface.isGlass ? 0: 75, for: .automatic)
                         .readableScrollContent()
                     }
                 }
@@ -353,7 +352,7 @@ struct TripView: View {
                                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                     .tpgSurface(in: .rect(cornerRadius: 35))
                                     .padding(.horizontal)
-                                    .padding(.bottom, TPGSurface.isGlass ? 20 : 70)
+                                    .padding(.bottom, 20)
                             }
                         }
                         .readableWidth()
@@ -368,6 +367,9 @@ struct TripView: View {
                                 BackdropBlurView(radius: 1)
                             
                             }
+                            // Avant iOS 26, le flou continue sous le dock, comme avant que sa
+                            // place soit réservée.
+                            .ignoresSafeArea(.container, edges: TPGSurface.isGlass ? [] : .bottom)
                         }
                     }
                 }
