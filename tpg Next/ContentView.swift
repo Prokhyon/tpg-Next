@@ -309,7 +309,9 @@ struct ContentView: View {
                     lastSeenWhatsNew = WhatsNew.current?.id ?? lastSeenWhatsNew
                 }) {
                     if let whatsNew = WhatsNew.current {
-                        WhatsNewView(whatsNew: whatsNew)
+                        WhatsNewView(whatsNew: whatsNew) {
+                            navigationModel.open(.userGuide, in: navigationModel.selectedTab)
+                        }
                             .presentationDetents([.large])
                             .presentationCornerRadius(35)
                     }
