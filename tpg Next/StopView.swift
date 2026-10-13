@@ -173,7 +173,6 @@ struct StopView: View {
                         // Sous le titre flottant ; avant iOS 26, au-dessus des boutons posés sur la liste.
                         .contentMargins(.top, max(90.0, titleBottom - listTop + 14), for: .automatic)
                         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.columnSpace)).minY + $0.safeAreaInsets.top } action: { listTop = $0 }
-                        .contentMargins(.bottom, TPGSurface.isGlass ? 0 : 125, for: .automatic)
                         // Sous la barre du bas, iOS 26 assombrit le bord de la liste, sur toute la
                         // hauteur de la barre, et plus encore avec le filtre ouvert.
                         .modifier(HiddenBottomScrollEdge())
@@ -215,17 +214,7 @@ struct StopView: View {
                         // Détachée de la carte : aussi loin du bord que les départs.
                         .padding(.trailing, titleIsDetached ? 20 : 0)
                         Spacer()
-
-                        // Depuis iOS 26, la barre du bas de la liste (`StopBottomBarModifier`).
-                        if !TPGSurface.isGlass {
-                            StopFloatingControls(isGroupedByLine: viewLineSorted,
-                                                 toggleGrouping: toggleGrouping,
-                                                 showsFilters: $filterLines,
-                                                 isFiltered: $viewLineFiltered,
-                                                 moveTime: moveTime)
-                        }
                     }
-                    .padding(.bottom, TPGSurface.isGlass ? 0 : 50)
                 }
             }
                 .coordinateSpace(.named(Self.columnSpace))
@@ -518,7 +507,16 @@ private struct StopBottomBarModifier: ViewModifier {
                 }
             }
         } else {
-            content
+            // Avant iOS 26, les boutons flottent sur les départs, au-dessus du dock et du bandeau
+            // du trajet suivi (leur place est réservée par `ContentView`).
+            content.safeAreaInset(edge: .bottom) {
+                StopFloatingControls(isGroupedByLine: isGroupedByLine,
+                                     toggleGrouping: { isGroupedByLine.toggle() },
+                                     showsFilters: $showsFilters,
+                                     isFiltered: .constant(isFiltered),
+                                     moveTime: moveTime)
+                    .padding(.bottom, 8)
+            }
         }
     }
 }

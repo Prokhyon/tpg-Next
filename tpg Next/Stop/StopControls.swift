@@ -556,23 +556,24 @@ struct StopFloatingControls: View {
 
     var body: some View {
         HStack {
-            HStack(spacing: TPGSurface.isGlass ? 0 : nil) {
+            // Chaque bouton occupe un carré de la hauteur de la capsule : les symboles sont
+            // centrés, et la pastille du filtre actif est à la même distance du bord partout.
+            HStack(spacing: 0) {
                 Button(action: toggleGrouping) {
                     Image(systemName: isGroupedByLine ? "text.justify" : "rectangle.grid.1x2.fill")
                         .contentTransition(.symbolEffect(.replace.upUp.byLayer))
-                        .padding()
                         .foregroundStyle(.foreground)
+                        .floatingControlSquare()
                 }
 
                 Filterbutton(filterLines: $showsFilters, viewLineFiltered: $isFiltered)
-                    .padding(.trailing, 7)
             }
             .tpgSurface(interactive: true, legacy: .thinMaterial)
             Spacer()
             AdjustTimeButton(moveTime: moveTime)
                 .tpgSurface(interactive: true, legacy: .thinMaterial)
         }
-        .padding()
+        .padding(.horizontal)
         .foregroundStyle(.primary)
         // Plafonnés, comme les barres d'outils du système : en taille d'accessibilité,
         // ces boutons flottants masquaient le bas de la liste.

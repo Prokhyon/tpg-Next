@@ -57,6 +57,20 @@ enum TPGSurface {
     }
 }
 
+/// Les boutons flottants d'avant iOS 26 (barre de la page arrêt, plus tôt / plus tard, suivi en
+/// direct) : une hauteur commune, celle d'une barre d'outils confortable.
+enum FloatingControl {
+    static let side: CGFloat = 48
+}
+
+extension View {
+    /// Le symbole au centre d'un carré de la hauteur des boutons flottants, entièrement touchable.
+    func floatingControlSquare() -> some View {
+        frame(width: FloatingControl.side, height: FloatingControl.side)
+            .contentShape(.rect)
+    }
+}
+
 extension View {
     /// Pose la vue sur une surface flottante.
     /// - Parameters:
@@ -431,15 +445,39 @@ struct TrailingBarButtons<Content: View>: ToolbarContent {
             }
         } else {
             ToolbarItem(placement: .topBarTrailing) {
-                HStack {
+                // Chaque bouton dans un rond de même taille, à égale distance du bord de la
+                // capsule : le rond du sablier actif y est concentrique.
+                HStack(spacing: 2) {
                     if let showTime {
                         ShowTimeButton(showTime: showTime)
                     }
                     content
                 }
+                .menuStyle(.button)
+                .buttonStyle(LegacyBarButtonStyle())
+                .padding(LegacyBar.inset)
                 .legacySurface()
             }
         }
+    }
+}
+
+/// La capsule des boutons en haut à droite, avant iOS 26.
+enum LegacyBar {
+    /// Le côté du rond de chaque bouton.
+    static let side: CGFloat = 32
+    /// L'espace entre les ronds et le bord de la capsule.
+    static let inset: CGFloat = 4
+}
+
+/// Un bouton de la capsule d'avant iOS 26 : son symbole centré dans un rond de `LegacyBar.side`.
+struct LegacyBarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .labelStyle(.iconOnly)
+            .frame(width: LegacyBar.side, height: LegacyBar.side)
+            .contentShape(.circle)
+            .opacity(configuration.isPressed ? 0.4 : 1)
     }
 }
 
@@ -483,11 +521,12 @@ struct ShowTimeButton: View {
                 }) {
                     hourglass
                         .foregroundColor(showTime ? Color.accentColor : .white)
-                        .padding(.horizontal, 5)
+                        .frame(width: LegacyBar.side, height: LegacyBar.side)
                         .background {
-                            Capsule()
+                            Circle()
                                 .foregroundStyle(showTime ? .clear : Color.accentColor)
                         }
+                        .contentShape(.circle)
                 }
             }
         }
@@ -547,17 +586,17 @@ struct Filterbutton: View {
                             .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
             } else {
+                // Une pastille ronde, centrée dans le carré du bouton.
                 Image(systemName: "line.3.horizontal.decrease")
                     .symbolEffect(.bounce.up.byLayer, value: trueAnimation)
                     .symbolEffect(.wiggle, value: falseAnimation)
                     .foregroundColor(viewLineFiltered ? .white : Color.accentColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 11)
-
+                    .frame(width: FloatingControl.side - 12, height: FloatingControl.side - 12)
                     .background {
-                        Capsule()
+                        Circle()
                             .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
+                    .floatingControlSquare()
             }
         }
     }
@@ -575,16 +614,16 @@ struct AdjustTimeButton : View {
             }) {
                 Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: earlierAnimation)
+                    .floatingControlSquare()
             }
-            .padding()
             Button(action: {
                 moveTime(false)
                 laterAnimation.toggle()
             }) {
                 Image(systemName: "arrow.trianglehead.clockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: laterAnimation)
+                    .floatingControlSquare()
             }
-            .padding()
         }
     }
 }

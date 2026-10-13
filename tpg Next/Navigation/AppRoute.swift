@@ -171,6 +171,7 @@ extension View {
     func appRouteDestinations() -> some View {
         navigationDestination(for: AppRoute.self) { route in
             AppRouteDestination(route: route)
+                .legacyDockPadding()
         }
     }
 }
