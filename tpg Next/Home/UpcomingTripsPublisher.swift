@@ -19,7 +19,7 @@ enum UpcomingTripsPublisher {
     /// `saved` absent (tâche de fond) : les itinéraires enregistrés tels qu'enregistrés, sans
     /// leur état du jour.
     @MainActor
-    static func publish(regular: RegularTripsModel, saved: SavedTripsModel?, now: Date = Date()) {
+    static func publish(regular: RegularTripsModel, saved: SavedTripsModel?, now: Date = AppClock.now()) {
         var trips: [UpcomingTrip] = []
 
         for occurrence in regular.upcoming(after: now, days: 2) {

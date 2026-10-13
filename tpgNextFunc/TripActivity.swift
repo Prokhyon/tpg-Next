@@ -111,7 +111,7 @@ public struct TripActivityState: Codable, Hashable {
 
     /// `nil` si le trajet n'a ni véhicule ni heures lisibles. `calls` : les passages de chaque
     /// course, par `journeyRef` (voir `TripActivityState.calls(from:for:)`).
-    public init?(trip: TripEvent, alert: String?, calls: [String: [Call]] = [:], updated: Date = Date()) {
+    public init?(trip: TripEvent, alert: String?, calls: [String: [Call]] = [:], updated: Date = AppClock.now()) {
         let transfers = trip.transferTimes
         let legs: [Leg] = trip.vehicleLegs.compactMap { leg in
             guard let board = leg.boardDate, let alight = leg.alightDate else { return nil }
@@ -142,7 +142,7 @@ public struct TripActivityState: Codable, Hashable {
     /// `nil` si l'un des deux arrêts manque, ou s'ils sont dans le mauvais ordre.
     public init?(journey events: [LineEvent], line: String, operatorName: String, transportType: String,
                  destination: String, boardSloid: String, alightSloid: String, alert: String? = nil,
-                 updated: Date = Date()) {
+                 updated: Date = AppClock.now()) {
         func stop(_ event: LineEvent) -> String { sloidHarmonizer(code: event.sloid.isEmpty ? event.stopPlaceRef : event.sloid) }
         let board = sloidHarmonizer(code: boardSloid)
         let alight = sloidHarmonizer(code: alightSloid)

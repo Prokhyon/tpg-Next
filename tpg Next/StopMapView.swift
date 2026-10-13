@@ -95,6 +95,14 @@ struct StopMapView: View {
             .animation(.easeInOut(duration: 0.2), value: selectedQuay?.id)
         }
         .mapScope(mapScope)
+        #if DEBUG
+        .task {
+            if let name = CaptureOptions.quay, let quay = quays.first(where: { $0.quayName == name }) {
+                try? await Task.sleep(for: .seconds(1))
+                withAnimation { selectedQuay = quay }
+            }
+        }
+        #endif
         .toolbar(TPGSurface.isGlass ? .automatic : .hidden, for: .navigationBar)
         .navigationTitle("Carte \(stopName)") // Set back button text
         .navigationBarTitleDisplayMode(.inline)

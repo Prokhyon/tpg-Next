@@ -105,7 +105,7 @@ public struct ServedAlternative: Hashable {
 /// Le plus proche des deux arrêts desservis qui encadrent l'arrêt sauté `sloid` sur la course
 /// (le dernier avant, le premier après), s'il est à moins de `maxDistance` mètres et que le
 /// véhicule n'y est pas encore passé. `nil` si l'arrêt est desservi ou absent de la course.
-public func nearestServedStop(skipping sloid: String, in events: [LineEvent], maxDistance: Double = 1_500, now: Date = Date()) -> ServedAlternative? {
+public func nearestServedStop(skipping sloid: String, in events: [LineEvent], maxDistance: Double = 1_500, now: Date = AppClock.now()) -> ServedAlternative? {
     guard let index = events.firstIndex(where: { $0.sloid == sloid }), events[index].isCancelled == true else { return nil }
     let origin = events[index].coordinate
     guard origin.latitude != 0 else { return nil }

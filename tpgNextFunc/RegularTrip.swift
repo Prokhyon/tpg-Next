@@ -185,7 +185,7 @@ public struct RegularTrip: Identifiable, Codable, Hashable {
         self.reminderMinutes = reminderMinutes
         self.alertsEnabled = alertsEnabled
         snapshot = trip
-        let anchorDate = trip.anchorDate(anchor, timetabled: true) ?? Date()
+        let anchorDate = trip.anchorDate(anchor, timetabled: true) ?? AppClock.now()
         let components = calendar.dateComponents([.hour, .minute], from: anchorDate)
         minuteOfDay = (components.hour ?? 0) * 60 + (components.minute ?? 0)
     }

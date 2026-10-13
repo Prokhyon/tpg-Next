@@ -284,7 +284,7 @@ struct ScheduledNotifications: View {
     }
 
     private func occurrence(_ id: String) -> RegularTripOccurrence? {
-        regularTripsModel.upcoming(after: Date().addingTimeInterval(-3600)).first { $0.id == id }
+        regularTripsModel.upcoming(after: AppClock.now().addingTimeInterval(-3600)).first { $0.id == id }
     }
 
     /// La fenêtre se ferme d'abord : l'écran demandé s'ouvre derrière.
@@ -377,7 +377,7 @@ enum AutomaticReminders {
 extension AutomaticReminders {
     /// Un trajet régulier demain matin et un itinéraire enregistré : pour les aperçus.
     static var preview: [Group] {
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date())) ?? Date()
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: AppClock.now())) ?? AppClock.now()
         let at = { (hour: Int, minute: Int) in tomorrow.addingTimeInterval(TimeInterval(hour * 3600 + minute * 60)) }
         return [
             Group(source: .regular(occurrenceID: "preview"), title: "Travail",

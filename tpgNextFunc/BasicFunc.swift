@@ -60,7 +60,7 @@ extension String {
 
 /// `hasPassed` pour une heure OJP en texte, quand on n'a pas le modèle sous la main.
 /// - Parameter equalReturnsTrue: la minute en cours compte déjà comme passée.
-public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = Date()) -> Bool {
+public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = AppClock.now()) -> Bool {
     let date = OJPDate.date(from: dateString)
     if date == nil && !dateString.isEmpty {
         Log.data.error("Date illisible : \(dateString)")
@@ -201,7 +201,7 @@ public func startsWithVowel(_ word: String) -> Bool {
 }
 
 /// - Parameter now: l'heure d'affichage (`\.displayTime`), pour que la couleur suive l'horloge.
-public func determineColor(for time: String, now: Date = Date()) -> Color {
+public func determineColor(for time: String, now: Date = AppClock.now()) -> Color {
     if dateStringHasPassed(with: time, equalReturnsTrue: false, now: now) {
         return Color.gray
     } else {

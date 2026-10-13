@@ -291,7 +291,7 @@ struct LineStopDeparturesPanel: View {
             .prominentButtonStyle()
         }
         .periodicRefresh(id: stop.id) { _ in
-            stopManager.selectStop(stopName: stop.stopPointName, stopSloid: stop.sloid, stopEventNumber: 40, timeRequest: Date())
+            stopManager.selectStop(stopName: stop.stopPointName, stopSloid: stop.sloid, stopEventNumber: 40, timeRequest: AppClock.now())
         }
         // Autre arrêt : ses lignes ne sont plus les mêmes.
         .onChange(of: stop.sloid) { lineFilters = [] }

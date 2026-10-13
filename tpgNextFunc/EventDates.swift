@@ -109,7 +109,7 @@ extension TripEvent {
 /// `true` si `date` est passée, à la minute près : les secondes sont ignorées.
 /// Une date inconnue n'est jamais passée.
 /// - Parameter includingCurrentMinute: la minute en cours compte déjà comme passée.
-public func hasPassed(_ date: Date?, includingCurrentMinute: Bool, now: Date = Date()) -> Bool {
+public func hasPassed(_ date: Date?, includingCurrentMinute: Bool, now: Date = AppClock.now()) -> Bool {
     guard let date else { return false }
     let minute = (date.timeIntervalSince1970 / 60).rounded(.down)
     let currentMinute = (now.timeIntervalSince1970 / 60).rounded(.down)

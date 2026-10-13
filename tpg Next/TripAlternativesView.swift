@@ -61,7 +61,7 @@ struct TripAlternativesView: View {
     /// Les itinéraires de `trip`, autour de son heure de départ.
     init(title: LocalizedStringKey, footer: LocalizedStringKey, replacing trip: TripEvent, onChoose: @escaping (TripEvent) -> Void) {
         self.init(title: title, footer: footer, origin: .origin(of: trip), destination: .destination(of: trip),
-                  around: trip.anchorDate(.departure, timetabled: true) ?? trip.startDate ?? Date(),
+                  around: trip.anchorDate(.departure, timetabled: true) ?? trip.startDate ?? AppClock.now(),
                   current: trip, onChoose: onChoose)
     }
 
@@ -251,6 +251,6 @@ extension TripEvent {
 #Preview("Autres horaires (API)") {
     TripAlternativesView(title: "Autres horaires", footer: "L'itinéraire choisi remplace celui enregistré.",
                          origin: .origin(of: PreviewData.tripWithTransfer), destination: .destination(of: PreviewData.tripWithTransfer),
-                         around: Date(), current: nil) { _ in }
+                         around: AppClock.now(), current: nil) { _ in }
         .previewEnvironment(navigation: false)
 }

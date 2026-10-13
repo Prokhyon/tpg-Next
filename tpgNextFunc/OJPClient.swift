@@ -203,6 +203,22 @@ public enum OJPClient {
     /// Essaie chaque clé au plus une fois quand l'échec tient à la clé, et refait une
     /// fois la requête après une panne passagère de la passerelle (502, 503, 504).
     public static func post(_ body: String, to version: Version) async throws -> Data {
+        #if DEBUG
+        // Captures de l'App Store : réponses enregistrées, relues à 9:41 (OJPCapture).
+        if OJPCapture.isReplaying {
+            guard let data = OJPCapture.replay(body) else { throw Failure.offline }
+            return data
+        }
+        if OJPCapture.isRecording {
+            let data = try await postToAPI(body, to: version)
+            OJPCapture.record(data, for: body)
+            return data
+        }
+        #endif
+        return try await postToAPI(body, to: version)
+    }
+
+    private static func postToAPI(_ body: String, to version: Version) async throws -> Data {
         var tried = Set<Int>()
         var retriedTransient = false
         var lastFailure = Failure.keyRejected(status: 0)

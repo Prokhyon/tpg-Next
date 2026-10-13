@@ -115,7 +115,7 @@ struct RegularTripEditor: View {
                         CardDivider(inset: 0)
                         HStack {
                             PlainCardRow("Dernier jour")
-                            DatePicker("Dernier jour", selection: lastDayBinding, in: Date()..., displayedComponents: .date)
+                            DatePicker("Dernier jour", selection: lastDayBinding, in: AppClock.now()..., displayedComponents: .date)
                                 .labelsHidden()
                                 .environment(\.timeZone, Calendar.swissTransit.timeZone)
                         }
@@ -280,7 +280,7 @@ struct RegularTripEditor: View {
 
     private var timeBinding: Binding<Date> {
         let calendar = Calendar.swissTransit
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: AppClock.now())
         return Binding {
             calendar.date(byAdding: .minute, value: trip.minuteOfDay, to: today) ?? today
         } set: { date in
@@ -293,7 +293,7 @@ struct RegularTripEditor: View {
         Binding {
             trip.lastDay != nil
         } set: { enabled in
-            let inAMonth = Calendar.swissTransit.date(byAdding: .month, value: 1, to: Date()) ?? Date()
+            let inAMonth = Calendar.swissTransit.date(byAdding: .month, value: 1, to: AppClock.now()) ?? AppClock.now()
             trip.lastDay = enabled ? Calendar.swissTransit.dayKey(for: inAMonth) : nil
         }
     }
@@ -301,7 +301,7 @@ struct RegularTripEditor: View {
     private var lastDayBinding: Binding<Date> {
         let calendar = Calendar.swissTransit
         return Binding {
-            trip.lastDay.flatMap(Self.date(fromDayKey:)) ?? Date()
+            trip.lastDay.flatMap(Self.date(fromDayKey:)) ?? AppClock.now()
         } set: { date in
             trip.lastDay = calendar.dayKey(for: date)
         }
@@ -404,7 +404,7 @@ struct AvoidableLinePicker: View {
 
     private func load() async {
         search = .loading
-        let request = trip.occurrences(after: Date()).first.map(trip.request(for:)) ?? (time: Date(), isArrivalTime: false)
+        let request = trip.occurrences(after: AppClock.now()).first.map(trip.request(for:)) ?? (time: AppClock.now(), isArrivalTime: false)
         do {
             let trips = try await RegularTripResolver.trips(from: trip.origin, to: trip.destination, at: request.time,
                                                             isArrivalTime: request.isArrivalTime, avoiding: trip.linesToAvoid)

@@ -25,7 +25,7 @@ struct TripView: View {
     @FocusState var focusField: TripField?
     
     @State private var showCloseStops = false
-    @State private var timeRequest = Date()
+    @State private var timeRequest = AppClock.now()
     
     @State private var closestStops: [Stop] = []
     @State private var calculationSuccess = false
@@ -161,6 +161,11 @@ struct TripView: View {
                             results = Results.tripResults
                         }
                     }
+                    #if DEBUG
+                    if CaptureOptions.selectsBestTrip, layout.showsSecondaryPane {
+                        selectedTrip = tripManager.tripEvents.bestForCapture()
+                    }
+                    #endif
                 }
                 .onChange(of: tripManager.tripError) {
                     withAnimation {
@@ -182,7 +187,7 @@ struct TripView: View {
                 .onAppear(perform: {
                     showTime = timeDefault
                     if !viewModel.tripDone {
-                        viewModel.selectedTime = Date()
+                        viewModel.selectedTime = AppClock.now()
                         viewModel.isArrivalTime = false
                         results = Results.favorites
                     }
@@ -201,7 +206,7 @@ struct TripView: View {
                         
                             locationManager.locationUpdateHandler = nil
                         
-                            viewModel.selectedTime = Date()
+                            viewModel.selectedTime = AppClock.now()
                             viewModel.isArrivalTime = false
                         
                             tripManager.tripEvents.removeAll()
@@ -424,8 +429,8 @@ struct TripView: View {
     
     func timeChange() -> Int {
         let tripEventsSorted = tripManager.tripEvents.sortedByStart()
-        let firstTime: Date = tripEventsSorted.first?.startDate ?? Date()
-        let lastTime: Date = tripEventsSorted.last?.startDate ?? Date()
+        let firstTime: Date = tripEventsSorted.first?.startDate ?? AppClock.now()
+        let lastTime: Date = tripEventsSorted.last?.startDate ?? AppClock.now()
         let timeChange = lastTime.timeIntervalSince(firstTime)/60
         
         return Int(timeChange)

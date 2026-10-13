@@ -155,7 +155,7 @@ enum PreviewData {
 
     /// L'heure de référence, arrondie à la minute : les décomptes ne tombent pas entre deux.
     static var now: Date {
-        Date(timeIntervalSinceReferenceDate: (Date().timeIntervalSinceReferenceDate / 60).rounded(.down) * 60)
+        Date(timeIntervalSinceReferenceDate: (AppClock.now().timeIntervalSinceReferenceDate / 60).rounded(.down) * 60)
     }
 
     private static var stopEvents: (events: [StopEvent], quays: [Quay]) {

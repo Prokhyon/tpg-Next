@@ -165,7 +165,7 @@ struct NewRegularTripView: View {
     /// Les itinéraires du prochain jour coché, à l'heure choisie.
     private func searchTrips() async {
         guard let origin, let destination, origin.sloid != destination.sloid,
-              let date = Weekday.nextDate(on: weekdays, minuteOfDay: minuteOfDay, after: Date()) else {
+              let date = Weekday.nextDate(on: weekdays, minuteOfDay: minuteOfDay, after: AppClock.now()) else {
             search = .idle
             return
         }
@@ -282,7 +282,7 @@ struct NewRegularTripView: View {
 
     private var timeBinding: Binding<Date> {
         let calendar = Calendar.swissTransit
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: AppClock.now())
         return Binding {
             calendar.date(byAdding: .minute, value: minuteOfDay, to: today) ?? today
         } set: { date in

@@ -660,7 +660,7 @@ struct SavedTripsAgenda: View {
         if calendar.isDateInToday(day) { return String(localized: "Aujourd'hui") }
         if calendar.isDateInTomorrow(day) { return String(localized: "Demain") }
         if calendar.isDateInYesterday(day) { return String(localized: "Hier") }
-        let format: Date.FormatStyle = calendar.isDate(day, equalTo: Date(), toGranularity: .year)
+        let format: Date.FormatStyle = calendar.isDate(day, equalTo: AppClock.now(), toGranularity: .year)
             ? .dateTime.weekday(.wide).day().month(.wide)
             : .dateTime.weekday(.wide).day().month(.wide).year()
         let text = day.formatted(format)
@@ -772,7 +772,7 @@ struct SavedTripView: View {
     var body: some View {
         VStack(spacing: 6) {
             HStack {
-                Text(dateToString(with: event.startDate ?? Date()))
+                Text(dateToString(with: event.startDate ?? AppClock.now()))
                 Spacer()
                 HStack {
                     Image(systemName: "arrowshape.bounce.forward")
@@ -784,7 +784,7 @@ struct SavedTripView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 Spacer()
-                Text(dateToString(with: event.endDate ?? Date()))
+                Text(dateToString(with: event.endDate ?? AppClock.now()))
             }
             // Aux tailles d'accessibilité, les deux heures ne laissaient que « : » entre elles.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
