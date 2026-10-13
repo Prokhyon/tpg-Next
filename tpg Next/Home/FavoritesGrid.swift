@@ -6,11 +6,16 @@
 //
 
 import SwiftUI
+import MapKit
 import tpgNextFunc
 
+/// Un arrêt favori : ses départs d'un toucher ; un itinéraire, la carte ou le retrait par un
+/// appui long, comme pour un lieu favori.
 struct FavoriteStopView: View {
     @Environment(ItineraryViewModel.self) var tripViewModel
     @Environment(NavigationModel.self) var navigationModel
+    @Environment(FavoritesViewModel.self) private var favoritesViewModel
+    @Environment(\.openRoute) private var openRoute
     var stop: Stop
     var body: some View {
         NavigationLink(value: AppRoute.stop(stop)) {
@@ -20,6 +25,19 @@ struct FavoriteStopView: View {
         .contentShape(.contextMenuPreview, Capsule())
         .contextMenu {
             TripActionsMenu(stop: stop)
+            // La carte des arrêts, centrée sur lui : ses quais ne sont connus qu'avec ses départs.
+            Button {
+                let region = MKCoordinateRegion(center: stop.wgs84Coordinates.toCLLocationCoordinate2D,
+                                                latitudinalMeters: 600, longitudinalMeters: 600)
+                openRoute(.stopsMap(MapArea(region)))
+            } label: {
+                Label("Voir sur la carte", systemImage: "map")
+            }
+            Button(role: .destructive) {
+                withAnimation { favoritesViewModel.removeFavoriteStop(stop) }
+            } label: {
+                Label("Retirer des favoris", systemImage: "star.slash")
+            }
         }
     }
 }

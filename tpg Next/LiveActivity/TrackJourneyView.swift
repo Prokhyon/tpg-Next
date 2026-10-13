@@ -338,8 +338,9 @@ private extension View {
     }
 }
 
-/// Le trait de la ligne derrière une rangée, aligné sur le point d'arrêt (comme `LineBackground`) :
-/// de la couleur de la ligne sur le tronçon suivi, estompé ailleurs.
+/// Le trait de la ligne derrière une rangée, aligné sur le point d'arrêt et découpé comme celui
+/// de la page d'une ligne (`LineBackground`) : la moitié haute s'arrête au centre, la moitié
+/// basse en part. De la couleur de la ligne sur le tronçon suivi, pâlie ailleurs.
 private struct TrackedTrail: View {
     let index: Int
     let count: Int
@@ -347,22 +348,28 @@ private struct TrackedTrail: View {
     let color: Color
     var trailX: CGFloat = 45
 
+    /// Pâlie, mais opaque : semi-transparents, les bouts de trait qui se recouvrent entre deux
+    /// rangées se voyaient plus foncés.
+    private var fadedColor: Color { color.mix(with: Color(uiColor: .systemBackground), by: 0.7) }
+
     var body: some View {
         GeometryReader { geometry in
-            let half = geometry.size.height / 2 + 8
+            let height = geometry.size.height
+            let half = height / 2 + 4
             if index > 0 {
-                Rectangle()
-                    .fill(color.opacity(isTracked(index - 1, index) ? 1 : 0.25))
-                    .frame(width: 7, height: half)
-                    .position(x: trailX, y: geometry.size.height / 4)
+                segment(tracked: isTracked(index - 1, index), top: -4, height: half)
             }
             if index < count - 1 {
-                Rectangle()
-                    .fill(color.opacity(isTracked(index, index + 1) ? 1 : 0.25))
-                    .frame(width: 7, height: half)
-                    .position(x: trailX, y: geometry.size.height / 4 * 3)
+                segment(tracked: isTracked(index, index + 1), top: height / 2, height: half)
             }
         }
+    }
+
+    private func segment(tracked: Bool, top: CGFloat, height: CGFloat) -> some View {
+        Rectangle()
+            .fill(tracked ? color : fadedColor)
+            .frame(width: 7, height: height)
+            .position(x: trailX, y: top + height / 2)
     }
 
     private func isTracked(_ from: Int, _ to: Int) -> Bool {
