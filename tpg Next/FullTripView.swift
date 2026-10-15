@@ -12,140 +12,55 @@ import tpgNextFunc
 struct FullTripView: View {
     @Environment(\.displayTime) private var now
     @Environment(SavedTripsModel.self) var savedTripsModel
-    @Environment(AppRequirementsClass.self) var appRequirementsClass
+    @Environment(\.openRoute) private var openRoute
+    @Environment(\.layout) private var layout
     var fullTrip: TripEvent
+    /// Sur grand écran, l'étape cadrée sur la carte ; `nil` = le trajet entier.
+    @State private var focus: TripMapFocus?
     @State private var lineManager = LineManager()
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @State private var showTime = true
+    /// L'itinéraire à répéter chaque semaine.
+    @State private var repeating: TripEvent?
+    private var liveActivities = TripLiveActivities.shared
     
     @Namespace private var namespace
 
 
     var body: some View {
 //        GeometryReader { geometry in
+        // Sur grand écran, la carte à droite des étapes : toucher une étape la cadre.
+        AdaptiveSplit {
             ZStack {
                 VStack(alignment: .leading) {
 //                    Spacer(minLength: 70) //Space for trip title to be placed on top
                     ScrollView { //trip details scroll area
-                        if !fullTrip.geoDeparture && (fullTrip.legs.first?.transfer ?? false || fullTrip.legs.first?.publishedLineName == "") { //Display departure stop input by user, if the first transport is from another stop
-                            NavigationLink {
-                                StopView(stopName: fullTrip.startName, stopSloid: fullTrip.startCode!, previousLineRef: "", previousLineName: "", previousLineTime: nil)
-                            } label: {
-                                LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.startName, estimatedTime: fullTrip.startTime, timetabledTime: fullTrip.startTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false)
-                            }
-                            .padding(.horizontal, 15)
-                            .foregroundStyle(.primary)
-                            
-                        } else if fullTrip.geoDeparture { //Display geoPosition departure
-                            LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.startName, estimatedTime: fullTrip.startTime, timetabledTime: fullTrip.startTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false, geoPositionDisplay: true)
-                                .padding(.horizontal, 15)
-                        }
-                        
-                        ForEach(fullTrip.legs) { leg in
-                            if !leg.publishedLineName.isEmpty { //check the leg for a transport line name. If absent, it means the leg is a transfer
-                                ZStack {
-                                        HStack { //Colored line background for the leg
-                                            RoundedRectangle(cornerRadius: 5)
-                                                .frame(width: 8, height: 108)
-                                                .foregroundStyle(LineColors.lineColor(for: leg.publishedLineName, operatorName: leg.legOperator))
-                                            Spacer()
-                                        }
-                                        .padding(.horizontal, 26)
-                                    VStack {
-                                            NavigationLink {//Departure stop for the leg
-                                                StopView(stopName: leg.legBoardStopName, stopSloid: leg.legBoardStopId, previousLineRef: leg.journeyRef, previousLineName: leg.publishedLineName, previousLineTime: leg.legBoardTimetableTime)
-                                            } label : {
-                                                LineEventElementView(currentLine: leg.publishedLineName, operatorName: leg.legOperator, transportType: leg.transportTypeName, currentStop: false, eventName: leg.legBoardStopName, estimatedTime: leg.legBoardEstimatedTime, timetabledTime: leg.legBoardTimetableTime, plannedQuay: leg.legBoardQuay, showTime: $showTime, pastEventPossible: false)
-
-                                        }
-                                        .foregroundStyle(.primary)
-                                        .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!hasPassed(leg.boardDate, includingCurrentMinute: false, now: now)) { view in
-                                            view.contextMenu {
-                                                NotificationContextMenu(event: StopEvent(stopPointName: leg.legBoardStopName, stopId: leg.legBoardStopId, plannedQuay: leg.legBoardQuay, timetabledTime: leg.legBoardTimetableTime, estimatedTime: leg.legBoardEstimatedTime, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator, journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef), stopID: leg.legBoardStopId)
-                                            }
-                                        }
-                                        
-                                        HStack { //Transport line name and destination for the leg. Navigates to a LineView
-                                            Rectangle()
-                                                .fill(.clear)
-                                                .frame(width: 50)
-                                            NavigationLink {
-                                                LineView(stopEvent: createStopEventFromTripLeg(tripLeg: leg), currentStop: nil, currentLine: leg.publishedLineName)
-                                            } label: {
-                                                HStack {
-                                                    BusLineIcon(lineName: leg.publishedLineName, operatorName: leg.legOperator)
-                                                    Image(systemName: "arrow.right")
-                                                    SmallStopTitleView(stopName: leg.legDestination)
-                                                }
-                                            }
-                                            Spacer()
-                                        }
-                                        .frame(height: 30)
-                                        .foregroundStyle(.primary)
-                                        
-                                            NavigationLink {//Arrival stop for the leg
-                                                StopView(stopName: leg.legAlightStopName, stopSloid: leg.legAlightStopId, previousLineRef: leg.journeyRef, previousLineName: leg.publishedLineName, previousLineTime: leg.legAlightTimetableTime)
-                                            } label: {
-                                                LineEventElementView(currentLine: leg.publishedLineName, operatorName: leg.legOperator, transportType: leg.transportTypeName, currentStop: false, eventName: leg.legAlightStopName, estimatedTime: leg.legAlightEstimatedTime, timetabledTime: leg.legAlightTimetableTime, plannedQuay: leg.legAlightQuay, showTime: $showTime, pastEventPossible: false)
-//
-                                        }
-                                        .foregroundStyle(.primary)
-                                        .contentShape(.contextMenuPreview, Capsule())
-                                        .if(!hasPassed(leg.alightDate, includingCurrentMinute: false, now: now)) { view in
-                                            view.contextMenu {
-                                                NotificationContextMenu(event: createEssentialStopEvent(journeyRef: leg.journeyRef, operatingDayRef: leg.resolvedOperatingDayRef, stopPointName: leg.legAlightStopName, stopId: leg.legAlightStopId, lineName: leg.publishedLineName, origin: "", destination: leg.legDestination, transportType: leg.transportTypeName, operatorName: leg.legOperator), stopID: leg.legAlightStopId)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 15)
-                                
-                            } else {
-                                HStack {
-                                    if !leg.transferDuration.isEmpty {
-                                        if leg.transferWalkDuration.isEmpty { //if walk leg without waiting time, display only the walking time
-                                            Image(systemName: "figure.walk")
-                                                .padding(.leading, 30)
-                                            Text(durationText(leg.transferDuration))
-                                            Spacer()
-                                        } else {
-                                            Image(systemName: "timer") //Time between previous leg arrival and next leg departure
-                                                .padding(.leading, 30)
-                                            Text(durationText(leg.transferDuration))
-                                                .padding(.trailing, 30)
-                                            Image(systemName: "figure.walk")//walk time
-                                            Text(durationText(leg.transferWalkDuration))
-                                            Spacer()
-                                        }
-                                    } else if leg.publishedLineName.isEmpty { //Used if trip without transport, only walking
-                                        Image(systemName: "figure.walk")
-                                            .padding(.leading, 30)
-                                        Text(durationText(fullTrip.duration))
-                                            .padding(.trailing, 30)
-                                        Spacer()
-                                    }
-                                }
-                                .padding(.vertical, 10)
-                            }
-                        }
-                        
-                        if !fullTrip.geoArrival && (fullTrip.legs.last?.transfer ?? false || fullTrip.legs.last?.publishedLineName == "") { //Trip arrival stop if different from last transport leg arrival
-                            NavigationLink {
-                                StopView(stopName: fullTrip.endName, stopSloid: fullTrip.endCode!, previousLineRef: "", previousLineName: "", previousLineTime: nil)
-                            } label: {
-                               LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.endName, estimatedTime: fullTrip.endTime, timetabledTime: fullTrip.endTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false, displayIcon: false)
-                            }
-                           .padding(.horizontal, 15)
-                            .foregroundStyle(.primary)
-                            
-                        } else if fullTrip.geoArrival { //Display geoPosition arrival
-                            LineEventElementView(currentLine: "", operatorName: "", transportType: "walk", currentStop: false, eventName: fullTrip.endName, estimatedTime: fullTrip.endTime, timetabledTime: fullTrip.endTime, plannedQuay: "ignore", showTime: $showTime, pastEventPossible: false, geoPositionDisplay: true, displayIcon: false)
-                                .padding(.horizontal, 15)
-                        }
+                        TripLegsList(fullTrip: fullTrip, showTime: $showTime,
+                                     onFocus: layout.showsSecondaryPane ? toggleFocus : nil, focusedID: focus?.id)
                     }
                     .contentMargins(.top, 80.0, for: .automatic)
                     .contentMargins(.bottom, 40, for: .automatic)
+                    .readableScrollContent()
+                    // En bas à droite, sous le pouce, comme sur la page d'une ligne.
+                    .safeAreaInset(edge: .bottom) {
+                        let key = TripLiveActivities.key(for: fullTrip)
+                        let isTracking = liveActivities.isTracking(key)
+                        if isTracking || (liveActivities.areEnabled && TripLiveActivities.canTrack(fullTrip)
+                                          && !hasPassed(fullTrip.endDate, includingCurrentMinute: true, now: now)) {
+                            HStack {
+                                Spacer()
+                                LiveTrackingButton(isTracking: isTracking) {
+                                    if isTracking {
+                                        liveActivities.stop(key)
+                                    } else {
+                                        liveActivities.start(trip: fullTrip)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom, 8)
+                        }
+                    }
                     .onAppear {
                         showTime = timeDefault
                     }
@@ -174,10 +89,13 @@ struct FullTripView: View {
                     Spacer()
                 }
             }
-        
+        } secondary: {
+            TripMapCard(trip: fullTrip, focus: $focus)
+                .padding([.horizontal, .bottom])
+                .padding(.top, 8)
+        }
             .toolbar {
-                HStack {
-                    ShowTimeButton(showTime: $showTime)
+                TrailingBarButtons(showTime: $showTime) {
                     Menu {
                         if savedTripsModel.tripIsSaved(fullTrip) {
                             Button(action: {
@@ -192,15 +110,18 @@ struct FullTripView: View {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
                             }
                         }
-                        //                    Button(action: {
-                        //
-                        //                    }) {
-                        //                        Label("Enregistrer comme trajet régulier", systemImage: "calendar.badge.plus")
-                        //                    }
-                        NavigationLink {
-                            TripMapView(tripEvent: fullTrip)
+                        // Le suivi en direct est en bas à droite de la liste (`LiveTrackingButton`).
+                        Button {
+                            repeating = fullTrip
                         } label: {
-                            Label("Afficher la carte", systemImage: "map")
+                            Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
+                        }
+                        if !layout.showsSecondaryPane {
+                            Button {
+                                openRoute(.tripMap(fullTrip))
+                            } label: {
+                                Label("Afficher la carte", systemImage: "map")
+                            }
                         }
                         //                    Button(action: {
                         //
@@ -208,27 +129,24 @@ struct FullTripView: View {
                         //                        Label("Partager l'itinéraire", systemImage: "square.and.arrow.up")
                         //                    }
                     } label: {
-                        Image(systemName: "ellipsis").font(.title3)
-                            .padding(.trailing, 10)
+                        Label("Actions de l'itinéraire", systemImage: "ellipsis")
                     }
                 }
-                .background {
-                    Capsule()
-                        .opacity(appRequirementsClass.version26 ? 0 : 1)
-                        .foregroundStyle(.ultraThinMaterial)
-                        .shadow(color: Color.customShadows, radius: 2, y: 1.5)
-                }
-
             }
+        .sheet(item: $repeating) { trip in
+            RegularTripEditor(creatingFrom: trip)
+        }
         .navigationTitle("Détail itinéraire") // Set back button text
         // Barre transparente pour cet écran seulement : l'ancien réglage UIKit s'appliquait à toute l'app.
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("") // Visible title
-            }
-        }
+        // Le titre de la barre ne sert qu'au bouton retour : la page a le sien.
+        .toolbar(removing: .title)
+    }
+
+    /// Toucher l'étape déjà cadrée revient au trajet entier.
+    private func toggleFocus(_ target: TripMapFocus) {
+        withAnimation { focus = focus == target ? nil : target }
     }
 }
 
@@ -269,27 +187,42 @@ struct fullTripViewTimeDate: View {
     }
 }
 
-struct FullTripView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var savedTripsModel = SavedTripsModel()
-        @State var appRequirementsClass = AppRequirementsClass()
-//        @State var favoritesViewModel = FavoritesViewModel()
-        @State var fullTripTest = FullTripTest()
-        @State var autoRefresh: Bool = false
-        
-        return NavigationStack() {
-            FullTripView(fullTrip: fullTripTest.Trip)
-                .environment(savedTripsModel)
-                .environment(appRequirementsClass)
-//                .background(Background())
-                    .navigationTitle("Genève, Rive") // Set back button text
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            Text("") // Visible title
-                        }
-                    }
-            }
-            
+#Preview("Trajet — avec correspondance") {
+    FullTripView(fullTrip: PreviewData.tripWithTransfer)
+        .previewEnvironment()
+}
+
+#Preview("Trajet — direct") {
+    FullTripView(fullTrip: PreviewData.directTrip)
+        .previewEnvironment()
+}
+
+#Preview("Trajet — tous les résultats") {
+    // Faire défiler les pages pour passer d'un itinéraire enregistré à l'autre.
+    TabView {
+        ForEach(PreviewData.trips) { trip in
+            FullTripView(fullTrip: trip)
+        }
     }
+    .tabViewStyle(.page)
+    .previewEnvironment()
+}
+
+#Preview("Trajet — enregistré") {
+    FullTripView(fullTrip: PreviewData.tripWithTransfer)
+        .previewEnvironment(savedTrips: [PreviewData.tripWithTransfer])
+}
+
+#Preview("Trajet — iPad", traits: .iPadLandscape) {
+    FullTripView(fullTrip: PreviewData.tripWithTransfer)
+        .previewEnvironment()
+}
+
+#Preview("En-têtes de trajet", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 20) {
+        fullTripViewTitle(departureStopName: "Genève, Rive", arrivalStopName: "Genève, gare Cornavin")
+        fullTripViewTitle(departureStopName: "Ma position", arrivalStopName: "Plan-les-Ouates, ZIPLO-Pré-Fleuri Nord")
+        fullTripViewTimeDate(duration: PreviewData.tripWithTransfer.duration, date: PreviewData.tripWithTransfer.startTime)
+    }
+    .padding()
 }

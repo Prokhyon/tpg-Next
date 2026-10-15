@@ -1,0 +1,30 @@
+# Vérifie chaque heure le quota des clés OJP (Scripts/check-ojp-quota.py).
+# Le travail échoue si une clé est refusée, épuisée, sous 25 % ou en voie de dépasser :
+# GitHub envoie alors un e-mail (Settings > Notifications > Actions : « Send notifications
+# for failed workflows only »). Le tableau est dans le résumé de chaque exécution.
+#
+# Secret requis : OJP_API_KEYS (Settings > Secrets and variables > Actions), les clés
+# séparées par des virgules, comme pour Xcode Cloud.
+name: Quota OJP
+
+on:
+  schedule:
+    # À la 17e minute : les tâches lancées à l'heure pile sont souvent retardées.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quota:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: Scripts
+      - name: Vérifier les clés
+        env:
+          OJP_API_KEYS: ${{ secrets.OJP_API_KEYS }}
+        run: python3 Scripts/check-ojp-quota.py

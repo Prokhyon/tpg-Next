@@ -22,11 +22,31 @@ struct TripElementView: View {
                     .minimumScaleFactor(0.5)
                 Spacer()
                 HStack {
+                    // Bus à la demande (tpg flex) : sans horaire fixe, sur réservation. Dans la
+                    // ligne plutôt qu'en dessous : la capsule garde sa taille.
+                    if event.hasOnDemandLeg {
+                        HStack(spacing: 2) {
+                            // Pas d'horaire fixe, puis réservation obligatoire.
+                            Image(systemName: "clock.badge.questionmark")
+                                .foregroundStyle(.orange)
+                            Image(systemName: "phone.fill")
+                                .foregroundStyle(.tint)
+                        }
+                        .padding(.trailing, 4)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Bus à la demande : sur réservation, pas d'horaire fixe")
+                    }
                     Image(systemName: "arrowshape.bounce.forward")
                     Text(": \(event.transfers)")
                         .padding(.trailing)
                     Image(systemName: "timer")
                     Text(": \(durationText(event.duration))")
+                    if event.legs.contains(where: \.hasIncident) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .padding(.leading, 4)
+                            .accessibilityLabel("Parcours modifié")
+                    }
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -40,6 +60,53 @@ struct TripElementView: View {
             }
             TripTimeline(event: event)
                 .padding(.horizontal)
+        }
+    }
+}
+
+extension TripEvent {
+    /// Les couleurs des lignes empruntées, dans l'ordre : l'ombre en dégradé de l'itinéraire.
+    var lineColors: [Color] {
+        vehicleLegs.map { LineColors.lineColor(for: $0.publishedLineName, operatorName: $0.legOperator) }
+    }
+}
+
+/// Le fond d'un résultat d'itinéraire : une capsule.
+struct TripResultBackground<Content: View>: View {
+    var selected = false
+    var lineColors: [Color]? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .padding(.horizontal, 20)
+            // La capsule prend la largeur disponible, pas celle du contenu : plus large que
+            // l'écran, il la faisait déborder sur les côtés.
+            .frame(maxWidth: .infinity)
+            .basicElementBackground(minHeight: 72, selected: selected, lineColors: lineColors)
+            .padding(4)
+    }
+}
+
+/// Un bus à la demande dans l'itinéraire (tpg flex) : OJP lui donne une heure comme à un bus
+/// ordinaire, mais il ne passe que sur réservation et n'a pas d'horaire fixe.
+struct OnDemandNotice: View {
+    var event: TripEvent? = nil
+    var leg: TripLeg? = nil
+
+    var body: some View {
+        if let line = leg.flatMap({ $0.isOnDemand ? $0 : nil })?.publishedLineName
+            ?? event?.legs.first(where: \.isOnDemand)?.publishedLineName {
+            Label {
+                Text("\(line) : sur réservation, pas d'horaire fixe")
+            } icon: {
+                Image(systemName: "phone.fill")
+            }
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.tint)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 6)
         }
     }
 }
@@ -128,10 +195,48 @@ struct CustomPicker: View {
     }
 }
 
-#Preview("Itinéraire") {
-    TripElementView(event: FullTripTest().Trip)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity)
-        .basicElementBackground(minHeight: 72)
-        .padding(4)
+#Preview("Résultat d'itinéraire") {
+    @Previewable @State var showTime = true
+    ScrollView {
+        Toggle("Heure affichée" as String, isOn: $showTime)
+            .padding(.horizontal, 30)
+        ForEach(PreviewData.trips) { trip in
+            TripResultBackground(lineColors: trip.lineColors) {
+                TripElementView(event: trip, showTime: showTime)
+            }
+            .padding(.horizontal, 10)
+        }
+    }
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Résultat d'itinéraire — texte très grand") {
+    VStack {
+        ForEach(PreviewData.trips.prefix(3)) { trip in
+            TripElementView(event: trip)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity)
+                .basicElementBackground(minHeight: 72)
+                .padding(4)
+        }
+    }
+    .dynamicTypeSize(.accessibility2)
+    .previewEnvironment(navigation: false)
+}
+
+#Preview("Sélecteur à deux options", traits: .sizeThatFitsLayout) {
+    @Previewable @State var second = false
+    @Previewable @Namespace var animation
+    VStack(spacing: 20) {
+        CustomPicker(secondSelected: $second, height: 40, firstOption: "Départ", firstIcon: "arrow.up.right",
+                     secondOption: "Arrivée", secondIcon: "arrow.down.right", animation: animation)
+        CustomPicker(secondSelected: $second, height: 40, firstOption: "Minutes", secondOption: "Heure",
+                     name: "second", animation: animation)
+    }
+    .padding()
+}
+
+#Preview("Aperçu d'un lieu", traits: .fixedLayout(width: 390, height: 300)) {
+    let place = searchResultItem(title: "Parc des Bastions", coordinates: CLLocationCoordinate2D(latitude: 46.2003, longitude: 6.1455))
+    MapPreview(resultDetail: place, position: .region(MKCoordinateRegion(center: place.coordinates, latitudinalMeters: 800, longitudinalMeters: 800)))
 }

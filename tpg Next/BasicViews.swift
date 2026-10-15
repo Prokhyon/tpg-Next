@@ -57,6 +57,20 @@ enum TPGSurface {
     }
 }
 
+/// Les boutons flottants d'avant iOS 26 (barre de la page arrêt, plus tôt / plus tard, suivi en
+/// direct) : une hauteur commune, celle d'une barre d'outils confortable.
+enum FloatingControl {
+    static let side: CGFloat = 48
+}
+
+extension View {
+    /// Le symbole au centre d'un carré de la hauteur des boutons flottants, entièrement touchable.
+    func floatingControlSquare() -> some View {
+        frame(width: FloatingControl.side, height: FloatingControl.side)
+            .contentShape(.rect)
+    }
+}
+
 extension View {
     /// Pose la vue sur une surface flottante.
     /// - Parameters:
@@ -79,6 +93,18 @@ extension View {
             self
         } else {
             tpgSurface(legacy: material)
+        }
+    }
+
+    /// Le dégradé doux d'iOS 26 en haut des listes, sous la barre de navigation, comme sur la
+    /// page Itinéraire. Posé sur la pile de chaque onglet : il vaut pour toutes les listes qu'elle
+    /// contient. Sans lui, l'accueil et les Trajets n'en avaient aucun (leur liste n'est pas reliée
+    /// à la barre, qui ne réduit pas non plus leur grand titre).
+    @ViewBuilder func softTopScrollEdge() -> some View {
+        if #available(iOS 26, *) {
+            scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self
         }
     }
 
@@ -161,8 +187,9 @@ extension View {
     /// Pose la vue sur une capsule `BasicElement` qui grandit avec elle. La hauteur n'est plus
     /// qu'un minimum : avec une grande taille de texte, la capsule s'agrandit au lieu de laisser
     /// le contenu déborder. À la taille de texte normale, l'affichage ne change pas.
-    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, button: Bool = false) -> some View {
-        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, button: button))
+    /// `lineColors` : les couleurs des lignes, pour l'ombre (réglage d'apparence).
+    func basicElementBackground(minHeight: CGFloat, transparent: Bool = false, highlighted: Bool = false, selected: Bool = false, button: Bool = false, lineColors: [Color]? = nil) -> some View {
+        modifier(BasicElementBackground(minHeight: minHeight, transparent: transparent, highlighted: highlighted, selected: selected, button: button, lineColors: lineColors))
     }
 }
 
@@ -201,7 +228,9 @@ private struct BasicElementBackground: ViewModifier {
     let minHeight: CGFloat
     let transparent: Bool
     let highlighted: Bool
+    let selected: Bool
     let button: Bool
+    let lineColors: [Color]?
 
     func body(content: Content) -> some View {
         content
@@ -209,8 +238,8 @@ private struct BasicElementBackground: ViewModifier {
             .padding(.vertical, dynamicTypeSize > .large ? 6 : 0)
             .frame(minHeight: minHeight)
             .background {
-                BasicElement(transparent: transparent, highlighted: highlighted, button: button,
-                             cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
+                BasicElement(transparent: transparent, highlighted: highlighted, selected: selected, button: button,
+                             lineColors: lineColors, cornerRadius: dynamicTypeSize.isAccessibilitySize ? 24 : nil)
             }
     }
 }
@@ -218,9 +247,12 @@ private struct BasicElementBackground: ViewModifier {
 struct BasicElement: View {
     var transparent = false
     var highlighted = false
+    var selected = false
     var button = false
+    /// Les couleurs des lignes du départ ou de l'itinéraire, pour l'ombre (réglage d'apparence).
+    var lineColors: [Color]? = nil
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
-    var accentBorder = Gradient(colors: [.accentColor, .orange, .accentColor, .orange, .accentColor])
+    var accentBorder = Gradient(colors: [.accentColor, .accentColor.opacity(0.5), .accentColor, .accentColor.opacity(0.5), .accentColor])
     /// Rectangle arrondi plutôt que capsule : les extrémités en demi-cercle d'une ligne très
     /// haute (texte agrandi) mordaient sur son contenu.
     var cornerRadius: CGFloat? = nil
@@ -231,21 +263,65 @@ struct BasicElement: View {
 
     var body: some View {
         shape
-            .fill(button ? .accent : .color1.opacity(transparent ? 0.5 : 1))
-            .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
-            .shadow(color: .customShadows.opacity(0.2), radius: 7)
+            .fill(button ? Color.accentColor : .color1.opacity(transparent ? 0.5 : 1))
+            .stroke(AngularGradient(gradient: selected ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
+            .modifier(ElementShadow(shape: shape, lineColors: lineColors, radius: 7))
     }
 }
 
 struct BasicCard: View {
     var cornerRadius: CGFloat = 30
+    /// Bordure orange, comme `BasicElement` : la carte détaillée à côté, sur grand écran.
+    var highlighted = false
+    /// Les couleurs des lignes, pour l'ombre (réglage d'apparence).
+    var lineColors: [Color]? = nil
     var borderGradient = Gradient(colors: [.borderLight, .borderDark, .borderLight, .borderDark, .borderLight])
-    
+    var accentBorder = Gradient(colors: [.accentColor, .accentColor.opacity(0.5), .accentColor, .accentColor.opacity(0.5), .accentColor])
+
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
             .fill(.color1)
-            .stroke(AngularGradient(gradient: borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
-            .shadow(color: .customShadows.opacity(0.2), radius: 10)
+            .stroke(AngularGradient(gradient: highlighted ? accentBorder : borderGradient, center: .center, angle: .degrees(45)), lineWidth: 1)
+            .modifier(ElementShadow(shape: AnyShape(RoundedRectangle(cornerRadius: cornerRadius)),
+                                    lineColors: lineColors, radius: 10))
+    }
+}
+
+extension EnvironmentValues {
+    /// Ombres des départs et des itinéraires aux couleurs de leurs lignes (réglage d'apparence).
+    @Entry var lineColoredShadows = false
+}
+
+/// Les ombres aux couleurs des lignes ne sont pas encore proposées : le réglage est masqué, et
+/// sans effet pour qui l'aurait activé en bêta. Passer à `true` pour les rendre.
+enum LineColoredShadows {
+    static let isAvailable = false
+}
+
+/// L'ombre d'une capsule ou d'une carte : grise, ou, si le réglage est activé, un halo aux
+/// couleurs des lignes, en dégradé dans l'ordre du trajet quand il y en a plusieurs (comme le
+/// trait du widget « Prochain trajet »).
+private struct ElementShadow: ViewModifier {
+    @Environment(\.lineColoredShadows) private var lineColoredShadows
+    @Environment(\.colorScheme) private var colorScheme
+    let shape: AnyShape
+    let lineColors: [Color]?
+    let radius: CGFloat
+
+    func body(content: Content) -> some View {
+        if lineColoredShadows, let colors = lineColors, !colors.isEmpty {
+            content
+                .background {
+                    shape
+                        .fill(LinearGradient(colors: colors.count == 1 ? colors + colors : colors,
+                                             startPoint: .leading, endPoint: .trailing))
+                        .blur(radius: radius * 0.55)
+                        .opacity(colorScheme == .dark ? 0.6 : 0.45)
+                }
+        } else {
+            content
+                .shadow(color: .customShadows.opacity(0.2), radius: radius)
+        }
     }
 }
 
@@ -269,7 +345,7 @@ struct BasicLocationView: View {
                 HStack {
                     if showFavorite, let favoriteAction = favoriteAction {
                         Button(action: favoriteAction) {
-                            Image(systemName: isFavorite ? "star.fill" : "star").foregroundColor(.accent)
+                            Image(systemName: isFavorite ? "star.fill" : "star").foregroundColor(Color.accentColor)
                         }
                     }
                     if isGeoPosition {
@@ -283,11 +359,17 @@ struct BasicLocationView: View {
                         }
                     } else {
                         SmallStopTitleView(stopName: name, transportType: transportType ?? "")
+                        // Pour un arrêt, la distance.
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                         Spacer()
                     if showButton, let buttonAction = buttonAction {
                         Button(action: buttonAction) {
-                            Image(systemName: isGeoPosition ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2).foregroundStyle(.accent)
+                            Image(systemName: isGeoPosition ? "mappin.and.ellipse.circle" : "figure.wave.circle").font(.title2).foregroundStyle(Color.accentColor)
                         }
                     }
                 }
@@ -299,6 +381,8 @@ struct BasicLocationView: View {
 struct StopIcon: View {
     var color: Color
     var currentStop: Bool = false
+    /// Le dernier arrêt (terminus d'une ligne, arrivée d'un itinéraire) : un point au centre.
+    var terminus: Bool = false
     var size: CGFloat = 18
     @State var isAnimating = false
     
@@ -312,8 +396,8 @@ struct StopIcon: View {
 //                    .onAppear {
 //                        self.isAnimating = true
 //                    }
-                Circle()
-                    .stroke(.accent, lineWidth: size/4)//current stop highlight
+                // L'arrêt mis en avant : un anneau dont la lumière tourne.
+                HighlightStroke(Circle(), lineWidth: size/2.5)
 //                Circle()
 //                    .shadow(color: Color.customShadows, radius: 1.5, y: 1)
                
@@ -323,46 +407,127 @@ struct StopIcon: View {
                     .fill(color)
                     .strokeBorder(Color.primary, lineWidth: size/4)
 //            .shadow(color: Color.customShadows, radius: 1.5, y: 1)
+            if terminus {
+                Circle()
+                    .fill(Color.primary)
+                    .frame(width: max(4, size * 0.22), height: max(4, size * 0.22))
+            }
 
         }
             .frame(width: size, height: size)
     }
 }
 
+/// Les boutons à droite de la barre de navigation. Depuis iOS 26, chacun devient un élément de
+/// barre à part : le système peut les poser à la verticale sur le côté (iPhone Duo) ou replier les
+/// moins utiles dans un menu. Le sablier (`showTime`), réglage de l'affichage, a sa propre bulle,
+/// séparée des actions comme sur la page d'un arrêt. Avant iOS 26, tous partagent une capsule
+/// posée sur le contenu.
+struct TrailingBarButtons<Content: View>: ToolbarContent {
+    var showTime: Binding<Bool>?
+    @ViewBuilder var content: Content
+
+    init(showTime: Binding<Bool>? = nil, @ViewBuilder content: () -> Content) {
+        self.showTime = showTime
+        self.content = content()
+    }
+
+    var body: some ToolbarContent {
+        if #available(iOS 26, *) {
+            if let showTime {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShowTimeButton(showTime: showTime)
+                }
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                content
+            }
+        } else {
+            ToolbarItem(placement: .topBarTrailing) {
+                // Chaque bouton dans un rond de même taille, à égale distance du bord de la
+                // capsule : le rond du sablier actif y est concentrique.
+                HStack(spacing: 2) {
+                    if let showTime {
+                        ShowTimeButton(showTime: showTime)
+                    }
+                    content
+                }
+                .menuStyle(.button)
+                .buttonStyle(LegacyBarButtonStyle())
+                .padding(LegacyBar.inset)
+                .legacySurface()
+            }
+        }
+    }
+}
+
+/// La capsule des boutons en haut à droite, avant iOS 26.
+enum LegacyBar {
+    /// Le côté du rond de chaque bouton.
+    static let side: CGFloat = 32
+    /// L'espace entre les ronds et le bord de la capsule.
+    static let inset: CGFloat = 4
+}
+
+/// Un bouton de la capsule d'avant iOS 26 : son symbole centré dans un rond de `LegacyBar.side`.
+struct LegacyBarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .labelStyle(.iconOnly)
+            .frame(width: LegacyBar.side, height: LegacyBar.side)
+            .contentShape(.circle)
+            .opacity(configuration.isPressed ? 0.4 : 1)
+    }
+}
+
+/// L'heure de passage (« 12:34 ») ou le temps restant (« 14' »). Actif quand le temps restant
+/// est affiché : depuis iOS 26, en verre teinté (le rond orange du système) ; avant, une capsule
+/// de la couleur de l'app. Le sablier se retourne ou tremble à chaque changement.
 struct ShowTimeButton: View {
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @Binding var showTime: Bool
     @State private var rotation: Double = 0
     @State private var imageName: String = "hourglass"
     @State private var wiggle: Bool = false
-    
+
     var body: some View {
-        Button(action: {
-            withAnimation {
-                showTime.toggle()
-            }
-        }) {
+        Group {
             if #available(iOS 26, *) {
-                Image(systemName: imageName)
-                    .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
-                    .foregroundColor(showTime ? .text : .white)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 5)
-                    .rotationEffect(.degrees(rotation))
-                    .background {
-                        Capsule()
-                            .foregroundStyle(showTime ? .clear : .accent)
-                    }
+                // Une seule vue, quel que soit l'état : changer de style de bouton la recréait, et
+                // une animation déclenchée sur une vue qui vient d'apparaître ne se joue pas (le
+                // retournement une fois sur deux, le tremblement jamais). Le rond orange est donc
+                // dessiné ici, derrière le sablier, et apparaît en fondu.
+                Button {
+                    withAnimation { showTime.toggle() }
+                } label: {
+                    hourglass
+                        .foregroundStyle(showTime ? AnyShapeStyle(.primary) : AnyShapeStyle(.white))
+                        .frame(width: 34, height: 34)
+                        .background {
+                            Circle()
+                                .fill(.tint)
+                                .opacity(showTime ? 0 : 1)
+                        }
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Temps restant")
+                .accessibilityAddTraits(showTime ? [] : .isSelected)
             } else {
-                Image(systemName: imageName)
-                    .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
-                    .foregroundColor(showTime ? .accent : .white)
-                    .padding(.horizontal, 5)
-                    .rotationEffect(.degrees(rotation))
-                    .background {
-                        Capsule()
-                            .foregroundStyle(showTime ? .clear : .accent)
+                Button(action: {
+                    withAnimation {
+                        showTime.toggle()
                     }
+                }) {
+                    hourglass
+                        .foregroundColor(showTime ? Color.accentColor : .white)
+                        .frame(width: LegacyBar.side, height: LegacyBar.side)
+                        .background {
+                            Circle()
+                                .foregroundStyle(showTime ? .clear : Color.accentColor)
+                        }
+                        .contentShape(.circle)
+                }
             }
         }
         .onAppear {
@@ -377,13 +542,18 @@ struct ShowTimeButton: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         imageName = "hourglass"
                     }
-//                    imageName = "hourglass.bottomhalf.filled"
                 }
-                    } else {
-                        wiggle.toggle()
-                        imageName = "hourglass.tophalf.filled"
-                    }
-                }
+            } else {
+                wiggle.toggle()
+                imageName = "hourglass.tophalf.filled"
+            }
+        }
+    }
+
+    private var hourglass: some View {
+        Image(systemName: imageName)
+            .symbolEffect(.wiggle.clockwise.byLayer, value: wiggle)
+            .rotationEffect(.degrees(rotation))
     }
 }
 
@@ -409,24 +579,24 @@ struct Filterbutton: View {
 //                    .symbolEffect(.bounce.up.byLayer, value: trueAnimation)
 //                    .symbolEffect(.wiggle, value: falseAnimation)
                     .foregroundColor(viewLineFiltered ? .white : .text)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 11)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 9)
                     .background {
                         Capsule()
-                            .foregroundStyle(viewLineFiltered ? .accent : .clear)
+                            .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
             } else {
+                // Une pastille ronde, centrée dans le carré du bouton.
                 Image(systemName: "line.3.horizontal.decrease")
                     .symbolEffect(.bounce.up.byLayer, value: trueAnimation)
                     .symbolEffect(.wiggle, value: falseAnimation)
-                    .foregroundColor(viewLineFiltered ? .white : .accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 11)
-
+                    .foregroundColor(viewLineFiltered ? .white : Color.accentColor)
+                    .frame(width: FloatingControl.side - 12, height: FloatingControl.side - 12)
                     .background {
-                        Capsule()
-                            .foregroundStyle(viewLineFiltered ? .accent : .clear)
+                        Circle()
+                            .foregroundStyle(viewLineFiltered ? Color.accentColor : .clear)
                     }
+                    .floatingControlSquare()
             }
         }
     }
@@ -442,18 +612,18 @@ struct AdjustTimeButton : View {
                 moveTime(true)
                 earlierAnimation.toggle()
             }) {
-                Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: earlierAnimation)
+                    .floatingControlSquare()
             }
-            .padding()
             Button(action: {
                 moveTime(false)
                 laterAnimation.toggle()
             }) {
-                Image(systemName: "text.line.last.and.arrowtriangle.forward")
+                Image(systemName: "arrow.trianglehead.clockwise.rotate.90")
                     .symbolEffect(.bounce.down.byLayer, value: laterAnimation)
+                    .floatingControlSquare()
             }
-            .padding()
         }
     }
 }
@@ -488,13 +658,64 @@ struct BackdropBlurView: View {
 }
 
 
-#Preview {
-    @Previewable @State var bool: Bool = false
-//    ShowTimeButton(showTime: $bool)
-    Filterbutton(filterLines: $bool, viewLineFiltered: $bool)
+// Ce fichier est aussi compilé pour le widget : ses aperçus n'utilisent que ses propres vues
+// et tpgNextFunc (pas de `PreviewData`, propre à l'app).
+
+#Preview("Boutons de la barre", traits: .sizeThatFitsLayout) {
+    @Previewable @State var showTime = false
+    @Previewable @State var filterLines = false
+    @Previewable @State var filtered = false
+    @Previewable @State var shift = 0
+    VStack(spacing: 20) {
+        HStack {
+            ShowTimeButton(showTime: $showTime)
+            Filterbutton(filterLines: $filterLines, viewLineFiltered: $filtered)
+            AdjustTimeButton { earlier in shift += earlier ? -1 : 1 }
+        }
+        Toggle("Filtre actif" as String, isOn: $filtered)
+        Text(verbatim: "Heure : \(showTime) · feuille des filtres : \(filterLines) · décalage : \(shift)")
+            .font(.caption)
+    }
+    .padding()
 }
 
-#Preview {
-    BasicElement()
-        .frame(height: 50)
+#Preview("Fonds", traits: .sizeThatFitsLayout) {
+    VStack(spacing: 12) {
+        BasicElement()
+            .frame(height: 50)
+        BasicElement(highlighted: true)
+            .frame(height: 50)
+        BasicElement(selected: true)
+            .frame(height: 50)
+        Text(verbatim: "basicElementBackground")
+            .padding(.horizontal)
+            .basicElementBackground(minHeight: 50)
+        Text(verbatim: "basicElementBackground mis en avant")
+            .padding(.horizontal)
+            .basicElementBackground(minHeight: 50, highlighted: true)
+        BasicCard(cornerRadius: 30)
+            .frame(height: 110)
+    }
+    .padding()
+    .background(Color.color1)
+}
+
+#Preview("Arrêts", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 12) {
+        BasicLocationView(name: "Genève, Rive", transportType: "BUS|TRAM")
+        BasicLocationView(name: "Genève, gare Cornavin", subtitle: "Genève", transportType: "TRAIN",
+                          isFavorite: true, showButton: true, showFavorite: true, buttonAction: {}, favoriteAction: {})
+        BasicLocationView(name: "Plan-les-Ouates, ZIPLO-Pré-Fleuri Nord", transportType: "BUS")
+        SmallStopTitleView(stopName: "Genève, Place des Eaux-Vives")
+        SmallStopTitleView(stopName: "Genève-Aéroport", transportType: "TRAIN")
+        HStack(spacing: 20) {
+            StopIcon(color: .orange)
+            StopIcon(color: .orange, currentStop: true)
+            StopIcon(color: .blue, size: 28)
+            StopIcon(color: .orange, terminus: true)
+            StopIcon(color: .blue, terminus: true, size: 28)
+        }
+    }
+    .padding()
+    .background(Color.color1)
 }

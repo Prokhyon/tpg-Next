@@ -8,12 +8,6 @@
 import Foundation
 import SwiftUI
 
-/// Une des clés d'API OJP, tirée au hasard pour répartir la charge entre elles.
-/// Les clés vivent dans `Secrets.swift`, généré par `ci_scripts/ci_post_clone.sh` et jamais versionné.
-public func keySelect() -> String {
-    Secrets.ojpAPIKeys.randomElement() ?? ""
-}
-
 /// Minutes d'une durée ISO 8601 telle que renvoyée par OJP (`PT20M`, `PT1H5M`, `P1DT2H`).
 ///
 /// Découper la chaîne à la main (`dropFirst(2).dropLast(1)`) affichait « 2' » pour `PT2H`
@@ -66,7 +60,7 @@ extension String {
 
 /// `hasPassed` pour une heure OJP en texte, quand on n'a pas le modèle sous la main.
 /// - Parameter equalReturnsTrue: la minute en cours compte déjà comme passée.
-public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = Date()) -> Bool {
+public func dateStringHasPassed(with dateString: String, equalReturnsTrue: Bool, now: Date = AppClock.now()) -> Bool {
     let date = OJPDate.date(from: dateString)
     if date == nil && !dateString.isEmpty {
         Log.data.error("Date illisible : \(dateString)")
@@ -143,15 +137,35 @@ public struct eventStopName: View {
     }
     
     public var body: some View {
-        let splitStopName = splitString(stopName, separator: ",")
-        
-        HStack {
-            Group {
-                Text(splitStopName.0) +
-                Text(" ") +
-                Text(splitStopName.1).bold()
-            }
+        Text(stopName: stopName)
             .multilineTextAlignment(.leading)
+    }
+}
+
+extension Text {
+    /// Un nom d'arrêt sur une seule ligne, comme la direction dans le titre d'une ligne :
+    /// « Genève **Rive** », la commune en normal et l'arrêt en gras. Sans commune, tout en gras.
+    public init(stopName: String) {
+        let parts = splitString(stopName, separator: ",")
+        if parts.1.isEmpty {
+            self = Text(verbatim: parts.0).bold()
+        } else {
+            self = Text(verbatim: parts.0 + " ").fontWeight(.regular) + Text(verbatim: parts.1).bold()
+        }
+    }
+
+    /// « Genève **Rive** → Genève **gare Cornavin** ».
+    public init(route origin: String, to destination: String) {
+        self = Text(stopName: origin) + Text(verbatim: " → ").fontWeight(.regular) + Text(stopName: destination)
+    }
+
+    /// Un titre de trajet tel quel, ou « départ → arrivée » mis en forme comme des arrêts.
+    public init(tripTitle title: String) {
+        let parts = title.components(separatedBy: " → ")
+        if parts.count == 2 {
+            self = Text(route: parts[0], to: parts[1])
+        } else {
+            self = Text(verbatim: title)
         }
     }
 }
@@ -187,7 +201,7 @@ public func startsWithVowel(_ word: String) -> Bool {
 }
 
 /// - Parameter now: l'heure d'affichage (`\.displayTime`), pour que la couleur suive l'horloge.
-public func determineColor(for time: String, now: Date = Date()) -> Color {
+public func determineColor(for time: String, now: Date = AppClock.now()) -> Color {
     if dateStringHasPassed(with: time, equalReturnsTrue: false, now: now) {
         return Color.gray
     } else {

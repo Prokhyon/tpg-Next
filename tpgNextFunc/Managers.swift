@@ -18,6 +18,8 @@ public final class StopManager {
     public private(set) var stopError = false
     /// Le code d'erreur OJP, par exemple `STOPEVENT_LOCATIONUNSERVED`.
     public private(set) var stopErrorMessage = ""
+    /// Pourquoi la requête a échoué (réseau, service, quota), `nil` si l'API a répondu.
+    public private(set) var failure: OJPClient.Failure?
     public private(set) var quays: [Quay] = []
 
     /// Numéro de la dernière requête : une réponse plus ancienne arrivée après elle
@@ -31,13 +33,22 @@ public final class StopManager {
     public func selectStop(stopName: String, stopSloid: String, stopEventNumber: Int, timeRequest: Date, completion: @escaping () -> Void = {}) {
         stopError = false
         stopErrorMessage = ""
+        failure = nil
         latestRequest += 1
         let request = latestRequest
 
-        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { data in
+        fetchTransportDepartures(with: stopName, stopSloid: stopSloid, stopEventNumber: stopEventNumber, timeRequest: timeRequest) { result in
             guard request == self.latestRequest else { return }
-            guard let data else {
+            let data: Data
+            switch result {
+            case .success(let received):
+                data = received
+            case .failure(.cancelled):
+                completion()
+                return
+            case .failure(let failure):
                 self.stopError = true
+                self.failure = failure
                 completion()
                 return
             }
@@ -49,11 +60,13 @@ public final class StopManager {
                         self.stopErrorMessage = message
                         Log.network.info("Aucun départ : \(message)")
                     } else {
+                        self.failure = .unreadable
                         Log.network.error("Départs : réponse illisible")
                     }
                     return
                 }
-                self.stopEvents = events
+                // Le nom officiel de chaque destination (voir `StopNames`).
+                self.stopEvents = events.map(StopNames.withOfficialDestination)
                 self.quays = quays
                 Log.network.debug("\(events.count) départs reçus")
                 completion()
@@ -70,6 +83,8 @@ public final class LineManager {
     /// Tracé de la dernière requête faite avec `track: true` : `nil` si elle a échoué,
     /// vide si l'API n'a pas fourni de tracé pour cette course.
     public private(set) var track: [CLLocationCoordinate2D]?
+    /// Le véhicule de la course (mode, plancher bas, suppression).
+    public private(set) var service: JourneyService?
 
     /// Voir `StopManager.latestRequest`.
     private var latestRequest = 0
@@ -91,9 +106,11 @@ public final class LineManager {
             DispatchQueue.global(qos: .userInitiated).async {
                 let coordinates = track ? parseJourneyTrack(from: data) : nil
                 let result = parseJourneyEventsSync(from: data)
+                let service = parseJourneyServiceSync(from: data)
                 DispatchQueue.main.async {
                     guard request == self.latestRequest else { return }
                     self.lineEvents = result.events
+                    self.service = service
                     // OJP 2.0 ne nomme que certains opérateurs : on garde alors celui du départ.
                     self.operatorName = result.operatorName.isEmpty ? stopEvent.operatorName : result.operatorName
                     if let coordinates {

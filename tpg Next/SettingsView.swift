@@ -10,152 +10,250 @@ import MessageUI
 import tpgNextFunc
 import WidgetKit
 
+/// Les paramètres, en cartes comme le reste de l'app : l'accueil et ses favoris, l'affichage
+/// des départs, les notifications des trajets, l'icône, puis l'aide. Les rappels prévus sont sur
+/// l'accueil (cloche) ; le message de démarrage n'a plus d'entrée : le guide reprend tout.
 struct SettingsView: View {
     @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
     @AppStorage(SettingKey.groupByLineByDefault) var groupedDefault = false
     @AppStorage(SettingKey.clockTimeByDefault) var timeDefault = false
     @AppStorage(SettingKey.delayIncludedInTime) var delayTimeIntegrated = false
-    @AppStorage(SettingKey.showWelcome) var showWelcome = true
-    @Namespace private var animation
-    @State private var circleButtonMessage = false
+    @AppStorage(SettingKey.regularTripAlertsOnThisDevice) var regularTripAlerts = RegularTripAlerts.defaultOnThisDevice
+    @AppStorage(SettingKey.regularTripRemindersOnThisDevice) var regularTripReminders = RegularTripAlerts.defaultOnThisDevice
+    @AppStorage(SettingKey.savedTripAutoTrackMinutes) var savedTripAutoTrack = 0
+    @AppStorage(SettingKey.savedTripReminderMinutes) var savedTripReminder = SavedTripReminders.off
+    @AppStorage(SettingKey.iCloudSync) private var iCloudSync = true
+    @AppStorage(SettingKey.appIcon) private var storedAppIcon = AppIconChoice.classique.rawValue
+    @AppStorage(SettingKey.lineColoredShadows) private var lineColoredShadows = false
+    @AppStorage(SettingKey.mapTab) private var mapTab = false
+    @Environment(SavedTripsModel.self) private var savedTripsModel
+    @Environment(FavoritesViewModel.self) private var favoritesViewModel
+    @Environment(FavoritePlacesModel.self) private var favoritePlaces
     @State var showMail: Bool = false
-        
-    var body: some View {
-//        NavigationView {
-//            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 10) {
-                                    NavigationLink {
-                                        FavoritesOrderView()
-                                            .navigationTitle("Ordre des favoris")
-                                    } label: {
-                                        HStack {
-                                            Text("Ordre des favoris").minimumScaleFactor(0.5)
-                                            Spacer()
-                                            Image(systemName: "chevron.right")
-                                        }
-                                        .padding(.horizontal)
-                                        .basicElementBackground(minHeight: 50)
-                                        .padding(.vertical, 5)
-                                    }
-                            NavigationLink {
-                                ScheduledNotifications()
-                                    .navigationTitle("Rappels prévus")
-                            } label: {
-                                HStack {
-                                    Spacer()
-                                    Text("Rappels prévus").minimumScaleFactor(0.5).padding(.vertical, 5)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                }
-                                .padding(.horizontal)
-                                .basicElementBackground(minHeight: 50)
-                                .padding(.vertical, 5)
-                            }
-                        }
-                        
-                        HStack(alignment: .bottom) {
-                            Text("Général")
-                                .font(.headline)
-                                .padding(.leading, 3)
-                            Spacer()
-                        }
-                        .padding(.top, 10)
-                        VStack(alignment: .leading, spacing: 10) {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Départs sur la page d'accueil:")
-                                CustomPicker(secondSelected: $homeFavorites, height: 40, firstOption: String(localized:"Proches"), firstIcon: "location.circle", secondOption: String(localized:"Favoris"), secondIcon: "star", name: "homeDeparture", animation: animation)
-                            }
-                        }
-                        .padding()
-                        .padding(.vertical, 5)
-                        .background (
-                            BasicCard(cornerRadius: 30)
-                                .padding(.vertical, 5)
-                        )
-                        
-                        
-                        HStack(alignment: .bottom) {
-                            Text("Affichage des départs")
-                                .font(.headline)
-                                .padding(.leading, 3)
-                            Spacer()
-                        }
-                        .padding(.top, 10)
-                        VStack(alignment: .leading, spacing: 10) {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Tri par défaut:")
-                                CustomPicker(secondSelected: $groupedDefault, height: 40, firstOption: String(localized:"Horaire"), firstIcon: "text.justify" , secondOption: String(localized:"Ligne"), secondIcon: "rectangle.grid.1x2.fill",name: "sort", animation: animation)
-                            }
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Heure d'arrivée par défaut:")
-                                CustomPicker(secondSelected: $timeDefault, height: 40, firstOption: "14'", firstIcon: "hourglass.circle.fill", secondOption: "12:34", secondIcon: "hourglass.circle", name: "time", animation: animation)
-                            }
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Format du retard:")
-                                CustomPicker(secondSelected: $delayTimeIntegrated, height: 40, firstOption: "12:31 (+3')", secondOption: "12:34", name: "delay", animation: animation)
-                                    // Le widget formate les départs avec ce réglage :
-                                    // il faut le recopier dans le groupe d'app.
-                                    .onChange(of: delayTimeIntegrated) {
-                                        SharedStorage.mirrorSettings()
-                                        WidgetCenter.shared.reloadAllTimelines()
-                                    }
-                            }
-                        }
-                        .padding(.vertical, 5)
-                        .padding()
-                        .background(
-                            BasicCard(cornerRadius: 30)
-                                .padding(.vertical, 5)
-                        )
-                        Button {
-                            showWelcome = true
-                        } label: {
-                                    HStack {
-                                        Text("Revoir le message de démarrage")
-                                        Spacer()
-                                        if #available(iOS 18, *) {
-                                            Image(systemName: "text.page.fill")
-                                        } else {
-                                            Image(systemName: "doc.plaintext.fill")
-                                        }
-                                    }
-                            .padding(.horizontal)
-                            .basicElementBackground(minHeight: 50)
-                                .padding(.vertical, 5)
-                        }
-                        
-                        Button {
-                            showMail.toggle()
-                        } label: {
-                                    HStack {
-                                        Text("Un problème, une question, une envie ?")
-                                        Spacer()
-                                        if #available(iOS 18, *) {
-                                            Image(systemName: "bubble.and.pencil")
-                                        } else {
-                                            Image(systemName: "exclamationmark.bubble")
-                                        }
-                                    }
-                            .padding(.horizontal)
-                            .basicElementBackground(minHeight: 50)
-                                .padding(.vertical, 5)
-                        }
-//                        Spacer()
-                    }
-                    .padding(.horizontal, 10)
-                }
-//                .scrollDisabled(UIScreen.main.bounds.height > 820)
+    @Environment(\.openURL) private var openURL
+    @Environment(\.openRoute) private var openRoute
 
-//            }
-            .navigationTitle("Paramètres")
-//        }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                homeSection
+                departuresSection
+                regularTripsSection
+                savedTripsSection
+                syncSection
+                appearanceSection
+                tabsSection
+                helpSection
+                Text(verbatim: Self.version)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    // Discret : le diagnostic de l'API sert au développeur, sur n'importe quelle version.
+                    .onLongPressGesture {
+                        openRoute(.apiDiagnostics)
+                    }
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 30)
+        }
+        .readableScrollContent()
+        .navigationTitle("Paramètres")
         .sheet(isPresented: $showMail) {
-                    MailComposerViewController(recipients: ["tpgnext@protonmail.ch"], subject: "Feedback", messageBody: "Bonjour !")
-                    .presentationDetents([.fraction(0.9)])
-                    .presentationCornerRadius(35)
+            MailComposerViewController(recipients: ["tpgnext@protonmail.ch"], subject: "Feedback", messageBody: "Bonjour !")
+                .presentationDetents([.fraction(0.9)])
+                .presentationCornerRadius(35)
+        }
+    }
+
+    // MARK: Sections
+
+    private var homeSection: some View {
+        CardSection("Accueil") {
+            choice("Départs affichés", selection: $homeFavorites, first: "Arrêts proches", second: "Favoris")
+            CardDivider(inset: 0)
+            CardLink(.homeLayout) {
+                SettingsRow("Organiser l'accueil", systemImage: "rectangle.3.group.fill", showsChevron: true)
+            }
+            CardDivider()
+            CardLink(.favoritesOrder) {
+                SettingsRow("Arrêts favoris", systemImage: "star.fill",
+                            value: favoritesViewModel.favoriteStops.count, showsChevron: true)
+            }
+            CardDivider()
+            CardLink(.favoritePlacesOrder) {
+                SettingsRow("Lieux favoris", systemImage: "mappin",
+                            value: favoritePlaces.places.count, showsChevron: true)
+            }
+        }
+    }
+
+    private var departuresSection: some View {
+        CardSection("Affichage des départs") {
+            choice("Tri par défaut", selection: $groupedDefault, first: "Par horaire", second: "Par ligne")
+            CardDivider(inset: 0)
+            choice("Heure affichée par défaut", selection: $timeDefault, first: "Temps restant, 14'", second: "Heure, 12:34")
+            CardDivider(inset: 0)
+            choice("Format du retard", selection: $delayTimeIntegrated, first: "12:31 (+3')", second: "12:34")
+                // Le widget formate les départs avec ce réglage : il faut le recopier dans le groupe d'app.
+                .onChange(of: delayTimeIntegrated) {
+                    SharedStorage.mirrorSettings()
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
+        }
+    }
+
+    private var regularTripsSection: some View {
+        CardSection("Trajets réguliers",
+                    footer: "Le délai du rappel se choisit dans chaque trajet. Vos trajets réguliers sont partagés entre vos appareils via iCloud : activez ces notifications sur un seul pour ne pas être prévenu en double.") {
+            Toggle(isOn: $regularTripReminders) {
+                SettingsRow("Rappels avant le départ", systemImage: "bell.fill")
+            }
+            .onChange(of: regularTripReminders) {
+                if regularTripReminders { NotificationManager.shared.requestAuthorization() }
+                RegularTripAlerts.scheduleReminders(for: .shared)
+                RegularTripsModel.shared.scheduleBackgroundRefresh()
+            }
+            CardDivider()
+            Toggle(isOn: $regularTripAlerts) {
+                SettingsRow("Retards et suivi en direct", systemImage: "exclamationmark.triangle.fill")
+            }
+            .onChange(of: regularTripAlerts) {
+                if regularTripAlerts { NotificationManager.shared.requestAuthorization() }
+                RegularTripsModel.shared.scheduleBackgroundRefresh()
+            }
+        }
+    }
+
+    private var savedTripsSection: some View {
+        CardSection("Itinéraires enregistrés",
+                    footer: "Le rappel compte depuis l'heure de partir, marche jusqu'à l'arrêt comprise. L'activité en direct démarre d'elle-même avant le départ ; iOS ne la laisse démarrer que l'app ouverte : une notification vous invite à l'ouvrir au bon moment. Réglages propres à cet appareil.") {
+            HStack {
+                SettingsRow("Rappel avant le départ", systemImage: "bell.fill")
+                Picker("Rappel avant le départ", selection: $savedTripReminder) {
+                    ForEach(SavedTripReminders.choices, id: \.self) { minutes in
+                        Text(SavedTripReminders.label(for: minutes))
+                            .tag(minutes)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+            }
+            .onChange(of: savedTripReminder) {
+                if savedTripReminder != SavedTripReminders.off {
+                    NotificationManager.shared.requestAuthorization()
+                }
+                savedTripsModel.scheduleNotifications()
+            }
+            CardDivider()
+            HStack {
+                SettingsRow("Suivi en direct automatique", systemImage: "inset.filled.circle")
+                Picker("Suivi en direct automatique", selection: $savedTripAutoTrack) {
+                    ForEach(SavedTripAutoTracking.choices, id: \.self) { minutes in
+                        Text(minutes == 0 ? "Désactivé" : "\(minutes) min avant")
+                            .tag(minutes)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+            }
+            .onChange(of: savedTripAutoTrack) {
+                if savedTripAutoTrack > 0 { NotificationManager.shared.requestAuthorization() }
+                savedTripsModel.scheduleNotifications()
+            }
+        }
+    }
+
+    private var syncSection: some View {
+        CardSection("Vos données",
+                    footer: "Vos favoris, lieux, itinéraires enregistrés et trajets réguliers se retrouvent sur tous vos appareils. Désactivée, ils restent sur cet appareil ; ce qui est déjà dans iCloud n'est pas effacé.") {
+            Toggle(isOn: $iCloudSync) {
+                SettingsRow("Synchronisation iCloud", systemImage: "icloud.fill")
+            }
+            .onChange(of: iCloudSync) {
+                CloudSync.settingChanged()
+            }
+        }
+    }
+
+    private var appearanceSection: some View {
+        CardSection("Apparence",
+                    footer: LineColoredShadows.isAvailable
+                        ? Text("Les départs et les itinéraires prennent une ombre aux couleurs de leurs lignes, en dégradé quand il y en a plusieurs.")
+                        : nil) {
+            CardLink(.appIcon) {
+                SettingsRow(Text("Icône de l'app"), subtitle: String(localized: appIcon.title),
+                            systemImage: "app.badge.fill", showsChevron: true)
+            }
+            // Pas encore proposé dans cette version (voir `LineColoredShadows`).
+            if LineColoredShadows.isAvailable {
+                CardDivider()
+                Toggle(isOn: $lineColoredShadows) {
+                    SettingsRow("Ombres aux couleurs des lignes", systemImage: "shadow")
+                }
+            }
+        }
+    }
+
+    private var tabsSection: some View {
+        CardSection("Onglets",
+                    footer: "La carte des arrêts prend la place de l'onglet Trajets. Vos itinéraires restent à portée de main depuis la page Itinéraire.") {
+            Toggle(isOn: $mapTab) {
+                SettingsRow("Onglet Carte à la place de Trajets", systemImage: "map.fill")
+            }
+        }
+    }
+
+    private var helpSection: some View {
+        CardSection("Aide") {
+            CardLink(.userGuide) {
+                SettingsRow("Guide d'utilisation", subtitle: "Tout ce que l'app sait faire, à essayer du doigt.",
+                            systemImage: "book.pages.fill", showsChevron: true)
+            }
+            CardDivider()
+            Button {
+                // Sans compte configuré dans Mail (fréquent sur iPad), le
+                // compositeur plante : on passe alors par l'app de messagerie par défaut.
+                if MFMailComposeViewController.canSendMail() {
+                    showMail.toggle()
+                } else if let url = URL(string: "mailto:tpgnext@protonmail.ch?subject=Feedback") {
+                    openURL(url)
+                }
+            } label: {
+                SettingsRow("Un problème, une question, une envie ?", systemImage: "envelope.fill")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Un choix entre deux options, sous son titre : un sélecteur segmenté du système.
+    private func choice(_ title: LocalizedStringKey, selection: Binding<Bool>,
+                        first: LocalizedStringKey, second: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+            Picker(selection: selection) {
+                Text(first).tag(false)
+                Text(second).tag(true)
+            } label: {
+                Text(title)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+        .padding(.vertical, 12)
+        .sensoryFeedback(.selection, trigger: selection.wrappedValue)
+    }
+
+    private var appIcon: AppIconChoice { AppIconChoice(stored: storedAppIcon) }
+
+    /// « tpg Next 3.2 (145) ».
+    private static var version: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? ""
+        let build = info?["CFBundleVersion"] as? String ?? ""
+        return "tpg Next \(short) (\(build))"
     }
 }
 
@@ -189,6 +287,7 @@ struct FavoritesOrderView: View {
                 .contentMargins(.horizontal, 5.0, for: .automatic)
                 .listStyle(.plain)
                 .environment(\.editMode, .constant(.active))
+                .readableList()
 //                .mask {
 //                    Rectangle()
 //                        .overlay(alignment: .leading) {
@@ -196,65 +295,6 @@ struct FavoritesOrderView: View {
 //                        }
 //                        .padding(.leading, 5)
 //                }
-    }
-}
-
-struct ScheduledNotifications: View {
-    var transportNotificationManager = BusNotificationManager.shared
-    
-    let notificationManager = NotificationManager.shared
-    
-//    @Binding var manageNotifications: Bool
-    
-    var body: some View {
-            VStack {
-                if transportNotificationManager.scheduledNotificationIdentifiers.isEmpty {
-                    Text("Aucun rappel programmé")
-                        .frame(height: 50)
-                } else {
-                    ScrollView {
-                        ForEach(Array(transportNotificationManager.scheduledNotificationIdentifiers.keys), id: \.self) { key in
-                            let stopEvent = transportNotificationManager.scheduledNotificationIdentifiers[key]!
-                            
-                                    HStack {
-                                        VStack(spacing: 0) {
-                                            HStack {
-                                                SmallStopTitleView(stopName: stopEvent.stopPointName)
-                                                Spacer()
-                                                let notificationInterval = Int(parseIdentifier(key)?.notificationInterval ?? 0)
-                                                Text(notificationInterval == 0 ? "Rappel à l'arrivée" : "Rappel \(notificationInterval)' avant")
-                                            }
-                                            .padding(5)
-                                            StopEventView(event: stopEvent, showTime: true)
-                                        }
-                                        
-                                        Button(action: {
-                                                let timeId = "timetable_\(key)"
-                                                let estId = "estimated_\(key)"
-                                            withAnimation(.easeInOut) {
-                                                transportNotificationManager.cancelScheduledNotifications(timetableIdentifier: timeId, estimatedIdentifier: estId, completeCancel: true)
-                                            }
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill").font(.title2)
-                                        }
-                                        .padding(5)
-                                    }
-                            .padding(.horizontal, 15)
-                            .frame(minHeight: 120)
-                            .background(BasicCard())
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
-                        }
-                            
-                    }
-//                    .contentMargins(.top, 60.0, for: .automatic)
-                }
-        }
-        // La liste ne survit pas à une relance : on la relit auprès du système.
-        .onAppear {
-            transportNotificationManager.refreshScheduledNotifications()
-        }
     }
 }
 
@@ -311,13 +351,34 @@ struct MailComposerViewController: UIViewControllerRepresentable {
 }
 
 
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
-        
-        return SettingsView()
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-    }
+#Preview("Réglages") {
+    SettingsView()
+        .previewEnvironment()
+}
+
+#Preview("Réglages — tout activé") {
+    SettingsView()
+        .previewSettings([SettingKey.homeShowsFavorites: true, SettingKey.groupByLineByDefault: true,
+                          SettingKey.clockTimeByDefault: true, SettingKey.delayIncludedInTime: true])
+        .previewEnvironment()
+}
+
+#Preview("Arrêts favoris") {
+    FavoritesOrderView()
+        .navigationTitle("Arrêts favoris" as String)
+        .previewEnvironment()
+}
+
+#Preview("Rappels prévus") {
+    ScheduledNotifications()
+        .navigationTitle("Rappels prévus" as String)
+        .previewEnvironment()
+}
+
+#Preview("Rappels prévus — feuille") {
+    Color.clear
+        .sheet(isPresented: .constant(true)) {
+            ScheduledNotificationsSheet()
+        }
+        .previewEnvironment(navigation: false)
 }

@@ -12,106 +12,115 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(StopStore.self) var stopStore
     @Environment(WatchFavoritesViewModel.self) var watchFavorites
+    @Environment(WatchTripsModel.self) private var watchTrips
+    @Environment(\.displayTime) private var now
     @State var locationManager = LocationManager()
     @State private var closestStops: [Stop] = []
     @State var closeStop: Stop? = nil
-    @State var viewCloseStops = false
-    @State var selected: Stop? = nil
-    @State var autoRefresh = true
-    @State var viewLineSorted = true
-    @State private var showTime = false
-    
+    @State private var showsMoreNearby = false
+    @State private var locationUnavailable = false
+    @State private var path: [WatchRoute] = []
+    /// Au lancement et au retour de l'arrière-plan, la montre ouvre l'arrêt le plus proche dès
+    /// que la position est connue.
+    @State private var opensNearestStop = true
+
+    private var favorites: [Stop] {
+        watchFavorites.resolvedFavorites(in: stopStore)
+    }
+
+    private var favoriteSloids: Set<String> {
+        Set(favorites.map { sloidHarmonizer(code: $0.sloid) })
+    }
+
+    /// L'arrêt le plus proche, ou les trois plus proches une fois la liste dépliée.
+    private var nearbyStops: [Stop] {
+        showsMoreNearby ? closestStops : closeStop.map { [$0] } ?? []
+    }
+
     var body: some View {
-        ZStack {
-            NavigationSplitView() {
-                List(selection: $selected) {
-                    if !viewCloseStops {
-                        Button(action: {
-                            viewCloseStops.toggle()
-                        }) {
-                            HStack {
-                                Image(systemName: "location.magnifyingglass")
-                                Text("Autres arrêts proches")
-                            }
-                            .foregroundStyle(.black)
-                        }
-                        .listRowPlatterColor(.primary)
-                    }
-                    if viewCloseStops {
-                        ForEach(closestStops) { stop in
-                            NavigationLink(value: stop) {
-                                HStack {
-                                    Circle()
-                                        .strokeBorder(Color.primary, lineWidth: 5)
-                                        .background(
-                                            Circle()
-                                                .fill(.black)
-                                        )
-                                        .frame(width: 20, height: 20)
-                                    SmallStopTitleView(stopName: stop.name)
-                                    Image(systemName: "location.fill")
-                                }
-                            }
-                        }
-                    } else if closeStop != nil {
-                        NavigationLink(value: closeStop) {
-                            HStack {
-                                Circle()
-                                    .strokeBorder(Color.primary, lineWidth: 5)
-                                    .background(
-                                        Circle()
-                                            .fill(.black)
-                                    )
-                                    .frame(width: 20, height: 20)
-                                SmallStopTitleView(stopName: closeStop!.name)
-                                Image(systemName: "location.fill")
-                            }
-                        }
-                    }
-                    ForEach(watchFavorites.favoriteStops, id: \.self) { favorite in
-                        if (!viewCloseStops && favorite.name != closeStop?.name) || (viewCloseStops && !closestStops.contains(favorite)) {
-                            NavigationLink(value: favorite) {
-                                HStack {
-                                    Circle()
-                                        .strokeBorder(Color.primary, lineWidth: 5)
-                                        .background(
-                                            Circle()
-                                                .fill(.black)
-                                        )
-                                        .frame(width: 20, height: 20)
-                                    SmallStopTitleView(stopName: favorite.name)
-                                }
-                            }
+        NavigationStack(path: $path) {
+            List {
+                let trips = watchTrips.upcoming(at: now)
+                if !trips.isEmpty {
+                    Section("Mes trajets") {
+                        ForEach(trips) { trip in
+                            NavigationLink(value: WatchRoute.trip(trip)) { UpcomingTripRow(trip: trip) }
                         }
                     }
                 }
-                .listStyle(.carousel)
-                .onAppear {
-                    viewCloseStops = false
-                    getLocation(withSelection: false)
+                Section("À proximité") {
+                    if nearbyStops.isEmpty {
+                        locationStatus
+                    }
+                    ForEach(nearbyStops) { stop in
+                        stopLink(stop, isNearby: true)
+                    }
+                    if !showsMoreNearby && closestStops.count > 1 {
+                        Button {
+                            withAnimation { showsMoreNearby = true }
+                        } label: {
+                            Label("Autres arrêts proches", systemImage: "location.magnifyingglass")
+                        }
+                    }
                 }
-                
-            } detail: {
-                if let selected = selected {
-                        StopView(stopName: selected.name, stopSloid: selected.sloid, isCloseStop: closestStops.contains(selected), showTime: $showTime, viewLineSorted: $viewLineSorted, autoRefresh: $autoRefresh)
-                } else {
-                    Text("Sélectionnez un arrêt")
+                Section("Favoris") {
+                    // Un favori déjà affiché à proximité n'est pas répété.
+                    let shown = Set(nearbyStops.map { sloidHarmonizer(code: $0.sloid) })
+                    ForEach(favorites.filter { !shown.contains(sloidHarmonizer(code: $0.sloid)) }) { stop in
+                        stopLink(stop, isNearby: false)
+                    }
+                    if favorites.isEmpty {
+                        Text("Ajoutez des favoris dans l'app iPhone.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
+            .navigationTitle("tpg Next")
+            .navigationDestination(for: WatchRoute.self) { $0.destination }
+            .onAppear {
+                getLocation()
+            }
         }
-        .onAppear {
-            getLocation(withSelection: true)
-        }
+        .onOpenURL(perform: open)
         .onChange(of: stopStore.isLoaded) {
-            getLocation(withSelection: true)
+            getLocation()
         }
         .onChange(of: scenePhase) {
-            if scenePhase == .active {
-                getLocation(withSelection: true)
+            switch scenePhase {
+            case .background:
+                opensNearestStop = true
+                showsMoreNearby = false
+            case .active:
+                getLocation()
+            default:
+                break
             }
         }
     }
-    private func getLocation(withSelection: Bool) {
+
+    private func stopLink(_ stop: Stop, isNearby: Bool) -> some View {
+        NavigationLink(value: WatchRoute.stop(name: stop.name, sloid: stop.sloid, isNearby: isNearby)) {
+            StopRow(name: stop.name, isNearby: isNearby,
+                    isFavorite: isNearby && favoriteSloids.contains(sloidHarmonizer(code: stop.sloid)))
+        }
+    }
+
+    @ViewBuilder private var locationStatus: some View {
+        if locationUnavailable {
+            Label("Position indisponible", systemImage: "location.slash")
+                .foregroundStyle(.secondary)
+        } else {
+            HStack {
+                ProgressView()
+                    .frame(width: 24)
+                Text("Recherche des arrêts…")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func getLocation() {
         // La base se charge en arrière-plan : `onChange(of: stopStore.isLoaded)` relance la recherche.
         guard stopStore.isLoaded else { return }
         locationManager.requestLocation { location in
@@ -120,37 +129,87 @@ struct ContentView: View {
                 let radiusList = stopsInBoundingBox(from: userLocation, radius: 1000, stops: stopList)
                 calculateClosestBusStops(from: userLocation, stops: radiusList, nb: 3) { success, stops in
                     DispatchQueue.main.async {
+                        locationUnavailable = false
                         closestStops = stops
                         // Même règle que l'iPhone et le widget. La comparaison se fait par
                         // sloid : l'égalité complète de `Stop` échoue dès qu'un champ secondaire
                         // diffère entre la copie synchronisée depuis l'iPhone et la base locale.
-                        let favoriteSloids = Set(watchFavorites.favoriteStops.map { sloidHarmonizer(code: $0.sloid) })
                         closeStop = NearbyStopSelector.prioritized(stops, from: userLocation, favoriteSloids: favoriteSloids).first
-                        if withSelection {
-                            selected = closeStop
-                        }
+                        openNearestStopIfNeeded()
                     }
                 }
                 stopStore.location = userLocation
+                // Le repli des complications, qui n'ont pas toujours le droit de demander la position.
+                SharedStorage.saveLastKnownLocation(userLocation)
             } else {
                 Log.location.error("Position indisponible")
+                locationUnavailable = true
             }
             locationManager.locationUpdateHandler = nil
         }
     }
+
+    /// Envoyé par une complication, à la place de l'arrêt le plus proche :
+    /// `tpgnext://stop?sloid=…&name=…` ouvre cet arrêt, `tpgnext://trip?id=…` ce trajet.
+    private func open(_ url: URL) {
+        guard url.scheme == "tpgnext",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return }
+        if url.host == "trip" {
+            guard let id = items.first(where: { $0.name == "id" })?.value,
+                  let trip = watchTrips.trips.first(where: { $0.id == id }) else { return }
+            opensNearestStop = false
+            path = [.trip(trip)]
+            return
+        }
+        guard url.host == "stop", let sloid = items.first(where: { $0.name == "sloid" })?.value else { return }
+        let name = items.first(where: { $0.name == "name" })?.value ?? stopStore.findStop(id: sloid)?.name ?? ""
+        opensNearestStop = false
+        path = [.stop(name: name, sloid: sloid, isNearby: sloidHarmonizer(code: sloid) == closeStop.map { sloidHarmonizer(code: $0.sloid) })]
+    }
+
+    /// Ouvre l'arrêt le plus proche, sauf s'il est déjà à la base de la pile : une course
+    /// ouverte depuis lui reste affichée.
+    private func openNearestStopIfNeeded() {
+        guard opensNearestStop, let closeStop else { return }
+        opensNearestStop = false
+        let route = WatchRoute.stop(name: closeStop.name, sloid: closeStop.sloid, isNearby: true)
+        if path.first != route {
+            path = [route]
+        }
+    }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var stopStore = StopStore()
-        @State var watchFavorites = WatchFavoritesViewModel()
-        @State var autoRefresh: Bool = false
-        @State var viewLineSorted: Bool = true
-        @State var showTime: Bool = false
-        let stop = Stop(name: "Genève, Rive", sloid: "ch:1:sloid:93006", codedidoc: "8593006", country: "CH", canton: "GE", meansOfTransport: "bus", wgs84Coordinates: Coordinates(lon: 46.2167, lat: 6.1667))
-        
-        return ContentView(closeStop: stop, autoRefresh: false)
-            .environment(stopStore)
-            .environment(watchFavorites)
+/// Un arrêt dans la liste de l'accueil.
+struct StopRow: View {
+    let name: String
+    var isNearby = false
+    var isFavorite = false
+
+    var body: some View {
+        HStack {
+            StopDot()
+            SmallStopTitleView(stopName: name)
+            if isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.caption)
+                    .foregroundStyle(.yellow)
+                    .accessibilityLabel("Favori")
+            }
+            if isNearby {
+                Image(systemName: "location.fill")
+                    .font(.caption)
+                    .accessibilityLabel("À proximité")
+            }
+        }
     }
+}
+
+#Preview("Montre") {
+    ContentView(closeStop: WatchPreviewData.rive)
+        .watchPreviewEnvironment()
+}
+
+#Preview("Montre — sans favori") {
+    ContentView(closeStop: WatchPreviewData.rive)
+        .watchPreviewEnvironment(favorites: [])
 }

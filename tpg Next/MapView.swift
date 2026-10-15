@@ -14,14 +14,34 @@ import ClusterMapSwiftUI
 import Foundation
 import tpgNextFunc
 
+/// Le point d'un arrêt sur une carte. Sélectionné, il grossit et prend la couleur de l'app.
+/// Partagé par la carte des arrêts et son aperçu sur l'accueil.
+struct StopMapMarker: View {
+    var isSelected: Bool
+
+    var body: some View {
+        Circle()
+            .strokeBorder(Color.primary, lineWidth: isSelected ? 5 : 3)
+            .background(Circle().fill(isSelected ? Color.accentColor : .color1))
+            .frame(width: isSelected ? 30 : 18, height: isSelected ? 25 : 18)
+            .animation(.bouncy, value: isSelected)
+    }
+}
+
 struct LocationStop: CoordinateIdentifiable, Identifiable, Hashable, Sendable {
     public var coordinate: CLLocationCoordinate2D
     public var id: String
     public var name: String
 }
 
+/// La carte des arrêts, en plein écran par-dessus l'accueil.
 struct MapView: View {
     @Environment(StopStore.self) var stopStore
+    /// La zone de l'aperçu d'où la carte s'ouvre : elle s'y ouvre aussi, sans attendre la position.
+    var initialRegion: MKCoordinateRegion? = nil
+    /// Racine d'un onglet : pas de barre de navigation. Ouverte depuis l'accueil, elle garde
+    /// la sienne, pour le bouton retour.
+    var hidesNavigationBar = false
     @State private var stopManager = StopManager()
     @State var locationManager = LocationManager()
     @State private var dataSource = DataSource()
@@ -48,7 +68,7 @@ struct MapView: View {
                                                 .strokeBorder(Color.primary, lineWidth: isSelected ? 4 : 2).animation(.bouncy, value: selectedResult)
                                                 .background(
                                                     Circle()
-                                                        .fill(isSelected ? .accent : .color1).animation(.bouncy, value: selectedResult)
+                                                        .fill(isSelected ? Color.accentColor : .color1).animation(.bouncy, value: selectedResult)
                                                 )
                                                 .frame(width: 15, height: 15)
                                         }
@@ -60,13 +80,7 @@ struct MapView: View {
                             let splitStopName = splitString(stop.name, separator: ",")
                             let isSelected = stop.id == selectedResult ? true : false
                             Annotation("\(splitStopName.0)\n\(splitStopName.1)", coordinate: stop.coordinate, anchor: .center) {
-                                Circle()
-                                    .strokeBorder(Color.primary, lineWidth: isSelected ? 5 : 3).animation(.bouncy, value: selectedResult)
-                                    .background(
-                                        Circle()
-                                            .fill(isSelected ? .accent : .color1).animation(.bouncy, value: selectedResult)
-                                    )
-                                    .frame(width: (isSelected ? 30 : 18), height: (isSelected ? 25 : 18)).animation(.bouncy, value: selectedResult)
+                                StopMapMarker(isSelected: isSelected)
                             }
                             .tag(stop.id)
                         }
@@ -92,6 +106,12 @@ struct MapView: View {
                         MapCompass()
                     }
                   
+                    // Sous les barres : sans quoi la barre de navigation ne floutait qu'un
+                    // prolongement de la carte, qui s'arrêtait net sous elle. Les boutons et la
+                    // mention Plans gardent, eux, la place des barres.
+                    .safeAreaPadding(.top, geometry.safeAreaInsets.top)
+                    .safeAreaPadding(.bottom, geometry.safeAreaInsets.bottom)
+                    .ignoresSafeArea()
                     .readSize(onChange: { newValue in
                         dataSource.mapSize = newValue
                     })
@@ -99,8 +119,9 @@ struct MapView: View {
                         dataSource.currentRegion = context.region
                     }
                     .onMapCameraChange(frequency: .onEnd) { context in
-                        Task.detached { await
-                            dataSource.reloadAnnotations() }
+                        // Pas de `Task.detached` : la taille et la région de la carte, écrites sur
+                        // le fil principal, étaient lues en parallèle depuis un autre fil.
+                        Task { await dataSource.reloadAnnotations() }
                     }
                     .onChange(of: selectedResult) {
                         if let selectedId = selectedResult,
@@ -123,8 +144,11 @@ struct MapView: View {
                     }
                     
                     VStack {
+                            // Le flou du haut : sous la barre de navigation (ouverte depuis
+                            // l'accueil), aussi court que sur la carte d'une ligne, sinon il
+                            // finissait net sous la barre ; plus long sous la barre d'état seule.
                             BackdropBlurView(radius: 5)
-                                .frame(height: 100)
+                                .frame(height: hidesNavigationBar ? 100 : 50)
                                 .mask {
                                     Rectangle()
                                         .overlay(alignment: .top) {
@@ -140,6 +164,7 @@ struct MapView: View {
                                     SmallStopView(stop: createStop(nomarret: selectedStop?.name, sloid: selectedResult), quay: returnQuayFromId(id: selectedResult)?.quayName ?? "?", isQuay: true, stopEventNumber: filteredQuays.count*10, testing: !autoRefresh)
                                         .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
+                                        .readableWidth()
                                         .transition(.opacity)
                                         .onAppear {
                                             QuayIsSelected = true
@@ -151,6 +176,7 @@ struct MapView: View {
                                     SmallStopView(stopManager: stopManager, stop: stop, stopEventNumber: 20, testing: !autoRefresh)
                                         .heightGrowingWithText(250)
                                         .padding(.horizontal, 15)
+                                        .readableWidth()
                                         .transition(.opacity)
                                 }
                             }
@@ -168,15 +194,16 @@ struct MapView: View {
                     }
                 }
                 .navigationTitle("Carte") // Set back button text
-//                .navigationBarTitleDisplayMode(.inline)
-//                .toolbar {
-//                    ToolbarItem(placement: .principal) {
-//                        Text("") // Visible title
-//                    }
-//                }
-                .toolbar(.hidden, for: .navigationBar)
+                .navigationBarTitleDisplayMode(.inline)
+                // Sans titre dans la barre, comme la carte d'une ligne : avec lui, iOS posait un fond
+                // à bord net sous la barre. Le flou du haut de la carte s'estompe à sa place.
+                // Le titre reste celui du bouton retour des pages suivantes.
+                .toolbar(removing: .title)
+                .toolbar(hidesNavigationBar ? .hidden : .automatic, for: .navigationBar)
                 .onAppear {
-                    if (selectedResult == nil) {
+                    if selectedResult == nil, let initialRegion {
+                        position = .region(initialRegion)
+                    } else if (selectedResult == nil) {
                         withAnimation {
                             getLocationRegion { region in
                                 position = .region(region)
@@ -230,12 +257,16 @@ struct MapView: View {
         return stopManager.quays.first { $0.id == id }
     }
     
+    /// Le centre de Genève tout de suite, puis la position dès qu'elle arrive. Sans la première
+    /// zone, la carte montrait toute l'Europe tant que la position ne répondait pas (onglet Carte
+    /// ouvert au lancement).
     func getLocationRegion(completion: @escaping (MKCoordinateRegion) -> Void) {
         var region = MKCoordinateRegion(
             center: Coordinates(lon: 6.14243773412, lat: 46.20973474672).toCLLocationCoordinate2D,
             span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007)
         )
-        
+        completion(region)
+
         locationManager.requestLocation { location in
             if let userLocation = location {
                 region = MKCoordinateRegion(
@@ -351,16 +382,12 @@ func copyToMapStops(activeStops: [Stop]) -> [LocationStop] {
     return mapStops
 }
 
-struct MapView2_Previews: PreviewProvider {
-    static var previews: some View {
-        let stopStore = StopStore()
-        let favoritesViewModel = FavoritesViewModel()
+#Preview("Carte") {
+    MapView()
+        .previewEnvironment(background: false)
+}
 
-        let keyboardResponder = KeyboardResponder()
-
-        return MapView()
-            .environment(stopStore)
-            .environment(favoritesViewModel)
-            .environment(keyboardResponder)
-    }
+#Preview("Carte — iPad", traits: .iPadLandscape) {
+    MapView()
+        .previewEnvironment(background: false)
 }

@@ -1,5 +1,16 @@
 #  Updates
 
+## 1.2
+Suivi en direct (écran verrouillé, Dynamic Island, correspondances vérifiées)
+Trajets réguliers, onglet Trajets et widget Prochain trajet
+Nouvelle app pour iPad et iPhone Duo
+Apple Watch : complications, trajets envoyés par l'iPhone, détail des courses
+Perturbations : courses supprimées, arrêts non desservis, parcours modifiés
+Accueil repensé, lieux favoris, synchro iCloud
+Icônes au choix
+Nouvelle bienvenue, guide d'utilisation et visite guidée
+
+
 ## 1.1.4
 Widget
 Tracés de ligne suivent les routes

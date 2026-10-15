@@ -11,62 +11,46 @@ import Combine
 import Foundation
 import tpgNextFunc
 
+/// L'appui long sur un départ : un rappel (le délai se choisit dans une feuille), le suivi en
+/// direct (montée ou descente ici, l'autre arrêt dans une feuille), et depuis une ligne les
+/// itinéraires vers ou depuis cet arrêt.
 struct NotificationContextMenu: View {
-    @Environment(ItineraryViewModel.self) var tripModel
-    @Environment(NavigationModel.self) var navigationModel
-    let transportNotificationManager = BusNotificationManager.shared
-    let notificationConfirmationViewModel = NotificationConfirmationViewModel.shared
+    @Environment(\.departureActions) private var departureActions
     let event: StopEvent
     let stopID: String
-//    var path: ViewStateStack
     var itinerary = false
-    
+
     var body: some View {
         Group {
-            ForEach([0.0, 1.0, 5.0, 10.0, 30.0], id: \.self) { notificationInterval in
-                Button(action: {
-                    if transportNotificationManager.notificationManager.isNotificationAuthorized {
-                        transportNotificationManager.scheduleNotifications(for: event, lineEvent: nil, stopID: stopID, notificationInterval: notificationInterval) { success in
-                            if success {
-                                let intNotificationInterval = Int(notificationInterval)
-                                if notificationInterval == 0.0 {
-                                    notificationConfirmationViewModel.show(message: String(localized:"Rappel à l'arrivée prévu avec succès"), error: false)
-                                } else {
-                                    notificationConfirmationViewModel.show(message: String(localized:"Rappel \(intNotificationInterval)' avant prévu avec succès"), error: false)
-                                }
-                            } else {
-                                notificationConfirmationViewModel.show(message: String(localized:"Erreur: Le rappel n'a pas pu être prévu"), error: true)
-                            }
-                        }
-                    } else {
-                        notificationConfirmationViewModel.show(message: String(localized:"Les notifications n'ont pas été autorisées pour tpg Next.\nChangez-le dans les paramètres du téléphone"), error: true)
+            Button {
+                departureActions.remind(event, stopID)
+            } label: {
+                Label("Programmer un rappel…", systemImage: "bell")
+            }
+            if !event.journeyRef.isEmpty, TripLiveActivities.shared.areEnabled {
+                let stopName = shortStopName(event.stopPointName)
+                Menu {
+                    Button {
+                        departureActions.track(event, stopID, true)
+                    } label: {
+                        Label("À partir de \(stopName)", systemImage: "arrow.up.forward")
+                        Text("Monter ici, descendre plus loin")
                     }
-                }) {
-                    Text(notificationLabel(for: notificationInterval))
+                    Button {
+                        departureActions.track(event, stopID, false)
+                    } label: {
+                        Label("Jusqu'à \(stopName)", systemImage: "arrow.down.forward")
+                        Text("Monter avant, descendre ici")
+                    }
+                } label: {
+                    Label("Suivre en direct", systemImage: "inset.filled.circle")
                 }
             }
             if itinerary {
                 Divider()
-                
+
                 TripActionsMenu(stop: createStop(nomarret: event.stopPointName, sloid: sloidHarmonizer(code: stopID)), includesQuickTrip: false)
             }
-        }
-    }
-    
-    private func notificationLabel(for notificationInterval: Double) -> String {
-        switch notificationInterval {
-        case 0.0:
-            return String(localized:"Prévenir à l'arrivée")
-        case 1.0:
-            return String(localized:"Prévenir 1' avant")
-        case 5.0:
-            return String(localized:"Prévenir 5' avant")
-        case 10.0:
-            return String(localized:"Prévenir 10' avant")
-        case 30.0:
-            return String(localized:"Prévenir 30' avant")
-        default:
-            return ""
         }
     }
 }
@@ -206,10 +190,11 @@ class BusNotificationManager {
         // Schedule notifications
         scheduleNotification(at: timetableNotificationTime, for: stopEvent, delay: delay, identifier: timetableIdentifier, isTimetabled: true, notificationInterval: notificationInterval)
         scheduleNotification(at: estimatedNotificationTime, for: stopEvent, delay: delay, identifier: estimatedIdentifier, isTimetabled: false, notificationInterval: notificationInterval)
-        
-        // Schedule update check
-        scheduleUpdateCheck(at: estimatedDate ?? timetableDate, stopEvent: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-        
+        // Le recalage sur le temps réel se fait à chaque réveil de l'app (`refreshPending`).
+        let departure = estimatedDate ?? timetableDate
+        if departure > Date() {
+            nextReminderDeparture = min(nextReminderDeparture ?? departure, departure)
+        }
         completionHandler(true)
     }
 
@@ -222,46 +207,68 @@ class BusNotificationManager {
         }
     }
 
-    // Update logic: Reschedule notifications if estimatedTime changes
-    func scheduleUpdateCheck(at estimatedDate: Date, stopEvent: StopEvent, stopID: String, notificationInterval: Double) {
-        let now = Date()
-        let halfInterval = (estimatedDate.timeIntervalSince(now)) / 2
-        let nextCheckTime = now.addingTimeInterval(halfInterval)
-        
-        if halfInterval > 60 { // Only schedule if more than 1 minute to check
-            Log.notifications.debug("Vérification du retard prévue à \(nextCheckTime)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + halfInterval) {
-                self.updateNotifications(for: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-            }
+    /// Les rappels relus à l'instant, par clé : au plus une requête par minute près du départ.
+    @ObservationIgnored private var lastCheck: [String: Date] = [:]
+
+    /// Recale les rappels en attente sur la dernière heure estimée.
+    ///
+    /// Appelé à chaque réveil de l'app (premier plan chaque minute, tâche de fond, suivi en
+    /// direct), avec les trajets réguliers : une vérification tenue seulement en mémoire
+    /// s'arrêtait dès qu'iOS suspendait l'app. Un rappel dont la notification estimée est déjà
+    /// partie n'est plus relu : reposé, il sonnerait une seconde fois.
+    @MainActor
+    func refreshPending(now: Date = Date()) async {
+        let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        var reminders: [String: (event: StopEvent, stopID: String, interval: Double)] = [:]
+        for request in pending where request.identifier.hasPrefix("estimated_") || request.identifier.hasPrefix("timetable_") {
+            let key = String(request.identifier.dropFirst(10))
+            guard reminders[key] == nil,
+                  let data = request.content.userInfo[NotificationManager.stopEventKey] as? Data,
+                  let event = try? JSONDecoder().decode(StopEvent.self, from: data),
+                  let info = parseIdentifier(key) else { continue }
+            reminders[key] = (event, info.stopID, info.notificationInterval)
+        }
+        lastCheck = lastCheck.filter { reminders[$0.key] != nil }
+        nextReminderDeparture = reminders.values
+            .compactMap { dateFromString($0.event.estimatedTime) ?? dateFromString($0.event.timetabledTime) }
+            .filter { $0 > now }
+            .min()
+        for (key, reminder) in reminders {
+            guard let departure = dateFromString(reminder.event.estimatedTime) ?? dateFromString(reminder.event.timetabledTime) else { continue }
+            let untilDeparture = departure.timeIntervalSince(now)
+            // Avant, le temps réel est vide ; ensuite, une relecture par minute tout près du départ.
+            guard untilDeparture < RegularTripsModel.liveWindow else { continue }
+            let interval: TimeInterval = untilDeparture < 30 * 60 ? 60 : 5 * 60
+            if let last = lastCheck[key], now.timeIntervalSince(last) < interval { continue }
+            lastCheck[key] = now
+            guard let estimated = await estimatedTime(of: reminder.event, at: reminder.stopID),
+                  estimated != reminder.event.estimatedTime else { continue }
+            Log.notifications.info("Heure estimée modifiée, rappels recalés")
+            var updated = reminder.event
+            updated.estimatedTime = estimated
+            scheduleNotifications(for: updated, lineEvent: nil, stopID: reminder.stopID,
+                                  notificationInterval: reminder.interval) { _ in }
         }
     }
 
-    /// Recale les rappels sur la dernière heure estimée.
-    ///
-    /// La course est redemandée à l'API et lue une fois la réponse arrivée : l'ancienne
-    /// version lisait le résultat avant la réponse, et ne recalait donc jamais rien.
-    /// Tant que l'heure ne bouge pas, une nouvelle vérification est prévue à mi-chemin.
-    /// Ne fonctionne que tant que l'app reste en mémoire.
-    func updateNotifications(for stopEvent: StopEvent, stopID: String, notificationInterval: Double) {
-        let lineManager = LineManager()
-        lineManager.selectJourney(stopEvent) { [self] in
-            let stopSloid = sloidHarmonizer(code: stopID)
-            let candidates = lineManager.lineEvents.filter { $0.stopPlaceRef == stopID || $0.sloid == stopSloid }
-            // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
-            guard let updatedEvent = candidates.first(where: { $0.timetabledTime == stopEvent.timetabledTime }) ?? candidates.first else {
-                Log.notifications.info("Arrêt introuvable dans la course, rappel laissé tel quel")
-                return
-            }
-            guard !updatedEvent.estimatedTime.isEmpty, updatedEvent.estimatedTime != stopEvent.estimatedTime else {
-                scheduleUpdateCheck(at: dateFromString(stopEvent.estimatedTime) ?? Date(), stopEvent: stopEvent, stopID: stopID, notificationInterval: notificationInterval)
-                return
-            }
-            Log.notifications.info("Heure estimée modifiée, rappels recalés")
-            var updatedStopEvent = stopEvent
-            updatedStopEvent.estimatedTime = updatedEvent.estimatedTime
-            scheduleNotifications(for: updatedStopEvent, lineEvent: nil, stopID: stopID, notificationInterval: notificationInterval) { _ in }
+    /// L'heure estimée du passage à cet arrêt, relue dans la course (`OJPTripInfoRequest`).
+    private func estimatedTime(of stopEvent: StopEvent, at stopID: String) async -> String? {
+        let data: Data? = await withCheckedContinuation { continuation in
+            fetchTransportJourney(with: stopEvent) { continuation.resume(returning: $0) }
         }
+        guard let data else { return nil }
+        let stopSloid = sloidHarmonizer(code: stopID)
+        let candidates = parseJourneyEventsSync(from: data).events
+            .filter { $0.stopPlaceRef == stopID || sloidHarmonizer(code: $0.sloid) == stopSloid }
+        // Une ligne peut passer deux fois au même arrêt : l'heure théorique départage.
+        let event = candidates.first { $0.timetabledTime == stopEvent.timetabledTime } ?? candidates.first
+        guard let estimated = event?.estimatedTime, !estimated.isEmpty else { return nil }
+        return estimated
     }
+
+    /// Le prochain départ qui a un rappel : la tâche de fond doit se réveiller avant. Tenu à
+    /// jour à la pose et à chaque relecture.
+    @ObservationIgnored private(set) var nextReminderDeparture: Date?
 
     /// Reconstruit la liste des rappels prévus à partir de ceux que le système garde en attente.
     ///
@@ -294,21 +301,22 @@ class BusNotificationManager {
             if notificationInterval == 0.0 {
                 let delayMessage = String(localized: "avec \(intDelay) minutes de retard.")
                 if isTimetabled {
-                    message = String(localized: "\(transport) aurait du arriver mais arrivera \(delayMessage)")
+                    message = String(localized: "\(transport) aurait dû arriver mais arrivera \(delayMessage)")
                 } else {
                     message = String(localized: "\(transport) devrait arriver à l'arrêt")
                 }
             } else {
                 let intNotificationInterval = Int(notificationInterval)
                 if isTimetabled {
-                    let delayMessage = String(format: "avec \(intDelay) minutes de retard.")
+                    let delayMessage = String(localized: "avec \(intDelay) minutes de retard.")
                     message = String(localized: "\(transport) devait arriver dans \(intNotificationInterval) minutes mais arrivera \(delayMessage)")
                 } else {
                     message = String(localized: "\(transport) est estimé dans \(intNotificationInterval) minutes à l'arrêt")
                 }
             }
-        } else if (delay < 0) {
-            if isTimetabled {
+        } else if (delay < -60) {
+            // En avance : seule l'heure estimée compte, l'heure prévue serait trop tard.
+            if !isTimetabled {
                 let intDelay = max(1, Int(abs(delay) / 60))
                 let intNotificationInterval = Int(notificationInterval)
                 let delayMessage = String(localized: "avec \(intDelay) minutes d'avance")
@@ -350,15 +358,20 @@ class NotificationConfirmationViewModel {
     var confirmationMessage: String = ""
     var errorMessage: Bool = false
     
+    @ObservationIgnored private var generation = 0
+
     func show(message: String, error: Bool) {
         confirmationMessage = message
         errorMessage = error
         withAnimation(.bouncy(duration: 0.5)) {
             showConfirmation = true
         }
-        
-        // Automatically hide after 2 seconds
+        generation += 1
+        let shown = generation
+
+        // Masqué après 3 s, sauf si un autre message l'a remplacé entre-temps.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            guard shown == self.generation else { return }
             withAnimation(.bouncy(duration: 0.5)) {
                 self.showConfirmation = false
                 self.errorMessage = false
@@ -367,6 +380,46 @@ class NotificationConfirmationViewModel {
     }
 }
 
-extension Notification.Name {
-    static let didReceiveNotification = Notification.Name("didReceiveNotification")
+/// Une notification dont le moment est passé n'a plus rien à dire. iOS ne sait pas la retirer
+/// seul : l'app fait le ménage dès qu'elle tourne — au premier plan chaque minute, et à chaque
+/// réveil en arrière-plan. Une notification reçue pendant que l'app était éteinte reste donc
+/// jusqu'à sa prochaine ouverture.
+enum NotificationExpiry {
+    /// Dans le `userInfo` : le moment après lequel la notification ne sert plus à rien.
+    static let key = "clearAfter"
+
+    static func mark(_ content: UNMutableNotificationContent, after date: Date) {
+        content.userInfo[key] = date.timeIntervalSince1970
+    }
+
+    /// Retire du centre de notifications celles dont le moment est passé.
+    static func clearExpired(now: Date = Date()) {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { delivered in
+            let stale = delivered.filter {
+                guard let limit = $0.request.content.userInfo[key] as? TimeInterval else { return false }
+                return limit <= now.timeIntervalSince1970
+            }.map(\.request.identifier)
+            guard !stale.isEmpty else { return }
+            center.removeDeliveredNotifications(withIdentifiers: stale)
+        }
+    }
+}
+
+/// L'écran à ouvrir après un toucher sur un rappel. Au lancement à froid, l'AppDelegate reçoit
+/// la réponse avant que `ContentView` n'écoute : une `Notification` postée était perdue.
+@Observable
+final class PendingNotificationOpen {
+    static let shared = PendingNotificationOpen()
+    var route: AppRoute?
+}
+
+#Preview("Menu des rappels") {
+    // Toucher longuement le départ pour ouvrir le menu.
+    let event = PreviewData.departure(inMinutes: 12)
+    StopEventView(event: event, showTime: false)
+        .contextMenu {
+            NotificationContextMenu(event: event, stopID: PreviewData.rive.sloid)
+        }
+        .previewEnvironment()
 }

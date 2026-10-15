@@ -111,10 +111,14 @@ public struct ShortStop: Codable, Identifiable, Hashable, Equatable {
 public struct GeoPosition: Hashable {
     public let name: String
     public let coordinate: CLLocationCoordinate2D
+    /// L'adresse de « Ma position », trouvée après coup : elle nomme l'itinéraire. Hors de
+    /// l'égalité : la trouver ne change pas de lieu.
+    public var address: String?
 
-    public init(name: String, coordinate: CLLocationCoordinate2D) {
+    public init(name: String, coordinate: CLLocationCoordinate2D, address: String? = nil) {
         self.name = name
         self.coordinate = coordinate
+        self.address = address
     }
 
     public static func == (lhs: GeoPosition, rhs: GeoPosition) -> Bool {
@@ -164,9 +168,11 @@ public class StopStore {
     /// `findStop` était un parcours des ~29 000 arrêts, appelé pour chaque favori.
     private var stopsBySloid: [String: Stop] = [:]
     /// Noms normalisés une fois pour toutes : la recherche les recalculait à chaque frappe.
-    private var searchIndex: [(key: String, stop: Stop)] = []
+    private(set) var searchIndex: [(key: String, stop: Stop)] = []
 
-    public init() {
+    /// - Parameter publishesNames: donne les noms officiels à `StopNames` une fois la base
+    ///   chargée. Pour l'app et la montre ; les tests ne touchent pas à ce réglage global.
+    public init(publishesNames: Bool = false) {
         // ~6 Mo de JSON : décodés hors du thread principal, qu'ils bloquaient au lancement
         // (et bien plus longtemps sur la montre).
         DispatchQueue.global(qos: .userInitiated).async {
@@ -183,6 +189,11 @@ public class StopStore {
                 self.activeStops = active
                 self.searchIndex = index
                 self.isLoaded = true
+                // Une copie de l'index, qui ne change plus : lue sans risque pendant le décodage
+                // des départs, hors du thread principal.
+                if publishesNames {
+                    StopNames.resolve = { unique[$0]?.name }
+                }
                 self.loadWaiters.forEach { $0.resume() }
                 self.loadWaiters = []
             }
@@ -341,6 +352,16 @@ public enum FavoritesStorage {
         guard let data = defaults.data(forKey: key) else { return [] }
         return (try? JSONDecoder().decode([FavoriteStop].self, from: data)) ?? []
     }
+
+    /// Enregistre les favoris là où le widget les lit. Pour la montre, qui reçoit les siens de
+    /// l'iPhone : sur l'iPhone, `FavoritesViewModel` s'en charge.
+    public static func save(_ favorites: [FavoriteStop], to defaults: UserDefaults = SharedStorage.defaults) {
+        do {
+            defaults.set(try JSONEncoder().encode(favorites), forKey: key)
+        } catch {
+            Log.data.error("Enregistrement des favoris impossible : \(error.localizedDescription)")
+        }
+    }
 }
 
 @Observable
@@ -362,6 +383,11 @@ public class FavoritesViewModel {
     /// Les favoris vivent dans le groupe d'app : le widget doit pouvoir les lire.
     private var store: UserDefaults { SharedStorage.defaults }
 
+    /// Seul le sloid compte : chaque appareil rafraîchit l'instantané depuis sa propre base,
+    /// qui peut ne pas être à la même version.
+    private let cloud = CloudCollection<FavoriteStop>(key: "cloud.favorites", id: \.id,
+                                                       isSame: { $0.id == $1.id })
+
     public init() {
         loadFavorites()
     }
@@ -373,6 +399,17 @@ public class FavoritesViewModel {
         refresh()
         // Les noms viennent d'être re-résolus : la montre doit recevoir cette version-là.
         syncFavoritesToWatch()
+    }
+
+    /// Partage les favoris avec les autres appareils via iCloud. Seule l'app iOS l'appelle.
+    public func startCloudSync() {
+        cloud.start(current: favorites) { [weak self] merged in
+            guard let self else { return }
+            favorites = merged
+            saveFavorites()
+            refresh()
+            syncFavoritesToWatch()
+        }
     }
 
     // MARK: - Mutations
@@ -453,6 +490,7 @@ public class FavoritesViewModel {
         saveFavorites()
         refresh()
         syncFavoritesToWatch()
+        cloud.record(favorites)
     }
 
     // MARK: - Persistance
@@ -517,12 +555,8 @@ public class FavoritesViewModel {
     /// le système conserve le dernier contexte et le livre au prochain réveil de l'app
     /// montre. C'est la sémantique voulue ici — « le dernier état gagne ».
     public func syncFavoritesToWatch() {
-        guard WCSession.isSupported() else { return }
-        let session = WCSession.default
-        guard session.activationState == .activated else { return }
         do {
-            let data = try JSONEncoder().encode(favoriteStops)
-            try session.updateApplicationContext(["favoriteStops": data])
+            WatchContext.update(WatchContext.favoritesKey, with: try JSONEncoder().encode(favoriteStops))
         } catch {
             Log.sync.error("Envoi des favoris à la montre impossible : \(error.localizedDescription)")
         }
@@ -563,6 +597,44 @@ public struct splitStopName: View {
 
 /// Ramène un sloid de quai (`ch:1:sloid:87061:0:450545`) au sloid de l'arrêt parent (`ch:1:sloid:87061`).
 /// Un sloid déjà au niveau de l'arrêt (4 composants) est retourné tel quel.
+/// Les noms officiels des arrêts (« Commune, Nom »), par sloid, une fois la base chargée.
+///
+/// Le texte de destination d'OJP (`DestinationText`) est celui que l'exploitant affiche sur le
+/// véhicule, et il varie d'une course à l'autre pour le même terminus : « Moillesulaz » ou
+/// « Genève, Moillesulaz ». Le sloid de destination, lui, est stable : son nom officiel s'affiche
+/// sur deux lignes, avec la commune, et regroupe les départs d'une même direction.
+public enum StopNames {
+    /// Le nom d'un arrêt par son sloid (d'arrêt, pas de quai). Posé par la `StopStore` de l'app
+    /// et de la montre à la fin du chargement, par l'index des arrêts dans le widget ; sans rien,
+    /// le texte d'OJP reste.
+    public static var resolve: ((String) -> String?)?
+
+    /// Le départ, avec le nom officiel de sa destination quand la base le connaît.
+    public static func withOfficialDestination(_ event: StopEvent) -> StopEvent {
+        withOfficialDestination(event, resolve: resolve)
+    }
+
+    /// L'itinéraire, avec le nom officiel de la destination de chaque véhicule.
+    public static func withOfficialDestinations(_ trip: TripEvent) -> TripEvent {
+        guard let resolve else { return trip }
+        var trip = trip
+        trip.legs = trip.legs.map { leg in
+            guard let ref = leg.legDestinationRef, let name = resolve(sloidHarmonizer(code: ref)), !name.isEmpty else { return leg }
+            var leg = leg
+            leg.legDestination = name
+            return leg
+        }
+        return trip
+    }
+
+    static func withOfficialDestination(_ event: StopEvent, resolve: ((String) -> String?)?) -> StopEvent {
+        guard let ref = event.destinationRef, let name = resolve?(sloidHarmonizer(code: ref)), !name.isEmpty else { return event }
+        var event = event
+        event.destination = name
+        return event
+    }
+}
+
 public func sloidHarmonizer(code: String) -> String {
     let components = code.split(separator: ":")
     guard components.count > 4 else { return code }

@@ -51,7 +51,7 @@ public enum StopIndex {
     public static func ensureIndex(for stops: [Stop]) -> Bool {
         guard let fileURL, !stops.isEmpty else { return false }
 
-        let signature = "v\(version)-\(stops.count)"
+        let signature = signature(for: stops)
         let isUpToDate = SharedStorage.defaults.string(forKey: signatureKey) == signature
             && FileManager.default.fileExists(atPath: fileURL.path)
         guard !isUpToDate else { return false }
@@ -65,6 +65,26 @@ public enum StopIndex {
             Log.data.error("Écriture de l'index des arrêts impossible : \(error.localizedDescription)")
             return false
         }
+    }
+
+    /// Change dès qu'un arrêt est ajouté, retiré, renommé ou déplacé : la base est régénérée
+    /// chaque mois (`Scripts/update-data.sh`), et un renommage ne change pas le nombre d'arrêts.
+    /// Empreinte FNV-1a, stable d'un lancement à l'autre, contrairement à `Hasher`.
+    static func signature(for stops: [Stop]) -> String {
+        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+        func mix<S: Sequence>(_ bytes: S) where S.Element == UInt8 {
+            for byte in bytes {
+                hash = (hash ^ UInt64(byte)) &* 0x0100_0000_01b3
+            }
+        }
+        for stop in stops {
+            mix(stop.sloid.utf8)
+            mix(stop.name.utf8)
+            mix(stop.meansOfTransport.utf8)
+            Swift.withUnsafeBytes(of: Float32(stop.wgs84Coordinates.lat).bitPattern) { mix($0) }
+            Swift.withUnsafeBytes(of: Float32(stop.wgs84Coordinates.lon).bitPattern) { mix($0) }
+        }
+        return "v\(version)-\(stops.count)-\(String(hash, radix: 16))"
     }
 
     /// L'index sérialisé. Exposé séparément pour pouvoir être testé sans conteneur partagé.

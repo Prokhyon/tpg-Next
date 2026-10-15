@@ -31,17 +31,64 @@ class ItineraryViewModel {
     /// Texte cherché dans les arrêts pour le champ actif (départ ou arrivée).
     var stopQuery = ""
 
-    var departure = TripPoint()
-    var arrival = TripPoint()
-    var selectedTime = Date()
+    var departure = TripPoint() {
+        didSet { if departure.endpoint != oldValue.endpoint { avoidedLines = [] } }
+    }
+    var arrival = TripPoint() {
+        didSet { if arrival.endpoint != oldValue.endpoint { avoidedLines = [] } }
+    }
+    /// Les lignes que la recherche évite, choisies dans les résultats. Elles ne valent que
+    /// pour ce départ et cette arrivée.
+    var avoidedLines: [AvoidedLine] = []
+    var selectedTime = AppClock.now()
     var isArrivalTime = false
 
     var tripDone = false
     var quickTrip = false
+    /// Une recherche demandée depuis un autre écran (raccourci, « Y aller », itinéraire récent) :
+    /// l'onglet Itinéraire la lance en s'affichant.
+    var pendingSearch = false
 
     var selectedTextField: Int = 1
 
     var selectedField: TripField? = .departure
+
+    /// Les adresses de « Ma position » en cours de recherche, par champ.
+    @ObservationIgnored private var addressLookups: [TripField: Task<Void, Never>] = [:]
+
+    /// Choisit la position actuelle (« Ma position ») et cherche aussitôt son adresse, qui
+    /// nommera l'itinéraire.
+    func selectCurrentPosition(_ coordinate: CLLocationCoordinate2D, for field: TripField) {
+        let place = GeoPosition(name: "Ma position", coordinate: coordinate)
+        let point: ReferenceWritableKeyPath<ItineraryViewModel, TripPoint> = field == .departure ? \.departure : \.arrival
+        self[keyPath: point].select(.place(place))
+        addressLookups[field]?.cancel()
+        addressLookups[field] = Task { @MainActor [weak self] in
+            guard let address = await PlaceAddress.lookUp(coordinate), !Task.isCancelled, let self,
+                  // Un autre lieu a pu être choisi entre-temps.
+                  self[keyPath: point].endpoint?.place == place else { return }
+            var located = place
+            located.address = address
+            self[keyPath: point].endpoint = .place(located)
+        }
+    }
+
+    /// Attend les adresses en cours, 2 secondes au plus : sans réponse, l'itinéraire garde
+    /// « Ma position ».
+    func waitForAddresses() async {
+        let lookups = Array(addressLookups.values)
+        guard !lookups.isEmpty else { return }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                for lookup in lookups { await lookup.value }
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(2))
+            }
+            await group.next()
+            group.cancelAll()
+        }
+    }
 
     /// Départ et arrivée renseignés : la recherche d'itinéraire peut être lancée.
     var canSearch: Bool { departure.endpoint != nil && arrival.endpoint != nil }
@@ -56,8 +103,39 @@ class ItineraryViewModel {
     func resetModel() {
         departure = TripPoint()
         arrival = TripPoint()
-        selectedTime = Date()
+        selectedTime = AppClock.now()
         isArrivalTime = false
+    }
+
+    /// Cherche les itinéraires de maintenant dans l'onglet Itinéraire, et y bascule. Sans
+    /// départ, on part de la position actuelle (comme « Trajet rapide »).
+    func searchNow(from origin: TripEndpoint?, to destination: TripEndpoint, tab: NavigationModel) {
+        if let origin {
+            departure.select(origin)
+            quickTrip = false
+            pendingSearch = true
+        } else {
+            departure = TripPoint()
+            quickTrip = true
+        }
+        arrival.select(destination)
+        selectedTime = AppClock.now()
+        isArrivalTime = false
+        selectedField = nil
+        tripDone = false
+        tab.popToRoot(.trip)
+        tab.selectedTab = .trip
+    }
+
+    /// Un itinéraire qui part de `origin` : l'arrivée reste à choisir dans l'onglet Itinéraire.
+    func start(from origin: TripEndpoint, tab: NavigationModel) {
+        departure.select(origin)
+        arrival = TripPoint()
+        selectedTextField = 2
+        tripDone = false
+        quickTrip = false
+        tab.popToRoot(.trip)
+        tab.selectedTab = .trip
     }
 
     func outerTrip(tab: NavigationModel, isDeparture: Bool, stop: Stop, isQuickTrip: Bool) {
