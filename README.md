@@ -19,7 +19,7 @@ Données : API [OJP 2.0](https://opentransportdata.swiss) d'opentransportdata.sw
 ## Démarrer
 
 ```bash
-git clone https://github.com/LewisThas/tpg-Next.git
+git clone https://github.com/Prokhyon/tpg-Next.git
 cd tpg-Next
 OJP_API_KEYS="clé1,clé2" ci_scripts/ci_post_clone.sh
 open "tpg Next.xcodeproj"
