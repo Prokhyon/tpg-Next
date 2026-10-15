@@ -19,5 +19,33 @@ public enum SettingKey {
     /// Retard intégré à l'heure (12:34) plutôt qu'affiché à côté (12:31 (+3')).
     public static let delayIncludedInTime = "DelayTimeIntegrated"
     public static let showWelcome = "ShowWelcome"
+    /// Favoris, lieux et trajets partagés entre les appareils via iCloud. Propre à chaque
+    /// appareil, activé par défaut ; le choix est proposé dans le message de bienvenue.
+    public static let iCloudSync = "ICloudSync"
     public static let notificationAsked = "NotificationAsked"
+    /// Alertes de retard et activités en direct des trajets réguliers sur cet appareil. Propre à
+    /// chaque appareil : les trajets sont partagés par iCloud, pas ce réglage.
+    public static let regularTripAlertsOnThisDevice = "RegularTripAlertsOnThisDevice"
+    /// Rappels avant le départ des trajets réguliers sur cet appareil (le délai se règle par trajet).
+    public static let regularTripRemindersOnThisDevice = "RegularTripRemindersOnThisDevice"
+    /// Minutes avant l'heure de partir d'un itinéraire enregistré où un rappel est envoyé ; -1 : jamais.
+    public static let savedTripReminderMinutes = "SavedTripReminderMinutes"
+    /// Les transporteurs dont on veut voir les lignes (identifiants ATLAS séparés par des virgules).
+    public static let lineOperators = "LineOperators"
+    /// L'ordre des sections de l'accueil (`HomeSection`, séparées par des virgules).
+    public static let homeSectionsOrder = "HomeSectionsOrder"
+    /// Les sections masquées de l'accueil (`HomeSection`, séparées par des virgules).
+    public static let homeHiddenSections = "HomeHiddenSections"
+    /// Minutes avant le départ d'un itinéraire enregistré où son suivi en direct démarre ; 0 : jamais.
+    public static let savedTripAutoTrackMinutes = "SavedTripAutoTrackMinutes"
+    /// Le dernier délai choisi pour le rappel d'un départ, en minutes : proposé la fois suivante.
+    public static let lastReminderMinutes = "LastReminderMinutes"
+    /// Le transporteur affiché dans la liste des lignes.
+    public static let selectedLineOperator = "SelectedLineOperator"
+    /// L'icône choisie (`AppIconChoice`), dont l'app reprend la couleur d'accent.
+    public static let appIcon = "AppIcon"
+    /// Ombres des départs et des itinéraires aux couleurs de leurs lignes.
+    public static let lineColoredShadows = "LineColoredShadows"
+    /// La carte des arrêts en onglet, à la place de Trajets (qui passe dans l'Itinéraire).
+    public static let mapTab = "MapTab"
 }

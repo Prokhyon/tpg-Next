@@ -158,7 +158,7 @@ struct DepartureRow: View {
     }
 
     var body: some View {
-        let departure = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: false, at: referenceDate)
+        let departure = departureDisplay(for: event, showTime: false, at: referenceDate)
         HStack(spacing: 6) {
             BusLineIcon(lineName: event.lineName, operatorName: event.operatorName)
                 .font(.caption)
@@ -188,7 +188,7 @@ struct CompactDepartureRow: View {
     let referenceDate: Date
 
     var body: some View {
-        let departure = departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: false, at: referenceDate)
+        let departure = departureDisplay(for: event, showTime: false, at: referenceDate)
         HStack(spacing: 6) {
             BusLineIcon(lineName: event.lineName, operatorName: event.operatorName, width: 30, height: 20)
                 .font(.caption)

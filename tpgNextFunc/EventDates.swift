@@ -36,8 +36,8 @@ extension TripLeg {
     /// La descente : heure estimée si elle est connue, sinon prévue.
     public var alightDate: Date? { OJPDate.date(from: legAlightEstimatedTime) ?? OJPDate.date(from: legAlightTimetableTime) }
 
-    /// La durée de l'étape. OJP ne donne une `Duration` qu'aux étapes à pied : celle d'un bus
-    /// ou d'un tram (`TimedLeg`) vient de ses heures de montée et de descente.
+    /// La durée de l'étape. Seule celle des étapes à pied est gardée : celle d'un bus ou d'un
+    /// tram (`TimedLeg`) vient de ses heures de montée et de descente.
     public var duration: TimeInterval? {
         if let boardDate, let alightDate {
             return alightDate.timeIntervalSince(boardDate)
@@ -109,7 +109,7 @@ extension TripEvent {
 /// `true` si `date` est passée, à la minute près : les secondes sont ignorées.
 /// Une date inconnue n'est jamais passée.
 /// - Parameter includingCurrentMinute: la minute en cours compte déjà comme passée.
-public func hasPassed(_ date: Date?, includingCurrentMinute: Bool, now: Date = Date()) -> Bool {
+public func hasPassed(_ date: Date?, includingCurrentMinute: Bool, now: Date = AppClock.now()) -> Bool {
     guard let date else { return false }
     let minute = (date.timeIntervalSince1970 / 60).rounded(.down)
     let currentMinute = (now.timeIntervalSince1970 / 60).rounded(.down)

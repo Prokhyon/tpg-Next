@@ -22,6 +22,11 @@ public enum TripEndpoint: Hashable {
         }
     }
 
+    /// Le nom donné à l'itinéraire : l'adresse de « Ma position » quand elle est connue.
+    public var displayName: String {
+        place?.address ?? name
+    }
+
     public var coordinates: Coordinates {
         switch self {
         case .stop(let stop): return stop.wgs84Coordinates

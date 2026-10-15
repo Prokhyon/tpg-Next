@@ -1,0 +1,72 @@
+# Met à jour chaque mois les arrêts, les lignes, les transporteurs et les couleurs des lignes
+# (Scripts/update-data.sh), et ouvre une pull request s'il y a du changement. Rien n'est fusionné
+# sans relecture : le résumé de chaque script (arrêts ajoutés, supprimés, renommés ; lignes sans
+# couleur) est dans la description de la pull request.
+#
+# Réglage requis, une fois : Settings > Actions > General > Workflow permissions, cocher
+# « Allow GitHub Actions to create and approve pull requests ».
+name: Données
+
+on:
+  schedule:
+    # Le 1er de chaque mois, et le lendemain du changement d'horaire de décembre.
+    - cron: "23 4 1 * *"
+    - cron: "23 4 15 12 *"
+  workflow_dispatch:
+    inputs:
+      colors:
+        description: "Relever aussi les couleurs (environ une heure)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Arrêts, lignes et transporteurs
+        shell: bash
+        run: Scripts/update-data.sh --no-colors 2>&1 | tee update.log
+
+      # Si search.ch est en panne, la mise à jour des arrêts et des lignes part quand même.
+      - name: Couleurs des lignes
+        if: github.event_name != 'workflow_dispatch' || inputs.colors
+        continue-on-error: true
+        shell: bash
+        run: |
+          python3 -u Scripts/line-colors.py 2>&1 | tee -a update.log \
+            || { echo "Échec du relevé des couleurs : LineColors.json conservé." | tee -a update.log; exit 1; }
+
+      - name: Ouvrir la pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- "tpgNextFunc/Stops Database" Scripts/line-colors-manual.csv; then
+            echo "Aucun changement."
+            exit 0
+          fi
+          branch="donnees/$(date +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add "tpgNextFunc/Stops Database" Scripts/line-colors-manual.csv
+          git commit -m "Données : arrêts, lignes et couleurs au $(date +%d.%m.%Y)"
+          git push --force origin "$branch"
+          {
+            echo "Mise à jour automatique (workflow « Données »)."
+            echo
+            echo '```'
+            grep -v "Too Many Requests" update.log | tail -40
+            echo '```'
+            echo
+            echo "Les lignes sans couleur sont dans \`Scripts/line-colors-manual.csv\` : remplir la colonne \`color\` puis relancer \`Scripts/line-colors.py\`."
+          } > body.md
+          gh pr create --base main --head "$branch" --title "Données au $(date +%d.%m.%Y)" --body-file body.md \
+            || gh pr edit "$branch" --body-file body.md

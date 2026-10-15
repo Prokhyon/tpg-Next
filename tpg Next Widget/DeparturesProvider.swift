@@ -36,6 +36,9 @@ struct DeparturesEntry: TimelineEntry {
     let status: Status
     /// Distance à l'arrêt en mode automatique, `nil` si l'arrêt a été choisi à la main.
     let distance: CLLocationDistance?
+    /// Aperçu du sélecteur de widgets : les départs sont des exemples, ce qui compte est de
+    /// reconnaître le réglage (sur la montre, l'arrêt le plus proche ou tel favori).
+    var isGalleryPreview = false
 
     static func message(_ status: Status, at date: Date = Date()) -> DeparturesEntry {
         DeparturesEntry(date: date, stop: nil, events: [], status: status, distance: nil)
@@ -65,15 +68,44 @@ struct DeparturesProvider: AppIntentTimelineProvider {
         DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120)
     }
 
+    /// L'aperçu de la galerie : départs d'exemple, mais au nom de l'arrêt réglé. Sur la montre,
+    /// chaque favori y est proposé ; avec le même arrêt d'exemple, ils semblaient tous identiques.
+    private func preview(for configuration: SelectStopIntent) -> DeparturesEntry {
+        guard let stop = configuration.selection.stop else {
+            return DeparturesEntry(date: Date(), stop: PreviewData.stop, events: PreviewData.events, status: .ok, distance: 120,
+                                   isGalleryPreview: true)
+        }
+        return DeparturesEntry(date: Date(), stop: stop, events: PreviewData.events, status: .ok, distance: nil,
+                               isGalleryPreview: true)
+    }
+
     /// Vrai quand le code tourne dans l'agent d'aperçu de Xcode, où ni la
     /// localisation ni le réseau ne sont souhaitables.
     static var isRunningInPreviewCanvas: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
 
+    #if os(watchOS)
+    /// La montre ne propose pas de régler un widget : elle offre ces configurations toutes faites,
+    /// l'arrêt le plus proche puis les quatre premiers favoris. Chacune apparaît une fois par
+    /// format : au-delà, le sélecteur en compte des dizaines. Leur aperçu (`isGalleryPreview`)
+    /// montre de quel arrêt il s'agit.
+    func recommendations() -> [AppIntentRecommendation<SelectStopIntent>] {
+        let stops = [StopEntity.automatic] + FavoritesStorage.load().prefix(4).map { StopEntity(stop: $0.fallbackStop) }
+        return stops.map { entity in
+            let intent = SelectStopIntent()
+            intent.stop = entity
+            // Le texte entier, déjà traduit : avec un argument (« Favori : %@ »), le sélecteur
+            // n'affichait que « %@ », l'argument n'étant pas transmis hors de l'app.
+            let description = entity.isAutomatic ? String(localized: "Arrêt le plus proche") : String(localized: "Favori : \(entity.name)")
+            return AppIntentRecommendation(intent: intent, description: LocalizedStringResource(stringLiteral: description))
+        }
+    }
+    #endif
+
     func snapshot(for configuration: SelectStopIntent, in context: Context) async -> DeparturesEntry {
         // La galerie de widgets doit montrer quelque chose immédiatement.
-        guard !context.isPreview, !Self.isRunningInPreviewCanvas else { return placeholder(in: context) }
+        guard !context.isPreview, !Self.isRunningInPreviewCanvas else { return preview(for: configuration) }
         return await buildEntries(for: configuration).first ?? placeholder(in: context)
     }
 
@@ -167,6 +199,10 @@ struct DeparturesProvider: AppIntentTimelineProvider {
     /// `nil` en cas d'échec réseau, vide si l'arrêt n'a pas de départ. La requête a son
     /// propre délai d'attente et se termine toujours : plus besoin de la borner ici.
     private func fetchDepartures(for stop: Stop) async -> [StopEvent]? {
+        // Sans la base des arrêts, les noms officiels des destinations viennent de l'index.
+        if StopNames.resolve == nil, let reader = StopIndexReader() {
+            StopNames.resolve = { reader.stop(sloid: $0)?.name }
+        }
         do {
             return try await fetchStopEvents(stopName: stop.name, stopSloid: stop.sloid, count: requestedDepartures).events
         } catch is ParserError {
@@ -211,7 +247,14 @@ private final class LocationFetcher: NSObject, CLLocationManagerDelegate, @unche
     func isAuthorizedForWidgetUpdates() async -> Bool {
         await withCheckedContinuation { continuation in
             DispatchQueue.main.async {
+                #if os(watchOS)
+                // Pas d'`isAuthorizedForWidgetUpdates` sur la montre : l'extension partage
+                // l'autorisation de l'app.
+                let status = CLLocationManager().authorizationStatus
+                continuation.resume(returning: status == .authorizedWhenInUse || status == .authorizedAlways)
+                #else
                 continuation.resume(returning: CLLocationManager().isAuthorizedForWidgetUpdates)
+                #endif
             }
         }
     }

@@ -9,9 +9,20 @@ import SwiftUI
 import MapKit
 import tpgNextFunc
 
+/// Ce que la carte d'un trajet doit cadrer : un arrêt, une étape ou une correspondance.
+struct TripMapFocus: Equatable {
+    let id: String
+    let coordinates: [CLLocationCoordinate2D]
+
+    static func == (lhs: TripMapFocus, rhs: TripMapFocus) -> Bool { lhs.id == rhs.id }
+}
+
 struct TripMapView: View {
     var tripEvent: TripEvent
     var isPreview: Bool = false
+    /// Partie du trajet à cadrer ; `nil` = le trajet entier.
+    var focus: TripMapFocus? = nil
+    @State private var position: MapCameraPosition = .automatic
     
     @State private var polylines: [Int : MKPolyline] = [:]
     /// Tracé réel des étapes en transport, par index d'étape.
@@ -19,7 +30,7 @@ struct TripMapView: View {
     
     var body: some View {
             ZStack {
-                Map {
+                Map(position: $position) {
                     ForEach(polylines.keys.sorted(), id: \.self) { key in
                         if let polyline = polylines[key] {
                             if tripEvent.legs[key].transfer {
@@ -99,18 +110,7 @@ struct TripMapView: View {
                             let splitArrivalStopName = splitString(leg.legAlightStopName, separator: ",")
                             
                             Annotation("\(splitArrivalStopName.0)\n\(splitArrivalStopName.1)", coordinate: CLLocationCoordinate2D(latitude: Double(leg.legAlightLatitude) ?? 0.0, longitude: Double(leg.legAlightLongitude) ?? 0.0)) {
-                                Circle()
-                                    .strokeBorder(Color.primary, lineWidth: 3)
-                                    .background(
-                                        Circle()
-                                            .fill(lineColorInverted)
-                                            .overlay {
-                                                Circle()
-                                                    .fill(Color.primary)
-                                                    .frame(width: 4, height: 4)
-                                            }
-                                    )
-                                    .frame(width: 15, height: 15)
+                                StopIcon(color: lineColorInverted, terminus: true, size: 15)
                             }
                         }
                     }
@@ -120,8 +120,12 @@ struct TripMapView: View {
                 }
                 .mapStyle(.standard(pointsOfInterest: .excludingAll))
                 .onAppear {
+                    position = cameraPosition(for: focus)
                     calculateRoutes()
                     loadLegTracks()
+                }
+                .onChange(of: focus) {
+                    withAnimation { position = cameraPosition(for: focus) }
                 }
                 .mapControls {
                     if !isPreview {
@@ -159,6 +163,23 @@ struct TripMapView: View {
 //            .toolbar(.hidden, for: .navigationBar)
     }
     
+    /// Le cadrage automatique de MapKit ne tient compte que des annotations visibles au premier
+    /// affichage : le trajet est cadré explicitement, arrêts intermédiaires compris.
+    private func cameraPosition(for focus: TripMapFocus?) -> MapCameraPosition {
+        let coordinates = (focus?.coordinates ?? tripEvent.mapCoordinates)
+            .filter { $0.latitude != 0 && $0.longitude != 0 }
+        guard let first = coordinates.first else { return .automatic }
+        if coordinates.count == 1 {
+            return .region(MKCoordinateRegion(center: first, latitudinalMeters: 400, longitudinalMeters: 400))
+        }
+        let rect = coordinates.dropFirst().reduce(MKMapRect(origin: MKMapPoint(first), size: MKMapSize())) { rect, coordinate in
+            rect.union(MKMapRect(origin: MKMapPoint(coordinate), size: MKMapSize()))
+        }
+        // Marge pour les noms d'arrêts et les boutons de la carte.
+        let margin = max(rect.width, rect.height) * 0.25 + 300
+        return .rect(rect.insetBy(dx: -margin, dy: -margin))
+    }
+
     /// MapKit ne redessine pas une MapPolyline dont seules les coordonnées changent : l'id porte
     /// donc la source de la géométrie, pour que la ligne droite soit remplacée par le tracé.
     private struct MapSegment: Identifiable {
@@ -244,3 +265,40 @@ struct TripMapView: View {
 
 }
 
+#Preview("Carte du trajet") {
+    TripMapView(tripEvent: PreviewData.tripWithTransfer)
+        .previewEnvironment()
+}
+
+#Preview("Carte du trajet — aperçu de menu", traits: .fixedLayout(width: 390, height: 300)) {
+    TripMapView(tripEvent: PreviewData.tripWithTransfer, isPreview: true)
+        .previewEnvironment(navigation: false)
+}
+
+extension TripEvent {
+    /// Tous les points du trajet : départ, arrêts de chaque étape, arrivée.
+    var mapCoordinates: [CLLocationCoordinate2D] {
+        [startCoordinates.toCLLocationCoordinate2D]
+            + legs.indices.flatMap { mapCoordinates(forLeg: $0) }
+            + [endCoordinates.toCLLocationCoordinate2D]
+    }
+
+    /// Les points d'une étape : ses arrêts en transport, ses deux bouts à pied.
+    func mapCoordinates(forLeg index: Int) -> [CLLocationCoordinate2D] {
+        let leg = legs[index]
+        guard leg.transfer || leg.publishedLineName.isEmpty else { return leg.trackStops }
+        let from = index > 0 ? legs[index - 1].alightCoordinate : startCoordinates.toCLLocationCoordinate2D
+        let to = index < legs.count - 1 ? legs[index + 1].boardCoordinate : endCoordinates.toCLLocationCoordinate2D
+        return [from, to]
+    }
+}
+
+extension TripLeg {
+    var boardCoordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: Double(legBoardLatitude) ?? 0, longitude: Double(legBoardLongitude) ?? 0)
+    }
+
+    var alightCoordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: Double(legAlightLatitude) ?? 0, longitude: Double(legAlightLongitude) ?? 0)
+    }
+}

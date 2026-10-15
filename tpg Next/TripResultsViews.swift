@@ -2,7 +2,7 @@
 //  TripResultsViews.swift
 //  tpg Next
 //
-//  Listes affichées sous les champs de l'itinéraire : favoris, recherche, arrêts proches, résultats.
+//  Listes affichées sous les champs de l'itinéraire : favoris (arrêts et lieux), recherche, arrêts proches, résultats.
 //
 
 import SwiftUI
@@ -11,11 +11,20 @@ import tpgNextFunc
 
 extension TripView {
     struct ResultsFavoritesView: View {
+        @Environment(\.layout) private var layout
         @Environment(StopStore.self) var stopStore
         @Environment(FavoritesViewModel.self) var favoritesViewModel
+        @Environment(FavoritePlacesModel.self) private var favoritePlaces
         @Bindable var viewModel: ItineraryViewModel
         @Environment(RecentSearch.self) var recentSearchModel
         @Binding var results: Results
+
+        /// Sur grand écran, la recherche n'occupe que la moitié gauche : trois noms par ligne
+        /// quand elle est large (paysage), deux sinon. Quatre et trois étaient trop serrés.
+        private var favoriteColumns: Int {
+            guard layout.showsSecondaryPane else { return layout.favoriteColumns }
+            return layout.width / 2 >= 540 ? 3 : 2
+        }
 
         var body: some View {
             VStack {
@@ -26,29 +35,30 @@ extension TripView {
                         Spacer()
                     }
                 }
-                LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10)
-                ], spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: favoriteColumns), spacing: 10) {
                     ForEach(favoritesViewModel.favoriteStops, id: \.self) { stop in
-                        Button(action: {
-                            withAnimation {
-                                if viewModel.selectedField == .departure {
-                                    viewModel.departure.select(.stop(stop))
-                                    viewModel.selectedField = .arrival
-                                    results = Results.favorites
-                                    viewModel.tripDone = false
-                                } else if viewModel.selectedField == .arrival {
-                                    viewModel.arrival.select(.stop(stop))
-                                    viewModel.selectedField = .departure
-                                    results = Results.favorites
-                                    viewModel.tripDone = false
-                                }
-                            }
-                        }){
+                        Button(action: { choose(.stop(stop)) }) {
                             BasicLocationView(name: stop.name, transportType: stop.meansOfTransport)
                         }
                         .foregroundStyle(.primary)
+                    }
+                }
+                if !favoritePlaces.places.isEmpty {
+                    HStack {
+                        Text("Lieux favoris")
+                            .font(.title3).bold()
+                        Spacer()
+                    }
+                    .padding(.top, 10)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: favoriteColumns), spacing: 10) {
+                        ForEach(favoritePlaces.places) { place in
+                            Button(action: { choose(place.endpoint) }) {
+                                FavoritePlaceLabel(place: place)
+                                    .padding(.horizontal, 15)
+                                    .basicElementBackground(minHeight: 45)
+                            }
+                            .foregroundStyle(.primary)
+                        }
                     }
                 }
                 if !recentSearchModel.searchItems.isEmpty {
@@ -56,6 +66,23 @@ extension TripView {
                 }
             }
             .padding(.horizontal, 30)
+        }
+
+        /// Un favori remplit le champ choisi, puis passe à l'autre.
+        private func choose(_ endpoint: TripEndpoint) {
+            withAnimation {
+                if viewModel.selectedField == .departure {
+                    viewModel.departure.select(endpoint)
+                    viewModel.selectedField = .arrival
+                    results = Results.favorites
+                    viewModel.tripDone = false
+                } else if viewModel.selectedField == .arrival {
+                    viewModel.arrival.select(endpoint)
+                    viewModel.selectedField = .departure
+                    results = Results.favorites
+                    viewModel.tripDone = false
+                }
+            }
         }
     }
     
@@ -113,7 +140,7 @@ extension TripView {
                                     viewModel.stopQuery = ""
                                 }
                             }) {
-                                BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
+                                BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, buttonAction: {
                                     resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
                                     resultTitle = stop.name
                                 })
@@ -150,7 +177,7 @@ extension TripView {
                                     }
                                 }
                             }) {
-                                BasicLocationView(name: result.title, subtitle: result.subtitle, isGeoPosition: true, showButton: true, favoriteAction:  {
+                                BasicLocationView(name: result.title, subtitle: result.subtitle, isGeoPosition: true, showButton: true, buttonAction: {
                                     self.locationViewModel.getCoordinate(for: result) { coordinate in
                                         resultDetail = searchResultItem(title: result.title, coordinates: coordinate ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                                     }
@@ -202,7 +229,7 @@ extension TripView {
                                     withAnimation {
                                         if viewModel.selectedField == .departure {
                                             // Execute only when selectedTextField is 1
-                                            viewModel.departure.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                                            viewModel.selectCurrentPosition(coordinate, for: .departure)
                                             results = Results.favorites
                                             showCloseStops = false
                                             calculationSuccess = false
@@ -210,7 +237,7 @@ extension TripView {
                                             viewModel.tripDone = false
                                         } else if viewModel.selectedField == .arrival {
                                             // Execute only when selectedTextField is 2
-                                            viewModel.arrival.select(.place(GeoPosition(name: "Ma position", coordinate: coordinate)))
+                                            viewModel.selectCurrentPosition(coordinate, for: .arrival)
                                             results = Results.favorites
                                             showCloseStops = false
                                             calculationSuccess = false
@@ -227,7 +254,7 @@ extension TripView {
                                         HStack {
                                             Text("Utiliser la position actuelle")
                                             Spacer()
-                                            Image(systemName: "location.circle").font(.title2).foregroundStyle(.accent)
+                                            Image(systemName: "location.circle").font(.title2).foregroundStyle(Color.accentColor)
                                         }
                                             .padding(.horizontal, 20)
                                             .basicElementBackground(minHeight: 45)
@@ -260,10 +287,19 @@ extension TripView {
                                         }
                                     }
                                 }) {
-                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, showButton: true, favoriteAction:  {
-                                        resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
-                                        resultTitle = stop.name
-                                    })
+                                    // Comme `BasicLocationView`, avec la distance et la direction de l'arrêt.
+                                    HStack {
+                                        SmallStopTitleView(stopName: stop.name, transportType: stop.meansOfTransport)
+                                        StopDistanceLabel(coordinate: stop.coordinate)
+                                        Button {
+                                            resultDetail = searchResultItem(title: stop.name, coordinates: stop.coordinate)
+                                            resultTitle = stop.name
+                                        } label: {
+                                            Image(systemName: "figure.wave.circle").font(.title2).foregroundStyle(Color.accentColor)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .basicElementBackground(minHeight: 45)
                                 }
                                 .padding(.horizontal, 30)
                                 .foregroundStyle(.primary)
@@ -278,7 +314,8 @@ extension TripView {
                         Text("Pas d'arrêts trouvés à proximité")
                     }
                 } else {
-                    Text("Chargement...")
+                    // Les arrêts proches attendus, en rangées fantômes.
+                    LoadingPlaceholder(kind: .stop, count: 3)
                 }
             }
             
@@ -290,27 +327,27 @@ extension TripView {
         
         var tripManager: TripManager
         @Environment(SavedTripsModel.self) var savedTripsModel
+        @Environment(\.layout) private var layout
+        @Environment(\.openRoute) private var openRoute
         @Binding var showTime: Bool
         
         let adjustTime: (Int) -> Void
         let timeChange: () -> Int
         let searchTrips: () -> Void
-        
+        /// Sur grand écran : le trajet détaillé à droite, et l'action qui en choisit un autre.
+        var selectedID: String? = nil
+        var onSelect: ((TripEvent) -> Void)? = nil
+        /// L'itinéraire à répéter chaque semaine.
+        @State private var repeating: TripEvent?
+
         var body: some View {
             LazyVStack(spacing: 5) {
 
                 ForEach(tripManager.tripEvents.sortedByStart(), id: \.id) { event in
-                        NavigationLink {
-                            FullTripView(fullTrip: event)
-//                                .environment(savedTripsModel)
-                        } label: {
-                            TripElementView(event: event, showTime: showTime)
-                                .padding(.horizontal, 20)
-                                // La capsule prend la largeur disponible, pas celle du contenu : plus
-                                // large que l'écran, il la faisait déborder sur les côtés.
-                                .frame(maxWidth: .infinity)
-                                .basicElementBackground(minHeight: 72)
-                                .padding(4)
+                        tripLink(event) {
+                            TripResultBackground(selected: event.id == selectedID, lineColors: event.lineColors) {
+                                TripElementView(event: event, showTime: showTime)
+                            }
                             
 //                            TripElementView(event: event, showTime: showTime)
 //                                .padding(.horizontal)
@@ -325,6 +362,14 @@ extension TripView {
                     .contentShape(.contextMenuPreview, Capsule())
                     .padding(.horizontal, 10)
                     .contextMenu {
+                        // Sur grand écran, toucher l'itinéraire le détaille à droite ; sa page reste ici.
+                        if onSelect != nil {
+                            Button {
+                                openRoute(.trip(event))
+                            } label: {
+                                Label("Ouvrir en plein écran", systemImage: "arrow.up.forward.square")
+                            }
+                        }
                         if savedTripsModel.tripIsSaved(event) {
                             Button(action: {
                                 savedTripsModel.removeTrip(event)
@@ -338,15 +383,81 @@ extension TripView {
                                 Label("Enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.plus")
                             }
                         }
+                        Button {
+                            repeating = event
+                        } label: {
+                            Label("Répéter chaque semaine…", systemImage: "calendar.badge.plus")
+                        }
+                        // Relance la recherche sans la ligne, dans les deux sens.
+                        Section {
+                            ForEach(event.avoidableLines.filter { !viewModel.avoidedLines.contains($0) }) { line in
+                                Button {
+                                    viewModel.avoidedLines.append(line)
+                                    searchTrips()
+                                } label: {
+                                    Label("Éviter la ligne \(line.name)", systemImage: "nosign")
+                                }
+                            }
+                        }
                     } preview: {
                         TripMapView(tripEvent: event, isPreview: true)
-                            .frame(width: UIScreen.main.bounds.width, height: 300)
+                            .frame(width: layout.previewWidth, height: 300)
                     }
                 }
+            }
+            .sheet(item: $repeating) { trip in
+                RegularTripEditor(creatingFrom: trip)
+            }
+        }
+
+        /// Sur iPhone, un trajet ouvre sa page ; sur grand écran, il se détaille à droite.
+        @ViewBuilder private func tripLink<Label: View>(_ event: TripEvent, @ViewBuilder label: () -> Label) -> some View {
+            if let onSelect {
+                Button(action: { onSelect(event) }, label: label)
+            } else {
+                NavigationLink(value: AppRoute.trip(event), label: label)
             }
         }
     }
     
+    /// Les lignes évitées, au-dessus des résultats : toucher l'une la rend à la recherche.
+    struct AvoidedLinesBar: View {
+        @Bindable var viewModel: ItineraryViewModel
+        let search: () -> Void
+
+        var body: some View {
+            if !viewModel.avoidedLines.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        Label("Lignes évitées", systemImage: "nosign")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        ForEach(viewModel.avoidedLines) { line in
+                            Button {
+                                withAnimation { viewModel.avoidedLines.removeAll { $0 == line } }
+                                search()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    BusLineIcon(lineName: line.name, operatorName: line.operatorName)
+                                    Image(systemName: "xmark")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color.primary.opacity(0.04)))
+                            }
+                            .foregroundStyle(.primary)
+                            .accessibilityLabel("Ne plus éviter la ligne \(line.name)")
+                        }
+                    }
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
     struct ResultsEmptyView: View {
         var body: some View {
             Spacer()
@@ -369,8 +480,26 @@ extension TripView {
         @State var locationManager = LocationManager()
         @Environment(StopStore.self) var stopStore
         
+        /// La bulle n'a rien à montrer hors de ces cas : elle disparaît, et le champ s'élargit.
+        static func isVisible(field: TripField, focus: TripField?, text: String, selected: TripField?) -> Bool {
+            focus == field || !text.isEmpty || selected == field
+        }
+
         var body: some View {
-            if searchText.isEmpty && viewModel.selectedField == field {
+            if focusField.wrappedValue == field {
+                // Le champ a le focus : la croix le lui retire et range le clavier. Effacer le
+                // texte se fait dans le champ lui-même.
+                Button {
+                    withAnimation {
+                        focusField.wrappedValue = nil
+                    }
+                } label: {
+                    Image(systemName: "xmark").font(.title3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Fermer la recherche")
+            } else if searchText.isEmpty && viewModel.selectedField == field {
                 Button(action: {
                     if !showCloseStops {
                         withAnimation {
@@ -405,6 +534,7 @@ extension TripView {
                     Image(systemName: (showCloseStops ? "location.fill" :  "location")).font(.title3)
                 }
             } else if !searchText.isEmpty {
+                // Retire l'arrêt choisi, sans rendre le focus au champ.
                 Button(action: {
                     withAnimation {
                         searchText = ""
@@ -419,6 +549,7 @@ extension TripView {
                 }) {
                     Image(systemName: "xmark").font(.title2)
                 }
+                .accessibilityLabel("Retirer l'arrêt")
             }
         }
     }
@@ -432,6 +563,7 @@ extension TripView {
         var body: some View {
             let selected = viewModel.selectedField == field
             let hasSelection = (field == .departure && viewModel.departure.endpoint != nil) || (field == .arrival && viewModel.arrival.endpoint != nil)
+            let text = field == .departure ? viewModel.departure.text : viewModel.arrival.text
             ZStack {
                 HStack {
                     HStack {
@@ -439,48 +571,58 @@ extension TripView {
                             if field == .departure {
                                 Image(systemName: viewModel.departure.endpoint?.isPlace == true ? "mappin.and.ellipse.circle" : "figure.wave.circle")
                                     .font(.title2)
-                                    .foregroundStyle(selected ? .accent : .primary)
+                                    .foregroundStyle(selected ? Color.accentColor : .primary)
                             } else if field == .arrival {
                                 Image(systemName: viewModel.arrival.endpoint?.isPlace == true ? "mappin.and.ellipse.circle" : "figure.wave.circle")
                                     .font(.title2)
-                                    .foregroundStyle(selected ? .accent : .primary)
+                                    .foregroundStyle(selected ? Color.accentColor : .primary)
                             }
                         } else {
                             Image(systemName: "magnifyingglass")
-                                .foregroundStyle(selected ? .accent : .primary.opacity(0.2))
+                                .foregroundStyle(selected ? Color.accentColor : .primary.opacity(0.2))
                         }
-                        if field == .arrival {
-                            TextField("Destination", text: $viewModel.arrival.text)
-                            //                            .frame(height: size)
-                                .focused(focusField, equals: .arrival)
-                            //                            .opacity(focusField.wrappedValue == .arrival ? 1:0)
-                                .onChange(of: viewModel.arrival.text) {
-                                    if selected {
-                                        if hasSelection && focusField.wrappedValue == nil {
-                                            results = Results.empty
-                                        } else if !viewModel.arrival.text.isEmpty {
-                                            results = Results.search
-                                        } else if viewModel.arrival.text.isEmpty {
-                                            results = Results.favorites
+                        VStack(alignment: .leading, spacing: 0) {
+                            if field == .arrival {
+                                TextField("Destination", text: $viewModel.arrival.text)
+                                //                            .frame(height: size)
+                                    .focused(focusField, equals: .arrival)
+                                //                            .opacity(focusField.wrappedValue == .arrival ? 1:0)
+                                    .onChange(of: viewModel.arrival.text) {
+                                        if selected {
+                                            if hasSelection && focusField.wrappedValue == nil {
+                                                results = Results.empty
+                                            } else if !viewModel.arrival.text.isEmpty {
+                                                results = Results.search
+                                            } else if viewModel.arrival.text.isEmpty {
+                                                results = Results.favorites
+                                            }
                                         }
                                     }
-                                }
-                        } else {
-                            TextField("Origine", text: $viewModel.departure.text)
-                            //                            .frame(height: size)
-                                .focused(focusField, equals: .departure)
-                            //                            .opacity(focusField.wrappedValue == .departure ? 1:0)
-                                .onChange(of: viewModel.departure.text) {
-                                    if selected {
-                                        if hasSelection && focusField.wrappedValue == nil {
-                                            results = Results.empty
-                                        } else if !viewModel.departure.text.isEmpty {
-                                            results = Results.search
-                                        } else if viewModel.departure.text.isEmpty {
-                                            results = Results.favorites
+                            } else {
+                                TextField("Origine", text: $viewModel.departure.text)
+                                //                            .frame(height: size)
+                                    .focused(focusField, equals: .departure)
+                                //                            .opacity(focusField.wrappedValue == .departure ? 1:0)
+                                    .onChange(of: viewModel.departure.text) {
+                                        if selected {
+                                            if hasSelection && focusField.wrappedValue == nil {
+                                                results = Results.empty
+                                            } else if !viewModel.departure.text.isEmpty {
+                                                results = Results.search
+                                            } else if viewModel.departure.text.isEmpty {
+                                                results = Results.favorites
+                                            }
                                         }
                                     }
-                                }
+                            }
+                            // « Ma position » : l'adresse trouvée, qui nommera l'itinéraire.
+                            if focusField.wrappedValue != field,
+                               let address = (field == .departure ? viewModel.departure : viewModel.arrival).endpoint?.place?.address {
+                                Text(address)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
                         }
                         //                    if text.isEmpty {
                         ////                        Text(emptyText)
@@ -499,9 +641,35 @@ extension TripView {
                             }
                             .padding(.trailing, 20)
                     }
+                    if !text.isEmpty && focusField.wrappedValue == field {
+                        // Pendant la saisie : efface le texte et l'arrêt choisi, et laisse le
+                        // champ prêt à la saisie. Hors saisie, la bulle à côté retire l'arrêt.
+                        Button {
+                            withAnimation {
+                                if field == .departure {
+                                    viewModel.departure.text = ""
+                                    viewModel.departure.endpoint = nil
+                                } else {
+                                    viewModel.arrival.text = ""
+                                    viewModel.arrival.endpoint = nil
+                                }
+                                viewModel.selectedField = field
+                                viewModel.tripDone = false
+                                focusField.wrappedValue = field
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 30, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Effacer")
+                        .transition(.opacity)
+                    }
                     if selected {
                         Image(systemName: "record.circle.fill")
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
                 .onTapGesture {
@@ -552,13 +720,13 @@ extension TripView {
                             results = Results.favorites
                             recentSearchModel.add(name: item.name, isStop: true, stop: item.stop, geoCoordinates: nil)
                         } else {
-                            let title = item.name.split(separator: ";")
+                            let title = item.placeTitle
                             let coordinates = item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0)
                             if viewModel.selectedField == .departure {
-                                viewModel.departure.select(.place(GeoPosition(name: String(title[0]), coordinate: coordinates)))
+                                viewModel.departure.select(.place(GeoPosition(name: title.name, coordinate: coordinates)))
                                 viewModel.selectedField = .arrival
                             } else if viewModel.selectedField == .arrival {
-                                viewModel.arrival.select(.place(GeoPosition(name: String(title[0]), coordinate: coordinates)))
+                                viewModel.arrival.select(.place(GeoPosition(name: title.name, coordinate: coordinates)))
                                 viewModel.selectedField = .departure
                             }
                             results = Results.favorites
@@ -568,14 +736,14 @@ extension TripView {
                         
                     }) {
                         if item.isStop {
-                            BasicLocationView(name: item.name, showButton: true, favoriteAction:  {
+                            BasicLocationView(name: item.name, showButton: true, buttonAction: {
                                 resultDetail = searchResultItem(title: item.name, coordinates: item.stop?.wgs84Coordinates.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                                 resultTitle = item.name
                             })
                         } else {
-                            let title = item.name.split(separator: ";")
-                            BasicLocationView(name: String(title[0]), subtitle: String(title[1]), isGeoPosition: true, showButton: true, favoriteAction:  {
-                                resultDetail = searchResultItem(title: String(title[0]), coordinates:item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
+                            let title = item.placeTitle
+                            BasicLocationView(name: title.name, subtitle: title.subtitle, isGeoPosition: true, showButton: true, buttonAction: {
+                                resultDetail = searchResultItem(title: title.name, coordinates:item.geoCoordinates?.toCLLocationCoordinate2D ?? CLLocationCoordinate2D(latitude: 0.0, longitude: 0.0))
                             })
                         }
                     }

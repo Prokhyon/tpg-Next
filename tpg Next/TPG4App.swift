@@ -15,11 +15,13 @@ import WidgetKit
 
 @main
 struct TPG4App: App {
-    @State private var stopStore = StopStore()
+    @State private var stopStore = StopStore(publishesNames: true)
     // Doit être l'instance partagée : l'AppDelegate passe par FavoritesViewModel.shared
     // pour la synchronisation avec la montre.
     @State private var favoritesViewModel = FavoritesViewModel.shared
-    @State private var appRequirementsClass = AppRequirementsClass()
+    @State private var favoritePlaces = FavoritePlacesModel.shared
+    @AppStorage(SettingKey.appIcon) private var appIcon = AppIconChoice.classique.rawValue
+    @AppStorage(SettingKey.lineColoredShadows) private var lineColoredShadows = false
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @SwiftUICore.Environment(\.scenePhase) var scenePhase
     
@@ -46,10 +48,11 @@ struct TPG4App: App {
         WindowGroup {
 //            StoryboardView()
             ContentView()
+                .providingLayoutContext()
                 .tickingClock()
                 .environment(stopStore)
                 .environment(favoritesViewModel)
-                .environment(appRequirementsClass)
+                .environment(favoritePlaces)
                 .task {
                     // La base se charge en arrière-plan : on l'attend avant de s'en servir.
                     await stopStore.waitUntilLoaded()
@@ -59,8 +62,13 @@ struct TPG4App: App {
                     prepareWidgetData()
                 }
                 .background (
-                    Gradient(colors: [.accent, .color1, .color1]).opacity(0.7)
+                    Gradient(colors: [.accentColor, .color1, .color1]).opacity(0.7)
                 )
+                // La couleur de l'icône choisie : `tint` pour les contrôles, `accentColor`
+                // pour `Color.accentColor`, que `tint` ne change pas.
+                .tint(AppIconChoice(stored: appIcon).accent)
+                .accentColor(AppIconChoice(stored: appIcon).accent)
+                .environment(\.lineColoredShadows, LineColoredShadows.isAvailable && lineColoredShadows)
         }
     }
 }
@@ -72,6 +80,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         let center = UNUserNotificationCenter.current()
         center.delegate = self  // Set the delegate
+        // Avant la fin du lancement, sinon iOS refuse l'enregistrement.
+        RegularTripsModel.registerBackgroundTask()
+        // Ici plutôt que dans une vue : une tâche de fond lance l'app sans interface.
+        FavoritesViewModel.shared.startCloudSync()
+        FavoritePlacesModel.shared.startCloudSync()
+        RegularTripsModel.shared.startCloudSync()
         
         // Initialize WCSession
         if WCSession.isSupported() {
@@ -111,9 +125,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         // Handle incoming messages from the watch
+        // Les messages arrivent sur la file de WCSession : les favoris ne se lisent que sur le fil principal.
         if message["requestSync"] as? Bool == true {
-                    FavoritesViewModel.shared.syncFavoritesToWatch()
-                }
+            DispatchQueue.main.async {
+                FavoritesViewModel.shared.syncFavoritesToWatch()
+            }
+        }
         if let data = message["favoriteStops"] as? Data {
             do {
                 let favorites = try JSONDecoder().decode([Stop].self, from: data)
@@ -132,6 +149,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // App ouverte, le suivi démarre de lui-même : la notification qui invitait à l'ouvrir
+        // n'a rien à dire.
+        if notification.request.content.userInfo[SavedTripAutoTracking.userInfoKey] != nil {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .badge])
     }
     
@@ -142,16 +165,30 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         ) {
             // Extract information from the notification
             let userInfo = response.notification.request.content.userInfo
-            if let stopID = userInfo["stopID"] as? String,
+            if let key = userInfo[TripStepAlerts.userInfoKey] as? String {
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .liveTrip(key: key)
+                }
+            } else if userInfo[SavedTripAutoTracking.userInfoKey] != nil || userInfo[SavedTripReminders.userInfoKey] != nil {
+                // Rappel ou invitation au suivi (qui démarre au retour au premier plan) : on montre
+                // l'itinéraire dans sa liste.
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .savedTrips
+                }
+            } else if userInfo[RegularTripAlerts.occurrenceKey] != nil {
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .regularTrips
+                }
+            } else if let stopID = userInfo["stopID"] as? String,
                let stopName = userInfo["stopName"] as? String,
                let journeyRef = userInfo["journeyRef"] as? String,
                let estimatedTime = userInfo["estimatedTime"] as? String {
-                // Post a notification to SwiftUI to handle navigation
-                NotificationCenter.default.post(
-                    name: .didReceiveNotification,
-                    object: nil,
-                    userInfo: ["stopID": stopID, "stopName": stopName, "journeyRef": journeyRef, "estimatedTime": estimatedTime]
-                )
+                // Déposée plutôt que postée : ContentView la consomme dès qu'il existe.
+                let highlight = DepartureHighlight(journeyRef: journeyRef.isEmpty ? nil : journeyRef,
+                                                   time: estimatedTime.isEmpty ? nil : estimatedTime)
+                DispatchQueue.main.async {
+                    PendingNotificationOpen.shared.route = .stop(name: stopName, sloid: stopID, highlight: highlight)
+                }
             }
             completionHandler()
         }
@@ -171,19 +208,5 @@ extension UINavigationBar {
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().compactScrollEdgeAppearance = appearance
         
-    }
-}
-
-@Observable
-class AppRequirementsClass {
-    var version26: Bool
-
-    init() {
-        // Par exemple, active la fonctionnalité pour iOS 17 et plus (iOS 26 quand disponible)
-        if #available(iOS 26, *) {
-            self.version26 = true
-        } else {
-            self.version26 = false
-        }
     }
 }

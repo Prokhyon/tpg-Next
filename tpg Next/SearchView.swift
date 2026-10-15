@@ -4,6 +4,10 @@
 //
 //  Created by Loris Thomas on 19.06.2024.
 //
+//  Un seul champ pour aller quelque part ou trouver quelque chose : les lignes, mes
+//  itinéraires, les arrêts et les lieux. Sans texte, les recherches récentes, les arrêts
+//  proches et la liste des lignes.
+//
 
 import Foundation
 import SwiftUI
@@ -12,229 +16,394 @@ import tpgNextFunc
 
 struct SearchView: View {
     @Environment(\.displayTime) private var now
-    //    var path: ViewStateStack
     @Environment(StopStore.self) var stopStore
     @Environment(FavoritesViewModel.self) var favoritesViewModel
-    @Environment(ItineraryViewModel.self) var tripViewModel
+    @Environment(FavoritePlacesModel.self) private var favoritePlaces
+    @Environment(ItineraryViewModel.self) var itinerary
     @Environment(NavigationModel.self) var navigationModel
     @Environment(RecentSearch.self) var recentSearchModel
-    @State var locationManager = LocationManager()
     @Environment(SavedTripsModel.self) var savedTripsModel
-    
-    @State private var resultDetail: searchResultItem?
-    @State private var activeFutureTrip: TripEvent?
-    //    @State private var recentSearchDestination: RecentSearchItem?
-    @State var searchResult: Stop?
+    @Environment(RegularTripsModel.self) var regularTripsModel
+    @Environment(\.openRoute) private var openRoute
+    @AppStorage(SettingKey.lineOperators) private var lineOperators = LineOperatorChoice.defaultValue
+
+    @State private var locationManager = LocationManager()
+    @State private var locationSearch = LocationSearchViewModel()
     @State private var stopResults: [Stop] = []
-    @State private var showTripDetail = false
-    
-    @FocusState private var isFocused: Bool
-    
-    @AppStorage(SettingKey.homeShowsFavorites) var homeFavorites = false
-    
-    //    var futureTrips: [TripEvent] = []
-    var futureTrips: [TripEvent] {
-        savedTripsModel.savedTrips.sortedByStart().filter { trip in
-            !hasPassed(trip.startDate, includingCurrentMinute: false, now: now)
-        }
-    }
-    
+    @State private var nearbyStops: [Stop] = []
+    @State private var userLocation: CLLocation?
+    /// La fiche d'un lieu ou d'un arrêt, avec « Y aller ».
+    @State private var place: PlaceSheetItem?
+    private var recentTrips = RecentTrips.shared
+
+    private var query: String { navigationModel.searchQuery }
+
     var body: some View {
-//        let searchView = VStack {}
-        let searchView = ZStack {
-            VStack(alignment: .leading, spacing: 0) {
-            if navigationModel.searchQuery.isEmpty {
-                ScrollView {
-                    if !recentSearchModel.searchItems.isEmpty {
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Recherches récentes")
-                                    .font(.title2).bold()
-                                //                            .padding(.top)
-                                Spacer()
-                            }
-                            .padding(.horizontal)
-                            ForEach(recentSearchModel.searchItems, id: \.self) { item in
-                                if item.isStop {
-                                    if let stop = item.stop {
-                                        Button(action: {
-                                            recentSearchModel.add(name: item.name, isStop: true, stop: stop, geoCoordinates: item.geoCoordinates)
-                                            searchResult = stop
-                                        }) {
-                                                BasicLocationView(name: item.name, transportType: stop.meansOfTransport, isFavorite: favoritesViewModel.isFavorite(stop), showButton: true, showFavorite: true, buttonAction: {
-                                                    resultDetail = searchResultItem(title: item.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
-                                                }, favoriteAction: {toggleFavorite(stop: stop)})
-                                        }
-                                        .foregroundStyle(.primary)
-                                        .padding(5)
-                                        .contentShape(.contextMenuPreview, Capsule())
-                                        .contextMenu {
-                                            TripActionsMenu(stop: stop)
-                                        }
-                                        .padding(.horizontal)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if !futureTrips.isEmpty {
-                        HStack {
-                            Text("Prochains itinéraires")
-                                .font(.title2).bold()
-                                .padding(.top)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                        HStack {
-                            Text(formatDate(activeFutureTrip?.startDate))
-                                .font(.headline)
-                            //                                .padding(.top)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                            ScrollView(.horizontal) {
-                                HStack {
-                                    ForEach(futureTrips, id: \.self) { trip in
-                                        //                            if !hasPassed(trip.startDate, includingCurrentMinute: false, now: now) {
-                                        NavigationLink {
-                                            FullTripView(fullTrip: trip)
-                                        } label: {
-                                            VStack {
-                                                SavedTripView(event: trip)
-                                                //                                                    .frame(width: geometry.size.width)
-                                                    .padding(15)
-                                            }
-                                            .background(
-                                                BasicCard(cornerRadius: 30)
-                                            )
-                                        }
-                                        //                                        .frame(width: geometry.size.width-10)
-                                        .padding(5)
-                                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 35))
-                                        .contextMenu {
-                                            Button(action: {
-                                                savedTripsModel.removeTrip(trip)
-                                            }) {
-                                                Label("Ne plus enregistrer l'itinéraire", image: "scurvepath.stack.fill.badge.minus")
-                                            }
-                                        }
-                                        //                                        .padding(15)
-                                        .padding(.vertical, 5)
-                                        .padding(.horizontal, 10)
-                                        .foregroundStyle(.primary)
-                                        //                            }
-                                    }
-                                    .containerRelativeFrame(.horizontal, count: 1, spacing: 0)
-                                }
-                            }
-                            .scrollTargetLayout()
-                            .scrollTargetBehavior(.viewAligned)
-                            .scrollPosition(id: $activeFutureTrip)
-//                            .mask {
-//                                Rectangle()
-//                                    .overlay(alignment: .top) {
-//                                        ScrollMask(leading: false, vertical: true, gradientLength: 10)
-//                                    }
-//                            }
-//                            .mask {
-//                                Rectangle()
-//                                    .overlay(alignment: .bottom) {
-//                                        ScrollMask(leading: true, vertical: true, gradientLength: 10)
-//                                    }
-//                            }
-                            //                            .padding(.vertical)
-                            //                            .scrollTargetBehavior(.paging)
-                            .onAppear {
-                                activeFutureTrip = futureTrips.first
-                            }
-                    }
-                }
-            } else {
-                if stopResults.isEmpty {
-                    Text("Aucun résultat pour « \(navigationModel.searchQuery) »")
+        let searchView = ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if query.isEmpty {
+                    emptyState
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(stopResults) { stop in
-                                Button(action: {
-                                    recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
-                                    searchResult = stop
-                                }) {
-                                    BasicLocationView(name: stop.name, transportType: stop.meansOfTransport, isFavorite: favoritesViewModel.isFavorite(stop), showButton: true, showFavorite: true, buttonAction: {
-                                        resultDetail = searchResultItem(title: stop.name, coordinates: CLLocationCoordinate2D(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon))
-                                    }, favoriteAction: {toggleFavorite(stop: stop)})
-                                }
-                                .foregroundStyle(.primary)
-                                .padding(5)
-                                .contentShape(.contextMenuPreview, Capsule())
-                                .contextMenu {
-                                    TripActionsMenu(stop: stop)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    .contentMargins(.bottom, 40, for: .automatic)
+                    results
                 }
             }
-            }
-            VStack {
-                BackdropBlurView(radius: 5)
-                    .frame(height: 70)
-                    .mask {
-                        Rectangle()
-                            .overlay(alignment: .top) {
-                                ScrollMask(leading: true, vertical: true, gradientLength: 70)
-                            }
-                    }
-                    .ignoresSafeArea()
-            Spacer()
-            }
+            .padding(.bottom, 40)
         }
-            .navigationTitle("Explorer") // Set back button text
-        //            .navigationBarTitleDisplayMode(.inline)
-        //            .toolbar {
-        //                ToolbarItem(placement: .principal) {
-        //                    Text("") // Visible title
-        //                }
-        //            }
-            .navigationDestination(item: $searchResult) { stop in
-                StopView(stopName: stop.name, stopSloid: stop.sloid)
-            }
-            .scrollDismissesKeyboard(.immediately)
-            .searchingStops(navigationModel.searchQuery, results: $stopResults)
-        
-        
-            .onAppear {
-                isFocused = true
-                if homeFavorites {
-                    locationManager.requestLocation { location in
-                        if let userLocation = locationManager.userLocation {
-                            stopStore.location = userLocation
-                        } else {
-                            Log.location.error("Position indisponible")
+        .readableScrollContent()
+        .overlay(alignment: .top) {
+            BackdropBlurView(radius: 5)
+                .frame(height: 70)
+                .mask {
+                    Rectangle()
+                        .overlay(alignment: .top) {
+                            ScrollMask(leading: true, vertical: true, gradientLength: 70)
                         }
-                        locationManager.locationUpdateHandler = nil
-                    }
                 }
-            }
-                .sheet(item: $resultDetail) { detail in
-                    MapPreview(resultDetail: detail, position: .region(MKCoordinateRegion(center: detail.coordinates, span: MKCoordinateSpan(latitudeDelta: 0.007, longitudeDelta: 0.007))))
-                        .presentationDetents([.medium, .fraction(0.9)])
-                        .presentationCornerRadius(35)
-                }
-                                   //            .navigationDestination(isPresented: $showTripDetail) {
-                                   //                if let stop = selectedSearchResult {
-                                   //                    StopView(stopName: stop.title, stopSloid: stop.stop.sloid)
-                                   ////                        .environment(savedTripsModel)
-                                   //                }
-                                   //            }
-               
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+        .navigationTitle("Explorer") // Set back button text
+        .scrollDismissesKeyboard(.immediately)
+        .searchingStops(query, results: $stopResults)
+        .onChange(of: query, initial: true) { locationSearch.searchQuery = query }
+        .onAppear(perform: locate)
+        .sheet(item: $place) { place in
+            PlaceSheet(place: place)
+        }
+
         if #available(iOS 26, *) {
             searchView
-                .searchable(text: Bindable(navigationModel).searchQuery)
+                .searchable(text: Bindable(navigationModel).searchQuery, prompt: Text("Arrêts, lieux, itinéraires"))
         } else {
             searchView
+        }
+    }
+
+    // MARK: Sans texte
+
+    /// Les recherches récentes (itinéraires, arrêts, lieux) et les arrêts proches.
+    @ViewBuilder private var emptyState: some View {
+        let recentItems = recentSearchModel.searchItems
+        if !recentTrips.trips.isEmpty || !recentItems.isEmpty {
+            sectionTitle("Récents")
+            ForEach(recentTrips.trips.prefix(3), id: \.self) { trip in
+                row(title: recentTripTitle(trip), subtitle: nil, systemImage: "point.bottomleft.forward.to.point.topright.scurvepath") {
+                    itinerary.searchNow(from: trip.origin?.endpoint, to: trip.destination.endpoint, tab: navigationModel)
+                }
+            }
+            ForEach(recentItems, id: \.self) { item in
+                if item.isStop, let stop = item.stop {
+                    stopRow(stop)
+                } else if let coordinates = item.geoCoordinates {
+                    let title = item.placeTitle
+                    let coordinate = coordinates.toCLLocationCoordinate2D
+                    placeRow(title: title.name, subtitle: title.subtitle,
+                             isFavorite: favoritePlaces.isFavorite(coordinate),
+                             toggleFavorite: {
+                                 favoritePlaces.toggle(name: title.name, address: title.subtitle, coordinate: coordinate)
+                             }) {
+                        place = PlaceSheetItem(name: title.name, subtitle: title.subtitle, coordinate: coordinate)
+                    }
+                }
+            }
+        }
+        if !nearbyStops.isEmpty {
+            sectionTitle("À proximité")
+            ForEach(nearbyStops) { stop in
+                stopRow(stop, distance: userLocation.map { distance(from: $0, to: stop) })
+            }
+        }
+        sectionTitle("Réseau")
+        row(title: Text("Toutes les lignes").bold(),
+            subtitle: LineOperatorChoice.operators(from: lineOperators).map(\.shortName).formatted(.list(type: .and)),
+            systemImage: "list.number") {
+            openRoute(.lines)
+        }
+    }
+
+    /// « Genève **Rive** → Genève **gare Cornavin** », « Ma position → Jet d'eau ».
+    private func recentTripTitle(_ trip: RecentTrips.RecentTrip) -> Text {
+        Text(route: trip.origin?.name ?? String(localized: "Ma position"), to: trip.destination.name)
+    }
+
+    // MARK: Résultats
+
+    @ViewBuilder private var results: some View {
+        // Seulement les transporteurs choisis : « 1 » ne donne pas les 1 de toute la Suisse.
+        let lines = LineDirectory.search(query, in: LineOperatorChoice.lines(from: lineOperators))
+        let myTrips = matchingTrips
+        let places = Array(locationSearch.searchResults.prefix(5))
+        if lines.isEmpty && myTrips.isEmpty && stopResults.isEmpty && places.isEmpty {
+            Text("Aucun résultat pour « \(query) »")
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+        }
+        if !lines.isEmpty {
+            sectionTitle("Lignes")
+            ForEach(lines) { line in
+                lineRow(line)
+            }
+        }
+        if !myTrips.isEmpty {
+            sectionTitle("Mes itinéraires")
+            ForEach(myTrips) { myTrip in
+                myTripRow(myTrip)
+            }
+        }
+        if !stopResults.isEmpty {
+            sectionTitle("Arrêts")
+            ForEach(stopResults) { stop in
+                stopRow(stop)
+            }
+        }
+        if !places.isEmpty {
+            sectionTitle("Lieux")
+            ForEach(places, id: \.self) { completion in
+                placeRow(title: completion.title, subtitle: completion.subtitle,
+                         isFavorite: favoritePlace(for: completion) != nil,
+                         toggleFavorite: { toggleFavorite(completion) }) {
+                    open(completion)
+                }
+            }
+        }
+    }
+
+    /// Les trajets réguliers et les prochains itinéraires enregistrés, par nom ou par arrêt.
+    private var matchingTrips: [MyTrip] {
+        let wanted = query.normalized().lowercased()
+        guard !wanted.isEmpty else { return [] }
+        func matches(_ texts: String...) -> Bool {
+            texts.contains { $0.normalized().lowercased().contains(wanted) }
+        }
+        let regular = regularTripsModel.regularTrips
+            .filter { matches($0.name, $0.origin.name, $0.destination.name) }
+            .map(MyTrip.regular)
+        let saved = savedTripsModel.savedTrips
+            .filter { ($0.endDate ?? .distantPast) > now && matches($0.startName, $0.endName) }
+            .sortedByStart()
+            .prefix(5)
+            .map(MyTrip.saved)
+        return regular + saved
+    }
+
+    enum MyTrip: Identifiable {
+        case regular(RegularTrip)
+        case saved(TripEvent)
+
+        var id: String {
+            switch self {
+            case .regular(let trip): "regular-\(trip.id)"
+            case .saved(let trip): "saved-\(trip.id)"
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func myTripRow(_ myTrip: MyTrip) -> some View {
+        switch myTrip {
+        case .regular(let trip):
+            let next = regularTripsModel.upcoming(after: now).first { $0.tripID == trip.id }
+            row(title: trip.displayTitle, subtitle: regularSubtitle(trip, next: next), systemImage: "repeat") {
+                // Le trajet du jour s'il y en a un dans la semaine, sinon la liste des trajets réguliers.
+                if let next, let displayed = regularTripsModel.displayedTrip(for: next) {
+                    openRoute(.trip(displayed))
+                } else {
+                    openRoute(.regularTrips)
+                }
+            }
+            .contextMenu {
+                Button {
+                    itinerary.searchNow(from: trip.origin.endpoint, to: trip.destination.endpoint, tab: navigationModel)
+                } label: {
+                    Label("Chercher maintenant", systemImage: "arrow.right")
+                }
+                Button {
+                    itinerary.searchNow(from: trip.destination.endpoint, to: trip.origin.endpoint, tab: navigationModel)
+                } label: {
+                    Label("Retour maintenant", systemImage: "arrow.uturn.left")
+                }
+            }
+        case .saved(let trip):
+            row(title: Text(route: trip.startName, to: trip.endName), subtitle: savedSubtitle(trip), image: "scurvepath.stack.fill") {
+                openRoute(.trip(savedTripsModel.displayedTrip(for: trip)))
+            }
+        }
+    }
+
+    /// « Demain · 17:58 », ou les jours et l'heure s'il n'y a rien dans la semaine.
+    private func regularSubtitle(_ trip: RegularTrip, next: RegularTripOccurrence?) -> String {
+        guard let next else { return "\(trip.daysSummary) · \(trip.timeText)" }
+        return "\(SavedTripsAgenda.dayTitle(next.plannedDeparture)) · \(dateToString(with: next.plannedDeparture))"
+    }
+
+    private func savedSubtitle(_ trip: TripEvent) -> String {
+        guard let start = trip.startDate else { return "" }
+        return "\(SavedTripsAgenda.dayTitle(start)) · \(dateToString(with: start))"
+    }
+
+    // MARK: Lignes
+
+    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.title2).bold()
+            .padding(.horizontal)
+            .padding(.top, 16)
+            .padding(.bottom, 4)
+    }
+
+    /// Un arrêt : ses départs au toucher, sa fiche (carte, « Y aller ») par le bouton.
+    private func stopRow(_ stop: Stop, distance: String? = nil) -> some View {
+        Button {
+            recentSearchModel.add(name: stop.name, isStop: true, stop: stop, geoCoordinates: nil)
+            openRoute(.stop(stop))
+        } label: {
+            BasicLocationView(name: stop.name, subtitle: distance, transportType: stop.meansOfTransport,
+                              isFavorite: favoritesViewModel.isFavorite(stop), showButton: true, showFavorite: true,
+                              buttonAction: { place = PlaceSheetItem(stop: stop) },
+                              favoriteAction: { toggleFavorite(stop: stop) })
+        }
+        .foregroundStyle(.primary)
+        .padding(5)
+        .padding(.horizontal)
+        .contentShape(.contextMenuPreview, Capsule())
+        .contextMenu {
+            TripActionsMenu(stop: stop)
+        }
+    }
+
+    /// Une ligne : son numéro, et ses terminus.
+    private func lineRow(_ line: TransitLine) -> some View {
+        Button {
+            openRoute(.lineInfo(line))
+        } label: {
+            HStack(spacing: 12) {
+                BusLineIcon(lineName: line.number, operatorName: line.operatorColorName)
+                    .font(.callout.bold())
+                Text(verbatim: line.termini.map { "\($0.from) ↔ \($0.to)" } ?? line.description)
+                    .font(.callout)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.bold())
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 20)
+            .basicElementBackground(minHeight: 45)
+        }
+        .foregroundStyle(.primary)
+        .padding(5)
+        .padding(.horizontal)
+    }
+
+    /// Un lieu : sa fiche au toucher ; l'étoile le garde parmi les lieux favoris.
+    private func placeRow(title: String, subtitle: String, isFavorite: Bool, toggleFavorite: @escaping () -> Void,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            BasicLocationView(name: title, subtitle: subtitle, isGeoPosition: true,
+                              isFavorite: isFavorite, showFavorite: true,
+                              favoriteAction: { withAnimation { toggleFavorite() } })
+        }
+        .foregroundStyle(.primary)
+        .padding(5)
+        .padding(.horizontal)
+    }
+
+    private func row(title: Text, subtitle: String?, systemImage: String? = nil, image: String? = nil,
+                     action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Group {
+                    if let systemImage {
+                        Image(systemName: systemImage)
+                    } else if let image {
+                        Image(image)
+                    }
+                }
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    title
+                        .font(.callout)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.bold())
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 20)
+            .basicElementBackground(minHeight: 45)
+        }
+        .foregroundStyle(.primary)
+        .padding(5)
+        .padding(.horizontal)
+    }
+
+    // MARK: Actions
+
+    /// Un lieu proposé par Plans : ses coordonnées d'abord, puis sa fiche.
+    private func open(_ completion: MKLocalSearchCompletion) {
+        locationSearch.getCoordinate(for: completion) { coordinate in
+            guard let coordinate else { return }
+            DispatchQueue.main.async {
+                recentSearchModel.add(name: "\(completion.title);\(completion.subtitle)", isStop: false, stop: nil,
+                                      geoCoordinates: coordinate.toCoordinates)
+                place = PlaceSheetItem(name: completion.title, subtitle: completion.subtitle, coordinate: coordinate)
+            }
+        }
+    }
+
+    /// La position : les arrêts proches, et des résultats triés du plus proche au plus lointain.
+    private func locate() {
+        locationManager.requestLocation { location in
+            guard let location = location ?? locationManager.userLocation else {
+                Log.location.error("Position indisponible")
+                return
+            }
+            locationManager.locationUpdateHandler = nil
+            stopStore.location = location
+            let candidates = stopsInBoundingBox(from: location, radius: 1000, stops: stopStore.activeStops)
+            calculateClosestBusStops(from: location, stops: candidates, nb: 5) { _, stops in
+                DispatchQueue.main.async {
+                    userLocation = location
+                    nearbyStops = stops
+                }
+            }
+        }
+    }
+
+    private func distance(from location: CLLocation, to stop: Stop) -> String {
+        let meters = CLLocation(latitude: stop.wgs84Coordinates.lat, longitude: stop.wgs84Coordinates.lon).distance(from: location)
+        return Measurement(value: meters, unit: UnitLength.meters).formatted(.measurement(width: .abbreviated, usage: .road))
+    }
+
+    /// Le lieu favori d'une suggestion de Plans, reconnu à son nom et son adresse : ses
+    /// coordonnées ne sont connues qu'une fois la suggestion ouverte.
+    private func favoritePlace(for completion: MKLocalSearchCompletion) -> FavoritePlace? {
+        favoritePlaces.places.first { $0.placeName == completion.title && ($0.address ?? "") == completion.subtitle }
+    }
+
+    private func toggleFavorite(_ completion: MKLocalSearchCompletion) {
+        if let existing = favoritePlace(for: completion) {
+            favoritePlaces.remove(existing)
+            return
+        }
+        locationSearch.getCoordinate(for: completion) { coordinate in
+            guard let coordinate else { return }
+            DispatchQueue.main.async {
+                withAnimation {
+                    favoritePlaces.add(name: completion.title, address: completion.subtitle, coordinate: coordinate)
+                }
+            }
         }
     }
 
@@ -245,34 +414,17 @@ struct SearchView: View {
             favoritesViewModel.addFavorite(stop)
         }
     }
-    func formatDate(_ date: Date?) -> String {
-        if let date = date {
-            let dateFormatter = DateFormatter()
-            //            dateFormatter.dateFormat = "EEE, d MMMM yyyy"
-            dateFormatter.dateStyle = .full
-            dateFormatter.timeStyle = .none
-            let formattedDate = dateFormatter.string(from: date)
-            return formattedDate.prefix(1).capitalized + formattedDate.dropFirst()
-        } else {
-            return ""
-        }
-    }
 }
 
-struct SearchView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var stopStore = StopStore()
-        @State var favoritesViewModel = FavoritesViewModel()
-        @State var fullTripTest = FullTripTest()
-        @State var showSearch: Bool = true
-        
-        return NavigationStack() {
-            SearchView(/*futureTrips: [fullTripTest.Trip]*/)
-                .environment(favoritesViewModel)
-                .environment(stopStore)
-                .environment(RecentSearch())
-//                    .background(Background())
-            }
-            
-    }
+#Preview("Recherche") {
+    SearchView()
+        .environment(RegularTripsModel(previewTrips: [
+            RegularTrip(trip: PreviewData.tripWithTransfer, weekdays: Weekday.workdays, name: "Travail"),
+        ]))
+        .previewEnvironment(savedTrips: PreviewData.trips)
+}
+
+#Preview("Recherche — iPad", traits: .iPadLandscape) {
+    SearchView()
+        .previewEnvironment(savedTrips: PreviewData.trips)
 }

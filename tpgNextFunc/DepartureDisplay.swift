@@ -20,6 +20,8 @@ public enum DepartureDisplay: Equatable {
     case clock(String, delayed: Bool)
     /// L'heure prévue et le retard, affichés séparément : « 14:05 » et « (+3') ».
     case plannedWithDelay(planned: String, delay: String)
+    /// Course supprimée à cet arrêt.
+    case cancelled
     /// Heure illisible.
     case unknown
 
@@ -31,6 +33,7 @@ public enum DepartureDisplay: Equatable {
         case .minutes(let minutes, _): return "\(minutes)'"
         case .clock(let time, _): return time
         case .plannedWithDelay(let planned, let delay): return "\(planned);\(delay)"
+        case .cancelled: return String(localized: "Supprimé", bundle: #bundle)
         case .unknown: return ""
         }
     }
@@ -40,7 +43,7 @@ public enum DepartureDisplay: Equatable {
         switch self {
         case .lessThanAMinute(let delayed), .minutes(_, let delayed), .clock(_, let delayed): return delayed
         case .plannedWithDelay: return true
-        case .atStop, .unknown: return false
+        case .atStop, .cancelled, .unknown: return false
         }
     }
 }
@@ -48,7 +51,15 @@ public enum DepartureDisplay: Equatable {
 /// Minutes restantes, heure de passage ou heure prévue avec son retard.
 /// - Parameter now: l'instant de référence du décompte. Le widget passe la date de
 ///   l'entrée de timeline qu'il est en train de construire, pas l'heure courante.
-public func departureDisplay(timetabled: String, estimated: String, showTime: Bool, at now: Date = Date()) -> DepartureDisplay {
+/// L'affichage d'un départ : « Supprimé » pour une course supprimée, son heure sinon.
+public func departureDisplay(for event: StopEvent, showTime: Bool, at now: Date = AppClock.now()) -> DepartureDisplay {
+    if event.cancelled {
+        return .cancelled
+    }
+    return departureDisplay(timetabled: event.timetabledTime, estimated: event.estimatedTime, showTime: showTime, at: now)
+}
+
+public func departureDisplay(timetabled: String, estimated: String, showTime: Bool, at now: Date = AppClock.now()) -> DepartureDisplay {
     let estimated = estimated.isEmpty ? timetabled : estimated
     guard let timetableTime = OJPDate.date(from: timetabled),
           let estimatedTime = OJPDate.date(from: estimated) else {
@@ -95,7 +106,7 @@ public struct DepartureTimeView: View {
     let iconWidth: CGFloat?
     let showsIcon: Bool
 
-    /// - Parameter showsIcon: `false` affiche « 0 » au lieu de l'icône du véhicule à l'arrêt.
+    /// - Parameter showsIcon: `false` affiche « Maintenant » au lieu de l'icône du véhicule à l'arrêt.
     public init(_ display: DepartureDisplay, transportType: String, layout: Layout = .stacked,
                 iconWidth: CGFloat? = nil, showsIcon: Bool = true) {
         self.display = display
@@ -106,6 +117,13 @@ public struct DepartureTimeView: View {
     }
 
     public var body: some View {
+        content
+            // Le décompte et les heures qui changent (temps réel) roulent au lieu de sauter.
+            .contentTransition(.numericText(countsDown: true))
+            .animation(.snappy, value: display)
+    }
+
+    @ViewBuilder private var content: some View {
         switch display {
         case .atStop where showsIcon:
             // Au moins la largeur de l'icône : elle grandit avec le texte et débordait
@@ -113,6 +131,11 @@ public struct DepartureTimeView: View {
             transportIcon(with: transportType)
                 .fixedSize()
                 .frame(minWidth: iconWidth)
+        case .atStop:
+            // « 0 », seul à côté d'un nom d'arrêt ou sous « Heure », ne se lisait pas.
+            Text(String(localized: "Maintenant", bundle: #bundle))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
         case .plannedWithDelay(let planned, let delay):
             stack {
                 Text(planned)
@@ -122,6 +145,11 @@ public struct DepartureTimeView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
+        case .cancelled:
+            Text(display.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(.red)
         default:
             // Une seule ligne : avec un texte agrandi, « 16:17 » passait sinon à la ligne.
             Text(display.text)

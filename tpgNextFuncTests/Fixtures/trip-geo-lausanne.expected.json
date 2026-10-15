@@ -1,0 +1,1364 @@
+[
+  {
+    "duration" : "PT1H35M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:14:30Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-6A160CFA-A2A4-4BCF-AF4A-D4DE36D626E7",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT44M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__FS",
+          "A__BZ",
+          "A__FZ",
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100001:1733-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:14:30Z",
+        "legAlightLatitude" : "46.51674",
+        "legAlightLongitude" : "6.62907",
+        "legAlightQuay" : "3",
+        "legAlightStopId" : "ch:1:sloid:1120:0:276884",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:12:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:23:30Z",
+        "legBoardLatitude" : "46.21056",
+        "legBoardLongitude" : "6.14234",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:3:4",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:23:00Z",
+        "legDestination" : "Brig",
+        "legDestinationRef" : "ch:1:sloid:1609",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.38471",
+            "longitude" : "6.23611",
+            "stopId" : "ch:1:sloid:1030:2:2",
+            "stopName" : "Nyon"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.51159",
+            "longitude" : "6.49421",
+            "stopId" : "ch:1:sloid:1037:3:4",
+            "stopName" : "Morges"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91095:_x0020_",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IR95",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterRegio"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T15:39:30Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT55M18S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T16:43:18Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-D43F83C3-627A-4E5D-9B12-AA2723C1F92A",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-19-Lun-Ven-35443306",
+        "legAlightEstimatedTime" : "2026-10-02T15:58:24Z",
+        "legAlightLatitude" : "46.2104",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-10-02T15:58:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T15:49:00Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-10-02T15:49:00Z",
+        "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.1406",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      },
+      {
+        "id" : "3",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT7M",
+        "transferWalkDuration" : "PT5M",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF",
+          "A__FS",
+          "A__BZ",
+          "A__FZ"
+        ],
+        "id" : "4",
+        "journeyRef" : "ch:1:sjyid:100001:1831-001",
+        "legAlightEstimatedTime" : "2026-10-02T16:43:18Z",
+        "legAlightLatitude" : "46.51674",
+        "legAlightLongitude" : "6.62907",
+        "legAlightQuay" : "3",
+        "legAlightStopId" : "ch:1:sloid:1120:0:276884",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T16:44:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:05:30Z",
+        "legBoardLatitude" : "46.21066",
+        "legBoardLongitude" : "6.14215",
+        "legBoardQuay" : "5",
+        "legBoardStopId" : "ch:1:sloid:1008:3:6",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:05:00Z",
+        "legDestination" : "Brig",
+        "legDestinationRef" : "ch:1:sloid:1609",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91090:_x0020_",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IR90",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterRegio"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T15:48:00Z",
+    "transfers" : "1"
+  },
+  {
+    "duration" : "PT1H22M6S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:13:36Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-9EE86044-87BE-4606-9759-738EE4343382",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT44M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__FS",
+          "A__BZ",
+          "A__FA",
+          "A__RZ",
+          "A__NF",
+          "A__WR",
+          "A___R",
+          "A__VR"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100001:733-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:13:36Z",
+        "legAlightLatitude" : "46.51677",
+        "legAlightLongitude" : "6.62951",
+        "legAlightQuay" : "1",
+        "legAlightStopId" : "ch:1:sloid:1120:0:668579",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:14:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:35:30Z",
+        "legBoardLatitude" : "46.21056",
+        "legBoardLongitude" : "6.14234",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:3:4",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:35:00Z",
+        "legDestination" : "Zürich HB",
+        "legDestinationRef" : "ch:1:sloid:3000",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.53754",
+            "longitude" : "6.57896",
+            "stopId" : "ch:1:sloid:1118:3:5",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91001:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IC1",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterCity"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T15:51:30Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT1H6M30S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T16:59:06Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-6FCD7E54-DAB1-4EB5-A51B-06CF66C3F28E",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-19-Lun-Ven-35443359",
+        "legAlightEstimatedTime" : "2026-10-02T16:03:00Z",
+        "legAlightLatitude" : "46.2104",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-10-02T16:03:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T15:53:36Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-10-02T15:53:00Z",
+        "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.1406",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      },
+      {
+        "id" : "3",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT5M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "4",
+        "journeyRef" : "ch:1:sjyid:100001:18429-001",
+        "legAlightEstimatedTime" : "2026-10-02T16:59:06Z",
+        "legAlightLatitude" : "46.51667",
+        "legAlightLongitude" : "6.62905",
+        "legAlightQuay" : "4",
+        "legAlightStopId" : "ch:1:sloid:1120:0:860143",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T16:59:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:08:12Z",
+        "legBoardLatitude" : "46.2105",
+        "legBoardLongitude" : "6.14266",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:1:1",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:08:00Z",
+        "legDestination" : "St-Maurice",
+        "legDestinationRef" : "ch:1:sloid:1403",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.31701",
+            "longitude" : "6.18744",
+            "stopId" : "ch:1:sloid:1023:2:3",
+            "stopName" : "Coppet"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.38471",
+            "longitude" : "6.23611",
+            "stopId" : "ch:1:sloid:1030:2:2",
+            "stopName" : "Nyon"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.42024",
+            "longitude" : "6.26947",
+            "stopId" : "ch:1:sloid:1031:1:1",
+            "stopName" : "Gland"
+          },
+          {
+            "id" : "5",
+            "latitude" : "46.46263",
+            "longitude" : "6.33624",
+            "stopId" : "ch:1:sloid:1033:1:1",
+            "stopName" : "Rolle"
+          },
+          {
+            "id" : "6",
+            "latitude" : "46.47556",
+            "longitude" : "6.39908",
+            "stopId" : "ch:1:sloid:1035:3:1",
+            "stopName" : "Allaman"
+          },
+          {
+            "id" : "7",
+            "latitude" : "46.51138",
+            "longitude" : "6.49404",
+            "stopId" : "ch:1:sloid:1037:2:3",
+            "stopName" : "Morges"
+          },
+          {
+            "id" : "8",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91033:C",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "RE33",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "RegioExpress"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T15:52:36Z",
+    "transfers" : "1"
+  },
+  {
+    "duration" : "PT1H34M54S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:29:06Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-B10C44D0-BCD5-478E-9E67-56C12EFC5E7F",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT44M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100001:18483-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:29:06Z",
+        "legAlightLatitude" : "46.51652",
+        "legAlightLongitude" : "6.62902",
+        "legAlightQuay" : "6",
+        "legAlightStopId" : "ch:1:sloid:1120:0:37997",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:29:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:38:12Z",
+        "legBoardLatitude" : "46.21052",
+        "legBoardLongitude" : "6.14242",
+        "legBoardQuay" : "3",
+        "legBoardStopId" : "ch:1:sloid:1008:2:3",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:38:00Z",
+        "legDestination" : "Martigny",
+        "legDestinationRef" : "ch:1:sloid:1500",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.31701",
+            "longitude" : "6.18744",
+            "stopId" : "ch:1:sloid:1023:2:3",
+            "stopName" : "Coppet"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.38471",
+            "longitude" : "6.23611",
+            "stopId" : "ch:1:sloid:1030:2:2",
+            "stopName" : "Nyon"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.42024",
+            "longitude" : "6.26947",
+            "stopId" : "ch:1:sloid:1031:1:1",
+            "stopName" : "Gland"
+          },
+          {
+            "id" : "5",
+            "latitude" : "46.46263",
+            "longitude" : "6.33624",
+            "stopId" : "ch:1:sloid:1033:1:1",
+            "stopName" : "Rolle"
+          },
+          {
+            "id" : "6",
+            "latitude" : "46.47556",
+            "longitude" : "6.39908",
+            "stopId" : "ch:1:sloid:1035:3:1",
+            "stopName" : "Allaman"
+          },
+          {
+            "id" : "7",
+            "latitude" : "46.51138",
+            "longitude" : "6.49404",
+            "stopId" : "ch:1:sloid:1037:2:3",
+            "stopName" : "Morges"
+          },
+          {
+            "id" : "8",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91033:C",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "RE33",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "RegioExpress"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T15:54:12Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT1H25M48S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:36:18Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-ACC04939-727B-478D-B187-5EE91D149391",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT44M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__FS",
+          "A__BZ",
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100001:2535-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:36:18Z",
+        "legAlightLatitude" : "46.51677",
+        "legAlightLongitude" : "6.62951",
+        "legAlightQuay" : "1",
+        "legAlightStopId" : "ch:1:sloid:1120:0:668579",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:37:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:54:30Z",
+        "legBoardLatitude" : "46.21056",
+        "legBoardLongitude" : "6.14234",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:3:4",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:54:00Z",
+        "legDestination" : "Luzern",
+        "legDestinationRef" : "ch:1:sloid:5000",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.38471",
+            "longitude" : "6.23611",
+            "stopId" : "ch:1:sloid:1030:2:2",
+            "stopName" : "Nyon"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.51138",
+            "longitude" : "6.49404",
+            "stopId" : "ch:1:sloid:1037:2:3",
+            "stopName" : "Morges"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91015:B",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IR15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterRegio"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T16:10:30Z",
+    "transfers" : "0"
+  },
+  {
+    "duration" : "PT57M",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:13:36Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-42FB84D6-FEA7-4C48-AEC5-AEF6450A311A",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-19-Lun-Ven-35443737",
+        "legAlightEstimatedTime" : "2026-10-02T16:27:00Z",
+        "legAlightLatitude" : "46.2104",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-10-02T16:27:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:17:36Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-10-02T16:17:00Z",
+        "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.1406",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      },
+      {
+        "id" : "3",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT9M",
+        "transferWalkDuration" : "PT5M",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__FS",
+          "A__BZ",
+          "A__FA",
+          "A__RZ",
+          "A__NF",
+          "A__WR",
+          "A___R",
+          "A__VR"
+        ],
+        "id" : "4",
+        "journeyRef" : "ch:1:sjyid:100001:733-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:13:36Z",
+        "legAlightLatitude" : "46.51677",
+        "legAlightLongitude" : "6.62951",
+        "legAlightQuay" : "1",
+        "legAlightStopId" : "ch:1:sloid:1120:0:668579",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:14:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:35:30Z",
+        "legBoardLatitude" : "46.21056",
+        "legBoardLongitude" : "6.14234",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:3:4",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:35:00Z",
+        "legDestination" : "Zürich HB",
+        "legDestinationRef" : "ch:1:sloid:3000",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.53754",
+            "longitude" : "6.57896",
+            "stopId" : "ch:1:sloid:1118:3:5",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91001:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IC1",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterCity"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T16:16:36Z",
+    "transfers" : "1"
+  },
+  {
+    "duration" : "PT1H8M6S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:29:06Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-0678AF00-18B8-4303-A36F-34C5D0A10858",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT1M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100680:HAS-26-15-19-Lun-Ven-35443736",
+        "legAlightEstimatedTime" : "2026-10-02T16:31:18Z",
+        "legAlightLatitude" : "46.2104",
+        "legAlightLongitude" : "6.14363",
+        "legAlightQuay" : "E",
+        "legAlightStopId" : "ch:1:sloid:87057:0:408265",
+        "legAlightStopName" : "Genève, gare Cornavin",
+        "legAlightTimetableTime" : "2026-10-02T16:31:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:22:00Z",
+        "legBoardLatitude" : "46.19864",
+        "legBoardLongitude" : "6.14204",
+        "legBoardQuay" : "B",
+        "legBoardStopId" : "ch:1:sloid:87907:0:102171",
+        "legBoardStopName" : "Genève, Plainpalais",
+        "legBoardTimetableTime" : "2026-10-02T16:22:00Z",
+        "legDestination" : "Nations",
+        "legDestinationRef" : "ch:1:sloid:87058",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.20081",
+            "longitude" : "6.1406",
+            "stopId" : "ch:1:sloid:92804:0:601267",
+            "stopName" : "Genève, Cirque"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.20398",
+            "longitude" : "6.13995",
+            "stopId" : "ch:1:sloid:92906:0:639734",
+            "stopName" : "Genève, Stand"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.20761",
+            "longitude" : "6.14153",
+            "stopId" : "ch:1:sloid:92831:0:720144",
+            "stopName" : "Genève, Goulart"
+          }
+        ],
+        "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91015:D",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "15",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "Tram"
+      },
+      {
+        "id" : "3",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT7M",
+        "transferWalkDuration" : "PT5M",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "id" : "4",
+        "journeyRef" : "ch:1:sjyid:100001:18483-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:29:06Z",
+        "legAlightLatitude" : "46.51652",
+        "legAlightLongitude" : "6.62902",
+        "legAlightQuay" : "6",
+        "legAlightStopId" : "ch:1:sloid:1120:0:37997",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:29:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T16:38:12Z",
+        "legBoardLatitude" : "46.21052",
+        "legBoardLongitude" : "6.14242",
+        "legBoardQuay" : "3",
+        "legBoardStopId" : "ch:1:sloid:1008:2:3",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T16:38:00Z",
+        "legDestination" : "Martigny",
+        "legDestinationRef" : "ch:1:sloid:1500",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.31701",
+            "longitude" : "6.18744",
+            "stopId" : "ch:1:sloid:1023:2:3",
+            "stopName" : "Coppet"
+          },
+          {
+            "id" : "3",
+            "latitude" : "46.38471",
+            "longitude" : "6.23611",
+            "stopId" : "ch:1:sloid:1030:2:2",
+            "stopName" : "Nyon"
+          },
+          {
+            "id" : "4",
+            "latitude" : "46.42024",
+            "longitude" : "6.26947",
+            "stopId" : "ch:1:sloid:1031:1:1",
+            "stopName" : "Gland"
+          },
+          {
+            "id" : "5",
+            "latitude" : "46.46263",
+            "longitude" : "6.33624",
+            "stopId" : "ch:1:sloid:1033:1:1",
+            "stopName" : "Rolle"
+          },
+          {
+            "id" : "6",
+            "latitude" : "46.47556",
+            "longitude" : "6.39908",
+            "stopId" : "ch:1:sloid:1035:3:1",
+            "stopName" : "Allaman"
+          },
+          {
+            "id" : "7",
+            "latitude" : "46.51138",
+            "longitude" : "6.49404",
+            "stopId" : "ch:1:sloid:1037:2:3",
+            "stopName" : "Morges"
+          },
+          {
+            "id" : "8",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91033:C",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "RE33",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "RegioExpress"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T16:21:00Z",
+    "transfers" : "1"
+  },
+  {
+    "duration" : "PT1H21M48S",
+    "endCode" : "ch:1:sloid:87057",
+    "endCoordinates" : {
+      "lat" : 46.2102,
+      "lon" : 6.1424
+    },
+    "endName" : "Genève, gare Cornavin",
+    "endTime" : "2026-10-02T17:43:18Z",
+    "geoArrival" : false,
+    "geoDeparture" : true,
+    "id" : "ID-F7485D69-F8BE-400D-920F-107FA020E679",
+    "legs" : [
+      {
+        "id" : "1",
+        "journeyRef" : "",
+        "legAlightEstimatedTime" : "",
+        "legAlightLatitude" : "",
+        "legAlightLongitude" : "",
+        "legAlightQuay" : "",
+        "legAlightStopId" : "",
+        "legAlightStopName" : "",
+        "legAlightTimetableTime" : "",
+        "legBoardEstimatedTime" : "",
+        "legBoardLatitude" : "",
+        "legBoardLongitude" : "",
+        "legBoardQuay" : "",
+        "legBoardStopId" : "",
+        "legBoardStopName" : "",
+        "legBoardTimetableTime" : "",
+        "legDestination" : "",
+        "legDuration" : "",
+        "legIntermediates" : [
+
+        ],
+        "legOperator" : "",
+        "publishedLineName" : "",
+        "transfer" : true,
+        "transferBuffer" : "",
+        "transferDuration" : "PT44M",
+        "transferWalkDuration" : "",
+        "transportTypeName" : ""
+      },
+      {
+        "attributeCodes" : [
+          "A__NF",
+          "A__FS",
+          "A__BZ",
+          "A__FZ"
+        ],
+        "id" : "2",
+        "journeyRef" : "ch:1:sjyid:100001:1833-001",
+        "legAlightEstimatedTime" : "2026-10-02T17:43:18Z",
+        "legAlightLatitude" : "46.51674",
+        "legAlightLongitude" : "6.62907",
+        "legAlightQuay" : "3",
+        "legAlightStopId" : "ch:1:sloid:1120:0:276884",
+        "legAlightStopName" : "Lausanne",
+        "legAlightTimetableTime" : "2026-10-02T17:44:00Z",
+        "legBoardEstimatedTime" : "2026-10-02T17:05:30Z",
+        "legBoardLatitude" : "46.21056",
+        "legBoardLongitude" : "6.14234",
+        "legBoardQuay" : "4",
+        "legBoardStopId" : "ch:1:sloid:1008:3:4",
+        "legBoardStopName" : "Genève",
+        "legBoardTimetableTime" : "2026-10-02T17:05:00Z",
+        "legDestination" : "Brig",
+        "legDestinationRef" : "ch:1:sloid:1609",
+        "legDuration" : "",
+        "legIntermediates" : [
+          {
+            "id" : "2",
+            "latitude" : "46.53741",
+            "longitude" : "6.57882",
+            "stopId" : "ch:1:sloid:1118:2:3",
+            "stopName" : "Renens VD"
+          }
+        ],
+        "legOperator" : "Schweizerische Bundesbahnen SBB",
+        "lineRef" : "ojp:91090:_x0020_",
+        "operatingDayRef" : "2026-10-02",
+        "publishedLineName" : "IR90",
+        "transfer" : false,
+        "transferBuffer" : "",
+        "transferDuration" : "",
+        "transferWalkDuration" : "",
+        "transportTypeName" : "InterRegio"
+      }
+    ],
+    "startCoordinates" : {
+      "lat" : 46.1985,
+      "lon" : 6.1418
+    },
+    "startName" : "Ma position",
+    "startTime" : "2026-10-02T16:21:30Z",
+    "transfers" : "0"
+  }
+]

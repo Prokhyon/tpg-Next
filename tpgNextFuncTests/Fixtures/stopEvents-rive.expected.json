@@ -1,394 +1,614 @@
 {
   "events" : [
     {
-      "destination" : "Versoix-La Scie",
-      "estimatedTime" : "2026-09-13T16:00:30Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-29-16-Dimanche-35283399",
-      "lineName" : "29",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Collonge-Bellerive, Bois-Caran",
-      "plannedQuay" : "D",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T15:56:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Moillesulaz",
-      "estimatedTime" : "2026-09-13T16:01:18Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073786",
-      "lineName" : "12",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Lancy-Bachet, gare",
-      "plannedQuay" : "B",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T15:58:00Z",
-      "transportType" : "Tram"
-    },
-    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Veigy-Douane",
-      "estimatedTime" : "2026-09-13T15:59:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-0-Dimanche-33792163",
+      "destinationRef" : "ch:1:sloid:1401326:0:826365",
+      "estimatedTime" : "2026-09-17T09:30:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079237",
       "lineName" : "G",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Genève, Rive",
       "plannedQuay" : "J",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T15:59:00Z",
+      "timetabledTime" : "2026-09-17T09:17:00Z",
       "transportType" : "Bus"
     },
     {
-      "destination" : "Belle-Terre-Place-de-l'Araire",
-      "estimatedTime" : "2026-09-13T16:05:36Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35916061",
-      "lineName" : "9",
-      "operatingDayRef" : "2026-09-13",
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
+      "estimatedTime" : "2026-09-17T09:29:54Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988695",
+      "lineName" : "7",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Vernier, Lignon Tours",
-      "plannedQuay" : "N",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:01:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Palexpo",
-      "estimatedTime" : "2026-09-13T16:02:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Dimanche-35206466",
-      "lineName" : "8",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Veyrier, douane",
-      "plannedQuay" : "E",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:02:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Puplinge, Pré-Marquis",
-      "estimatedTime" : "2026-09-13T16:02:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-31-33-0-Dimanche-34067119",
-      "lineName" : "33",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Genève, Rive",
-      "plannedQuay" : "I",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:02:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Genève-Aéroport-Terminal",
-      "estimatedTime" : "2026-09-13T16:03:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-10-0-Dimanche-33793883",
-      "lineName" : "10",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Genève, Rive",
-      "plannedQuay" : "H",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:03:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Place de Neuve",
-      "estimatedTime" : "2026-09-13T16:05:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-92-0-Dimanche-34043750",
-      "lineName" : "92",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Genève, Place de Neuve",
       "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:05:00Z",
+      "timetabledTime" : "2026-09-17T09:23:00Z",
       "transportType" : "Bus"
     },
     {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Thônex-Vallard",
-      "estimatedTime" : "2026-09-13T16:06:06Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35915870",
+      "destinationRef" : "ch:1:sloid:93124:0:615990",
+      "estimatedTime" : "2026-09-17T09:29:12Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914041",
       "lineName" : "25",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Genève, Jardin Botanique",
       "plannedQuay" : "N",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:05:00Z",
+      "timetabledTime" : "2026-09-17T09:28:00Z",
       "transportType" : "Bus"
     },
     {
-      "destination" : "Lancy-Bachet-Gare",
-      "estimatedTime" : "2026-09-13T16:07:30Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073835",
-      "lineName" : "12",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Thônex, Moillesulaz",
-      "plannedQuay" : "C",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:06:00Z",
-      "transportType" : "Tram"
-    },
-    {
-      "destination" : "Bois-Caran",
-      "estimatedTime" : "2026-09-13T16:03:48Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-29-16-Dimanche-35283364",
-      "lineName" : "29",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Versoix, La Scie",
-      "plannedQuay" : "A",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:06:00Z",
-      "transportType" : "Bus"
-    },
-    {
-      "destination" : "Moillesulaz",
-      "estimatedTime" : "2026-09-13T16:06:12Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073787",
-      "lineName" : "12",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Lancy-Bachet, gare",
-      "plannedQuay" : "B",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:06:00Z",
-      "transportType" : "Tram"
-    },
-    {
-      "destination" : "Vessy, Grands-Esserts",
-      "estimatedTime" : "2026-09-13T16:04:54Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-0-Dimanche-33856974",
-      "lineName" : "7",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Vernier, Lignon Tours",
-      "plannedQuay" : "A",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:07:00Z",
-      "transportType" : "Bus"
-    },
-    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Lancy-Pont-Rouge-Gare",
-      "estimatedTime" : "2026-09-13T16:11:12Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-10-Dimanche-35073074",
+      "destinationRef" : "ch:1:sloid:89098:0:158679",
+      "estimatedTime" : "2026-09-17T09:31:42Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444190",
       "lineName" : "17",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Annemasse, Parc Montessuit",
       "plannedQuay" : "C",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:09:00Z",
+      "timetabledTime" : "2026-09-17T09:29:00Z",
       "transportType" : "Tram"
     },
     {
-      "destination" : "Genève-Plage",
-      "estimatedTime" : "2026-09-13T16:11:12Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653643",
-      "lineName" : "6",
-      "operatingDayRef" : "2026-09-13",
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Veyrier-Douane",
+      "destinationRef" : "ch:1:sloid:87905:0:511932",
+      "estimatedTime" : "2026-09-17T09:33:18Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205790",
+      "lineName" : "8",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
-      "origin" : "Vernier, village",
-      "plannedQuay" : "A",
+      "origin" : "Grand-Saconnex, Palexpo",
+      "plannedQuay" : "F",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:10:00Z",
+      "timetabledTime" : "2026-09-17T09:30:00Z",
       "transportType" : "Bus"
     },
     {
-      "destination" : "Versoix-La Scie",
-      "estimatedTime" : "2026-09-13T16:17:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-29-16-Dimanche-35283400",
-      "lineName" : "29",
-      "operatingDayRef" : "2026-09-13",
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Belle-Terre-Place-de-l'Araire",
+      "destinationRef" : "ch:1:sloid:9321:0:714096",
+      "estimatedTime" : "2026-09-17T09:29:30Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914531",
+      "lineName" : "9",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
-      "origin" : "Collonge-Bellerive, Bois-Caran",
-      "plannedQuay" : "D",
+      "origin" : "Vernier, Lignon Tours",
+      "plannedQuay" : "N",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:11:00Z",
+      "timetabledTime" : "2026-09-17T09:30:00Z",
       "transportType" : "Bus"
     },
     {
-      "destination" : "Lignon-Tours",
-      "estimatedTime" : "2026-09-13T16:13:54Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-0-Dimanche-33856997",
-      "lineName" : "7",
-      "operatingDayRef" : "2026-09-13",
-      "operatorName" : "Transports Publics Genevois",
-      "origin" : "Vessy, Grands-Esserts",
-      "plannedQuay" : "D",
-      "stopId" : "ch:1:sloid:87061",
-      "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:13:00Z",
-      "transportType" : "Bus"
-    },
-    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Moillesulaz",
-      "estimatedTime" : "2026-09-13T16:13:00Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073788",
+      "destinationRef" : "ch:1:sloid:93118:0:11534",
+      "estimatedTime" : "2026-09-17T09:28:24Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444567",
       "lineName" : "12",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Lancy-Bachet, gare",
       "plannedQuay" : "B",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:13:00Z",
+      "timetabledTime" : "2026-09-17T09:30:00Z",
       "transportType" : "Tram"
     },
     {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Lancy-Bachet-Gare",
-      "estimatedTime" : "2026-09-13T16:14:18Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073836",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
+      "estimatedTime" : "2026-09-17T09:32:12Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444489",
       "lineName" : "12",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Thônex, Moillesulaz",
       "plannedQuay" : "C",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:14:00Z",
+      "timetabledTime" : "2026-09-17T09:31:00Z",
       "transportType" : "Tram"
     },
     {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Puplinge, Pré-Marquis",
+      "destinationRef" : "ch:1:sloid:93087:0:261939",
+      "estimatedTime" : "2026-09-17T09:31:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-31-33-0-Lun-Ven-34066277",
+      "lineName" : "33",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Rive",
+      "plannedQuay" : "I",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:31:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
+      "estimatedTime" : "2026-09-17T09:34:42Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988694",
+      "lineName" : "7",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vernier, Lignon Tours",
+      "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:33:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Lignon-Tours",
+      "destinationRef" : "ch:1:sloid:93173:0:613495",
+      "estimatedTime" : "2026-09-17T09:36:24Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988667",
+      "lineName" : "7",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vessy, Grands-Esserts",
+      "plannedQuay" : "D",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:33:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF",
+        "ojp92008IR_IncidentTrip414_1"
+      ],
+      "destination" : "Palexpo",
+      "destinationRef" : "ch:1:sloid:92950:0:289497",
+      "estimatedTime" : "2026-09-17T09:33:00Z",
+      "isCancelled" : true,
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205857",
+      "lineName" : "8",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Veyrier, douane",
+      "plannedQuay" : "E",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:33:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Place de Neuve",
+      "destinationRef" : "ch:1:sloid:92885:0:296556",
+      "estimatedTime" : "2026-09-17T09:35:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-92-0-Lun-Ven-33882147",
+      "lineName" : "92",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Place de Neuve",
+      "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:35:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Hermance-Village",
+      "destinationRef" : "ch:1:sloid:87067:0:106033",
+      "estimatedTime" : "2026-09-17T09:36:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079177",
+      "lineName" : "E",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Rive",
+      "plannedQuay" : "J",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:36:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
       "destination" : "Genève-Plage",
-      "estimatedTime" : "2026-09-13T16:14:48Z",
-      "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653672",
+      "destinationRef" : "ch:1:sloid:87059:0:357051",
+      "estimatedTime" : "2026-09-17T09:36:54Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Lun-Ven-34652192",
+      "lineName" : "6",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vernier, village",
+      "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:36:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Moillesulaz",
+      "destinationRef" : "ch:1:sloid:93118:0:1850",
+      "estimatedTime" : "2026-09-17T09:33:54Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444566",
+      "lineName" : "12",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Lancy-Bachet, gare",
+      "plannedQuay" : "B",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:36:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Lancy-Bachet-Gare",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
+      "estimatedTime" : "2026-09-17T09:37:24Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444381",
+      "lineName" : "12",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Thônex, Moillesulaz",
+      "plannedQuay" : "C",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:37:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Genève-Aéroport-Terminal",
+      "destinationRef" : "ch:1:sloid:92775:0:533072",
+      "estimatedTime" : "2026-09-17T09:37:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-10-0-Lun-Ven-33808910",
+      "lineName" : "10",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Rive",
+      "plannedQuay" : "H",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:37:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Thônex-Vallard",
+      "destinationRef" : "ch:1:sloid:93124:0:615990",
+      "estimatedTime" : "2026-09-17T09:37:24Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914039",
+      "lineName" : "25",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Jardin Botanique",
+      "plannedQuay" : "N",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:37:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Genève-Plage",
+      "destinationRef" : "ch:1:sloid:87059:0:357051",
+      "estimatedTime" : "2026-09-17T09:43:18Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Lun-Ven-34652370",
       "lineName" : "2",
-      "operatingDayRef" : "2026-09-13",
+      "operatingDayRef" : "2026-09-17",
       "operatorName" : "Transports Publics Genevois",
       "origin" : "Bernex, Cressy",
       "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
       "stopId" : "ch:1:sloid:87061",
       "stopPointName" : "Genève, Rive",
-      "timetabledTime" : "2026-09-13T16:14:00Z",
+      "timetabledTime" : "2026-09-17T09:39:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Annemasse-Parc Montessuit",
+      "destinationRef" : "ch:1:sloid:1400021:0:27404",
+      "estimatedTime" : "2026-09-17T09:37:12Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444149",
+      "lineName" : "17",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Lancy-Pont-Rouge, gare",
+      "plannedQuay" : "B",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:39:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Lancy-Pont-Rouge-Gare",
+      "destinationRef" : "ch:1:sloid:89098:0:158679",
+      "estimatedTime" : "2026-09-17T09:39:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-17-19-Lun-Ven-35444189",
+      "lineName" : "17",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Annemasse, Parc Montessuit",
+      "plannedQuay" : "C",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:40:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Belle-Terre-Place-de-l'Araire",
+      "destinationRef" : "ch:1:sloid:9321:0:714096",
+      "estimatedTime" : "2026-09-17T09:40:24Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Lun-Ven-35914534",
+      "lineName" : "9",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vernier, Lignon Tours",
+      "plannedQuay" : "N",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:40:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Gy-Temple",
+      "destinationRef" : "ch:1:sloid:87066:0:54554",
+      "estimatedTime" : "2026-09-17T09:47:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-A-0-Lun-Ven-33791917",
+      "lineName" : "A",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Rive",
+      "plannedQuay" : "I",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:41:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Moillesulaz",
+      "destinationRef" : "ch:1:sloid:93118:0:11534",
+      "estimatedTime" : "2026-09-17T09:41:42Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444565",
+      "lineName" : "12",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Lancy-Bachet, gare",
+      "plannedQuay" : "B",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:41:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Lancy-Bachet-Gare",
+      "destinationRef" : "ch:1:sloid:87075:0:337873",
+      "estimatedTime" : "2026-09-17T09:43:18Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-19-Lun-Ven-35444440",
+      "lineName" : "12",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Thônex, Moillesulaz",
+      "plannedQuay" : "C",
+      "ptMode" : "tram",
+      "quayAccess" : "PLATFORM_ACCESS_WITHOUT_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:42:00Z",
+      "transportType" : "Tram"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Vessy, Grands-Esserts",
+      "destinationRef" : "ch:1:sloid:11620:0:509",
+      "estimatedTime" : "2026-09-17T09:44:42Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988693",
+      "lineName" : "7",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vernier, Lignon Tours",
+      "plannedQuay" : "A",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:43:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Lignon-Tours",
+      "destinationRef" : "ch:1:sloid:93173:0:613495",
+      "estimatedTime" : "2026-09-17T09:43:30Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-07-7-Lun-Ven-34988666",
+      "lineName" : "7",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Vessy, Grands-Esserts",
+      "plannedQuay" : "D",
+      "ptMode" : "bus",
+      "quayAccess" : "PLATFORM_ACCESS_WITH_ASSISTANCE",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:43:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Veigy-Douane",
+      "destinationRef" : "ch:1:sloid:1401326:0:826365",
+      "estimatedTime" : "2026-09-17T09:45:00Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-E-G-75-Lun-Ven-36079262",
+      "lineName" : "G",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Genève, Rive",
+      "plannedQuay" : "J",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:45:00Z",
+      "transportType" : "Bus"
+    },
+    {
+      "attributeCodes" : [
+        "A__NF"
+      ],
+      "destination" : "Veyrier-Douane",
+      "destinationRef" : "ch:1:sloid:87905:0:511932",
+      "estimatedTime" : "2026-09-17T09:47:48Z",
+      "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Lun-Ven-35205789",
+      "lineName" : "8",
+      "operatingDayRef" : "2026-09-17",
+      "operatorName" : "Transports Publics Genevois",
+      "origin" : "Grand-Saconnex, Palexpo",
+      "plannedQuay" : "F",
+      "ptMode" : "bus",
+      "quayAccess" : "ALTERNATIVE_TRANSPORT",
+      "stopId" : "ch:1:sloid:87061",
+      "stopPointName" : "Genève, Rive",
+      "timetabledTime" : "2026-09-17T09:46:00Z",
       "transportType" : "Bus"
     }
   ],
   "quays" : [
     {
-      "id" : "ch:1:sloid:87061:0:111210",
-      "latitude" : "46.20192",
-      "longitude" : "6.15244",
-      "quayName" : "D"
-    },
-    {
-      "id" : "ch:1:sloid:92725:0:325673",
-      "latitude" : "46.24796",
-      "longitude" : "6.20061",
-      "quayName" : "B"
-    },
-    {
-      "id" : "ch:1:sloid:93186:0:1894",
-      "latitude" : "46.27335",
-      "longitude" : "6.16726",
-      "quayName" : "P"
-    },
-    {
-      "id" : "ch:1:sloid:87061:0:681082",
-      "latitude" : "46.20172",
-      "longitude" : "6.15287",
-      "quayName" : "B"
-    },
-    {
-      "id" : "ch:1:sloid:87075:0:326316",
-      "latitude" : "46.17390",
-      "longitude" : "6.12985",
-      "quayName" : "A"
-    },
-    {
-      "id" : "ch:1:sloid:93118:0:11534",
-      "latitude" : "46.19244",
-      "longitude" : "6.20670",
-      "quayName" : "B"
-    },
-    {
       "id" : "ch:1:sloid:87061:0:490225",
       "latitude" : "46.20264",
       "longitude" : "6.15394",
       "quayName" : "J"
-    },
-    {
-      "id" : "ch:1:sloid:1401326:0:826365",
-      "latitude" : "46.27616",
-      "longitude" : "6.24630",
-      "quayName" : "L"
-    },
-    {
-      "id" : "ch:1:sloid:87061:0:1728",
-      "latitude" : "46.20273",
-      "longitude" : "6.15421",
-      "quayName" : "N"
-    },
-    {
-      "id" : "ch:1:sloid:93173:0:416485",
-      "latitude" : "46.20068",
-      "longitude" : "6.09343",
-      "quayName" : "Z"
-    },
-    {
-      "id" : "ch:1:sloid:9321:0:714096",
-      "latitude" : "46.20615",
-      "longitude" : "6.21837",
-      "quayName" : "Z"
-    },
-    {
-      "id" : "ch:1:sloid:87061:0:763661",
-      "latitude" : "46.20166",
-      "longitude" : "6.15207",
-      "quayName" : "E"
-    },
-    {
-      "id" : "ch:1:sloid:87905:0:511932",
-      "latitude" : "46.16727",
-      "longitude" : "6.18669",
-      "quayName" : "Z"
-    },
-    {
-      "id" : "ch:1:sloid:92950:0:289497",
-      "latitude" : "46.23351",
-      "longitude" : "6.11861",
-      "quayName" : "U"
-    },
-    {
-      "id" : "ch:1:sloid:87061:0:450545",
-      "latitude" : "46.20201",
-      "longitude" : "6.15350",
-      "quayName" : "I"
-    },
-    {
-      "id" : "ch:1:sloid:93087:0:261939",
-      "latitude" : "46.21336",
-      "longitude" : "6.23444",
-      "quayName" : "U"
-    },
-    {
-      "id" : "ch:1:sloid:87061:0:677339",
-      "latitude" : "46.20150",
-      "longitude" : "6.15351",
-      "quayName" : "H"
-    },
-    {
-      "id" : "ch:1:sloid:92775:0:533072",
-      "latitude" : "46.23106",
-      "longitude" : "6.10960",
-      "quayName" : "A"
     },
     {
       "id" : "ch:1:sloid:87061:0:737184",
@@ -397,16 +617,10 @@
       "quayName" : "A"
     },
     {
-      "id" : "ch:1:sloid:92885:0:296556",
-      "latitude" : "46.20153",
-      "longitude" : "6.14399",
+      "id" : "ch:1:sloid:87061:0:1728",
+      "latitude" : "46.20273",
+      "longitude" : "6.15421",
       "quayName" : "N"
-    },
-    {
-      "id" : "ch:1:sloid:93124:0:615990",
-      "latitude" : "46.18912",
-      "longitude" : "6.20006",
-      "quayName" : "L"
     },
     {
       "id" : "ch:1:sloid:87061:0:343130",
@@ -415,70 +629,40 @@
       "quayName" : "C"
     },
     {
-      "id" : "ch:1:sloid:87075:0:337873",
-      "latitude" : "46.17357",
-      "longitude" : "6.12932",
-      "quayName" : "J"
+      "id" : "ch:1:sloid:87061:0:361538",
+      "latitude" : "46.20163",
+      "longitude" : "6.15185",
+      "quayName" : "F"
     },
     {
-      "id" : "ch:1:sloid:92725:0:384806",
-      "latitude" : "46.24808",
-      "longitude" : "6.19980",
-      "quayName" : "C"
+      "id" : "ch:1:sloid:87061:0:681082",
+      "latitude" : "46.20172",
+      "longitude" : "6.15287",
+      "quayName" : "B"
     },
     {
-      "id" : "ch:1:sloid:93118:0:1850",
-      "latitude" : "46.19240",
-      "longitude" : "6.20669",
-      "quayName" : "A"
+      "id" : "ch:1:sloid:87061:0:450545",
+      "latitude" : "46.20201",
+      "longitude" : "6.1535",
+      "quayName" : "I"
     },
     {
-      "id" : "ch:1:sloid:11620:0:509",
-      "latitude" : "46.17630",
-      "longitude" : "6.16232",
-      "quayName" : "L"
+      "id" : "ch:1:sloid:87061:0:111210",
+      "latitude" : "46.20192",
+      "longitude" : "6.15244",
+      "quayName" : "D"
     },
     {
-      "id" : "ch:1:sloid:1400021:0:27404",
-      "latitude" : "46.19426",
-      "longitude" : "6.23103",
-      "quayName" : "M"
+      "id" : "ch:1:sloid:87061:0:763661",
+      "latitude" : "46.20166",
+      "longitude" : "6.15207",
+      "quayName" : "E"
     },
     {
-      "id" : "ch:1:sloid:89098:0:158679",
-      "latitude" : "46.18805",
-      "longitude" : "6.12460",
-      "quayName" : "A"
-    },
-    {
-      "id" : "ch:1:sloid:93177:0:83600",
-      "latitude" : "46.21282",
-      "longitude" : "6.07936",
-      "quayName" : "C"
-    },
-    {
-      "id" : "ch:1:sloid:87059:0:357051",
-      "latitude" : "46.21135",
-      "longitude" : "6.17179",
-      "quayName" : "A"
-    },
-    {
-      "id" : "ch:1:sloid:11620:0:510",
-      "latitude" : "46.17630",
-      "longitude" : "6.16247",
-      "quayName" : "M"
-    },
-    {
-      "id" : "ch:1:sloid:93173:0:613495",
-      "latitude" : "46.20092",
-      "longitude" : "6.09308",
-      "quayName" : "X"
-    },
-    {
-      "id" : "ch:1:sloid:92755:0:637672",
-      "latitude" : "46.18232",
-      "longitude" : "6.08828",
-      "quayName" : "Q"
+      "id" : "ch:1:sloid:87061:0:677339",
+      "latitude" : "46.2015",
+      "longitude" : "6.15351",
+      "quayName" : "H"
     }
   ]
 }

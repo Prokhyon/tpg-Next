@@ -37,12 +37,16 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT4M",
-        "transferWalkDuration" : "PT4M",
+        "transferWalkDuration" : "",
         "transportTypeName" : ""
       },
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-015925-70-Dimanche-35916007",
         "legAlightEstimatedTime" : "2026-09-13T16:10:36Z",
@@ -60,6 +64,7 @@
         "legBoardStopName" : "Genève, Place des Eaux-Vives",
         "legBoardTimetableTime" : "2026-09-13T15:59:00Z",
         "legDestination" : "Lignon-Tours",
+        "legDestinationRef" : "ch:1:sloid:93173",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -78,6 +83,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92009:L",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "9",
         "transfer" : false,
@@ -110,6 +116,9 @@
     "id" : "ID-E53CBB3A-DD36-4553-8ED0-FB3EE40E48A2",
     "legs" : [
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
         "id" : "1",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-12-10-Dimanche-35073834",
         "legAlightEstimatedTime" : "2026-09-13T16:01:18Z",
@@ -127,6 +136,7 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T15:59:00Z",
         "legDestination" : "Lancy-Bachet-Gare",
+        "legDestinationRef" : "ch:1:sloid:87075",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -138,6 +148,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:91012:B",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "12",
         "transfer" : false,
@@ -171,12 +182,16 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT3M",
         "transferWalkDuration" : "PT2M",
         "transportTypeName" : ""
       },
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "3",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653679",
         "legAlightEstimatedTime" : "2026-09-13T16:08:24Z",
@@ -194,6 +209,7 @@
         "legBoardStopName" : "Genève, Bel-Air",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Vernier-Village",
+        "legDestinationRef" : "ch:1:sloid:93177",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -205,6 +221,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92019:C",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "19",
         "transfer" : false,
@@ -237,6 +254,10 @@
     "id" : "ID-8266174A-155C-4B5D-98D7-89F38D76CB8D",
     "legs" : [
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "1",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-29-16-Dimanche-35283399",
         "legAlightEstimatedTime" : "2026-09-13T16:01:24Z",
@@ -254,11 +275,13 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T15:56:00Z",
         "legDestination" : "Versoix-La Scie",
+        "legDestinationRef" : "ch:1:sloid:93186",
         "legDuration" : "",
         "legIntermediates" : [
 
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92029:B",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "29",
         "transfer" : false,
@@ -292,12 +315,17 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT1M",
-        "transferDuration" : "PT4M",
+        "transferBuffer" : "",
+        "transferDuration" : "PT3M",
         "transferWalkDuration" : "PT2M",
         "transportTypeName" : ""
       },
       {
+        "attributeCodes" : [
+          "ojp92008IR_IncidentTrip488_1",
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "3",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-08-20-13-Dimanche-35206466",
         "legAlightEstimatedTime" : "2026-09-13T16:13:36Z",
@@ -315,6 +343,7 @@
         "legBoardStopName" : "Genève, Métropole",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Palexpo",
+        "legDestinationRef" : "ch:1:sloid:92950",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -326,6 +355,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92008:I",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "8",
         "transfer" : false,
@@ -382,12 +412,16 @@
         "legOperator" : "",
         "publishedLineName" : "",
         "transfer" : true,
-        "transferBuffer" : "PT0M",
+        "transferBuffer" : "",
         "transferDuration" : "PT4M",
-        "transferWalkDuration" : "PT4M",
+        "transferWalkDuration" : "",
         "transportTypeName" : ""
       },
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "2",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-02-06-19-1-Dimanche-34653660",
         "legAlightEstimatedTime" : "2026-09-13T16:16:18Z",
@@ -405,6 +439,7 @@
         "legBoardStopName" : "Genève, Place des Eaux-Vives",
         "legBoardTimetableTime" : "2026-09-13T16:06:00Z",
         "legDestination" : "Vernier-Village",
+        "legDestinationRef" : "ch:1:sloid:93177",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -423,6 +458,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92006:N",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "6",
         "transfer" : false,
@@ -455,6 +491,10 @@
     "id" : "ID-D6FC3E64-35CA-4EBC-8D80-F91BDBBA770B",
     "legs" : [
       {
+        "attributeCodes" : [
+          "A__NF"
+        ],
+        "busSubmode" : "localBusService",
         "id" : "1",
         "journeyRef" : "ch:1:sjyid:100680:HAS-26-10-0-Dimanche-33793883",
         "legAlightEstimatedTime" : "2026-09-13T16:16:00Z",
@@ -472,6 +512,7 @@
         "legBoardStopName" : "Genève, Rive",
         "legBoardTimetableTime" : "2026-09-13T16:03:00Z",
         "legDestination" : "Genève-Aéroport-Terminal",
+        "legDestinationRef" : "ch:1:sloid:92775",
         "legDuration" : "",
         "legIntermediates" : [
           {
@@ -511,6 +552,7 @@
           }
         ],
         "legOperator" : "Transports Publics Genevois",
+        "lineRef" : "ojp:92010:H",
         "operatingDayRef" : "2026-09-13",
         "publishedLineName" : "10",
         "transfer" : false,

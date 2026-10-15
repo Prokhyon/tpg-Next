@@ -7,57 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		780452D02D9446A9004722F5 /* RegularTrips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780452CF2D94469B004722F5 /* RegularTrips.swift */; };
-		7813BE8D2C23389A005FAFBF /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7813BE8C2C23389A005FAFBF /* SearchView.swift */; };
-		7813BE932C23737A005FAFBF /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7813BE922C23737A005FAFBF /* HomeView.swift */; };
-		7813BE952C237EBD005FAFBF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7813BE942C237EBD005FAFBF /* ContentView.swift */; };
-		7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
-		782463402D21C6B900CDE4D2 /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		782463502D21C86E00CDE4D2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40A2C2094F20083C4C6 /* Assets.xcassets */; };
-		782463572D21E36300CDE4D2 /* EventManagers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782463562D21E36300CDE4D2 /* EventManagers.swift */; };
+		7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
+		782463402D21C6B900CDE4D2 /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7829E3FB2D2297EB0049A10B /* tpg Next Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7829E3FF2D2298380049A10B /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
 		7829E4002D2298380049A10B /* tpgNextFunc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		7835AAC12C68E4E400F77E4F /* LineMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7835AAC02C68E4E400F77E4F /* LineMapView.swift */; };
-		7835AAC32C6A4BC900F77E4F /* TripMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7835AAC22C6A4BC900F77E4F /* TripMapView.swift */; };
 		7855070F3055703F00B892A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B05 /* Assets.xcassets */; };
-		78550712305578AD00B892A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40A2C2094F20083C4C6 /* Assets.xcassets */; };
-		7857887E2CD28F9400196E1C /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 7857887D2CD28F9400196E1C /* InfoPlist.xcstrings */; };
-		786C183B2C660CF800C214AA /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786C183A2C660CF800C214AA /* MapView.swift */; };
 		786C183E2C67624E00C214AA /* ClusterMap in Frameworks */ = {isa = PBXBuildFile; productRef = 786C183D2C67624E00C214AA /* ClusterMap */; };
 		786C18402C67624E00C214AA /* ClusterMapSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 786C183F2C67624E00C214AA /* ClusterMapSwiftUI */; };
-		786CE2042C2F3AE500590018 /* StopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786CE2032C2F3AE500590018 /* StopView.swift */; };
-		786CE2062C2F5D3700590018 /* LineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786CE2052C2F5D3700590018 /* LineView.swift */; };
-		7872A1AC2E7C7C3200469F2E /* tpgNext26.icon in Resources */ = {isa = PBXBuildFile; fileRef = 7872A1AB2E7C7C3200469F2E /* tpgNext26.icon */; };
-		7872A1AD2E7C7C3200469F2E /* tpgNext26.icon in Resources */ = {isa = PBXBuildFile; fileRef = 7872A1AB2E7C7C3200469F2E /* tpgNext26.icon */; };
-		788654572CCD4C8A009FA538 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 788654562CCD4C8A009FA538 /* Localizable.xcstrings */; };
-		7898B4D42C81F72300D64621 /* StopMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7898B4D32C81F72300D64621 /* StopMapView.swift */; };
-		78AC0DF93044A9EC0062E467 /* BasicViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786AF4022D59157B0047017E /* BasicViews.swift */; };
-		78AC0DFA3044AA0B0062E467 /* BasicViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786AF4022D59157B0047017E /* BasicViews.swift */; };
-		78AC0DFD3044AB280062E467 /* StopEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78AC0DFC3044AB280062E467 /* StopEventView.swift */; };
-		78B074592CAC537E000474C9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B074582CAC537E000474C9 /* SettingsView.swift */; };
-		78B4B1A52CBFE80C00F3D0D5 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */; };
 		78C254702E1D664D00115169 /* Updates.md in Resources */ = {isa = PBXBuildFile; fileRef = 78C2546F2E1D664D00115169 /* Updates.md */; };
-		78C3C1122CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf in Resources */ = {isa = PBXBuildFile; fileRef = 78C3C1112CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf */; };
-		78D5C4072C2094F00083C4C6 /* TPG4App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D5C4062C2094F00083C4C6 /* TPG4App.swift */; };
-		78D5C40B2C2094F20083C4C6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40A2C2094F20083C4C6 /* Assets.xcassets */; };
-		78D5C40E2C2094F20083C4C6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78D5C40D2C2094F20083C4C6 /* Preview Assets.xcassets */; };
-		78D8519B2CFF0EB8002810D5 /* FullTripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D8519A2CFF0EB8002810D5 /* FullTripView.swift */; };
-		78E81CDD2C3D34BC0021DC5D /* NotificationFunc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */; };
-		78FE35632C31A1CD00698FEE /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FE35622C31A1CD00698FEE /* TripView.swift */; };
-		7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000A001 /* WhatsNewView.swift */; };
-		7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */; };
-		7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B021 /* TripResultsViews.swift */; };
-		7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B031 /* TripComponents.swift */; };
-		7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B041 /* SavedTripsView.swift */; };
-		7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0DE0000000000000B051 /* TripTimeline.swift */; };
+		7A7C00000000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
+		7A7C00000000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
+		7A7C00000000000000000C03 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
+		7A7C00000000000000000C04 /* tpg Next Watch Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B01 /* SelectStopIntent.swift */; };
 		7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B02 /* DeparturesProvider.swift */; };
 		7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */; };
 		7BADCAFE0000000000000C04 /* DeparturesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B04 /* DeparturesWidget.swift */; };
-		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
+		7BADCAFE0000000000000C06 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; platformFilter = ios; };
 		7BADCAFE0000000000000C07 /* tpg Next Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000A01 /* tpg Next Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B08 /* WidgetPreviews.swift */; };
+		7BADCAFE0000000000000C09 /* NextTripWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B09 /* NextTripWidget.swift */; };
+		7BADCAFE0000000000000C0A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7BADCAFE0000000000000B0A /* PrivacyInfo.xcprivacy */; };
 		7E57A1B20000000000000007 /* tpgNextFunc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */; };
 /* End PBXBuildFile section */
 
@@ -77,6 +48,20 @@
 			remoteInfo = "watch tpg Next Watch App";
 		};
 		7829E4012D2298380049A10B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 782463362D21C6B800CDE4D2;
+			remoteInfo = tpgNextFunc;
+		};
+		7A7C00000000000000000102 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7A7C00000000000000000F01;
+			remoteInfo = "tpg Next Watch Widget";
+		};
+		7A7C00000000000000000104 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 78D5C3FB2C2094F00083C4C6 /* Project object */;
 			proxyType = 1;
@@ -151,48 +136,28 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A7C00000000000000000E04 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7A7C00000000000000000C04 /* tpg Next Watch Widget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		780452CF2D94469B004722F5 /* RegularTrips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegularTrips.swift; sourceTree = "<group>"; };
-		7813BE8C2C23389A005FAFBF /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
-		7813BE922C23737A005FAFBF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		7813BE942C237EBD005FAFBF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		782463222D21B58400CDE4D2 /* tpg Next.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tpg Next.entitlements"; sourceTree = "<group>"; };
 		782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = tpgNextFunc.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		782463562D21E36300CDE4D2 /* EventManagers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventManagers.swift; sourceTree = "<group>"; };
 		7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tpg Next Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		7835AAC02C68E4E400F77E4F /* LineMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineMapView.swift; sourceTree = "<group>"; };
-		7835AAC22C6A4BC900F77E4F /* TripMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMapView.swift; sourceTree = "<group>"; };
-		7857887D2CD28F9400196E1C /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
-		786AF4022D59157B0047017E /* BasicViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicViews.swift; sourceTree = "<group>"; };
 		786C00D52CD413BE009DAC17 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		786C00D72CD413BF009DAC17 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		786C183A2C660CF800C214AA /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
-		786CE2032C2F3AE500590018 /* StopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopView.swift; sourceTree = "<group>"; };
-		786CE2052C2F5D3700590018 /* LineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineView.swift; sourceTree = "<group>"; };
-		7872A1AB2E7C7C3200469F2E /* tpgNext26.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = tpgNext26.icon; sourceTree = "<group>"; };
-		788654562CCD4C8A009FA538 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		7898B4D32C81F72300D64621 /* StopMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopMapView.swift; sourceTree = "<group>"; };
-		78AC0DFC3044AB280062E467 /* StopEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopEventView.swift; sourceTree = "<group>"; };
-		78B074582CAC537E000474C9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; usesTabs = 0; };
 		78C2546F2E1D664D00115169 /* Updates.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Updates.md; sourceTree = "<group>"; };
-		78C3C1112CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = tpgNextNotificationSound.caf; sourceTree = "<group>"; };
 		78C6A6542C988B45006F5AF4 /* tpg-Next-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "tpg-Next-Info.plist"; sourceTree = SOURCE_ROOT; };
 		78D5C4032C2094F00083C4C6 /* tpg Next.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tpg Next.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		78D5C4062C2094F00083C4C6 /* TPG4App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TPG4App.swift; sourceTree = "<group>"; };
-		78D5C40A2C2094F20083C4C6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		78D5C40D2C2094F20083C4C6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		78D8519A2CFF0EB8002810D5 /* FullTripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullTripView.swift; sourceTree = "<group>"; };
-		78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFunc.swift; sourceTree = "<group>"; };
-		78FE35622C31A1CD00698FEE /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000A001 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItineraryViewModel.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B021 /* TripResultsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripResultsViews.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B031 /* TripComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripComponents.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B041 /* SavedTripsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedTripsView.swift; sourceTree = "<group>"; };
-		7A1C0DE0000000000000B051 /* TripTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripTimeline.swift; sourceTree = "<group>"; };
+		7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Watch Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000A01 /* tpg Next Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "tpg Next Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7BADCAFE0000000000000B01 /* SelectStopIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectStopIntent.swift; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B02 /* DeparturesProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeparturesProvider.swift; sourceTree = "<group>"; };
@@ -202,6 +167,8 @@
 		7BADCAFE0000000000000B06 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B07 /* tpg Next Widget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tpg Next Widget.entitlements"; sourceTree = "<group>"; };
 		7BADCAFE0000000000000B08 /* WidgetPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPreviews.swift; sourceTree = "<group>"; };
+		7BADCAFE0000000000000B09 /* NextTripWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextTripWidget.swift; sourceTree = "<group>"; };
+		7BADCAFE0000000000000B0A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7E57A1B20000000000000002 /* tpgNextFuncTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tpgNextFuncTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -213,11 +180,53 @@
 			);
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
 		};
+		787686DA305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
+		};
+		787686DB305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				tpgNext26.icon,
+			);
+			target = 7829E3ED2D2297EA0049A10B /* tpg Next Watch App */;
+		};
+		787686DC305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				BasicViews.swift,
+				LiveActivity/LayoutSandboxActivity.swift,
+				LiveActivity/TripBoardingIntent.swift,
+				LiveActivity/TripLiveActivity.swift,
+				Localizable.xcstrings,
+			);
+			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;
+		};
+		7A7C00000000000000000D02 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7A7C00000000000000000F01 /* tpg Next Watch Widget */;
+		};
+		7A7C00000000000000000D03 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Localizable.xcstrings,
+			);
+			target = 7A7C00000000000000000F01 /* tpg Next Watch Widget */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		782463382D21C6B900CDE4D2 /* tpgNextFunc */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (782463412D21C6B900CDE4D2 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = tpgNextFunc; sourceTree = "<group>"; };
-		7829E3EF2D2297EA0049A10B /* tpg Next Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "tpg Next Watch App"; sourceTree = "<group>"; };
+		7829E3EF2D2297EA0049A10B /* tpg Next Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7A7C00000000000000000D03 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "tpg Next Watch App"; sourceTree = "<group>"; };
+		787686B6305BDA6E00621A56 /* tpg Next */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (787686DA305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 787686DB305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 787686DC305BDA6F00621A56 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "tpg Next"; sourceTree = "<group>"; };
+		7A7C00000000000000000D01 /* tpg Next Watch Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7A7C00000000000000000D02 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "tpg Next Watch Widget"; sourceTree = "<group>"; };
 		7E57A1B20000000000000003 /* tpgNextFuncTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = tpgNextFuncTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -244,6 +253,14 @@
 				786C18402C67624E00C214AA /* ClusterMapSwiftUI in Frameworks */,
 				7824633F2D21C6B900CDE4D2 /* tpgNextFunc.framework in Frameworks */,
 				786C183E2C67624E00C214AA /* ClusterMap in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E02 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A7C00000000000000000C03 /* tpgNextFunc.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -279,11 +296,13 @@
 			isa = PBXGroup;
 			children = (
 				78C2546F2E1D664D00115169 /* Updates.md */,
-				78D5C4052C2094F00083C4C6 /* tpg Next */,
+				78C6A6542C988B45006F5AF4 /* tpg-Next-Info.plist */,
+				787686B6305BDA6E00621A56 /* tpg Next */,
 				782463382D21C6B900CDE4D2 /* tpgNextFunc */,
 				7E57A1B20000000000000003 /* tpgNextFuncTests */,
 				7829E3EF2D2297EA0049A10B /* tpg Next Watch App */,
 				7BADCAFE0000000000000D01 /* tpg Next Widget */,
+				7A7C00000000000000000D01 /* tpg Next Watch Widget */,
 				786C00D42CD413BE009DAC17 /* Frameworks */,
 				78D5C4042C2094F00083C4C6 /* Products */,
 			);
@@ -296,57 +315,10 @@
 				782463372D21C6B800CDE4D2 /* tpgNextFunc.framework */,
 				7829E3EE2D2297EA0049A10B /* tpg Next Watch App.app */,
 				7BADCAFE0000000000000A01 /* tpg Next Widget.appex */,
+				7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */,
 				7E57A1B20000000000000002 /* tpgNextFuncTests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		78D5C4052C2094F00083C4C6 /* tpg Next */ = {
-			isa = PBXGroup;
-			children = (
-				782463222D21B58400CDE4D2 /* tpg Next.entitlements */,
-				7872A1AB2E7C7C3200469F2E /* tpgNext26.icon */,
-				78D5C40A2C2094F20083C4C6 /* Assets.xcassets */,
-				7857887D2CD28F9400196E1C /* InfoPlist.xcstrings */,
-				7813BE942C237EBD005FAFBF /* ContentView.swift */,
-				780452CF2D94469B004722F5 /* RegularTrips.swift */,
-				7813BE922C23737A005FAFBF /* HomeView.swift */,
-				7835AAC02C68E4E400F77E4F /* LineMapView.swift */,
-				786C183A2C660CF800C214AA /* MapView.swift */,
-				786CE2052C2F5D3700590018 /* LineView.swift */,
-				786CE2032C2F3AE500590018 /* StopView.swift */,
-				78AC0DFC3044AB280062E467 /* StopEventView.swift */,
-				78E81CDC2C3D34BC0021DC5D /* NotificationFunc.swift */,
-				7813BE8C2C23389A005FAFBF /* SearchView.swift */,
-				78B074582CAC537E000474C9 /* SettingsView.swift */,
-				7898B4D32C81F72300D64621 /* StopMapView.swift */,
-				78D5C4062C2094F00083C4C6 /* TPG4App.swift */,
-				7835AAC22C6A4BC900F77E4F /* TripMapView.swift */,
-				78FE35622C31A1CD00698FEE /* TripView.swift */,
-				7A1C0DE0000000000000B011 /* ItineraryViewModel.swift */,
-				7A1C0DE0000000000000B021 /* TripResultsViews.swift */,
-				7A1C0DE0000000000000B031 /* TripComponents.swift */,
-				7A1C0DE0000000000000B051 /* TripTimeline.swift */,
-				7A1C0DE0000000000000B041 /* SavedTripsView.swift */,
-				78D8519A2CFF0EB8002810D5 /* FullTripView.swift */,
-				78B4B1A42CBFE80C00F3D0D5 /* WelcomeView.swift */,
-				7A1C0DE0000000000000A001 /* WhatsNewView.swift */,
-				786AF4022D59157B0047017E /* BasicViews.swift */,
-				788654562CCD4C8A009FA538 /* Localizable.xcstrings */,
-				78D5C40C2C2094F20083C4C6 /* Preview Content */,
-				78C6A6542C988B45006F5AF4 /* tpg-Next-Info.plist */,
-				78C3C1112CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf */,
-				782463562D21E36300CDE4D2 /* EventManagers.swift */,
-			);
-			path = "tpg Next";
-			sourceTree = "<group>";
-		};
-		78D5C40C2C2094F20083C4C6 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				78D5C40D2C2094F20083C4C6 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 		7BADCAFE0000000000000D01 /* tpg Next Widget */ = {
@@ -360,6 +332,8 @@
 				7BADCAFE0000000000000B03 /* DeparturesWidgetView.swift */,
 				7BADCAFE0000000000000B01 /* SelectStopIntent.swift */,
 				7BADCAFE0000000000000B08 /* WidgetPreviews.swift */,
+				7BADCAFE0000000000000B09 /* NextTripWidget.swift */,
+				7BADCAFE0000000000000B0A /* PrivacyInfo.xcprivacy */,
 			);
 			path = "tpg Next Widget";
 			sourceTree = "<group>";
@@ -408,11 +382,13 @@
 				7829E3EB2D2297EA0049A10B /* Frameworks */,
 				7829E3EC2D2297EA0049A10B /* Resources */,
 				7829E4032D2298380049A10B /* Embed Frameworks */,
+				7A7C00000000000000000E04 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				7829E4022D2298380049A10B /* PBXTargetDependency */,
+				7A7C00000000000000000101 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7829E3EF2D2297EA0049A10B /* tpg Next Watch App */,
@@ -444,6 +420,9 @@
 				7824633E2D21C6B900CDE4D2 /* PBXTargetDependency */,
 				7829E3FA2D2297EB0049A10B /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				787686B6305BDA6E00621A56 /* tpg Next */,
+			);
 			name = "tpg Next";
 			packageProductDependencies = (
 				786C183D2C67624E00C214AA /* ClusterMap */,
@@ -452,6 +431,29 @@
 			productName = TPG4;
 			productReference = 78D5C4032C2094F00083C4C6 /* tpg Next.app */;
 			productType = "com.apple.product-type.application";
+		};
+		7A7C00000000000000000F01 /* tpg Next Watch Widget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A7C00000000000000000203 /* Build configuration list for PBXNativeTarget "tpg Next Watch Widget" */;
+			buildPhases = (
+				7A7C00000000000000000E01 /* Sources */,
+				7A7C00000000000000000E02 /* Frameworks */,
+				7A7C00000000000000000E03 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A7C00000000000000000103 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A7C00000000000000000D01 /* tpg Next Watch Widget */,
+			);
+			name = "tpg Next Watch Widget";
+			packageProductDependencies = (
+			);
+			productName = "tpg Next Watch Widget";
+			productReference = 7A7C00000000000000000A01 /* tpg Next Watch Widget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		7BADCAFE0000000000000F01 /* tpg Next Widget */ = {
 			isa = PBXNativeTarget;
@@ -515,6 +517,9 @@
 					78D5C4022C2094F00083C4C6 = {
 						CreatedOnToolsVersion = 15.4;
 					};
+					7A7C00000000000000000F01 = {
+						CreatedOnToolsVersion = 27.1;
+					};
 					7BADCAFE0000000000000F01 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -531,6 +536,8 @@
 				en,
 				fr,
 				Base,
+				"en-GB",
+				de,
 			);
 			mainGroup = 78D5C3FA2C2094F00083C4C6;
 			packageReferences = (
@@ -545,6 +552,7 @@
 				7829E3ED2D2297EA0049A10B /* tpg Next Watch App */,
 				7BADCAFE0000000000000F01 /* tpg Next Widget */,
 				7E57A1B20000000000000001 /* tpgNextFuncTests */,
+				7A7C00000000000000000F01 /* tpg Next Watch Widget */,
 			);
 		};
 /* End PBXProject section */
@@ -554,7 +562,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				782463502D21C86E00CDE4D2 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -562,7 +569,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7872A1AD2E7C7C3200469F2E /* tpgNext26.icon in Resources */,
 				78C254702E1D664D00115169 /* Updates.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -571,12 +577,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7872A1AC2E7C7C3200469F2E /* tpgNext26.icon in Resources */,
-				7857887E2CD28F9400196E1C /* InfoPlist.xcstrings in Resources */,
-				78D5C40E2C2094F20083C4C6 /* Preview Assets.xcassets in Resources */,
-				78C3C1122CF8B9CD00C2CDA1 /* tpgNextNotificationSound.caf in Resources */,
-				788654572CCD4C8A009FA538 /* Localizable.xcstrings in Resources */,
-				78D5C40B2C2094F20083C4C6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E03 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -584,8 +591,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				78550712305578AD00B892A5 /* Assets.xcassets in Resources */,
 				7855070F3055703F00B892A5 /* Assets.xcassets in Resources */,
+				7BADCAFE0000000000000C0A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -617,31 +624,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7835AAC32C6A4BC900F77E4F /* TripMapView.swift in Sources */,
-				7898B4D42C81F72300D64621 /* StopMapView.swift in Sources */,
-				786C183B2C660CF800C214AA /* MapView.swift in Sources */,
-				786CE2062C2F5D3700590018 /* LineView.swift in Sources */,
-				7813BE8D2C23389A005FAFBF /* SearchView.swift in Sources */,
-				78B4B1A52CBFE80C00F3D0D5 /* WelcomeView.swift in Sources */,
-				7A1C0DE0000000000000A002 /* WhatsNewView.swift in Sources */,
-				780452D02D9446A9004722F5 /* RegularTrips.swift in Sources */,
-				78FE35632C31A1CD00698FEE /* TripView.swift in Sources */,
-				7A1C0DE0000000000000B012 /* ItineraryViewModel.swift in Sources */,
-				7A1C0DE0000000000000B022 /* TripResultsViews.swift in Sources */,
-				7A1C0DE0000000000000B032 /* TripComponents.swift in Sources */,
-				7A1C0DE0000000000000B052 /* TripTimeline.swift in Sources */,
-				7A1C0DE0000000000000B042 /* SavedTripsView.swift in Sources */,
-				78D8519B2CFF0EB8002810D5 /* FullTripView.swift in Sources */,
-				7835AAC12C68E4E400F77E4F /* LineMapView.swift in Sources */,
-				78E81CDD2C3D34BC0021DC5D /* NotificationFunc.swift in Sources */,
-				7813BE932C23737A005FAFBF /* HomeView.swift in Sources */,
-				786CE2042C2F3AE500590018 /* StopView.swift in Sources */,
-				782463572D21E36300CDE4D2 /* EventManagers.swift in Sources */,
-				7813BE952C237EBD005FAFBF /* ContentView.swift in Sources */,
-				78AC0DF93044A9EC0062E467 /* BasicViews.swift in Sources */,
-				78D5C4072C2094F00083C4C6 /* TPG4App.swift in Sources */,
-				78AC0DFD3044AB280062E467 /* StopEventView.swift in Sources */,
-				78B074592CAC537E000474C9 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A7C00000000000000000E01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A7C00000000000000000C01 /* SelectStopIntent.swift in Sources */,
+				7A7C00000000000000000C02 /* DeparturesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -649,12 +640,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				78AC0DFA3044AA0B0062E467 /* BasicViews.swift in Sources */,
 				7BADCAFE0000000000000C04 /* DeparturesWidget.swift in Sources */,
 				7BADCAFE0000000000000C02 /* DeparturesProvider.swift in Sources */,
 				7BADCAFE0000000000000C03 /* DeparturesWidgetView.swift in Sources */,
 				7BADCAFE0000000000000C01 /* SelectStopIntent.swift in Sources */,
 				7BADCAFE0000000000000C08 /* WidgetPreviews.swift in Sources */,
+				7BADCAFE0000000000000C09 /* NextTripWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -670,6 +661,7 @@
 /* Begin PBXTargetDependency section */
 		7824633E2D21C6B900CDE4D2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
 			targetProxy = 7824633D2D21C6B900CDE4D2 /* PBXContainerItemProxy */;
 		};
@@ -691,6 +683,16 @@
 			isa = PBXTargetDependency;
 			productRef = 786C18432C6762BB00C214AA /* ClusterMapSwiftUI */;
 		};
+		7A7C00000000000000000101 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7A7C00000000000000000F01 /* tpg Next Watch Widget */;
+			targetProxy = 7A7C00000000000000000102 /* PBXContainerItemProxy */;
+		};
+		7A7C00000000000000000103 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
+			targetProxy = 7A7C00000000000000000104 /* PBXContainerItemProxy */;
+		};
 		7BADCAFE0000000000000101 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 7BADCAFE0000000000000F01 /* tpg Next Widget */;
@@ -698,6 +700,7 @@
 		};
 		7BADCAFE0000000000000103 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 782463362D21C6B800CDE4D2 /* tpgNextFunc */;
 			targetProxy = 7BADCAFE0000000000000104 /* PBXContainerItemProxy */;
 		};
@@ -731,7 +734,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = loristhomas.tpgNextFunc;
@@ -746,7 +749,7 @@
 				TARGETED_DEVICE_FAMILY = "1,4";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -772,7 +775,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = loristhomas.tpgNextFunc;
@@ -787,7 +790,7 @@
 				TARGETED_DEVICE_FAMILY = "1,4";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -803,14 +806,14 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La localisation sert à trouver les arrêts à proximité et à afficher votre position sur une carte.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.loristhomas.tpgNext;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -819,7 +822,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -835,14 +838,14 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La localisation sert à trouver les arrêts à proximité et à afficher votre position sur une carte.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.loristhomas.tpgNext;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -851,7 +854,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.5;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -987,6 +990,7 @@
 		78D5C4122C2094F20083C4C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc AppIcon-Lagon AppIcon-Menthe AppIcon-Aurore AppIcon-Minuit AppIcon-Ambre AppIcon-Terracotta AppIcon-Ardoise";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -999,7 +1003,8 @@
 				INFOPLIST_FILE = "tpg-Next-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La localisation sert à trouver les arrêts à proximité et à afficher votre position sur une carte.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1010,20 +1015,21 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		78D5C4132C2094F20083C4C6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Grenadine AppIcon-Orchidee AppIcon-Fuchsia AppIcon-Neon AppIcon-Saphir AppIcon-Crepuscule AppIcon-Tropique AppIcon-Foret AppIcon-Flamme AppIcon-Braise AppIcon-BarbeAPapa AppIcon-NoirBlanc AppIcon-Lagon AppIcon-Menthe AppIcon-Aurore AppIcon-Minuit AppIcon-Ambre AppIcon-Terracotta AppIcon-Ardoise";
 				ASSETCATALOG_COMPILER_APPICON_NAME = tpgNext26;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -1036,7 +1042,8 @@
 				INFOPLIST_FILE = "tpg-Next-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La géolocation est utilisée afin d'identifier des arrêt à proximité ainsi que d'afficher votre position sur une carte";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "La localisation sert à trouver les arrêts à proximité et à afficher votre position sur une carte.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1047,14 +1054,73 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7A7C00000000000000000201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "tpg Next Watch Widget/tpg Next Watch Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "tpg Next Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		7A7C00000000000000000202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "tpg Next Watch Widget/tpg Next Watch Widget.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "tpg Next Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "tpg Next";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -1078,7 +1144,7 @@
 					"@executable_path/..",
 					"@loader_path/..",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1086,7 +1152,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -1110,7 +1176,7 @@
 					"@executable_path/..",
 					"@loader_path/..",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loristhomas.tpgNext.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1119,7 +1185,7 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -1136,7 +1202,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = loristhomas.tpgNextFuncTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1159,7 +1225,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = loristhomas.tpgNextFuncTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1205,6 +1271,15 @@
 			buildConfigurations = (
 				78D5C4122C2094F20083C4C6 /* Debug */,
 				78D5C4132C2094F20083C4C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A7C00000000000000000203 /* Build configuration list for PBXNativeTarget "tpg Next Watch Widget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A7C00000000000000000201 /* Debug */,
+				7A7C00000000000000000202 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

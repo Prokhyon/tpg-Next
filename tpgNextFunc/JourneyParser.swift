@@ -10,13 +10,6 @@
 
 import Foundation
 
-/// OJP 2.0 ne donne que la référence de l'opérateur, alors que `LineColors` est indexé
-/// par son nom complet. Pour les autres, l'appelant garde le nom qu'il connaît déjà.
-private let operatorNames: [String: String] = [
-    "ojp:881": "Transports Publics Genevois",
-    "ojp:11": "Schweizerische Bundesbahnen SBB",
-]
-
 /// Arrêts d'une course, depuis une réponse OJP 2.0. Mêmes `LineEvent` que l'ancien parser
 /// OJP 1.0 : l'heure retenue est celle de départ (d'arrivée au terminus), `sloid` est l'arrêt
 /// parent (StopPlace) et les coordonnées sont celles du quai.
@@ -84,6 +77,10 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
                     current.stopPointName = value
                 case "Text" where parent == "PlannedQuay":
                     current.plannedQuay = value
+                case "Text" where parent == "NameSuffix":
+                    current.quayAccess = QuayAccess(rawValue: value) ?? current.quayAccess
+                case "NotServicedStop" where value == "true":
+                    current.isCancelled = true
                 // L'arrivée précède le départ : le départ l'emporte, comme avec OJP 1.0.
                 case "TimetabledTime" where !value.isEmpty:
                     current.timetabledTime = value
@@ -123,7 +120,9 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
     let delegate = JourneyParserDelegate()
     let parser = XMLParser(data: data)
     parser.delegate = delegate
-    parser.parse()
+    if !parser.parse() {
+        OJPUsage.shared.recordUnreadable("course")
+    }
 
     // Le contexte (lieux) peut suivre les appels : les coordonnées sont résolues à la fin.
     var events = delegate.events
@@ -138,7 +137,7 @@ public func parseJourneyEventsSync(from data: Data) -> (events: [LineEvent], ope
     // même identifiant laissaient un vide dans la liste de la course (LazyVStack).
     var seen = Set<String>()
     events = events.filter { seen.insert($0.id).inserted }
-    let operatorName = delegate.operatorName.isEmpty ? (operatorNames[delegate.operatorRef] ?? "") : delegate.operatorName
+    let operatorName = delegate.operatorName.isEmpty ? (OJPOperators.name(forRef: delegate.operatorRef) ?? "") : delegate.operatorName
     return (events, operatorName)
 }
 
@@ -171,4 +170,41 @@ public func operatingDayCandidates(for day: String) -> [String] {
     formatter.dateFormat = "yyyy-MM-dd"
     guard let date = formatter.date(from: day) else { return [day] }
     return [0, 1, -1].map { formatter.string(from: date.addingTimeInterval(Double($0) * 86_400)) }
+}
+
+
+/// Le véhicule d'une course : ce que l'élément `Service` d'une réponse TripInfo en dit.
+public struct JourneyService: Hashable {
+    /// Mode OJP : `bus`, `tram`, `rail`, `water`…
+    public var ptMode = ""
+    /// Nom du mode tel que l'API l'écrit (« Bus », « Tram »), en allemand.
+    public var modeName = ""
+    public var trainNumber = ""
+    public var attributeCodes: [String] = []
+    public var hasLowFloor: Bool { attributeCodes.contains("A__NF") }
+    /// Course touchée par un incident : une partie ou la totalité de ses arrêts est sautée.
+    /// Les arrêts concernés portent `LineEvent.isCancelled`.
+    public var hasIncident: Bool { attributeCodes.contains(where: isIncidentAttribute) }
+}
+
+/// Lit l'élément `Service` d'une réponse OJPTripInfoRequest (OJP 2.0).
+public func parseJourneyServiceSync(from data: Data) -> JourneyService {
+    let parser = JourneyServiceParser()
+    parser.parse(data)
+    return parser.service
+}
+
+final class JourneyServiceParser: OJPParser {
+    private(set) var service = JourneyService()
+
+    override func didEnd(_ name: String, parent: String, value: String) {
+        guard isInside("Service"), !value.isEmpty else { return }
+        switch name {
+        case "PtMode": service.ptMode = value
+        case "Text" where parent == "Name" && isInside("Mode"): service.modeName = value
+        case "TrainNumber": service.trainNumber = value
+        case "Code" where parent == "Attribute": service.attributeCodes.append(value)
+        default: break
+        }
+    }
 }
